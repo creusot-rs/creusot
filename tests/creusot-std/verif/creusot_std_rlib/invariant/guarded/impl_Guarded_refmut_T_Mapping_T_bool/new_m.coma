@@ -6,6 +6,7 @@ type t_Namespace = Other namespace_other
 
 use creusot.prelude.MutBorrow
 use map.Map
+use creusot.prelude.Mode
 use creusot.prelude.Any
 
 type t_T
@@ -50,7 +51,8 @@ function guard_refmut_T [@inline:trivial] (self: t_Guarded_refmut_T_Mapping_T_bo
 
 meta "rewrite_def" function guard_refmut_T
 
-let new_T (borrow: MutBorrow.t t_T) (guard: Map.map t_T bool) (return (x: t_Guarded_refmut_T_Mapping_T_bool)) =
+let new_T (borrow: MutBorrow.t t_T) (guard: Map.map t_T bool) (mode: Mode.t)
+  (return (x: t_Guarded_refmut_T_Mapping_T_bool)) =
 {[@stop_split] [@expl:new_T requires] ([@stop_split] [@expl:new 'borrow' type invariant] inv_refmut_T borrow)
   /\ ([@stop_split] [@expl:new requires] guards_ref_Mapping_T_bool guard borrow.current)}
   any
@@ -69,7 +71,8 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let new_m_T (borrow: MutBorrow.t t_T) (guard: Map.map t_T bool) (return (x: t_Guarded_refmut_T_Mapping_T_bool)) =
+let new_m_T (borrow: MutBorrow.t t_T) (guard: Map.map t_T bool) (mode: Mode.t)
+  (return (x: t_Guarded_refmut_T_Mapping_T_bool)) =
 {[@stop_split] [@expl:new_m_T requires] ([@stop_split] [@expl:new_m 'borrow' type invariant] inv_refmut_T borrow)
   /\ ([@stop_split] [@expl:new_m requires] guards_ref_Mapping_T_bool guard borrow.current)}
   (! bb0
@@ -79,7 +82,7 @@ let new_m_T (borrow: MutBorrow.t t_T) (guard: Map.map t_T bool) (return (x: t_Gu
           [ &_13 <- _bor ] -{inv_T _bor.final}-
           [ &borrow <- { borrow with current = _bor.final } ] s1)
       [ _ck -> (! {[@expl:type invariant] inv_T borrow.current} any) ]
-    | s1 = new_T {_13} {guard} (fun (_x: t_Guarded_refmut_T_Mapping_T_bool) -> [ &_ret <- _x ] s2)
+    | s1 = new_T {_13} {guard} {mode} (fun (_x: t_Guarded_refmut_T_Mapping_T_bool) -> [ &_ret <- _x ] s2)
     | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_T borrow} any) ]
     | s3 = -{resolve_refmut_T borrow}- s4
     | s4 = return {_ret} ] ]

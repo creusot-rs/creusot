@@ -218,7 +218,7 @@ impl<T: ?Sized> PCell<T> {
     #[requires(self == perm.ward())]
     #[ensures(self == (^perm).ward())]
     #[ensures(result == *perm.val_unsized())]
-    #[ensures(T::default.postcondition((), *(^perm).val_unsized()))]
+    #[ensures(T::default.postcondition((), *(^perm).val_unsized(), mode!()))]
     pub unsafe fn take(&self, perm: Ghost<&mut Perm<PCell<T>>>) -> T
     where
         T: Default,

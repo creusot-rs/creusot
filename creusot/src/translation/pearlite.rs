@@ -34,8 +34,16 @@ type Inputs<'tcx> = [(PIdent, Span, Ty<'tcx>)];
 pub enum TermSort<'tcx, 'a> {
     Contract(&'a Inputs<'tcx>),
     Logic(&'a Inputs<'tcx>),
+    /// `forall` and mappings
     LogicClosure(&'a Inputs<'tcx>),
     Other,
+}
+
+/// Whether a term occurs inside a program function
+#[derive(Clone, Copy, Debug)]
+pub enum InProgram {
+    No,
+    Yes { in_ghost: bool },
 }
 
 #[derive(Copy, Clone, Debug, TyDecodable, TyEncodable, TypeFoldable, TypeVisitable)]

@@ -1,4 +1,5 @@
 module M_example
+  use creusot.prelude.Mode
   use set.Fset
   use creusot.prelude.MutBorrow
   use creusot.int.Int32
@@ -25,7 +26,7 @@ module M_example
   
   function domain_i32 (self: t_UnionFind_i32) : Fset.fset t_Element_i32
   
-  let new_i32 (return (x: t_UnionFind_i32)) = any
+  let new_i32 (mode: Mode.t) (return (x: t_UnionFind_i32)) = any
     [ return (result: t_UnionFind_i32) ->
     {[@stop_split] [@expl:new_i32 ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_UnionFind_i32 result)
       /\ ([@stop_split] [@expl:new ensures] Fset.is_empty (domain_i32 result))}
@@ -61,7 +62,8 @@ module M_example
   
   meta "rewrite_def" predicate inv_Ghost_refmut_UnionFind_i32
   
-  let borrow_mut_UnionFind_i32 (self: MutBorrow.t t_UnionFind_i32) (return (x: MutBorrow.t t_UnionFind_i32)) =
+  let borrow_mut_UnionFind_i32 (self: MutBorrow.t t_UnionFind_i32) (mode: Mode.t)
+    (return (x: MutBorrow.t t_UnionFind_i32)) =
   {[@stop_split] [@expl:borrow_mut 'self' type invariant] inv_refmut_Ghost_UnionFind_i32 self}
     any
     [ return (result: MutBorrow.t t_UnionFind_i32) ->
@@ -102,7 +104,7 @@ module M_example
   
   function payloads_map_i32 (self: t_UnionFind_i32) : Map.map t_Element_i32 Int32.t
   
-  let make_i32 (uf: MutBorrow.t t_UnionFind_i32) (payload: Int32.t) (return (x: t_Element_i32)) =
+  let make_i32 (uf: MutBorrow.t t_UnionFind_i32) (payload: Int32.t) (mode: Mode.t) (return (x: t_Element_i32)) =
   {[@stop_split] [@expl:make 'uf' type invariant] inv_Ghost_refmut_UnionFind_i32 uf}
     any
     [ return (result: t_Element_i32) ->
@@ -140,7 +142,7 @@ module M_example
   
   meta "rewrite_def" predicate inv_Ghost_ref_UnionFind_i32
   
-  let borrow_UnionFind_i32 (self: t_UnionFind_i32) (return (x: t_UnionFind_i32)) =
+  let borrow_UnionFind_i32 (self: t_UnionFind_i32) (mode: Mode.t) (return (x: t_UnionFind_i32)) =
   {[@stop_split] [@expl:borrow 'self' type invariant] inv_ref_Ghost_UnionFind_i32 self}
     any
     [ return (result: t_UnionFind_i32) ->
@@ -167,7 +169,7 @@ module M_example
   function payload_i32 (self: t_UnionFind_i32) (e: t_Element_i32) : Int32.t =
     index_Mapping_Element_i32_i32 (payloads_map_i32 self) e
   
-  let get_i32 (uf: t_UnionFind_i32) (elem: t_Element_i32) (return (x: Int32.t)) =
+  let get_i32 (uf: t_UnionFind_i32) (elem: t_Element_i32) (mode: Mode.t) (return (x: Int32.t)) =
   {[@stop_split] [@expl:get_i32 requires] ([@stop_split] [@expl:get 'uf' type invariant] inv_Ghost_ref_UnionFind_i32 uf)
     /\ ([@stop_split] [@expl:get 'elem' type invariant] inv_ref_Element_i32 elem)
     /\ ([@stop_split] [@expl:get requires #0] in_domain_i32 uf elem)
@@ -175,7 +177,7 @@ module M_example
     any
     [ return (result: Int32.t) -> {[@stop_split] [@expl:get ensures] result = payload_i32 uf elem} (! return {result}) ]
   
-  let clone_Element_i32 (self: t_Element_i32) (return (x: t_Element_i32)) =
+  let clone_Element_i32 (self: t_Element_i32) (mode: Mode.t) (return (x: t_Element_i32)) =
   {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Element_i32 self}
     any
     [ return (result: t_Element_i32) ->
@@ -188,7 +190,8 @@ module M_example
   predicate payloads_unchanged_i32 (self: MutBorrow.t t_UnionFind_i32) =
     payloads_map_i32 self.current = payloads_map_i32 self.final
   
-  let union_i32 (uf: MutBorrow.t t_UnionFind_i32) (x: t_Element_i32) (y: t_Element_i32) (return (x'0: t_Element_i32)) =
+  let union_i32 (uf: MutBorrow.t t_UnionFind_i32) (x: t_Element_i32) (y: t_Element_i32) (mode: Mode.t)
+    (return (x'0: t_Element_i32)) =
   {[@stop_split] [@expl:union_i32 requires] ([@stop_split] [@expl:union 'uf' type invariant] inv_Ghost_refmut_UnionFind_i32 uf)
     /\ ([@stop_split] [@expl:union 'x' type invariant] inv_Element_i32 x)
     /\ ([@stop_split] [@expl:union 'y' type invariant] inv_Element_i32 y)
@@ -214,7 +217,8 @@ module M_example
     /\ roots_map_i32 self.current = roots_map_i32 self.final
     /\ payloads_map_i32 self.current = payloads_map_i32 self.final
   
-  let equiv_i32 (uf: MutBorrow.t t_UnionFind_i32) (e1: t_Element_i32) (e2: t_Element_i32) (return (x: bool)) =
+  let equiv_i32 (uf: MutBorrow.t t_UnionFind_i32) (e1: t_Element_i32) (e2: t_Element_i32) (mode: Mode.t)
+    (return (x: bool)) =
   {[@stop_split] [@expl:equiv_i32 requires] ([@stop_split] [@expl:equiv 'uf' type invariant] inv_Ghost_refmut_UnionFind_i32 uf)
     /\ ([@stop_split] [@expl:equiv 'e1' type invariant] inv_Element_i32 e1)
     /\ ([@stop_split] [@expl:equiv 'e2' type invariant] inv_Element_i32 e2)
@@ -226,7 +230,7 @@ module M_example
       /\ ([@stop_split] [@expl:equiv ensures #1] unchanged_i32 uf)}
       (! return {result}) ]
   
-  let find_i32 (uf: MutBorrow.t t_UnionFind_i32) (elem: t_Element_i32) (return (x: t_Element_i32)) =
+  let find_i32 (uf: MutBorrow.t t_UnionFind_i32) (elem: t_Element_i32) (mode: Mode.t) (return (x: t_Element_i32)) =
   {[@stop_split] [@expl:find_i32 requires] ([@stop_split] [@expl:find 'uf' type invariant] inv_Ghost_refmut_UnionFind_i32 uf)
     /\ ([@stop_split] [@expl:find 'elem' type invariant] inv_Element_i32 elem)
     /\ ([@stop_split] [@expl:find requires] in_domain_i32 uf.current elem)}
@@ -247,46 +251,56 @@ module M_example
   
   meta "rewrite_def" predicate resolve_Ghost_UnionFind_i32'0
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (expr: string) (mode: Mode.t) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
-  let example (return (x: ())) = (! bb0
+  let example (mode: Mode.t) (return (x: ())) = {not Mode.terminates mode}
+    (! bb0
     [ bb0 = s0
-      [ s0 = new_i32 (fun (_x: t_UnionFind_i32) -> [ &uf <- _x ] s1)
+      [ s0 = new_i32 {mode} (fun (_x: t_UnionFind_i32) -> [ &uf <- _x ] s1)
       | s1 = MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
           (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
             [ &_4 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
             [ &uf <- _bor.final ] s2) [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
-      | s2 = borrow_mut_UnionFind_i32 {_4} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_3 <- _x ] s3)
-      | s3 = make_i32 {_3} {(1: Int32.t)} (fun (_x: t_Element_i32) -> [ &x <- _x ] s4)
+      | s2 = borrow_mut_UnionFind_i32 {_4} {mode} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_3 <- _x ] s3)
+      | s3 = make_i32 {_3} {(1: Int32.t)} {mode} (fun (_x: t_Element_i32) -> [ &x <- _x ] s4)
       | s4 = MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
           (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
             [ &_7 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
             [ &uf <- _bor.final ] s5) [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
-      | s5 = borrow_mut_UnionFind_i32 {_7} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_6 <- _x ] s6)
-      | s6 = make_i32 {_6} {(2: Int32.t)} (fun (_x: t_Element_i32) -> [ &y <- _x ] s7)
+      | s5 = borrow_mut_UnionFind_i32 {_7} {mode} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_6 <- _x ] s6)
+      | s6 = make_i32 {_6} {(2: Int32.t)} {mode} (fun (_x: t_Element_i32) -> [ &y <- _x ] s7)
       | s7 = MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
           (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
             [ &_10 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
             [ &uf <- _bor.final ] s8) [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
-      | s8 = borrow_mut_UnionFind_i32 {_10} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_9 <- _x ] s9)
-      | s9 = make_i32 {_9} {(3: Int32.t)} (fun (_x: t_Element_i32) -> [ &z <- _x ] s10)
-      | s10 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_15 <- _x ] s11)
+      | s8 = borrow_mut_UnionFind_i32 {_10} {mode} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_9 <- _x ] s9)
+      | s9 = make_i32 {_9} {(3: Int32.t)} {mode} (fun (_x: t_Element_i32) -> [ &z <- _x ] s10)
+      | s10 = borrow_UnionFind_i32 {uf} {mode} (fun (_x: t_UnionFind_i32) -> [ &_15 <- _x ] s11)
       | s11 = [ &_18 <- x ] s12
-      | s12 = get_i32 {_15} {_18} (fun (_x: Int32.t) -> [ &_14 <- _x ] s13)
+      | s12 = get_i32 {_15} {_18} {mode} (fun (_x: Int32.t) -> [ &_14 <- _x ] s13)
       | s13 = [ &_12 <- _14 = (1: Int32.t) ] s14
       | s14 = any [ br0 -> {_12 = false} (! bb11) | br1 -> {_12} (! bb10) ] ]
     | bb10 = s0
-      [ s0 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_24 <- _x ] s1)
+      [ s0 = borrow_UnionFind_i32 {uf} {mode} (fun (_x: t_UnionFind_i32) -> [ &_24 <- _x ] s1)
       | s1 = [ &_27 <- y ] s2
-      | s2 = get_i32 {_24} {_27} (fun (_x: Int32.t) -> [ &_23 <- _x ] s3)
+      | s2 = get_i32 {_24} {_27} {mode} (fun (_x: Int32.t) -> [ &_23 <- _x ] s3)
       | s3 = [ &_21 <- _23 = (2: Int32.t) ] s4
       | s4 = any [ br0 -> {_21 = false} (! bb15) | br1 -> {_21} (! bb14) ] ]
     | bb14 = s0
-      [ s0 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_33 <- _x ] s1)
+      [ s0 = borrow_UnionFind_i32 {uf} {mode} (fun (_x: t_UnionFind_i32) -> [ &_33 <- _x ] s1)
       | s1 = [ &_36 <- z ] s2
-      | s2 = get_i32 {_33} {_36} (fun (_x: Int32.t) -> [ &_32 <- _x ] s3)
+      | s2 = get_i32 {_33} {_36} {mode} (fun (_x: Int32.t) -> [ &_32 <- _x ] s3)
       | s3 = [ &_30 <- _32 = (3: Int32.t) ] s4
       | s4 = any [ br0 -> {_30 = false} (! bb19) | br1 -> {_30} (! bb18) ] ]
     | bb18 = s0
@@ -294,64 +308,68 @@ module M_example
           (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
             [ &_40 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
             [ &uf <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
-      | s1 = borrow_mut_UnionFind_i32 {_40} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_39 <- _x ] s2)
-      | s2 = clone_Element_i32 {x} (fun (_x: t_Element_i32) -> [ &_41 <- _x ] s3)
-      | s3 = clone_Element_i32 {y} (fun (_x: t_Element_i32) -> [ &_43 <- _x ] s4)
-      | s4 = union_i32 {_39} {_41} {_43} (fun (_x: t_Element_i32) -> [ &_38 <- _x ] s5)
+      | s1 = borrow_mut_UnionFind_i32 {_40} {mode} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_39 <- _x ] s2)
+      | s2 = clone_Element_i32 {x} {mode} (fun (_x: t_Element_i32) -> [ &_41 <- _x ] s3)
+      | s3 = clone_Element_i32 {y} {mode} (fun (_x: t_Element_i32) -> [ &_43 <- _x ] s4)
+      | s4 = union_i32 {_39} {_41} {_43} {mode} (fun (_x: t_Element_i32) -> [ &_38 <- _x ] s5)
       | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_Element_i32 _38} any) ]
       | s6 = -{resolve_Element_i32 _38}- s7
       | s7 = MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
           (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
             [ &_48 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
             [ &uf <- _bor.final ] s8) [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
-      | s8 = borrow_mut_UnionFind_i32 {_48} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_47 <- _x ] s9)
-      | s9 = clone_Element_i32 {x} (fun (_x: t_Element_i32) -> [ &_49 <- _x ] s10)
-      | s10 = clone_Element_i32 {y} (fun (_x: t_Element_i32) -> [ &_51 <- _x ] s11)
-      | s11 = equiv_i32 {_47} {_49} {_51} (fun (_x: bool) -> [ &_46 <- _x ] s12)
+      | s8 = borrow_mut_UnionFind_i32 {_48} {mode} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_47 <- _x ] s9)
+      | s9 = clone_Element_i32 {x} {mode} (fun (_x: t_Element_i32) -> [ &_49 <- _x ] s10)
+      | s10 = clone_Element_i32 {y} {mode} (fun (_x: t_Element_i32) -> [ &_51 <- _x ] s11)
+      | s11 = equiv_i32 {_47} {_49} {_51} {mode} (fun (_x: bool) -> [ &_46 <- _x ] s12)
       | s12 = any [ br0 -> {_46 = false} (! bb30) | br1 -> {_46} (! bb29) ] ]
     | bb29 = s0
       [ s0 = MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
           (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
             [ &_56 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
             [ &uf <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
-      | s1 = borrow_mut_UnionFind_i32 {_56} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_55 <- _x ] s2)
-      | s2 = find_i32 {_55} {x} (fun (_x: t_Element_i32) -> [ &xr <- _x ] s3)
+      | s1 = borrow_mut_UnionFind_i32 {_56} {mode} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_55 <- _x ] s2)
+      | s2 = find_i32 {_55} {x} {mode} (fun (_x: t_Element_i32) -> [ &xr <- _x ] s3)
       | s3 = MutBorrow.borrow_mut <t_UnionFind_i32> {uf}
           (fun (_bor: MutBorrow.t t_UnionFind_i32) ->
             [ &_60 <- _bor ] -{inv_Ghost_UnionFind_i32 _bor.final}-
             [ &uf <- _bor.final ] s4) [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
-      | s4 = borrow_mut_UnionFind_i32 {_60} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_59 <- _x ] s5)
-      | s5 = find_i32 {_59} {y} (fun (_x: t_Element_i32) -> [ &yr <- _x ] s6)
-      | s6 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_66 <- _x ] s7)
+      | s4 = borrow_mut_UnionFind_i32 {_60} {mode} (fun (_x: MutBorrow.t t_UnionFind_i32) -> [ &_59 <- _x ] s5)
+      | s5 = find_i32 {_59} {y} {mode} (fun (_x: t_Element_i32) -> [ &yr <- _x ] s6)
+      | s6 = borrow_UnionFind_i32 {uf} {mode} (fun (_x: t_UnionFind_i32) -> [ &_66 <- _x ] s7)
       | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_Element_i32 xr} any) ]
       | s8 = -{resolve_Element_i32 xr}- s9
       | s9 = [ &_69 <- xr ] s10
-      | s10 = get_i32 {_66} {_69} (fun (_x: Int32.t) -> [ &_65 <- _x ] s11)
-      | s11 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_72 <- _x ] s12)
+      | s10 = get_i32 {_66} {_69} {mode} (fun (_x: Int32.t) -> [ &_65 <- _x ] s11)
+      | s11 = borrow_UnionFind_i32 {uf} {mode} (fun (_x: t_UnionFind_i32) -> [ &_72 <- _x ] s12)
       | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_Element_i32 yr} any) ]
       | s13 = -{resolve_Element_i32 yr}- s14
       | s14 = [ &_75 <- yr ] s15
-      | s15 = get_i32 {_72} {_75} (fun (_x: Int32.t) -> [ &_71 <- _x ] s16)
+      | s15 = get_i32 {_72} {_75} {mode} (fun (_x: Int32.t) -> [ &_71 <- _x ] s16)
       | s16 = [ &_63 <- _65 = _71 ] s17
       | s17 = any [ br0 -> {_63 = false} (! bb42) | br1 -> {_63} (! bb41) ] ]
     | bb41 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
       | s1 = -{resolve_Ghost_UnionFind_i32'0 uf}- s2
-      | s2 = borrow_UnionFind_i32 {uf} (fun (_x: t_UnionFind_i32) -> [ &_81 <- _x ] s3)
+      | s2 = borrow_UnionFind_i32 {uf} {mode} (fun (_x: t_UnionFind_i32) -> [ &_81 <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_Element_i32 z} any) ]
       | s4 = -{resolve_Element_i32 z}- s5
       | s5 = [ &_84 <- z ] s6
-      | s6 = get_i32 {_81} {_84} (fun (_x: Int32.t) -> [ &_80 <- _x ] s7)
+      | s6 = get_i32 {_81} {_84} {mode} (fun (_x: Int32.t) -> [ &_80 <- _x ] s7)
       | s7 = [ &_78 <- _80 = (3: Int32.t) ] s8
       | s8 = any [ br0 -> {_78 = false} (! bb46) | br1 -> {_78} (! bb51) ] ]
     | bb51 = return {_ret}
-    | bb46 = {false} any
+    | bb46 = s0
+      [ s0 = panic {"assertion failed: *get(uf.borrow(), &z) == 3"} {mode} (fun (_x: ()) -> [ &_85 <- _x ] s1)
+      | s1 = {false} any ]
     | bb42 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Element_i32 z} any) ]
       | s1 = -{resolve_Element_i32 z}- s2
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
       | s3 = -{resolve_Ghost_UnionFind_i32'0 uf}- s4
-      | s4 = {false} any ]
+      | s4 = panic {"assertion failed: *get(uf.borrow(), &xr) == *get(uf.borrow(), &yr)"} {mode}
+          (fun (_x: ()) -> [ &_76 <- _x ] s5)
+      | s5 = {false} any ]
     | bb30 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Element_i32 z} any) ]
       | s1 = -{resolve_Element_i32 z}- s2
@@ -361,7 +379,9 @@ module M_example
       | s5 = -{resolve_Element_i32 x}- s6
       | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
       | s7 = -{resolve_Ghost_UnionFind_i32'0 uf}- s8
-      | s8 = {false} any ]
+      | s8 = panic {"assertion failed: equiv(uf.borrow_mut(), x.clone(), y.clone())"} {mode}
+          (fun (_x: ()) -> [ &_53 <- _x ] s9)
+      | s9 = {false} any ]
     | bb19 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Element_i32 z} any) ]
       | s1 = -{resolve_Element_i32 z}- s2
@@ -371,7 +391,8 @@ module M_example
       | s5 = -{resolve_Element_i32 x}- s6
       | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
       | s7 = -{resolve_Ghost_UnionFind_i32'0 uf}- s8
-      | s8 = {false} any ]
+      | s8 = panic {"assertion failed: *get(uf.borrow(), &z) == 3"} {mode} (fun (_x: ()) -> [ &_37 <- _x ] s9)
+      | s9 = {false} any ]
     | bb15 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Element_i32 z} any) ]
       | s1 = -{resolve_Element_i32 z}- s2
@@ -381,7 +402,8 @@ module M_example
       | s5 = -{resolve_Element_i32 x}- s6
       | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
       | s7 = -{resolve_Ghost_UnionFind_i32'0 uf}- s8
-      | s8 = {false} any ]
+      | s8 = panic {"assertion failed: *get(uf.borrow(), &y) == 2"} {mode} (fun (_x: ()) -> [ &_28 <- _x ] s9)
+      | s9 = {false} any ]
     | bb11 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Element_i32 z} any) ]
       | s1 = -{resolve_Element_i32 z}- s2
@@ -391,7 +413,8 @@ module M_example
       | s5 = -{resolve_Element_i32 x}- s6
       | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_Ghost_UnionFind_i32 uf} any) ]
       | s7 = -{resolve_Ghost_UnionFind_i32'0 uf}- s8
-      | s8 = {false} any ] ]
+      | s8 = panic {"assertion failed: *get(uf.borrow(), &x) == 1"} {mode} (fun (_x: ()) -> [ &_19 <- _x ] s9)
+      | s9 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & uf: t_UnionFind_i32 = Any.any_l ()
     | & x: t_Element_i32 = Any.any_l ()
@@ -407,14 +430,17 @@ module M_example
     | & _14: Int32.t = Any.any_l ()
     | & _15: t_UnionFind_i32 = Any.any_l ()
     | & _18: t_Element_i32 = Any.any_l ()
+    | & _19: () = Any.any_l ()
     | & _21: bool = Any.any_l ()
     | & _23: Int32.t = Any.any_l ()
     | & _24: t_UnionFind_i32 = Any.any_l ()
     | & _27: t_Element_i32 = Any.any_l ()
+    | & _28: () = Any.any_l ()
     | & _30: bool = Any.any_l ()
     | & _32: Int32.t = Any.any_l ()
     | & _33: t_UnionFind_i32 = Any.any_l ()
     | & _36: t_Element_i32 = Any.any_l ()
+    | & _37: () = Any.any_l ()
     | & _38: t_Element_i32 = Any.any_l ()
     | & _39: MutBorrow.t t_UnionFind_i32 = Any.any_l ()
     | & _40: MutBorrow.t t_UnionFind_i32 = Any.any_l ()
@@ -425,6 +451,7 @@ module M_example
     | & _48: MutBorrow.t t_UnionFind_i32 = Any.any_l ()
     | & _49: t_Element_i32 = Any.any_l ()
     | & _51: t_Element_i32 = Any.any_l ()
+    | & _53: () = Any.any_l ()
     | & xr: t_Element_i32 = Any.any_l ()
     | & _55: MutBorrow.t t_UnionFind_i32 = Any.any_l ()
     | & _56: MutBorrow.t t_UnionFind_i32 = Any.any_l ()
@@ -438,12 +465,15 @@ module M_example
     | & _71: Int32.t = Any.any_l ()
     | & _72: t_UnionFind_i32 = Any.any_l ()
     | & _75: t_Element_i32 = Any.any_l ()
+    | & _76: () = Any.any_l ()
     | & _78: bool = Any.any_l ()
     | & _80: Int32.t = Any.any_l ()
     | & _81: t_UnionFind_i32 = Any.any_l ()
-    | & _84: t_Element_i32 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _84: t_Element_i32 = Any.any_l ()
+    | & _85: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_example_addrs_eq
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   use creusot.prelude.Any
   use set.Fset
@@ -468,7 +498,7 @@ module M_example_addrs_eq
   
   meta "rewrite_def" function deep_model_ref_Element_T
   
-  let eq_Element_T (self: t_Element_T) (other: t_Element_T) (return (x: bool)) =
+  let eq_Element_T (self: t_Element_T) (other: t_Element_T) (mode: Mode.t) (return (x: bool)) =
   {[@stop_split] [@expl:eq_Element_T requires] ([@stop_split] [@expl:eq 'self' type invariant] inv_ref_Element_T self)
     /\ ([@stop_split] [@expl:eq 'other' type invariant] inv_ref_Element_T other)}
     any
@@ -505,8 +535,9 @@ module M_example_addrs_eq
   
   meta "select_lsinst" "all"
   
-  let example_addrs_eq_T (uf: t_UnionFind_T) (e1: t_Element_T) (e2: t_Element_T) (return (x: ())) =
-  {[@stop_split] [@expl:example_addrs_eq_T requires] ([@stop_split] [@expl:example_addrs_eq 'uf' type invariant] inv_ref_UnionFind_T uf)
+  let example_addrs_eq_T (uf: t_UnionFind_T) (e1: t_Element_T) (e2: t_Element_T) (mode: Mode.t) (return (x: ())) =
+  {not Mode.terminates mode}
+    {[@stop_split] [@expl:example_addrs_eq_T requires] ([@stop_split] [@expl:example_addrs_eq 'uf' type invariant] inv_ref_UnionFind_T uf)
     /\ ([@stop_split] [@expl:example_addrs_eq 'e1' type invariant] inv_Element_T e1)
     /\ ([@stop_split] [@expl:example_addrs_eq 'e2' type invariant] inv_Element_T e2)
     /\ ([@stop_split] [@expl:example_addrs_eq requires] in_domain_T uf e1 /\ in_domain_T uf e2)}
@@ -516,7 +547,7 @@ module M_example_addrs_eq
       | s1 = -{resolve_Element_T e1}- s2
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Element_T e2} any) ]
       | s3 = -{resolve_Element_T e2}- s4
-      | s4 = eq_Element_T {e1} {e2} (fun (_x: bool) -> [ &_8 <- _x ] s5)
+      | s4 = eq_Element_T {e1} {e2} {mode} (fun (_x: bool) -> [ &_8 <- _x ] s5)
       | s5 = any [ br0 -> {_8 = false} (! bb6) | br1 -> {_8} (! bb2) ] ]
     | bb2 = s0 [ s0 = {[@expl:assertion] e1 = e2} s1 | s1 = return {_ret} ]
     | bb6 = return {_ret} ]
@@ -528,6 +559,7 @@ module M_implementation__equiv
   use set.Fset
   use map.Map
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.Ptr
   use creusot.prelude.Opaque
   use creusot.prelude.Any
@@ -686,7 +718,7 @@ module M_implementation__equiv
   
   meta "rewrite_def" predicate inv_refmut_refmut_UnionFind_T
   
-  let deref_mut_Ghost_refmut_UnionFind_T (self: MutBorrow.t (MutBorrow.t t_UnionFind_T))
+  let deref_mut_Ghost_refmut_UnionFind_T (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) (mode: Mode.t)
     (return (x: MutBorrow.t (MutBorrow.t t_UnionFind_T))) =
   {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_UnionFind_T self}
     any
@@ -704,7 +736,7 @@ module M_implementation__equiv
   
   meta "rewrite_def" predicate resolve_refmut_UnionFind_T
   
-  let new_refmut_UnionFind_T (x: MutBorrow.t t_UnionFind_T) (return (x'0: MutBorrow.t t_UnionFind_T)) =
+  let new_refmut_UnionFind_T (x: MutBorrow.t t_UnionFind_T) (mode: Mode.t) (return (x'0: MutBorrow.t t_UnionFind_T)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_refmut_UnionFind_T x}
     any
     [ return (result: MutBorrow.t t_UnionFind_T) ->
@@ -740,7 +772,7 @@ module M_implementation__equiv
     domain_T self.current = domain_T self.final
     /\ roots_map_T self.current = roots_map_T self.final /\ payloads_map_T self.current = payloads_map_T self.final
   
-  let find_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element_T) (return (x: t_Element_T)) =
+  let find_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element_T) (mode: Mode.t) (return (x: t_Element_T)) =
   {[@stop_split] [@expl:find_T requires] ([@stop_split] [@expl:find 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
     /\ ([@stop_split] [@expl:find 'elem' type invariant] inv_Element_T elem)
     /\ ([@stop_split] [@expl:find requires] in_domain_T uf.current elem)}
@@ -777,7 +809,7 @@ module M_implementation__equiv
   
   meta "rewrite_def" function deep_model_ref_Element_T
   
-  let eq_Element_T (self: t_Element_T) (other: t_Element_T) (return (x: bool)) =
+  let eq_Element_T (self: t_Element_T) (other: t_Element_T) (mode: Mode.t) (return (x: bool)) =
   {[@stop_split] [@expl:eq_Element_T requires] ([@stop_split] [@expl:eq 'self' type invariant] inv_ref_Element_T self)
     /\ ([@stop_split] [@expl:eq 'other' type invariant] inv_ref_Element_T other)}
     any
@@ -790,7 +822,7 @@ module M_implementation__equiv
   
   meta "select_lsinst" "all"
   
-  let equiv_T (uf: MutBorrow.t t_UnionFind_T) (e1: t_Element_T) (e2: t_Element_T) (return (x: bool)) =
+  let equiv_T (uf: MutBorrow.t t_UnionFind_T) (e1: t_Element_T) (e2: t_Element_T) (mode: Mode.t) (return (x: bool)) =
   {[@stop_split] [@expl:equiv_T requires] ([@stop_split] [@expl:equiv 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
     /\ ([@stop_split] [@expl:equiv 'e1' type invariant] inv_Element_T e1)
     /\ ([@stop_split] [@expl:equiv 'e2' type invariant] inv_Element_T e2)
@@ -802,7 +834,7 @@ module M_implementation__equiv
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
             [ &_23 <- _bor ] -{inv_Ghost_refmut_UnionFind_T _bor.final}-
             [ &uf <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UnionFind_T uf} any) ]
-      | s1 = deref_mut_Ghost_refmut_UnionFind_T {_23}
+      | s1 = deref_mut_Ghost_refmut_UnionFind_T {_23} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_22 <- _x ] s2)
       | s2 = MutBorrow.borrow_mut <t_UnionFind_T> {_22.current.current}
           (fun (_bor: MutBorrow.t t_UnionFind_T) ->
@@ -830,16 +862,17 @@ module M_implementation__equiv
             [ &_18 <- _bor ] -{inv_UnionFind_T _bor.final}-
             [ &_19 <- { _19 with current = _bor.final } ] s12)
         [ _ck -> (! {[@expl:type invariant] inv_UnionFind_T _19.current} any) ]
-      | s12 = new_refmut_UnionFind_T {_18} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_17 <- _x ] s13)
+      | s12 = new_refmut_UnionFind_T {_18} {Mode.into_ghost mode}
+          (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_17 <- _x ] s13)
       | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_refmut_UnionFind_T _19} any) ]
       | s14 = -{resolve_refmut_UnionFind_T _19}- s15
-      | s15 = find_T {_17} {e1} (fun (_x: t_Element_T) -> [ &r1 <- _x ] s16)
-      | s16 = find_T {uf} {e2} (fun (_x: t_Element_T) -> [ &r2 <- _x ] s17)
+      | s15 = find_T {_17} {e1} {mode} (fun (_x: t_Element_T) -> [ &r1 <- _x ] s16)
+      | s16 = find_T {uf} {e2} {mode} (fun (_x: t_Element_T) -> [ &r2 <- _x ] s17)
       | s17 = s18 [ _ck -> (! {[@expl:type invariant] inv_Element_T r1} any) ]
       | s18 = -{resolve_Element_T r1}- s19
       | s19 = s20 [ _ck -> (! {[@expl:type invariant] inv_Element_T r2} any) ]
       | s20 = -{resolve_Element_T r2}- s21
-      | s21 = eq_Element_T {r1} {r2} (fun (_x: bool) -> [ &_ret <- _x ] s22)
+      | s21 = eq_Element_T {r1} {r2} {mode} (fun (_x: bool) -> [ &_ret <- _x ] s22)
       | s22 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & uf: MutBorrow.t t_UnionFind_T = uf
@@ -863,6 +896,7 @@ module M_implementation__find
   use creusot.prelude.MutBorrow
   use set.Fset
   use map.Map
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   use creusot.prelude.Any
   use int.Int
@@ -1036,7 +1070,7 @@ module M_implementation__find
   
   meta "rewrite_def" predicate ge_log_Int
   
-  let find_inner_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element_T) (return (x: t_Element_T)) =
+  let find_inner_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element_T) (mode: Mode.t) (return (x: t_Element_T)) =
   {[@stop_split] [@expl:find_inner_T requires] ([@stop_split] [@expl:find_inner 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
     /\ ([@stop_split] [@expl:find_inner 'elem' type invariant] inv_Element_T elem)
     /\ ([@stop_split] [@expl:find_inner requires] in_domain_T uf.current elem)}
@@ -1054,12 +1088,13 @@ module M_implementation__find
   
   meta "select_lsinst" "all"
   
-  let find_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element_T) (return (x: t_Element_T)) =
+  let find_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element_T) (mode: Mode.t) (return (x: t_Element_T)) =
   {[@stop_split] [@expl:find_T requires] ([@stop_split] [@expl:find 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
     /\ ([@stop_split] [@expl:find 'elem' type invariant] inv_Element_T elem)
     /\ ([@stop_split] [@expl:find requires] in_domain_T uf.current elem)}
     (! bb0
-    [ bb0 = s0 [ s0 = find_inner_T {uf} {elem} (fun (_x: t_Element_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ bb0 = s0
+      [ s0 = find_inner_T {uf} {elem} {mode} (fun (_x: t_Element_T) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_Element_T = Any.any_l () | & uf: MutBorrow.t t_UnionFind_T = uf | & elem: t_Element_T = elem ])
     [ return (result: t_Element_T) ->
     {[@stop_split] [@expl:find_T ensures] ([@stop_split] [@expl:find result type invariant] inv_Element_T result)
@@ -1071,6 +1106,7 @@ module M_implementation__find_inner
   use creusot.prelude.MutBorrow
   use set.Fset
   use map.Map
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   use creusot.prelude.Any
   use int.Int
@@ -1228,7 +1264,8 @@ module M_implementation__find_inner
   
   meta "rewrite_def" predicate inv_ref_refmut_UnionFind_T
   
-  let deref_Ghost_refmut_UnionFind_T (self: MutBorrow.t t_UnionFind_T) (return (x: MutBorrow.t t_UnionFind_T)) =
+  let deref_Ghost_refmut_UnionFind_T (self: MutBorrow.t t_UnionFind_T) (mode: Mode.t)
+    (return (x: MutBorrow.t t_UnionFind_T)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_refmut_UnionFind_T self}
     any
     [ return (result: MutBorrow.t t_UnionFind_T) ->
@@ -1244,19 +1281,19 @@ module M_implementation__find_inner
       | Some x -> Some'0 (Map.get f x)
       end
   
-  let get_ghost_Snapshot_Element_T (self: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T) (key: t_Element_T)
+  let get_ghost_Snapshot_Element_T (self: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T) (key: t_Element_T) (mode: Mode.t)
     (return (x: t_Option_ref_Perm_PCell_Node_T)) = any
     [ return (result: t_Option_ref_Perm_PCell_Node_T) -> {[@stop_split] [@expl:get_ghost ensures] result
       = map_Option_Perm_PCell_Node_T (get_Snapshot_Element_T self key) (fun (v: t_Perm_PCell_Node_T) -> v)}
       (! return {result}) ]
   
-  let unwrap_ref_Perm_PCell_Node_T (self: t_Option_ref_Perm_PCell_Node_T) (return (x: t_Perm_PCell_Node_T)) =
-  {[@stop_split] [@expl:unwrap requires] self <> None'0}
+  let unwrap_ref_Perm_PCell_Node_T (self: t_Option_ref_Perm_PCell_Node_T) (mode: Mode.t)
+    (return (x: t_Perm_PCell_Node_T)) = {[@stop_split] [@expl:unwrap requires] Mode.nopanic mode -> self <> None'0}
     any
     [ return (result: t_Perm_PCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'0 result = self}
       (! return {result}) ]
   
-  let new_ref_Perm_PCell_Node_T (x: t_Perm_PCell_Node_T) (return (x'0: t_Perm_PCell_Node_T)) = any
+  let new_ref_Perm_PCell_Node_T (x: t_Perm_PCell_Node_T) (mode: Mode.t) (return (x'0: t_Perm_PCell_Node_T)) = any
     [ return (result: t_Perm_PCell_Node_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   predicate inv_Rc_PCell_Node_T_Global (_1: t_Rc_PCell_Node_T_Global)
@@ -1271,7 +1308,7 @@ module M_implementation__find_inner
   
   meta "rewrite_def" predicate inv_ref_Rc_PCell_Node_T_Global
   
-  let deref_Rc_PCell_Node_T_Global (self: t_Rc_PCell_Node_T_Global) (return (x: t_PCell_Node_T)) =
+  let deref_Rc_PCell_Node_T_Global (self: t_Rc_PCell_Node_T_Global) (mode: Mode.t) (return (x: t_PCell_Node_T)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Rc_PCell_Node_T_Global self}
     any
     [ return (result: t_PCell_Node_T) -> {[@stop_split] [@expl:deref ensures] result = view_Rc_PCell_Node_T_Global self}
@@ -1300,7 +1337,7 @@ module M_implementation__find_inner
   
   meta "rewrite_def" predicate inv_ref_Node_T
   
-  let borrow_Node_T (self: t_PCell_Node_T) (perm: t_Perm_PCell_Node_T) (return (x: t_Node_T)) =
+  let borrow_Node_T (self: t_PCell_Node_T) (perm: t_Perm_PCell_Node_T) (mode: Mode.t) (return (x: t_Node_T)) =
   {[@stop_split] [@expl:borrow requires] self = ward_PCell_Node_T perm}
     any
     [ return (result: t_Node_T) ->
@@ -1324,7 +1361,7 @@ module M_implementation__find_inner
   
   meta "rewrite_def" predicate inv_ref_Element_T
   
-  let clone_Element_T (self: t_Element_T) (return (x: t_Element_T)) =
+  let clone_Element_T (self: t_Element_T) (mode: Mode.t) (return (x: t_Element_T)) =
   {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Element_T self}
     any
     [ return (result: t_Element_T) ->
@@ -1352,7 +1389,7 @@ module M_implementation__find_inner
   
   meta "rewrite_def" predicate inv_refmut_refmut_UnionFind_T
   
-  let deref_mut_Ghost_refmut_UnionFind_T (self: MutBorrow.t (MutBorrow.t t_UnionFind_T))
+  let deref_mut_Ghost_refmut_UnionFind_T (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) (mode: Mode.t)
     (return (x: MutBorrow.t (MutBorrow.t t_UnionFind_T))) =
   {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_UnionFind_T self}
     any
@@ -1370,7 +1407,7 @@ module M_implementation__find_inner
   
   meta "rewrite_def" predicate resolve_refmut_UnionFind_T
   
-  let new_refmut_UnionFind_T (x: MutBorrow.t t_UnionFind_T) (return (x'0: MutBorrow.t t_UnionFind_T)) =
+  let new_refmut_UnionFind_T (x: MutBorrow.t t_UnionFind_T) (mode: Mode.t) (return (x'0: MutBorrow.t t_UnionFind_T)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_refmut_UnionFind_T x}
     any
     [ return (result: MutBorrow.t t_UnionFind_T) ->
@@ -1407,7 +1444,7 @@ module M_implementation__find_inner
   
   meta "rewrite_def" predicate ge_log_Int
   
-  let find_inner_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element_T) (return (x: t_Element_T)) =
+  let find_inner_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element_T) (mode: Mode.t) (return (x: t_Element_T)) =
   {[@stop_split] [@expl:find_inner_T requires] ([@stop_split] [@expl:find_inner 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
     /\ ([@stop_split] [@expl:find_inner 'elem' type invariant] inv_Element_T elem)
     /\ ([@stop_split] [@expl:find_inner requires] in_domain_T uf.current elem)}
@@ -1421,10 +1458,10 @@ module M_implementation__find_inner
       /\ ([@stop_split] [@expl:find_inner ensures #3] ge_log_Int (index_Mapping_Element_T_Int uf.current.f0'0.depth result) (index_Mapping_Element_T_Int uf.current.f0'0.depth elem))}
       (! return {result}) ]
   
-  let new_refmut_UFInner_T (x: MutBorrow.t t_UFInner_T) (return (x'0: MutBorrow.t t_UFInner_T)) = any
+  let new_refmut_UFInner_T (x: MutBorrow.t t_UFInner_T) (mode: Mode.t) (return (x'0: MutBorrow.t t_UFInner_T)) = any
     [ return (result: MutBorrow.t t_UFInner_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  let deref_mut_Ghost_refmut_UFInner_T (self: MutBorrow.t (MutBorrow.t t_UFInner_T))
+  let deref_mut_Ghost_refmut_UFInner_T (self: MutBorrow.t (MutBorrow.t t_UFInner_T)) (mode: Mode.t)
     (return (x: MutBorrow.t (MutBorrow.t t_UFInner_T))) = any
     [ return (result: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
       (! return {result}) ]
@@ -1437,7 +1474,7 @@ module M_implementation__find_inner
     forall self: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T [len_Snapshot_Element_T self]. ge_log_Int (len_Snapshot_Element_T self) 0
   
   let get_mut_ghost_Snapshot_Element_T (self: MutBorrow.t t_FMap_Snapshot_Element_T_Perm_PCell_Node_T)
-    (key: t_Element_T) (return (x: t_Option_refmut_Perm_PCell_Node_T)) = any
+    (key: t_Element_T) (mode: Mode.t) (return (x: t_Option_refmut_Perm_PCell_Node_T)) = any
     [ return (result: t_Option_refmut_Perm_PCell_Node_T) ->
     {[@stop_split] [@expl:get_mut_ghost_Snapshot_Element_T ensures] ([@stop_split] [@expl:get_mut_ghost ensures #0] if contains_Snapshot_Element_T self.current key then
           match result with
@@ -1455,8 +1492,9 @@ module M_implementation__find_inner
       = len_Snapshot_Element_T self.final)}
       (! return {result}) ]
   
-  let unwrap_refmut_Perm_PCell_Node_T (self: t_Option_refmut_Perm_PCell_Node_T)
-    (return (x: MutBorrow.t t_Perm_PCell_Node_T)) = {[@stop_split] [@expl:unwrap requires] self <> None'1}
+  let unwrap_refmut_Perm_PCell_Node_T (self: t_Option_refmut_Perm_PCell_Node_T) (mode: Mode.t)
+    (return (x: MutBorrow.t t_Perm_PCell_Node_T)) = {[@stop_split] [@expl:unwrap requires] Mode.nopanic mode
+    -> self <> None'1}
     any
     [ return (result: MutBorrow.t t_Perm_PCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'1 result = self}
       (! return {result}) ]
@@ -1471,7 +1509,7 @@ module M_implementation__find_inner
   
   meta "rewrite_def" predicate resolve_refmut_Perm_PCell_Node_T
   
-  let new_refmut_Perm_PCell_Node_T (x: MutBorrow.t t_Perm_PCell_Node_T)
+  let new_refmut_Perm_PCell_Node_T (x: MutBorrow.t t_Perm_PCell_Node_T) (mode: Mode.t)
     (return (x'0: MutBorrow.t t_Perm_PCell_Node_T)) = any
     [ return (result: MutBorrow.t t_Perm_PCell_Node_T) -> {[@stop_split] [@expl:new ensures] result = x}
       (! return {result}) ]
@@ -1497,7 +1535,7 @@ module M_implementation__find_inner
   
   meta "rewrite_def" function fin_Ghost_refmut_Perm_PCell_Node_T
   
-  let borrow_mut_Node_T (self: t_PCell_Node_T) (perm: MutBorrow.t t_Perm_PCell_Node_T)
+  let borrow_mut_Node_T (self: t_PCell_Node_T) (perm: MutBorrow.t t_Perm_PCell_Node_T) (mode: Mode.t)
     (return (x: MutBorrow.t t_Node_T)) = {[@stop_split] [@expl:borrow_mut requires] self
     = ward_PCell_Node_T perm.current}
     any
@@ -1561,32 +1599,35 @@ module M_implementation__find_inner
   
   meta "select_lsinst" "all"
   
-  let find_inner_T'0 (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element_T) (return (x: t_Element_T)) =
+  let find_inner_T'0 (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element_T) (mode: Mode.t) (return (x: t_Element_T)) =
   {[@stop_split] [@expl:find_inner_T requires] ([@stop_split] [@expl:find_inner 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
     /\ ([@stop_split] [@expl:find_inner 'elem' type invariant] inv_Element_T elem)
     /\ ([@stop_split] [@expl:find_inner requires] in_domain_T uf.current elem)}
     (! bb0
     [ bb0 = s0
-      [ s0 = deref_Ghost_refmut_UnionFind_T {uf} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_23 <- _x ] s1)
+      [ s0 = deref_Ghost_refmut_UnionFind_T {uf} {Mode.into_ghost mode}
+          (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_23 <- _x ] s1)
       | s1 = [ &_27 <- elem ] s2
       | s2 = [ &_26 <- _27 ] s3
-      | s3 = get_ghost_Snapshot_Element_T {_23.current.f0'0.perms} {_26}
+      | s3 = get_ghost_Snapshot_Element_T {_23.current.f0'0.perms} {_26} {Mode.into_ghost mode}
           (fun (_x: t_Option_ref_Perm_PCell_Node_T) -> [ &_21 <- _x ] s4)
-      | s4 = unwrap_ref_Perm_PCell_Node_T {_21} (fun (_x: t_Perm_PCell_Node_T) -> [ &_20 <- _x ] s5)
-      | s5 = new_ref_Perm_PCell_Node_T {_20} (fun (_x: t_Perm_PCell_Node_T) -> [ &perm <- _x ] s6)
-      | s6 = deref_Rc_PCell_Node_T_Global {elem.f0} (fun (_x: t_PCell_Node_T) -> [ &_32 <- _x ] s7)
-      | s7 = borrow_Node_T {_32} {perm} (fun (_x: t_Node_T) -> [ &_30 <- _x ] s8)
+      | s4 = unwrap_ref_Perm_PCell_Node_T {_21} {Mode.into_ghost mode}
+          (fun (_x: t_Perm_PCell_Node_T) -> [ &_20 <- _x ] s5)
+      | s5 = new_ref_Perm_PCell_Node_T {_20} {Mode.into_ghost mode}
+          (fun (_x: t_Perm_PCell_Node_T) -> [ &perm <- _x ] s6)
+      | s6 = deref_Rc_PCell_Node_T_Global {elem.f0} {mode} (fun (_x: t_PCell_Node_T) -> [ &_32 <- _x ] s7)
+      | s7 = borrow_Node_T {_32} {perm} {mode} (fun (_x: t_Node_T) -> [ &_30 <- _x ] s8)
       | s8 = any
         [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_30 = Root x0 x1} (! bb9)
         | br1 (x0: t_Element_T) -> {_30 = Link x0} (! bb10) ] ]
     | bb10 = s0
       [ s0 = elim_Link {_30} (fun (r0: t_Element_T) -> [ &e <- r0 ] s1)
-      | s1 = clone_Element_T {e} (fun (_x: t_Element_T) -> [ &e'0 <- _x ] s2)
+      | s1 = clone_Element_T {e} {mode} (fun (_x: t_Element_T) -> [ &e'0 <- _x ] s2)
       | s2 = MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
             [ &_46 <- _bor ] -{inv_Ghost_refmut_UnionFind_T _bor.final}-
             [ &uf <- _bor.final ] s3) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UnionFind_T uf} any) ]
-      | s3 = deref_mut_Ghost_refmut_UnionFind_T {_46}
+      | s3 = deref_mut_Ghost_refmut_UnionFind_T {_46} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_45 <- _x ] s4)
       | s4 = MutBorrow.borrow_mut <t_UnionFind_T> {_45.current.current}
           (fun (_bor: MutBorrow.t t_UnionFind_T) ->
@@ -1614,27 +1655,28 @@ module M_implementation__find_inner
             [ &_41 <- _bor ] -{inv_UnionFind_T _bor.final}-
             [ &_42 <- { _42 with current = _bor.final } ] s14)
         [ _ck -> (! {[@expl:type invariant] inv_UnionFind_T _42.current} any) ]
-      | s14 = new_refmut_UnionFind_T {_41} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_40 <- _x ] s15)
+      | s14 = new_refmut_UnionFind_T {_41} {Mode.into_ghost mode}
+          (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_40 <- _x ] s15)
       | s15 = s16 [ _ck -> (! {[@expl:type invariant] inv_refmut_UnionFind_T _42} any) ]
       | s16 = -{resolve_refmut_UnionFind_T _42}- s17
-      | s17 = find_inner_T {_40} {e'0} (fun (_x: t_Element_T) -> [ &root <- _x ] s18)
+      | s17 = find_inner_T {_40} {e'0} {mode} (fun (_x: t_Element_T) -> [ &root <- _x ] s18)
       | s18 = MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
             [ &_50 <- _bor ] -{inv_Ghost_refmut_UnionFind_T _bor.final}-
             [ &uf <- _bor.final ] s19) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UnionFind_T uf} any) ]
-      | s19 = deref_mut_Ghost_refmut_UnionFind_T {_50}
+      | s19 = deref_mut_Ghost_refmut_UnionFind_T {_50} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_49 <- _x ] s20)
       | s20 = MutBorrow.borrow_mut <t_UFInner_T> {_49.current.current.f0'0}
           (fun (_bor: MutBorrow.t t_UFInner_T) ->
             [ &__temp <- _bor ] [ &_49 <- { _49 with current = { _49.current with current = { f0'0 = _bor.final } } } ]
             s21)
-      | s21 = new_refmut_UFInner_T {__temp} (fun (_x: MutBorrow.t t_UFInner_T) -> [ &uf'0 <- _x ] s22)
+      | s21 = new_refmut_UFInner_T {__temp} {mode} (fun (_x: MutBorrow.t t_UFInner_T) -> [ &uf'0 <- _x ] s22)
       | s22 = {[@expl:assertion] index_Mapping_Element_T_Int uf'0.current.depth elem
         < index_Mapping_Element_T_Int uf'0.current.depth root}
         s23
       | s23 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_65 <- _bor ] [ &uf'0 <- _bor.final ] s24)
-      | s24 = deref_mut_Ghost_refmut_UFInner_T {_65}
+      | s24 = deref_mut_Ghost_refmut_UFInner_T {_65} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_64 <- _x ] s25)
       | s25 = [ &_68 <- elem ] s26
       | s26 = [ &_67 <- _68 ] s27
@@ -1643,9 +1685,10 @@ module M_implementation__find_inner
             [ &_63 <- _bor ]
             [ &_64 <- { _64 with current = { _64.current with current = { _64.current.current with perms = _bor.final } } } ]
             s28)
-      | s28 = get_mut_ghost_Snapshot_Element_T {_63} {_67}
+      | s28 = get_mut_ghost_Snapshot_Element_T {_63} {_67} {Mode.into_ghost mode}
           (fun (_x: t_Option_refmut_Perm_PCell_Node_T) -> [ &_62 <- _x ] s29)
-      | s29 = unwrap_refmut_Perm_PCell_Node_T {_62} (fun (_x: MutBorrow.t t_Perm_PCell_Node_T) -> [ &_61 <- _x ] s30)
+      | s29 = unwrap_refmut_Perm_PCell_Node_T {_62} {Mode.into_ghost mode}
+          (fun (_x: MutBorrow.t t_Perm_PCell_Node_T) -> [ &_61 <- _x ] s30)
       | s30 = -{resolve_refmut_refmut_UFInner_T _64}- s31
       | s31 = MutBorrow.borrow_final <t_Perm_PCell_Node_T> {_61.current} {MutBorrow.get_id _61}
           (fun (_bor: MutBorrow.t t_Perm_PCell_Node_T) ->
@@ -1654,14 +1697,15 @@ module M_implementation__find_inner
       | s33 = MutBorrow.borrow_final <t_Perm_PCell_Node_T> {_60.current} {MutBorrow.get_id _60}
           (fun (_bor: MutBorrow.t t_Perm_PCell_Node_T) ->
             [ &_59 <- _bor ] [ &_60 <- { _60 with current = _bor.final } ] s34)
-      | s34 = new_refmut_Perm_PCell_Node_T {_59} (fun (_x: MutBorrow.t t_Perm_PCell_Node_T) -> [ &mut_perm <- _x ] s35)
+      | s34 = new_refmut_Perm_PCell_Node_T {_59} {Mode.into_ghost mode}
+          (fun (_x: MutBorrow.t t_Perm_PCell_Node_T) -> [ &mut_perm <- _x ] s35)
       | s35 = -{resolve_refmut_Perm_PCell_Node_T _60}- s36
-      | s36 = clone_Element_T {root} (fun (_x: t_Element_T) -> [ &_73 <- _x ] s37)
+      | s36 = clone_Element_T {root} {mode} (fun (_x: t_Element_T) -> [ &_73 <- _x ] s37)
       | s37 = [ &_72 <- Link _73 ] s38
       | s38 = s39 [ _ck -> (! {[@expl:type invariant] inv_Element_T elem} any) ]
       | s39 = -{resolve_Element_T elem}- s40
-      | s40 = deref_Rc_PCell_Node_T_Global {elem.f0} (fun (_x: t_PCell_Node_T) -> [ &_77 <- _x ] s41)
-      | s41 = borrow_mut_Node_T {_77} {mut_perm} (fun (_x: MutBorrow.t t_Node_T) -> [ &_75 <- _x ] s42)
+      | s40 = deref_Rc_PCell_Node_T_Global {elem.f0} {mode} (fun (_x: t_PCell_Node_T) -> [ &_77 <- _x ] s41)
+      | s41 = borrow_mut_Node_T {_77} {mut_perm} {mode} (fun (_x: MutBorrow.t t_Node_T) -> [ &_75 <- _x ] s42)
       | s42 = s43 [ _ck -> (! {[@expl:type invariant] inv_Node_T _75.current} any) ]
       | s43 = -{resolve_Node_T _75.current}- s44
       | s44 = [ &_75 <- { _75 with current = _72 } ] s45
@@ -1718,10 +1762,11 @@ module M_implementation__find_inner
     | & _73: t_Element_T = Any.any_l ()
     | & _75: MutBorrow.t t_Node_T = Any.any_l ()
     | & _77: t_PCell_Node_T = Any.any_l () ]
-    [ find_inner_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element_T) (_k (_ret: t_Element_T)) ->
-    {[@expl:function variant] well_founded_relation_Int function_variant (uf.current.f0'0.max_depth
-      - index_Mapping_Element_T_Int uf.current.f0'0.depth elem)}
-      find_inner_T {uf} {elem} (_k) ]
+    [ find_inner_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element_T) (mode: Mode.t) (_k (_ret: t_Element_T)) ->
+    {Mode.terminates mode
+      -> ([@expl:function variant] well_founded_relation_Int function_variant (uf.current.f0'0.max_depth
+      - index_Mapping_Element_T_Int uf.current.f0'0.depth elem))}
+      find_inner_T {uf} {elem} {mode} (_k) ]
     [ function_variant: int = uf.current.f0'0.max_depth - index_Mapping_Element_T_Int uf.current.f0'0.depth elem ])
     [ return (result: t_Element_T) ->
     {[@stop_split] [@expl:find_inner_T ensures] ([@stop_split] [@expl:find_inner result type invariant] inv_Element_T result)
@@ -1735,6 +1780,7 @@ end
 module M_implementation__get
   use set.Fset
   use map.Map
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   use creusot.prelude.Any
   use int.Int
@@ -1885,7 +1931,7 @@ module M_implementation__get
   
   meta "rewrite_def" predicate inv_ref_ref_UnionFind_T
   
-  let deref_Ghost_ref_UnionFind_T (self: t_UnionFind_T) (return (x: t_UnionFind_T)) =
+  let deref_Ghost_ref_UnionFind_T (self: t_UnionFind_T) (mode: Mode.t) (return (x: t_UnionFind_T)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_ref_UnionFind_T self}
     any
     [ return (result: t_UnionFind_T) ->
@@ -1901,19 +1947,19 @@ module M_implementation__get
       | Some x -> Some'0 (Map.get f x)
       end
   
-  let get_ghost_Snapshot_Element_T (self: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T) (key: t_Element_T)
+  let get_ghost_Snapshot_Element_T (self: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T) (key: t_Element_T) (mode: Mode.t)
     (return (x: t_Option_ref_Perm_PCell_Node_T)) = any
     [ return (result: t_Option_ref_Perm_PCell_Node_T) -> {[@stop_split] [@expl:get_ghost ensures] result
       = map_Option_Perm_PCell_Node_T (get_Snapshot_Element_T self key) (fun (v: t_Perm_PCell_Node_T) -> v)}
       (! return {result}) ]
   
-  let unwrap_ref_Perm_PCell_Node_T (self: t_Option_ref_Perm_PCell_Node_T) (return (x: t_Perm_PCell_Node_T)) =
-  {[@stop_split] [@expl:unwrap requires] self <> None'0}
+  let unwrap_ref_Perm_PCell_Node_T (self: t_Option_ref_Perm_PCell_Node_T) (mode: Mode.t)
+    (return (x: t_Perm_PCell_Node_T)) = {[@stop_split] [@expl:unwrap requires] Mode.nopanic mode -> self <> None'0}
     any
     [ return (result: t_Perm_PCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'0 result = self}
       (! return {result}) ]
   
-  let new_ref_Perm_PCell_Node_T (x: t_Perm_PCell_Node_T) (return (x'0: t_Perm_PCell_Node_T)) = any
+  let new_ref_Perm_PCell_Node_T (x: t_Perm_PCell_Node_T) (mode: Mode.t) (return (x'0: t_Perm_PCell_Node_T)) = any
     [ return (result: t_Perm_PCell_Node_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   predicate inv_Rc_PCell_Node_T_Global (_1: t_Rc_PCell_Node_T_Global)
@@ -1928,7 +1974,7 @@ module M_implementation__get
   
   meta "rewrite_def" predicate inv_ref_Rc_PCell_Node_T_Global
   
-  let deref_Rc_PCell_Node_T_Global (self: t_Rc_PCell_Node_T_Global) (return (x: t_PCell_Node_T)) =
+  let deref_Rc_PCell_Node_T_Global (self: t_Rc_PCell_Node_T_Global) (mode: Mode.t) (return (x: t_PCell_Node_T)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Rc_PCell_Node_T_Global self}
     any
     [ return (result: t_PCell_Node_T) -> {[@stop_split] [@expl:deref ensures] result = view_Rc_PCell_Node_T_Global self}
@@ -1957,13 +2003,22 @@ module M_implementation__get
   
   meta "rewrite_def" predicate inv_ref_Node_T
   
-  let borrow_Node_T (self: t_PCell_Node_T) (perm: t_Perm_PCell_Node_T) (return (x: t_Node_T)) =
+  let borrow_Node_T (self: t_PCell_Node_T) (perm: t_Perm_PCell_Node_T) (mode: Mode.t) (return (x: t_Node_T)) =
   {[@stop_split] [@expl:borrow requires] self = ward_PCell_Node_T perm}
     any
     [ return (result: t_Node_T) ->
     {[@stop_split] [@expl:borrow_Node_T ensures] ([@stop_split] [@expl:borrow result type invariant] inv_ref_Node_T result)
       /\ ([@stop_split] [@expl:borrow ensures] result = val_unsized_PCell_Node_T perm)}
       (! return {result}) ]
+  
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (expr: string) (mode: Mode.t) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
   
   let elim_Root (_x: t_Node_T) (return (rank: t_PeanoInt) (payload: t_T)) = any
     [ _k (rank: t_PeanoInt) (payload: t_T) -> {Root rank payload = _x} (! return {rank} {payload})
@@ -2012,26 +2067,30 @@ module M_implementation__get
   
   meta "select_lsinst" "all"
   
-  let get_T (uf: t_UnionFind_T) (elem: t_Element_T) (return (x: t_T)) =
+  let get_T (uf: t_UnionFind_T) (elem: t_Element_T) (mode: Mode.t) (return (x: t_T)) =
   {[@stop_split] [@expl:get_T requires] ([@stop_split] [@expl:get 'uf' type invariant] inv_Ghost_ref_UnionFind_T uf)
     /\ ([@stop_split] [@expl:get 'elem' type invariant] inv_ref_Element_T elem)
     /\ ([@stop_split] [@expl:get requires #0] in_domain_T uf elem)
     /\ ([@stop_split] [@expl:get requires #1] root_T uf elem = elem)}
     (! bb0
     [ bb0 = s0
-      [ s0 = deref_Ghost_ref_UnionFind_T {uf} (fun (_x: t_UnionFind_T) -> [ &_16 <- _x ] s1)
+      [ s0 = deref_Ghost_ref_UnionFind_T {uf} {Mode.into_ghost mode} (fun (_x: t_UnionFind_T) -> [ &_16 <- _x ] s1)
       | s1 = [ &_20 <- elem ] s2
       | s2 = [ &_19 <- _20 ] s3
-      | s3 = get_ghost_Snapshot_Element_T {_16.f0'0.perms} {_19}
+      | s3 = get_ghost_Snapshot_Element_T {_16.f0'0.perms} {_19} {Mode.into_ghost mode}
           (fun (_x: t_Option_ref_Perm_PCell_Node_T) -> [ &_14 <- _x ] s4)
-      | s4 = unwrap_ref_Perm_PCell_Node_T {_14} (fun (_x: t_Perm_PCell_Node_T) -> [ &_13 <- _x ] s5)
-      | s5 = new_ref_Perm_PCell_Node_T {_13} (fun (_x: t_Perm_PCell_Node_T) -> [ &perm <- _x ] s6)
-      | s6 = deref_Rc_PCell_Node_T_Global {elem.f0} (fun (_x: t_PCell_Node_T) -> [ &_25 <- _x ] s7)
-      | s7 = borrow_Node_T {_25} {perm} (fun (_x: t_Node_T) -> [ &_23 <- _x ] s8)
+      | s4 = unwrap_ref_Perm_PCell_Node_T {_14} {Mode.into_ghost mode}
+          (fun (_x: t_Perm_PCell_Node_T) -> [ &_13 <- _x ] s5)
+      | s5 = new_ref_Perm_PCell_Node_T {_13} {Mode.into_ghost mode}
+          (fun (_x: t_Perm_PCell_Node_T) -> [ &perm <- _x ] s6)
+      | s6 = deref_Rc_PCell_Node_T_Global {elem.f0} {mode} (fun (_x: t_PCell_Node_T) -> [ &_25 <- _x ] s7)
+      | s7 = borrow_Node_T {_25} {perm} {mode} (fun (_x: t_Node_T) -> [ &_23 <- _x ] s8)
       | s8 = any
         [ br0 (x0: t_PeanoInt) (x1: t_T) -> {_23 = Root x0 x1} (! bb10)
         | br1 (x0: t_Element_T) -> {_23 = Link x0} (! bb8) ] ]
-    | bb8 = {false} any
+    | bb8 = s0
+      [ s0 = panic {"internal error: entered unreachable code"} {mode} (fun (_x: ()) -> [ &_30 <- _x ] s1)
+      | s1 = {false} any ]
     | bb10 = s0
       [ s0 = elim_Root {_23} (fun (rrank: t_PeanoInt) (rpayload: t_T) -> [ &payload <- rpayload ] s1)
       | s1 = [ &_ret <- payload ] s2
@@ -2047,13 +2106,15 @@ module M_implementation__get
     | & _20: t_Element_T = Any.any_l ()
     | & _23: t_Node_T = Any.any_l ()
     | & _25: t_PCell_Node_T = Any.any_l ()
-    | & payload: t_T = Any.any_l () ])
+    | & payload: t_T = Any.any_l ()
+    | & _30: () = Any.any_l () ])
     [ return (result: t_T) ->
     {[@stop_split] [@expl:get_T ensures] ([@stop_split] [@expl:get result type invariant] inv_ref_T result)
       /\ ([@stop_split] [@expl:get ensures] result = payload_T uf elem)}
       (! return {result}) ]
 end
 module M_implementation__impl_Clone_for_Element_T__clone (* <implementation::Element<T> as std::clone::Clone> *)
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   
   type t_Rc_PCell_Node_T_Global
@@ -2072,7 +2133,8 @@ module M_implementation__impl_Clone_for_Element_T__clone (* <implementation::Ele
   
   meta "rewrite_def" predicate inv_ref_Rc_PCell_Node_T_Global
   
-  let clone_Rc_PCell_Node_T_Global (self: t_Rc_PCell_Node_T_Global) (return (x: t_Rc_PCell_Node_T_Global)) =
+  let clone_Rc_PCell_Node_T_Global (self: t_Rc_PCell_Node_T_Global) (mode: Mode.t)
+    (return (x: t_Rc_PCell_Node_T_Global)) =
   {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Rc_PCell_Node_T_Global self}
     any
     [ return (result: t_Rc_PCell_Node_T_Global) ->
@@ -2097,11 +2159,11 @@ module M_implementation__impl_Clone_for_Element_T__clone (* <implementation::Ele
   
   meta "select_lsinst" "all"
   
-  let clone_Element_T (self: t_Element_T) (return (x: t_Element_T)) =
+  let clone_Element_T (self: t_Element_T) (mode: Mode.t) (return (x: t_Element_T)) =
   {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Element_T self}
     (! bb0
     [ bb0 = s0
-      [ s0 = clone_Rc_PCell_Node_T_Global {self.f0} (fun (_x: t_Rc_PCell_Node_T_Global) -> [ &_4 <- _x ] s1)
+      [ s0 = clone_Rc_PCell_Node_T_Global {self.f0} {mode} (fun (_x: t_Rc_PCell_Node_T_Global) -> [ &_4 <- _x ] s1)
       | s1 = [ &_ret <- { f0 = _4 } ] s2
       | s2 = return {_ret} ] ]
     [ & _ret: t_Element_T = Any.any_l () | & self: t_Element_T = self | & _4: t_Rc_PCell_Node_T_Global = Any.any_l () ])
@@ -2111,6 +2173,8 @@ module M_implementation__impl_Clone_for_Element_T__clone (* <implementation::Ele
       (! return {result}) ]
 end
 module M_implementation__impl_Clone_for_Element_T__clone__refines (* <implementation::Element<T> as std::clone::Clone> *)
+  use creusot.prelude.Mode
+  
   type t_Rc_PCell_Node_T_Global
   
   type t_Element_T = { f0: t_Rc_PCell_Node_T_Global }
@@ -2134,11 +2198,12 @@ module M_implementation__impl_Clone_for_Element_T__clone__refines (* <implementa
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_Element_T. inv_ref_Element_T self
+  goal refines: forall mode: Mode.t, self: t_Element_T. inv_ref_Element_T self
       -> inv_ref_Element_T self
       /\ (forall result: t_Element_T. inv_Element_T result /\ self = result -> inv_Element_T result)
 end
 module M_implementation__impl_PartialEq_for_Element_T__eq (* <implementation::Element<T> as std::cmp::PartialEq> *)
+  use creusot.prelude.Mode
   use creusot.prelude.Ptr
   use creusot.prelude.Opaque
   use creusot.prelude.Any
@@ -2162,7 +2227,8 @@ module M_implementation__impl_PartialEq_for_Element_T__eq (* <implementation::El
   
   function as_ptr_Rc_PCell_Node_T_Global (self: t_Rc_PCell_Node_T_Global) : Opaque.ptr
   
-  let ptr_eq_PCell_Node_T (this: t_Rc_PCell_Node_T_Global) (other: t_Rc_PCell_Node_T_Global) (return (x: bool)) =
+  let ptr_eq_PCell_Node_T (this: t_Rc_PCell_Node_T_Global) (other: t_Rc_PCell_Node_T_Global) (mode: Mode.t)
+    (return (x: bool)) =
   {[@stop_split] [@expl:ptr_eq_PCell_Node_T requires] ([@stop_split] [@expl:ptr_eq 'this' type invariant] inv_ref_Rc_PCell_Node_T_Global this)
     /\ ([@stop_split] [@expl:ptr_eq 'other' type invariant] inv_ref_Rc_PCell_Node_T_Global other)}
     any
@@ -2199,14 +2265,14 @@ module M_implementation__impl_PartialEq_for_Element_T__eq (* <implementation::El
   
   meta "select_lsinst" "all"
   
-  let eq_Element_T (self: t_Element_T) (other: t_Element_T) (return (x: bool)) =
+  let eq_Element_T (self: t_Element_T) (other: t_Element_T) (mode: Mode.t) (return (x: bool)) =
   {[@stop_split] [@expl:eq_Element_T requires] ([@stop_split] [@expl:eq 'self' type invariant] inv_ref_Element_T self)
     /\ ([@stop_split] [@expl:eq 'other' type invariant] inv_ref_Element_T other)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_10 <- self.f0 ] s1
       | s1 = [ &_12 <- other.f0 ] s2
-      | s2 = ptr_eq_PCell_Node_T {_10} {_12} (fun (_x: bool) -> [ &_ret <- _x ] s3)
+      | s2 = ptr_eq_PCell_Node_T {_10} {_12} {mode} (fun (_x: bool) -> [ &_ret <- _x ] s3)
       | s3 = return {_ret} ] ]
     [ & _ret: bool = Any.any_l ()
     | & self: t_Element_T = self
@@ -2219,6 +2285,7 @@ module M_implementation__impl_PartialEq_for_Element_T__eq (* <implementation::El
       (! return {result}) ]
 end
 module M_implementation__impl_PartialEq_for_Element_T__eq__refines (* <implementation::Element<T> as std::cmp::PartialEq> *)
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   use creusot.prelude.Ptr
   use creusot.prelude.Opaque
@@ -2257,7 +2324,7 @@ module M_implementation__impl_PartialEq_for_Element_T__eq__refines (* <implement
   
   meta "select_lsinst" "all"
   
-  goal refines: forall self: t_Element_T, other: t_Element_T. inv_ref_Element_T self
+  goal refines: forall mode: Mode.t, self: t_Element_T, other: t_Element_T. inv_ref_Element_T self
       -> inv_ref_Element_T other
       -> inv_ref_Element_T self
       /\ inv_ref_Element_T other
@@ -2403,6 +2470,7 @@ module M_implementation__impl_UnionFind_T__roots_map (* implementation::UnionFin
       = index_Mapping_Element_T_Element_T result (index_Mapping_Element_T_Element_T result e))
 end
 module M_implementation__link
+  use creusot.prelude.Mode
   use creusot.int.UInt64
   use creusot.prelude.Ptr
   use creusot.prelude.Opaque
@@ -2443,7 +2511,7 @@ module M_implementation__link
   
   meta "rewrite_def" function deep_model_ref_Element_T
   
-  let eq_Element_T (self: t_Element_T) (other: t_Element_T) (return (x: bool)) =
+  let eq_Element_T (self: t_Element_T) (other: t_Element_T) (mode: Mode.t) (return (x: bool)) =
   {[@stop_split] [@expl:eq_Element_T requires] ([@stop_split] [@expl:eq 'self' type invariant] inv_ref_Element_T self)
     /\ ([@stop_split] [@expl:eq 'other' type invariant] inv_ref_Element_T other)}
     any
@@ -2622,7 +2690,7 @@ module M_implementation__link
   
   meta "rewrite_def" predicate inv_refmut_refmut_UnionFind_T
   
-  let deref_mut_Ghost_refmut_UnionFind_T (self: MutBorrow.t (MutBorrow.t t_UnionFind_T))
+  let deref_mut_Ghost_refmut_UnionFind_T (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) (mode: Mode.t)
     (return (x: MutBorrow.t (MutBorrow.t t_UnionFind_T))) =
   {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_UnionFind_T self}
     any
@@ -2631,10 +2699,10 @@ module M_implementation__link
       /\ ([@stop_split] [@expl:deref_mut ensures] result = self)}
       (! return {result}) ]
   
-  let new_refmut_UFInner_T (x: MutBorrow.t t_UFInner_T) (return (x'0: MutBorrow.t t_UFInner_T)) = any
+  let new_refmut_UFInner_T (x: MutBorrow.t t_UFInner_T) (mode: Mode.t) (return (x'0: MutBorrow.t t_UFInner_T)) = any
     [ return (result: MutBorrow.t t_UFInner_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  let deref_mut_Ghost_refmut_UFInner_T (self: MutBorrow.t (MutBorrow.t t_UFInner_T))
+  let deref_mut_Ghost_refmut_UFInner_T (self: MutBorrow.t (MutBorrow.t t_UFInner_T)) (mode: Mode.t)
     (return (x: MutBorrow.t (MutBorrow.t t_UFInner_T))) = any
     [ return (result: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
       (! return {result}) ]
@@ -2673,7 +2741,8 @@ module M_implementation__link
       = (if contains_Snapshot_Element_T self k then len_Snapshot_Element_T self else len_Snapshot_Element_T self + 1)
   
   let split_mut_ghost_Snapshot_Element_T (self: MutBorrow.t t_FMap_Snapshot_Element_T_Perm_PCell_Node_T)
-    (key: t_Element_T) (return (x: tup2_refmut_Perm_PCell_Node_T_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T)) =
+    (key: t_Element_T) (mode: Mode.t)
+    (return (x: tup2_refmut_Perm_PCell_Node_T_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T)) =
   {[@stop_split] [@expl:split_mut_ghost requires] contains_Snapshot_Element_T self.current key}
     any
     [ return (result: tup2_refmut_Perm_PCell_Node_T_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T) ->
@@ -2690,7 +2759,7 @@ module M_implementation__link
   meta "rewrite_def" predicate resolve_refmut_refmut_UFInner_T
   
   let new_tup2_refmut_Perm_PCell_Node_T_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T
-    (x: tup2_refmut_Perm_PCell_Node_T_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T)
+    (x: tup2_refmut_Perm_PCell_Node_T_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T) (mode: Mode.t)
     (return (x'0: tup2_refmut_Perm_PCell_Node_T_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T)) = any
     [ return (result: tup2_refmut_Perm_PCell_Node_T_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T) ->
     {[@stop_split] [@expl:new ensures] result = x}
@@ -2701,7 +2770,7 @@ module M_implementation__link
     f1'3: MutBorrow.t t_FMap_Snapshot_Element_T_Perm_PCell_Node_T }
   
   let split_refmut_Perm_PCell_Node_T
-    (self: tup2_refmut_Perm_PCell_Node_T_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T)
+    (self: tup2_refmut_Perm_PCell_Node_T_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T) (mode: Mode.t)
     (return (x: tup2_Ghost_refmut_Perm_PCell_Node_T_Ghost_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T)) = any
     [ return (result: tup2_Ghost_refmut_Perm_PCell_Node_T_Ghost_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T) ->
     {[@stop_split] [@expl:split_refmut_Perm_PCell_Node_T ensures] ([@stop_split] [@expl:split ensures #0] self.f0'2
@@ -2719,7 +2788,7 @@ module M_implementation__link
   
   meta "rewrite_def" predicate inv_ref_Rc_PCell_Node_T_Global
   
-  let deref_Rc_PCell_Node_T_Global (self: t_Rc_PCell_Node_T_Global) (return (x: t_PCell_Node_T)) =
+  let deref_Rc_PCell_Node_T_Global (self: t_Rc_PCell_Node_T_Global) (mode: Mode.t) (return (x: t_PCell_Node_T)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Rc_PCell_Node_T_Global self}
     any
     [ return (result: t_PCell_Node_T) -> {[@stop_split] [@expl:deref ensures] result = view_Rc_PCell_Node_T_Global self}
@@ -2749,7 +2818,7 @@ module M_implementation__link
   
   meta "rewrite_def" function fin_Ghost_refmut_Perm_PCell_Node_T
   
-  let borrow_mut_Node_T (self: t_PCell_Node_T) (perm: MutBorrow.t t_Perm_PCell_Node_T)
+  let borrow_mut_Node_T (self: t_PCell_Node_T) (perm: MutBorrow.t t_Perm_PCell_Node_T) (mode: Mode.t)
     (return (x: MutBorrow.t t_Node_T)) = {[@stop_split] [@expl:borrow_mut requires] self
     = ward_PCell_Node_T perm.current}
     any
@@ -2767,7 +2836,7 @@ module M_implementation__link
   meta "rewrite_def" predicate resolve_refmut_Node_T
   
   let deref_mut_Ghost_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T
-    (self: MutBorrow.t (MutBorrow.t t_FMap_Snapshot_Element_T_Perm_PCell_Node_T))
+    (self: MutBorrow.t (MutBorrow.t t_FMap_Snapshot_Element_T_Perm_PCell_Node_T)) (mode: Mode.t)
     (return (x: MutBorrow.t (MutBorrow.t t_FMap_Snapshot_Element_T_Perm_PCell_Node_T))) = any
     [ return (result: MutBorrow.t (MutBorrow.t t_FMap_Snapshot_Element_T_Perm_PCell_Node_T)) ->
     {[@stop_split] [@expl:deref_mut ensures] result = self}
@@ -2776,7 +2845,7 @@ module M_implementation__link
   type t_Option_refmut_Perm_PCell_Node_T = None'0 | Some'0 (MutBorrow.t t_Perm_PCell_Node_T)
   
   let get_mut_ghost_Snapshot_Element_T (self: MutBorrow.t t_FMap_Snapshot_Element_T_Perm_PCell_Node_T)
-    (key: t_Element_T) (return (x: t_Option_refmut_Perm_PCell_Node_T)) = any
+    (key: t_Element_T) (mode: Mode.t) (return (x: t_Option_refmut_Perm_PCell_Node_T)) = any
     [ return (result: t_Option_refmut_Perm_PCell_Node_T) ->
     {[@stop_split] [@expl:get_mut_ghost_Snapshot_Element_T ensures] ([@stop_split] [@expl:get_mut_ghost ensures #0] if contains_Snapshot_Element_T self.current key then
           match result with
@@ -2794,8 +2863,9 @@ module M_implementation__link
       = len_Snapshot_Element_T self.final)}
       (! return {result}) ]
   
-  let unwrap_refmut_Perm_PCell_Node_T (self: t_Option_refmut_Perm_PCell_Node_T)
-    (return (x: MutBorrow.t t_Perm_PCell_Node_T)) = {[@stop_split] [@expl:unwrap requires] self <> None'0}
+  let unwrap_refmut_Perm_PCell_Node_T (self: t_Option_refmut_Perm_PCell_Node_T) (mode: Mode.t)
+    (return (x: MutBorrow.t t_Perm_PCell_Node_T)) = {[@stop_split] [@expl:unwrap requires] Mode.nopanic mode
+    -> self <> None'0}
     any
     [ return (result: MutBorrow.t t_Perm_PCell_Node_T) -> {[@stop_split] [@expl:unwrap ensures] Some'0 result = self}
       (! return {result}) ]
@@ -2810,7 +2880,7 @@ module M_implementation__link
   
   meta "rewrite_def" predicate resolve_refmut_Perm_PCell_Node_T
   
-  let new_refmut_Perm_PCell_Node_T (x: MutBorrow.t t_Perm_PCell_Node_T)
+  let new_refmut_Perm_PCell_Node_T (x: MutBorrow.t t_Perm_PCell_Node_T) (mode: Mode.t)
     (return (x'0: MutBorrow.t t_Perm_PCell_Node_T)) = any
     [ return (result: MutBorrow.t t_Perm_PCell_Node_T) -> {[@stop_split] [@expl:new ensures] result = x}
       (! return {result}) ]
@@ -2849,6 +2919,15 @@ module M_implementation__link
   
   meta "rewrite_def" predicate resolve_refmut_refmut_UnionFind_T
   
+  predicate inv_never [@inline:trivial] (_1: ()) = false
+  
+  meta "rewrite_def" predicate inv_never
+  
+  let panic (expr: string) (mode: Mode.t) (return (x: ())) =
+  {[@stop_split] [@expl:panic requires] not Mode.nopanic mode}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:panic result type invariant] inv_never result} (! return {result}) ]
+  
   let elim_Root (_x: t_Node_T) (return (rank: t_PeanoInt) (payload: t_T)) = any
     [ _k (rank: t_PeanoInt) (payload: t_T) -> {Root rank payload = _x} (! return {rank} {payload})
     | _chk -> (! {[@expl:elim Root] match _x with
@@ -2865,12 +2944,12 @@ module M_implementation__link
   
   meta "rewrite_def" function view_PeanoInt
   
-  let lt_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: bool)) = any
+  let lt_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (mode: Mode.t) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:lt ensures] result
       = UInt64.lt (view_PeanoInt self) (view_PeanoInt other)}
       (! return {result}) ]
   
-  let clone_Element_T (self: t_Element_T) (return (x: t_Element_T)) =
+  let clone_Element_T (self: t_Element_T) (mode: Mode.t) (return (x: t_Element_T)) =
   {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Element_T self}
     any
     [ return (result: t_Element_T) ->
@@ -2888,13 +2967,13 @@ module M_implementation__link
         | Link x0 -> resolve_Element_T x0
         end
   
-  let new_unit (x: ()) (return (x'0: ())) = any
+  let new_unit (x: ()) (mode: Mode.t) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  let eq_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (return (x: bool)) = any
+  let eq_PeanoInt (self: t_PeanoInt) (other: t_PeanoInt) (mode: Mode.t) (return (x: bool)) = any
     [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result = (self = other)} (! return {result}) ]
   
-  let incr (self: t_PeanoInt) (return (x: t_PeanoInt)) = any
+  let incr (self: t_PeanoInt) (mode: Mode.t) (return (x: t_PeanoInt)) = any
     [ return (result: t_PeanoInt) -> {[@stop_split] [@expl:incr ensures] UInt64.t'int result.f0'1
       = UInt64.t'int self.f0'1 + 1}
       (! return {result}) ]
@@ -2929,7 +3008,8 @@ module M_implementation__link
   
   meta "select_lsinst" "all"
   
-  let link_T (uf: MutBorrow.t t_UnionFind_T) (x: t_Element_T) (y: t_Element_T) (return (x'0: t_Element_T)) =
+  let link_T (uf: MutBorrow.t t_UnionFind_T) (x: t_Element_T) (y: t_Element_T) (mode: Mode.t)
+    (return (x'0: t_Element_T)) =
   {[@stop_split] [@expl:link_T requires] ([@stop_split] [@expl:link 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
     /\ ([@stop_split] [@expl:link 'x' type invariant] inv_Element_T x)
     /\ ([@stop_split] [@expl:link 'y' type invariant] inv_Element_T y)
@@ -2937,7 +3017,7 @@ module M_implementation__link
     /\ ([@stop_split] [@expl:link requires #1] root_T uf.current x = x /\ root_T uf.current y = y)}
     (! bb0
     [ bb0 = s0
-      [ s0 = eq_Element_T {x} {y} (fun (_x: bool) -> [ &_25 <- _x ] s1)
+      [ s0 = eq_Element_T {x} {y} {mode} (fun (_x: bool) -> [ &_25 <- _x ] s1)
       | s1 = any [ br0 -> {_25 = false} (! bb3) | br1 -> {_25} (! bb2) ] ]
     | bb2 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Element_T y} any) ]
@@ -2951,16 +3031,16 @@ module M_implementation__link
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
             [ &_31 <- _bor ] -{inv_Ghost_refmut_UnionFind_T _bor.final}-
             [ &uf <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UnionFind_T uf} any) ]
-      | s1 = deref_mut_Ghost_refmut_UnionFind_T {_31}
+      | s1 = deref_mut_Ghost_refmut_UnionFind_T {_31} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_30 <- _x ] s2)
       | s2 = MutBorrow.borrow_mut <t_UFInner_T> {_30.current.current.f0'0}
           (fun (_bor: MutBorrow.t t_UFInner_T) ->
             [ &__temp <- _bor ] [ &_30 <- { _30 with current = { _30.current with current = { f0'0 = _bor.final } } } ]
             s3)
-      | s3 = new_refmut_UFInner_T {__temp} (fun (_x: MutBorrow.t t_UFInner_T) -> [ &uf'0 <- _x ] s4)
+      | s3 = new_refmut_UFInner_T {__temp} {mode} (fun (_x: MutBorrow.t t_UFInner_T) -> [ &uf'0 <- _x ] s4)
       | s4 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_41 <- _bor ] [ &uf'0 <- _bor.final ] s5)
-      | s5 = deref_mut_Ghost_refmut_UFInner_T {_41}
+      | s5 = deref_mut_Ghost_refmut_UFInner_T {_41} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_40 <- _x ] s6)
       | s6 = [ &_44 <- x ] s7
       | s7 = [ &_43 <- _44 ] s8
@@ -2969,20 +3049,21 @@ module M_implementation__link
             [ &_39 <- _bor ]
             [ &_40 <- { _40 with current = { _40.current with current = { _40.current.current with perms = _bor.final } } } ]
             s9)
-      | s9 = split_mut_ghost_Snapshot_Element_T {_39} {_43}
+      | s9 = split_mut_ghost_Snapshot_Element_T {_39} {_43} {Mode.into_ghost mode}
           (fun (_x: tup2_refmut_Perm_PCell_Node_T_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T) ->
             [ &_38 <- _x ] s10)
       | s10 = -{resolve_refmut_refmut_UFInner_T _40}- s11
       | s11 = new_tup2_refmut_Perm_PCell_Node_T_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T {_38}
+          {Mode.into_ghost mode}
           (fun (_x: tup2_refmut_Perm_PCell_Node_T_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T) ->
             [ &_37 <- _x ] s12)
-      | s12 = split_refmut_Perm_PCell_Node_T {_37}
+      | s12 = split_refmut_Perm_PCell_Node_T {_37} {mode}
           (fun (_x: tup2_Ghost_refmut_Perm_PCell_Node_T_Ghost_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T) ->
             [ &_36 <- _x ] s13)
       | s13 = [ &perm_x <- _36.f0'3 ] s14
       | s14 = [ &m <- _36.f1'3 ] s15
-      | s15 = deref_Rc_PCell_Node_T_Global {x.f0} (fun (_x: t_PCell_Node_T) -> [ &_50 <- _x ] s16)
-      | s16 = borrow_mut_Node_T {_50} {perm_x} (fun (_x: MutBorrow.t t_Node_T) -> [ &_48 <- _x ] s17)
+      | s15 = deref_Rc_PCell_Node_T_Global {x.f0} {mode} (fun (_x: t_PCell_Node_T) -> [ &_50 <- _x ] s16)
+      | s16 = borrow_mut_Node_T {_50} {perm_x} {mode} (fun (_x: MutBorrow.t t_Node_T) -> [ &_48 <- _x ] s17)
       | s17 = MutBorrow.borrow_final <t_Node_T> {_48.current} {MutBorrow.get_id _48}
           (fun (_bor: MutBorrow.t t_Node_T) ->
             [ &bx <- _bor ] -{inv_Node_T _bor.final}-
@@ -2990,20 +3071,21 @@ module M_implementation__link
         [ _ck -> (! {[@expl:type invariant] inv_Node_T _48.current} any) ]
       | s18 = s19 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T _48} any) ]
       | s19 = -{resolve_refmut_Node_T _48}- s20
-      | s20 = deref_Rc_PCell_Node_T_Global {y.f0} (fun (_x: t_PCell_Node_T) -> [ &_56 <- _x ] s21)
+      | s20 = deref_Rc_PCell_Node_T_Global {y.f0} {mode} (fun (_x: t_PCell_Node_T) -> [ &_56 <- _x ] s21)
       | s21 = MutBorrow.borrow_mut <MutBorrow.t t_FMap_Snapshot_Element_T_Perm_PCell_Node_T> {m}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_FMap_Snapshot_Element_T_Perm_PCell_Node_T)) ->
             [ &_66 <- _bor ] [ &m <- _bor.final ] s22)
-      | s22 = deref_mut_Ghost_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T {_66}
+      | s22 = deref_mut_Ghost_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T {_66} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t (MutBorrow.t t_FMap_Snapshot_Element_T_Perm_PCell_Node_T)) -> [ &_65 <- _x ] s23)
       | s23 = [ &_69 <- y ] s24
       | s24 = [ &_68 <- _69 ] s25
       | s25 = MutBorrow.borrow_mut <t_FMap_Snapshot_Element_T_Perm_PCell_Node_T> {_65.current.current}
           (fun (_bor: MutBorrow.t t_FMap_Snapshot_Element_T_Perm_PCell_Node_T) ->
             [ &_64 <- _bor ] [ &_65 <- { _65 with current = { _65.current with current = _bor.final } } ] s26)
-      | s26 = get_mut_ghost_Snapshot_Element_T {_64} {_68}
+      | s26 = get_mut_ghost_Snapshot_Element_T {_64} {_68} {Mode.into_ghost mode}
           (fun (_x: t_Option_refmut_Perm_PCell_Node_T) -> [ &_63 <- _x ] s27)
-      | s27 = unwrap_refmut_Perm_PCell_Node_T {_63} (fun (_x: MutBorrow.t t_Perm_PCell_Node_T) -> [ &_62 <- _x ] s28)
+      | s27 = unwrap_refmut_Perm_PCell_Node_T {_63} {Mode.into_ghost mode}
+          (fun (_x: MutBorrow.t t_Perm_PCell_Node_T) -> [ &_62 <- _x ] s28)
       | s28 = MutBorrow.borrow_final <t_Perm_PCell_Node_T> {_62.current} {MutBorrow.get_id _62}
           (fun (_bor: MutBorrow.t t_Perm_PCell_Node_T) ->
             [ &_61 <- _bor ] [ &_62 <- { _62 with current = _bor.final } ] s29)
@@ -3016,9 +3098,10 @@ module M_implementation__link
       | s33 = MutBorrow.borrow_final <t_Perm_PCell_Node_T> {_60.current} {MutBorrow.get_id _60}
           (fun (_bor: MutBorrow.t t_Perm_PCell_Node_T) ->
             [ &_59 <- _bor ] [ &_60 <- { _60 with current = _bor.final } ] s34)
-      | s34 = new_refmut_Perm_PCell_Node_T {_59} (fun (_x: MutBorrow.t t_Perm_PCell_Node_T) -> [ &_58 <- _x ] s35)
+      | s34 = new_refmut_Perm_PCell_Node_T {_59} {Mode.into_ghost mode}
+          (fun (_x: MutBorrow.t t_Perm_PCell_Node_T) -> [ &_58 <- _x ] s35)
       | s35 = -{resolve_refmut_Perm_PCell_Node_T _60}- s36
-      | s36 = borrow_mut_Node_T {_56} {_58} (fun (_x: MutBorrow.t t_Node_T) -> [ &_54 <- _x ] s37)
+      | s36 = borrow_mut_Node_T {_56} {_58} {mode} (fun (_x: MutBorrow.t t_Node_T) -> [ &_54 <- _x ] s37)
       | s37 = MutBorrow.borrow_final <t_Node_T> {_54.current} {MutBorrow.get_id _54}
           (fun (_bor: MutBorrow.t t_Node_T) ->
             [ &by' <- _bor ] -{inv_Node_T _bor.final}-
@@ -3044,7 +3127,8 @@ module M_implementation__link
       | s11 = -{resolve_refmut_refmut_UnionFind_T _30}- s12
       | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UnionFind_T uf} any) ]
       | s13 = -{resolve_Ghost_refmut_UnionFind_T'0 uf}- s14
-      | s14 = {false} any ]
+      | s14 = panic {"internal error: entered unreachable code"} {mode} (fun (_x: ()) -> [ &_72 <- _x ] s15)
+      | s15 = {false} any ]
     | bb22 = s0
       [ s0 = elim_Root {bx.current}
           (fun (rrank: t_PeanoInt) (rpayload: t_T) ->
@@ -3070,14 +3154,15 @@ module M_implementation__link
       | s12 = -{resolve_refmut_refmut_UnionFind_T _30}- s13
       | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UnionFind_T uf} any) ]
       | s14 = -{resolve_Ghost_refmut_UnionFind_T'0 uf}- s15
-      | s15 = {false} any ]
+      | s15 = panic {"internal error: entered unreachable code"} {mode} (fun (_x: ()) -> [ &_75 <- _x ] s16)
+      | s16 = {false} any ]
     | bb25 = s0
       [ s0 = elim_Root {by'.current}
           (fun (rrank: t_PeanoInt) (rpayload: t_T) ->
             MutBorrow.borrow_mut <t_PeanoInt> {rrank}
               (fun (_bor: MutBorrow.t t_PeanoInt) ->
                 [ &ry <- _bor ] [ &by' <- { by' with current = Root _bor.final rpayload } ] s1))
-      | s1 = lt_PeanoInt {rx.current} {ry.current} (fun (_x: bool) -> [ &_78 <- _x ] s2)
+      | s1 = lt_PeanoInt {rx.current} {ry.current} {mode} (fun (_x: bool) -> [ &_78 <- _x ] s2)
       | s2 = any [ br0 -> {_78 = false} (! bb40) | br1 -> {_78} (! bb27) ] ]
     | bb27 = s0
       [ s0 = -{resolve_refmut_PeanoInt ry}- s1
@@ -3087,7 +3172,7 @@ module M_implementation__link
       | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T by'} any) ]
       | s5 = -{resolve_refmut_Node_T by'}- s6
       | s6 = -{resolve_Ghost_refmut_FMap_Snapshot_Element_T_Perm_PCell_Node_T'0 m}- s7
-      | s7 = clone_Element_T {y} (fun (_x: t_Element_T) -> [ &_82 <- _x ] s8)
+      | s7 = clone_Element_T {y} {mode} (fun (_x: t_Element_T) -> [ &_82 <- _x ] s8)
       | s8 = [ &_81 <- Link _82 ] s9
       | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_Node_T bx.current} any) ]
       | s10 = -{resolve_Node_T bx.current}- s11
@@ -3101,7 +3186,7 @@ module M_implementation__link
          ] s15
       | s15 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_92 <- _bor ] [ &uf'0 <- _bor.final ] s16)
-      | s16 = deref_mut_Ghost_refmut_UFInner_T {_92}
+      | s16 = deref_mut_Ghost_refmut_UFInner_T {_92} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_91 <- _x ] s17)
       | s17 = [ &_91 <- { _91 with current = { _91.current with current = { _91.current.current with roots = _86 } } } ]
         s18
@@ -3109,7 +3194,7 @@ module M_implementation__link
       | s19 = [ &_93 <- uf'0.current.max_depth + 1 ] s20
       | s20 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_97 <- _bor ] [ &uf'0 <- _bor.final ] s21)
-      | s21 = deref_mut_Ghost_refmut_UFInner_T {_97}
+      | s21 = deref_mut_Ghost_refmut_UFInner_T {_97} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_96 <- _x ] s22)
       | s22 =
         [ &_96 <- { _96 with current = { _96.current with current = { _96.current.current with max_depth = _93 } } } ]
@@ -3120,7 +3205,7 @@ module M_implementation__link
         s25
       | s25 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_104 <- _bor ] [ &uf'0 <- _bor.final ] s26)
-      | s26 = deref_mut_Ghost_refmut_UFInner_T {_104}
+      | s26 = deref_mut_Ghost_refmut_UFInner_T {_104} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_103 <- _x ] s27)
       | s27 =
         [ &_103 <- { _103 with current = { _103.current with current = { _103.current.current with depth = _98 } } } ]
@@ -3131,20 +3216,20 @@ module M_implementation__link
       | s31 = -{resolve_refmut_refmut_UnionFind_T _30}- s32
       | s32 = s33 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UnionFind_T uf} any) ]
       | s33 = -{resolve_Ghost_refmut_UnionFind_T'0 uf}- s34
-      | s34 = new_unit {_85} (fun (_x: ()) -> [ &_84 <- _x ] s35)
+      | s34 = new_unit {_85} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_84 <- _x ] s35)
       | s35 = [ &_ret <- y ] s36
       | s36 = return {_ret} ]
     | bb40 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Element_T y} any) ]
       | s1 = -{resolve_Element_T y}- s2
       | s2 = -{resolve_refmut_PeanoInt ry}- s3
-      | s3 = eq_PeanoInt {rx.current} {ry.current} (fun (_x: bool) -> [ &_106 <- _x ] s4)
+      | s3 = eq_PeanoInt {rx.current} {ry.current} {mode} (fun (_x: bool) -> [ &_106 <- _x ] s4)
       | s4 = any [ br0 -> {_106 = false} (! bb44) | br1 -> {_106} (! bb42) ] ]
     | bb42 = s0
       [ s0 = -{resolve_refmut_PeanoInt rx}- s1
       | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_T bx} any) ]
       | s2 = -{resolve_refmut_Node_T bx}- s3
-      | s3 = incr {rx.current} (fun (_x: t_PeanoInt) -> [ &_109 <- _x ] s4)
+      | s3 = incr {rx.current} {mode} (fun (_x: t_PeanoInt) -> [ &_109 <- _x ] s4)
       | s4 = bb45 ]
     | bb44 = s0
       [ s0 = -{resolve_refmut_PeanoInt rx}- s1
@@ -3152,7 +3237,7 @@ module M_implementation__link
       | s2 = -{resolve_refmut_Node_T bx}- s3
       | s3 = bb45 ]
     | bb45 = s0
-      [ s0 = clone_Element_T {x} (fun (_x: t_Element_T) -> [ &_112 <- _x ] s1)
+      [ s0 = clone_Element_T {x} {mode} (fun (_x: t_Element_T) -> [ &_112 <- _x ] s1)
       | s1 = [ &_111 <- Link _112 ] s2
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Node_T by'.current} any) ]
       | s3 = -{resolve_Node_T by'.current}- s4
@@ -3167,7 +3252,7 @@ module M_implementation__link
          ] s9
       | s9 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_122 <- _bor ] [ &uf'0 <- _bor.final ] s10)
-      | s10 = deref_mut_Ghost_refmut_UFInner_T {_122}
+      | s10 = deref_mut_Ghost_refmut_UFInner_T {_122} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_121 <- _x ] s11)
       | s11 =
         [ &_121 <- { _121 with current = { _121.current with current = { _121.current.current with roots = _116 } } } ]
@@ -3176,7 +3261,7 @@ module M_implementation__link
       | s13 = [ &_123 <- uf'0.current.max_depth + 1 ] s14
       | s14 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_127 <- _bor ] [ &uf'0 <- _bor.final ] s15)
-      | s15 = deref_mut_Ghost_refmut_UFInner_T {_127}
+      | s15 = deref_mut_Ghost_refmut_UFInner_T {_127} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_126 <- _x ] s16)
       | s16 =
         [ &_126 <- { _126 with current = { _126.current with current = { _126.current.current with max_depth = _123 } } } ]
@@ -3187,7 +3272,7 @@ module M_implementation__link
         s19
       | s19 = MutBorrow.borrow_mut <MutBorrow.t t_UFInner_T> {uf'0}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_134 <- _bor ] [ &uf'0 <- _bor.final ] s20)
-      | s20 = deref_mut_Ghost_refmut_UFInner_T {_134}
+      | s20 = deref_mut_Ghost_refmut_UFInner_T {_134} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UFInner_T)) -> [ &_133 <- _x ] s21)
       | s21 =
         [ &_133 <- { _133 with current = { _133.current with current = { _133.current.current with depth = _128 } } } ]
@@ -3198,7 +3283,7 @@ module M_implementation__link
       | s25 = -{resolve_refmut_refmut_UnionFind_T _30}- s26
       | s26 = s27 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UnionFind_T uf} any) ]
       | s27 = -{resolve_Ghost_refmut_UnionFind_T'0 uf}- s28
-      | s28 = new_unit {_115} (fun (_x: ()) -> [ &_114 <- _x ] s29)
+      | s28 = new_unit {_115} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_114 <- _x ] s29)
       | s29 = [ &_ret <- x ] s30
       | s30 = return {_ret} ] ]
     [ & _ret: t_Element_T = Any.any_l ()
@@ -3237,7 +3322,9 @@ module M_implementation__link
     | & _66: MutBorrow.t (MutBorrow.t t_FMap_Snapshot_Element_T_Perm_PCell_Node_T) = Any.any_l ()
     | & _68: t_Element_T = Any.any_l ()
     | & _69: t_Element_T = Any.any_l ()
+    | & _72: () = Any.any_l ()
     | & rx: MutBorrow.t t_PeanoInt = Any.any_l ()
+    | & _75: () = Any.any_l ()
     | & ry: MutBorrow.t t_PeanoInt = Any.any_l ()
     | & _78: bool = Any.any_l ()
     | & _81: t_Node_T = Any.any_l ()
@@ -3284,6 +3371,7 @@ module M_implementation__link
 end
 module M_implementation__make
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.MutBorrow
   use set.Fset
   use map.Map
@@ -3292,7 +3380,7 @@ module M_implementation__make
   
   type t_PeanoInt = { f0: UInt64.t }
   
-  let new (return (x: t_PeanoInt)) = any
+  let new (mode: Mode.t) (return (x: t_PeanoInt)) = any
     [ return (result: t_PeanoInt) -> {[@stop_split] [@expl:new ensures] result.f0 = (0: UInt64.t)} (! return {result}) ]
   
   type t_T
@@ -3334,7 +3422,7 @@ module M_implementation__make
   
   meta "rewrite_def" function val_PCell_Node_T
   
-  let new_Node_T (value: t_Node_T) (return (x: tup2_PCell_Node_T_Ghost_Perm_PCell_Node_T)) =
+  let new_Node_T (value: t_Node_T) (mode: Mode.t) (return (x: tup2_PCell_Node_T_Ghost_Perm_PCell_Node_T)) =
   {[@stop_split] [@expl:new 'value' type invariant] inv_Node_T value}
     any
     [ return (result: tup2_PCell_Node_T_Ghost_Perm_PCell_Node_T) ->
@@ -3345,13 +3433,13 @@ module M_implementation__make
   
   function view_Rc_PCell_Node_T_Global (self: t_Rc_PCell_Node_T_Global) : t_PCell_Node_T
   
-  let new_PCell_Node_T (value: t_PCell_Node_T) (return (x: t_Rc_PCell_Node_T_Global)) = any
+  let new_PCell_Node_T (value: t_PCell_Node_T) (mode: Mode.t) (return (x: t_Rc_PCell_Node_T_Global)) = any
     [ return (result: t_Rc_PCell_Node_T_Global) ->
     {[@stop_split] [@expl:new_PCell_Node_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Rc_PCell_Node_T_Global result)
       /\ ([@stop_split] [@expl:new ensures] view_Rc_PCell_Node_T_Global result = value)}
       (! return {result}) ]
   
-  let into_inner_Perm_PCell_Node_T (self: t_Perm_PCell_Node_T) (return (x: t_Perm_PCell_Node_T)) = any
+  let into_inner_Perm_PCell_Node_T (self: t_Perm_PCell_Node_T) (mode: Mode.t) (return (x: t_Perm_PCell_Node_T)) = any
     [ return (result: t_Perm_PCell_Node_T) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
   
@@ -3464,7 +3552,8 @@ module M_implementation__make
   
   meta "rewrite_def" predicate inv_Ghost_refmut_UnionFind_T
   
-  let into_inner_refmut_UnionFind_T (self: MutBorrow.t t_UnionFind_T) (return (x: MutBorrow.t t_UnionFind_T)) =
+  let into_inner_refmut_UnionFind_T (self: MutBorrow.t t_UnionFind_T) (mode: Mode.t)
+    (return (x: MutBorrow.t t_UnionFind_T)) =
   {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_refmut_UnionFind_T self}
     any
     [ return (result: MutBorrow.t t_UnionFind_T) ->
@@ -3482,7 +3571,7 @@ module M_implementation__make
       | Some x -> Some'0 (Map.get f x)
       end
   
-  let get_ghost_Snapshot_Element_T (self: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T) (key: t_Element_T)
+  let get_ghost_Snapshot_Element_T (self: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T) (key: t_Element_T) (mode: Mode.t)
     (return (x: t_Option_ref_Perm_PCell_Node_T)) = any
     [ return (result: t_Option_ref_Perm_PCell_Node_T) -> {[@stop_split] [@expl:get_ghost ensures] result
       = map_Option_Perm_PCell_Node_T (get_Snapshot_Element_T self key) (fun (v: t_Perm_PCell_Node_T) -> v)}
@@ -3501,7 +3590,7 @@ module M_implementation__make
   
   meta "rewrite_def" predicate is_disjoint_PCell_Node_T
   
-  let disjoint_lemma_PCell_Node_T (self: MutBorrow.t t_Perm_PCell_Node_T) (other: t_Perm_PCell_Node_T)
+  let disjoint_lemma_PCell_Node_T (self: MutBorrow.t t_Perm_PCell_Node_T) (other: t_Perm_PCell_Node_T) (mode: Mode.t)
     (return (x: ())) = any
     [ return (result: ()) ->
     {[@stop_split] [@expl:disjoint_lemma_PCell_Node_T ensures] ([@stop_split] [@expl:disjoint_lemma ensures #0] is_disjoint_PCell_Node_T (ward_PCell_Node_T self.current) (val_unsized_PCell_Node_T self.current) (ward_PCell_Node_T other) (val_unsized_PCell_Node_T other))
@@ -3533,7 +3622,7 @@ module M_implementation__make
       = (if contains_Snapshot_Element_T self k then len_Snapshot_Element_T self else len_Snapshot_Element_T self + 1)
   
   let insert_ghost_Snapshot_Element_T (self: MutBorrow.t t_FMap_Snapshot_Element_T_Perm_PCell_Node_T) (key: t_Element_T)
-    (value: t_Perm_PCell_Node_T) (return (x: t_Option_Perm_PCell_Node_T)) = any
+    (value: t_Perm_PCell_Node_T) (mode: Mode.t) (return (x: t_Option_Perm_PCell_Node_T)) = any
     [ return (result: t_Option_Perm_PCell_Node_T) ->
     {[@stop_split] [@expl:insert_ghost_Snapshot_Element_T ensures] ([@stop_split] [@expl:insert_ghost ensures #0] self.final
         = insert_Snapshot_Element_T self.current key value)
@@ -3549,7 +3638,7 @@ module M_implementation__make
   
   meta "rewrite_def" predicate resolve_refmut_UnionFind_T
   
-  let new_unit (x: ()) (return (x'0: ())) = any
+  let new_unit (x: ()) (mode: Mode.t) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element_T = self.f0'2.domain
@@ -3574,27 +3663,29 @@ module M_implementation__make
   
   meta "select_lsinst" "all"
   
-  let make_T (uf: MutBorrow.t t_UnionFind_T) (payload: t_T) (return (x: t_Element_T)) =
+  let make_T (uf: MutBorrow.t t_UnionFind_T) (payload: t_T) (mode: Mode.t) (return (x: t_Element_T)) =
   {[@stop_split] [@expl:make_T requires] ([@stop_split] [@expl:make 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
     /\ ([@stop_split] [@expl:make 'payload' type invariant] inv_T payload)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &payload_snap <- payload ] s1
-      | s1 = new (fun (_x: t_PeanoInt) -> [ &_19 <- _x ] s2)
+      | s1 = new {mode} (fun (_x: t_PeanoInt) -> [ &_19 <- _x ] s2)
       | s2 = [ &_18 <- Root _19 payload ] s3
-      | s3 = new_Node_T {_18} (fun (_x: tup2_PCell_Node_T_Ghost_Perm_PCell_Node_T) -> [ &_17 <- _x ] s4)
+      | s3 = new_Node_T {_18} {mode} (fun (_x: tup2_PCell_Node_T_Ghost_Perm_PCell_Node_T) -> [ &_17 <- _x ] s4)
       | s4 = [ &value <- _17.f0'1 ] s5
       | s5 = [ &perm <- _17.f1'1 ] s6
-      | s6 = new_PCell_Node_T {value} (fun (_x: t_Rc_PCell_Node_T_Global) -> [ &_22 <- _x ] s7)
+      | s6 = new_PCell_Node_T {value} {mode} (fun (_x: t_Rc_PCell_Node_T_Global) -> [ &_22 <- _x ] s7)
       | s7 = [ &elt <- { f0'0 = _22 } ] s8
-      | s8 = into_inner_Perm_PCell_Node_T {perm} (fun (_x: t_Perm_PCell_Node_T) -> [ &_29 <- _x ] s9)
-      | s9 = into_inner_refmut_UnionFind_T {uf} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_31 <- _x ] s10)
+      | s8 = into_inner_Perm_PCell_Node_T {perm} {Mode.into_ghost mode}
+          (fun (_x: t_Perm_PCell_Node_T) -> [ &_29 <- _x ] s9)
+      | s9 = into_inner_refmut_UnionFind_T {uf} {Mode.into_ghost mode}
+          (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_31 <- _x ] s10)
       | s10 = [ &_28 <- { f0'3 = _29; f1'3 = _31 } ] s11
       | s11 = [ &perm'0 <- _28.f0'3 ] s12
       | s12 = [ &uf'0 <- _28.f1'3 ] s13
       | s13 = [ &_38 <- elt ] s14
       | s14 = [ &_37 <- _38 ] s15
-      | s15 = get_ghost_Snapshot_Element_T {uf'0.current.f0'2.perms} {_37}
+      | s15 = get_ghost_Snapshot_Element_T {uf'0.current.f0'2.perms} {_37} {Mode.into_ghost mode}
           (fun (_x: t_Option_ref_Perm_PCell_Node_T) -> [ &_34 <- _x ] s16)
       | s16 = any [ br0 -> {_34 = None'0} (! bb17) | br1 (x0: t_Perm_PCell_Node_T) -> {_34 = Some'0 x0} (! bb14) ] ]
     | bb14 = s0
@@ -3604,7 +3695,7 @@ module M_implementation__make
       | s2 = MutBorrow.borrow_final <t_Perm_PCell_Node_T> {_44.current} {MutBorrow.get_id _44}
           (fun (_bor: MutBorrow.t t_Perm_PCell_Node_T) ->
             [ &_43 <- _bor ] [ &_44 <- { _44 with current = _bor.final } ] s3)
-      | s3 = disjoint_lemma_PCell_Node_T {_43} {other_perm} (fun (_x: ()) -> [ &_33 <- _x ] s4)
+      | s3 = disjoint_lemma_PCell_Node_T {_43} {other_perm} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_33 <- _x ] s4)
       | s4 = -{resolve_refmut_Perm_PCell_Node_T _44}- s5
       | s5 = bb17 ]
     | bb17 = s0
@@ -3614,7 +3705,7 @@ module M_implementation__make
           (fun (_bor: MutBorrow.t t_FMap_Snapshot_Element_T_Perm_PCell_Node_T) ->
             [ &_47 <- _bor ]
             [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with perms = _bor.final } } } ] s2)
-      | s2 = insert_ghost_Snapshot_Element_T {_47} {_48} {perm'0}
+      | s2 = insert_ghost_Snapshot_Element_T {_47} {_48} {perm'0} {Mode.into_ghost mode}
           (fun (_x: t_Option_Perm_PCell_Node_T) -> [ &_46 <- _x ] s3)
       | s3 = [ &_52 <- insert_Element_T uf'0.current.f0'2.domain elt ] s4
       | s4 = [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with domain = _52 } } } ] s5
@@ -3626,7 +3717,7 @@ module M_implementation__make
       | s10 = [ &uf'0 <- { uf'0 with current = { f0'2 = { uf'0.current.f0'2 with roots = _66 } } } ] s11
       | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_UnionFind_T uf'0} any) ]
       | s12 = -{resolve_refmut_UnionFind_T uf'0}- s13
-      | s13 = new_unit {_25} (fun (_x: ()) -> [ &_24 <- _x ] s14)
+      | s13 = new_unit {_25} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_24 <- _x ] s14)
       | s14 = [ &_ret <- elt ] s15
       | s15 = return {_ret} ] ]
     [ & _ret: t_Element_T = Any.any_l ()
@@ -3674,6 +3765,7 @@ module M_implementation__make
 end
 module M_implementation__new
   use set.Fset
+  use creusot.prelude.Mode
   use map.Map
   use map.Const
   use creusot.int.UInt64
@@ -3726,13 +3818,13 @@ module M_implementation__new
     forall self: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T [is_empty_Snapshot_Element_T self]. is_empty_Snapshot_Element_T self
       = (len_Snapshot_Element_T self = 0)
   
-  let new_Snapshot_Element_T (return (x: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T)) = any
+  let new_Snapshot_Element_T (mode: Mode.t) (return (x: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T)) = any
     [ return (result: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T) ->
     {[@stop_split] [@expl:new ensures] is_empty_Snapshot_Element_T result}
       (! return {result}) ]
   
   let into_inner_FMap_Snapshot_Element_T_Perm_PCell_Node_T (self: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T)
-    (return (x: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T)) = any
+    (mode: Mode.t) (return (x: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T)) = any
     [ return (result: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T) -> {[@stop_split] [@expl:into_inner ensures] result
       = self}
       (! return {result}) ]
@@ -3848,7 +3940,7 @@ module M_implementation__new
   
   meta "rewrite_def" predicate inv_Ghost_UnionFind_T
   
-  let new_UnionFind_T (x: t_UnionFind_T) (return (x'0: t_UnionFind_T)) =
+  let new_UnionFind_T (x: t_UnionFind_T) (mode: Mode.t) (return (x'0: t_UnionFind_T)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_UnionFind_T x}
     any
     [ return (result: t_UnionFind_T) ->
@@ -3862,11 +3954,12 @@ module M_implementation__new
   
   meta "select_lsinst" "all"
   
-  let new_T (return (x: t_UnionFind_T)) = (! bb0
+  let new_T (mode: Mode.t) (return (x: t_UnionFind_T)) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- Fset.empty: Fset.fset t_Element_T ] s1
-      | s1 = new_Snapshot_Element_T (fun (_x: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T) -> [ &_7 <- _x ] s2)
-      | s2 = into_inner_FMap_Snapshot_Element_T_Perm_PCell_Node_T {_7}
+      | s1 = new_Snapshot_Element_T {Mode.into_ghost mode}
+          (fun (_x: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T) -> [ &_7 <- _x ] s2)
+      | s2 = into_inner_FMap_Snapshot_Element_T_Perm_PCell_Node_T {_7} {Mode.into_ghost mode}
           (fun (_x: t_FMap_Snapshot_Element_T_Perm_PCell_Node_T) -> [ &_6 <- _x ] s3)
       | s3 = [ &_8 <- any_Mapping_Element_T_T ] s4
       | s4 = [ &_10 <- any_Mapping_Element_T_Int ] s5
@@ -3874,7 +3967,7 @@ module M_implementation__new
       | s6 = [ &_14 <- 0 ] s7
       | s7 = [ &_3 <- { domain = _4; perms = _6; payloads = _8; roots = _12; depth = _10; max_depth = _14 } ] s8
       | s8 = [ &_2 <- { f0'0 = _3 } ] s9
-      | s9 = new_UnionFind_T {_2} (fun (_x: t_UnionFind_T) -> [ &_ret <- _x ] s10)
+      | s9 = new_UnionFind_T {_2} {Mode.into_ghost mode} (fun (_x: t_UnionFind_T) -> [ &_ret <- _x ] s10)
       | s10 = return {_ret} ] ]
     [ & _ret: t_UnionFind_T = Any.any_l ()
     | & _2: t_UnionFind_T = Any.any_l ()
@@ -3896,6 +3989,7 @@ module M_implementation__union
   use set.Fset
   use map.Map
   use creusot.int.UInt64
+  use creusot.prelude.Mode
   use creusot.prelude.Any
   use int.Int
   
@@ -4052,7 +4146,7 @@ module M_implementation__union
   
   meta "rewrite_def" predicate inv_refmut_refmut_UnionFind_T
   
-  let deref_mut_Ghost_refmut_UnionFind_T (self: MutBorrow.t (MutBorrow.t t_UnionFind_T))
+  let deref_mut_Ghost_refmut_UnionFind_T (self: MutBorrow.t (MutBorrow.t t_UnionFind_T)) (mode: Mode.t)
     (return (x: MutBorrow.t (MutBorrow.t t_UnionFind_T))) =
   {[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_refmut_UnionFind_T self}
     any
@@ -4070,7 +4164,7 @@ module M_implementation__union
   
   meta "rewrite_def" predicate resolve_refmut_UnionFind_T
   
-  let new_refmut_UnionFind_T (x: MutBorrow.t t_UnionFind_T) (return (x'0: MutBorrow.t t_UnionFind_T)) =
+  let new_refmut_UnionFind_T (x: MutBorrow.t t_UnionFind_T) (mode: Mode.t) (return (x'0: MutBorrow.t t_UnionFind_T)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_refmut_UnionFind_T x}
     any
     [ return (result: MutBorrow.t t_UnionFind_T) ->
@@ -4106,7 +4200,7 @@ module M_implementation__union
     domain_T self.current = domain_T self.final
     /\ roots_map_T self.current = roots_map_T self.final /\ payloads_map_T self.current = payloads_map_T self.final
   
-  let find_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element_T) (return (x: t_Element_T)) =
+  let find_T (uf: MutBorrow.t t_UnionFind_T) (elem: t_Element_T) (mode: Mode.t) (return (x: t_Element_T)) =
   {[@stop_split] [@expl:find_T requires] ([@stop_split] [@expl:find 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
     /\ ([@stop_split] [@expl:find 'elem' type invariant] inv_Element_T elem)
     /\ ([@stop_split] [@expl:find requires] in_domain_T uf.current elem)}
@@ -4126,7 +4220,8 @@ module M_implementation__union
   
   meta "rewrite_def" function fin_Ghost_refmut_UnionFind_T
   
-  let link_T (uf: MutBorrow.t t_UnionFind_T) (x: t_Element_T) (y: t_Element_T) (return (x'0: t_Element_T)) =
+  let link_T (uf: MutBorrow.t t_UnionFind_T) (x: t_Element_T) (y: t_Element_T) (mode: Mode.t)
+    (return (x'0: t_Element_T)) =
   {[@stop_split] [@expl:link_T requires] ([@stop_split] [@expl:link 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
     /\ ([@stop_split] [@expl:link 'x' type invariant] inv_Element_T x)
     /\ ([@stop_split] [@expl:link 'y' type invariant] inv_Element_T y)
@@ -4151,7 +4246,8 @@ module M_implementation__union
   
   meta "select_lsinst" "all"
   
-  let union_T (uf: MutBorrow.t t_UnionFind_T) (x: t_Element_T) (y: t_Element_T) (return (x'0: t_Element_T)) =
+  let union_T (uf: MutBorrow.t t_UnionFind_T) (x: t_Element_T) (y: t_Element_T) (mode: Mode.t)
+    (return (x'0: t_Element_T)) =
   {[@stop_split] [@expl:union_T requires] ([@stop_split] [@expl:union 'uf' type invariant] inv_Ghost_refmut_UnionFind_T uf)
     /\ ([@stop_split] [@expl:union 'x' type invariant] inv_Element_T x)
     /\ ([@stop_split] [@expl:union 'y' type invariant] inv_Element_T y)
@@ -4162,7 +4258,7 @@ module M_implementation__union
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
             [ &_25 <- _bor ] -{inv_Ghost_refmut_UnionFind_T _bor.final}-
             [ &uf <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UnionFind_T uf} any) ]
-      | s1 = deref_mut_Ghost_refmut_UnionFind_T {_25}
+      | s1 = deref_mut_Ghost_refmut_UnionFind_T {_25} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_24 <- _x ] s2)
       | s2 = MutBorrow.borrow_mut <t_UnionFind_T> {_24.current.current}
           (fun (_bor: MutBorrow.t t_UnionFind_T) ->
@@ -4190,15 +4286,16 @@ module M_implementation__union
             [ &_20 <- _bor ] -{inv_UnionFind_T _bor.final}-
             [ &_21 <- { _21 with current = _bor.final } ] s12)
         [ _ck -> (! {[@expl:type invariant] inv_UnionFind_T _21.current} any) ]
-      | s12 = new_refmut_UnionFind_T {_20} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_19 <- _x ] s13)
+      | s12 = new_refmut_UnionFind_T {_20} {Mode.into_ghost mode}
+          (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_19 <- _x ] s13)
       | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_refmut_UnionFind_T _21} any) ]
       | s14 = -{resolve_refmut_UnionFind_T _21}- s15
-      | s15 = find_T {_19} {x} (fun (_x: t_Element_T) -> [ &rx <- _x ] s16)
+      | s15 = find_T {_19} {x} {mode} (fun (_x: t_Element_T) -> [ &rx <- _x ] s16)
       | s16 = MutBorrow.borrow_mut <MutBorrow.t t_UnionFind_T> {uf}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_UnionFind_T)) ->
             [ &_34 <- _bor ] -{inv_Ghost_refmut_UnionFind_T _bor.final}-
             [ &uf <- _bor.final ] s17) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_UnionFind_T uf} any) ]
-      | s17 = deref_mut_Ghost_refmut_UnionFind_T {_34}
+      | s17 = deref_mut_Ghost_refmut_UnionFind_T {_34} {Mode.into_ghost mode}
           (fun (_x: MutBorrow.t (MutBorrow.t t_UnionFind_T)) -> [ &_33 <- _x ] s18)
       | s18 = MutBorrow.borrow_mut <t_UnionFind_T> {_33.current.current}
           (fun (_bor: MutBorrow.t t_UnionFind_T) ->
@@ -4226,11 +4323,12 @@ module M_implementation__union
             [ &_29 <- _bor ] -{inv_UnionFind_T _bor.final}-
             [ &_30 <- { _30 with current = _bor.final } ] s28)
         [ _ck -> (! {[@expl:type invariant] inv_UnionFind_T _30.current} any) ]
-      | s28 = new_refmut_UnionFind_T {_29} (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_28 <- _x ] s29)
+      | s28 = new_refmut_UnionFind_T {_29} {Mode.into_ghost mode}
+          (fun (_x: MutBorrow.t t_UnionFind_T) -> [ &_28 <- _x ] s29)
       | s29 = s30 [ _ck -> (! {[@expl:type invariant] inv_refmut_UnionFind_T _30} any) ]
       | s30 = -{resolve_refmut_UnionFind_T _30}- s31
-      | s31 = find_T {_28} {y} (fun (_x: t_Element_T) -> [ &ry <- _x ] s32)
-      | s32 = link_T {uf} {rx} {ry} (fun (_x: t_Element_T) -> [ &_ret <- _x ] s33)
+      | s31 = find_T {_28} {y} {mode} (fun (_x: t_Element_T) -> [ &ry <- _x ] s32)
+      | s32 = link_T {uf} {rx} {ry} {mode} (fun (_x: t_Element_T) -> [ &_ret <- _x ] s33)
       | s33 = return {_ret} ] ]
     [ & _ret: t_Element_T = Any.any_l ()
     | & uf: MutBorrow.t t_UnionFind_T = uf

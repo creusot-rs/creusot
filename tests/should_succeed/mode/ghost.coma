@@ -1,0 +1,37 @@
+module M_g
+  use creusot.prelude.Mode
+  use creusot.prelude.Any
+  
+  let new_unit (x: ()) (mode: Mode.t) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let g (mode: Mode.t) (return (x: ())) = {not Mode.terminates mode}
+    (! bb0
+    [ bb0 = s0 [ s0 = new_unit {_2} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_1 <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & _1: () = Any.any_l () | & _2: () = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
+end
+module M_g__f
+  use creusot.prelude.Mode
+  use creusot.prelude.Any
+  
+  let new_unit (x: ()) (mode: Mode.t) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let _f (mode: Mode.t) (return (x: ())) = {not Mode.terminates mode}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = {[@expl:assertion] Mode.ghost_ (Mode.into_ghost mode)} s1
+      | s1 = new_unit {_2} {Mode.into_ghost mode} (fun (_x: ()) -> [ &_1 <- _x ] s2)
+      | s2 = {[@expl:assertion] not Mode.ghost_ mode} s3
+      | s3 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & _1: () = Any.any_l () | & _2: () = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
+end

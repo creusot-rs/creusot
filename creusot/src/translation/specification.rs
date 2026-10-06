@@ -1,8 +1,8 @@
 use crate::{
     backend::closures::ClosSubst,
     contracts_items::{
-        Intrinsic, creusot_clause_attrs, is_check_ghost, is_check_terminates, is_trusted_ghost,
-        is_trusted_terminates,
+        Intrinsic, creusot_clause_attrs, is_check_ghost, is_check_terminates, is_logic,
+        is_trusted_ghost, is_trusted_terminates,
     },
     ctx::*,
     lints::{Diagnostics, RESULT_PARAM},
@@ -10,7 +10,8 @@ use crate::{
     translation::{
         external::ExternSpec,
         pearlite::{
-            Ident, PIdent, Subst, Substable, Term, TermSort, TermWithTriggers, Trigger, normalize,
+            Ident, InProgram, PIdent, Subst, Substable, Term, TermSort, TermWithTriggers, Trigger,
+            normalize,
         },
     },
     util::erased_identity_for_item,
@@ -209,11 +210,14 @@ impl ContractClauses {
         ctx: &TranslationCtx<'tcx>,
         fn_name: &str,
         inputs: &[(PIdent, Span, Ty<'tcx>)],
+        in_program: bool,
     ) -> EarlyBinder<'tcx, PreContract<'tcx>> {
         let has_user_contract =
             !self.requires.is_empty() || !self.ensures.is_empty() || self.variant.is_some();
         let source = ContractSource::Basic { has_user_contract };
         let sort = TermSort::Contract(inputs);
+        let in_program =
+            if in_program { InProgram::Yes { in_ghost: false } } else { InProgram::No };
         let n_requires = self.requires.len();
         let requires = self
             .requires
@@ -225,7 +229,7 @@ impl ContractClauses {
                 if n_requires > 1 {
                     expl.push_str(&format!(" #{i}"))
                 }
-                let term = *ctx.term(req_id, sort).no_triggers();
+                let term = *ctx.term(req_id, sort, in_program).no_triggers();
                 Condition { term, expl }
             })
             .collect();
@@ -241,14 +245,14 @@ impl ContractClauses {
                 if n_ensures > 1 {
                     expl.push_str(&format!(" #{i}"))
                 }
-                let TermWithTriggers { box term, triggers } = ctx.term(ens_id, sort);
+                let TermWithTriggers { box term, triggers } = ctx.term(ens_id, sort, in_program);
                 (triggers, Condition { term, expl })
             })
             .collect();
 
         let variant = self.variant.map(|var_id| {
             log::trace!("variant clause {:?}", var_id);
-            *ctx.term(var_id, sort).no_triggers()
+            *ctx.term(var_id, sort, in_program).no_triggers()
         });
         log::trace!("purity: {}", self.purity);
         EarlyBinder::bind(
@@ -335,7 +339,7 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
     let subst = erased_identity_for_item(ctx.tcx, def_id);
     let mut contract = contract_clauses_of(ctx, def_id)
         .unwrap()
-        .get_pre(ctx, fn_name, &inputs)
+        .get_pre(ctx, fn_name, &inputs, !is_logic(ctx.tcx, def_id))
         .instantiate(ctx.tcx, subst)
         .skip_normalization();
 
@@ -420,6 +424,14 @@ impl<'tcx> PreSignature<'tcx> {
             .tcx
             .normalize_erasing_regions(typing_env, Unnormalized::new((sig.inputs, sig.output)));
         sig
+    }
+
+    pub(crate) fn terminates(&self) -> bool {
+        use ProgramPurity::*;
+        match self.contract.purity {
+            Terminates | Ghost => true,
+            Impure => false,
+        }
     }
 }
 
@@ -548,10 +560,11 @@ pub fn inputs_and_output<'tcx>(
                 DefKind::Ctor(..) => &vec![None; sig.inputs().len()],
                 _ => tcx.fn_arg_idents(def_id),
             };
-            let result_index = match tcx.intrinsic(def_id) {
-                Intrinsic::Postcondition | Intrinsic::PostconditionOnce => Some(3),
-                Intrinsic::PostconditionMut => Some(4),
-                _ => None,
+            let (result_index, mode_index) = match tcx.intrinsic(def_id) {
+                Intrinsic::Postcondition | Intrinsic::PostconditionOnce => (Some(3), Some(4)),
+                Intrinsic::PostconditionMut => (Some(4), Some(5)),
+                Intrinsic::Precondition => (None, Some(3)),
+                _ => (None, None),
             };
             let inputs = idents
                 .iter()
@@ -559,7 +572,11 @@ pub fn inputs_and_output<'tcx>(
                 .zip(sig.inputs().iter().cloned())
                 .zip(1..) // We start numbering from 1 to match locals numbering (_0 is the return value)
                 .map(|((ident, ty), ix)| match ident {
-                    _ if result_index == Some(ix) => (name::result().into(), DUMMY_SP, ty),
+                    _ if Some(ix) == result_index => (name::result().into(), DUMMY_SP, ty),
+                    _ if Some(ix) == mode_index => {
+                        assert_eq!(ty, tcx.mode_ty());
+                        (name::mode().into(), DUMMY_SP, ty)
+                    }
                     Some(rustc_span::Ident { name, span }) => {
                         let name = name.as_str();
                         let ident = if name.is_empty() || name == "_" {

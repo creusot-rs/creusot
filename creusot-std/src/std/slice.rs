@@ -1,4 +1,6 @@
 #[cfg(creusot)]
+use crate::mode::Mode;
+#[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{
     ghost::perm::Perm, invariant::*, logic::ops::IndexLogic, prelude::*,
@@ -551,13 +553,13 @@ extern_spec! {
 
         // FIXME: inherit ghost/terminates from clone
         #[ensures(result@.len() == self@.len())]
-        #[ensures(forall<i> 0 <= i && i < self@.len() ==> <T as Clone>::clone.postcondition((&self@[i],), result@[i]))]
+        #[ensures(forall<i> 0 <= i && i < self@.len() ==> <T as Clone>::clone.postcondition((&self@[i],), result@[i], mode!()))]
         fn to_vec(&self) -> Vec<T> where T: Clone;
     }
 
     impl<T: Clone, A: Allocator + Clone> Clone for Box<[T], A> {
         #[ensures(forall<i> 0 <= i && i < self@.len() ==>
-            T::clone.postcondition((&self@[i],), result@[i]))]
+            T::clone.postcondition((&self@[i],), result@[i], mode!()))]
         fn clone(&self) -> Box<[T], A>;
     }
 }
@@ -609,7 +611,7 @@ extern_spec! {
 
 impl<'a, T> ExactSizeIteratorSpec for Iter<'a, T> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -645,7 +647,7 @@ impl<'a, T> DoubleEndedIteratorSpec for Iter<'a, T> {
     }
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
     #[ensures(match r.1 {
@@ -719,7 +721,7 @@ extern_spec! {
 
 impl<'a, T> ExactSizeIteratorSpec for IterMut<'a, T> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
@@ -755,7 +757,7 @@ impl<'a, T> DoubleEndedIteratorSpec for IterMut<'a, T> {
     }
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
+    #[requires(exists<mode: Mode> Self::size_hint.postcondition((self,), r, mode))]
     #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
         self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
     #[ensures(match r.1 {
