@@ -11,14 +11,57 @@ use core::sync::atomic::{Ordering as OrderingTy, fence};
 
 /// Creusot type-level wrappers around [`std::sync::atomic::Ordering`].
 pub mod ordering {
+    use crate::{
+        prelude::*,
+        std::sync::view::{AcquireSyncView, ReleaseSyncView},
+    };
+    #[cfg(creusot)]
+    use crate::{
+        logic::FMap,
+        std::sync::view::{SyncView, Timestamp},
+    };
     use core::sync::atomic::Ordering as OrderingTy;
 
-    pub trait Ordering {
+    mod sealed {
+        pub trait Sealed {}
+    }
+
+    /// This trait is sealed: it cannot be implemented outside of this crate.
+    pub trait Ordering: sealed::Sealed {
         const ORDERING: OrderingTy;
     }
 
-    pub trait LoadOrdering: Ordering {}
-    pub trait StoreOrdering: Ordering {}
+    pub trait LoadOrdering: Ordering {
+        /// The acquire view a load with this ordering depends on: `()` for acquire loads,
+        /// an [`AcquireSyncView`] for relaxed loads.
+        type Acq: Copy;
+
+        /// Postcondition of a load with this ordering, reading `val` at timestamp `t`.
+        #[logic(prophetic)]
+        fn view_acquired<T>(
+            hist: FMap<Timestamp, (T, SyncView)>,
+            sync_view: SyncView,
+            val: T,
+            t: Timestamp,
+            acq_view: Self::Acq,
+        ) -> bool;
+    }
+    pub trait StoreOrdering: Ordering {
+        /// The release view a store with this ordering depends on: `()` for release stores,
+        /// a [`ReleaseSyncView`] for relaxed stores.
+        type Rel: Copy;
+
+        #[logic(prophetic)]
+        #[allow(unused_variables)]
+        fn view_released<T>(
+            old_hist: FMap<Timestamp, (T, SyncView)>,
+            new_hist: FMap<Timestamp, (T, SyncView)>,
+            sync_view: SyncView,
+            val: T,
+            t: Timestamp,
+            rel_view: Self::Rel,
+        ) -> bool;
+    }
     pub trait UpdateOrdering: Ordering {
         type Load: LoadOrdering;
         type Store: StoreOrdering;
@@ -29,6 +72,8 @@ pub mod ordering {
     macro_rules! impl_ordering {
         ( $order:ident, load = $load:ident, store = $store:ident ) => {
             pub struct $order;
+
+            impl sealed::Sealed for $order {}
 
             impl Ordering for $order {
                 const ORDERING: OrderingTy = OrderingTy::$order;
@@ -46,20 +91,103 @@ pub mod ordering {
     impl_ordering!(Release, load = Relaxed, store = Release);
     impl_ordering!(AcqRel, load = Acquire, store = Release);
 
-    impl LoadOrdering for Relaxed {}
-    impl StoreOrdering for Relaxed {}
-    impl LoadOrdering for Acquire {}
-    impl StoreOrdering for Release {}
+    impl LoadOrdering for Relaxed {
+        type Acq = AcquireSyncView;
+
+        #[logic(open, prophetic)]
+        #[allow(unused_variables)]
+        fn view_acquired<T>(
+            hist: FMap<Timestamp, (T, SyncView)>,
+            sync_view: SyncView,
+            val: T,
+            t: Timestamp,
+            acq_view: AcquireSyncView,
+        ) -> bool
+        {
+            pearlite! {
+                match hist.get(t) {
+                    Some((v, v_view)) => v == val && v_view <= acq_view@,
+                    Option::None => false
+                }
+            }
+        }
+    }
+    impl StoreOrdering for Relaxed {
+        type Rel = ReleaseSyncView;
+
+        #[logic(open, prophetic)]
+        #[allow(unused_variables)]
+        fn view_released<T>(
+            old_hist: FMap<Timestamp, (T, SyncView)>,
+            new_hist: FMap<Timestamp, (T, SyncView)>,
+            sync_view: SyncView,
+            val: T,
+            t: Timestamp,
+            rel_view: ReleaseSyncView,
+        ) -> bool
+        {
+            pearlite! {
+                old_hist.get(t) == Option::None && new_hist == old_hist.insert(t, (val, rel_view@))
+            }
+        }
+    }
+    impl LoadOrdering for Acquire {
+        type Acq = ();
+
+        #[logic(open, prophetic)]
+        #[allow(unused_variables)]
+        fn view_acquired<T>(
+            hist: FMap<Timestamp, (T, SyncView)>,
+            sync_view: SyncView,
+            val: T,
+            t: Timestamp,
+            acq_view: (),
+        ) -> bool
+        {
+            pearlite! {
+                match hist.get(t) {
+                    Some((v, v_view)) => v == val && v_view <= sync_view,
+                    Option::None => false
+                }
+            }
+        }
+    }
+    impl StoreOrdering for Release {
+        type Rel = ();
+
+        #[logic(open, prophetic)]
+        #[allow(unused_variables)]
+        fn view_released<T>(
+            old_hist: FMap<Timestamp, (T, SyncView)>,
+            new_hist: FMap<Timestamp, (T, SyncView)>,
+            sync_view: SyncView,
+            val: T,
+            t: Timestamp,
+            rel_view: (),
+        ) -> bool
+        {
+            pearlite! {
+                old_hist.get(t) == Option::None && new_hist == old_hist.insert(t, (val, sync_view))
+            }
+        }
+    }
 }
 
 use ordering::{LoadOrdering, StoreOrdering, UpdateOrdering};
 
 const SEQ_CST: OrderingTy = OrderingTy::SeqCst;
 
+/// `t` is the largest timestamp of the history `hist`.
+#[logic(open)]
+pub fn is_max_timestamp<V>(hist: FMap<Timestamp, V>, t: Timestamp) -> bool {
+    pearlite! { hist.contains(t) && forall<t2> hist.contains(t2) ==> t2 <= t }
+}
+
 macro_rules! impl_atomic {
     ($( ($type:ty, $atomic_type:ident $(< $T:ident >)?) ),+) => { $(
 
         #[doc = concat!("Creusot wrapper around [`std::sync::atomic::", stringify!($atomic_type), "`].")]
+        #[repr(transparent)]
         pub struct $atomic_type $(< $T >)?(::core::sync::atomic::$atomic_type $(< $T >)?);
 
         impl $(< $T >)? PermTarget for $atomic_type $(< $T >)? {
@@ -107,6 +235,35 @@ macro_rules! impl_atomic {
                 (self.0.into_inner(), Ghost::conjure())
             }
 
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::get_mut`].")]
+            #[doc = ""]
+            #[doc = "Returns a mutable reference to the value of the latest write, together with its message view and timestamp."]
+            #[requires(*self == *own.ward())]
+            #[ensures(^self == *self)]
+            #[ensures(^self == *(^own).ward())]
+            #[ensures(is_max_timestamp((*own).val(), *result.2))]
+            #[ensures((*own).val().get(*result.2) == Some((*result.0, *result.1)))]
+            #[ensures((^own).val().lookup(*result.2).0 == ^result.0)]
+            #[inline(always)]
+            #[trusted]
+            #[check(terminates)]
+            #[allow(unused_variables)]
+            pub fn get_mut<'a>(&'a mut self, own: Ghost<&'a mut Perm<$atomic_type $(< $T >)?>>) -> (&'a mut $type, Ghost<SyncView>, Ghost<Timestamp>) {
+                (self.0.get_mut(), Ghost::conjure(), Ghost::conjure())
+            }
+
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::from_mut`].")]
+            #[ensures(*result.0 == *result.1.ward())]
+            #[ensures(result.1.val() == FMap::singleton((*result.0).get_timestamp(*result.2), (*v, *result.2)))]
+            #[ensures(forall<t> is_max_timestamp((^result.1).val(), t) ==> ^result.0 == *(^result.1).ward() ==> (^result.1).val().lookup(t).0 == ^v)]
+            #[inline(always)]
+            #[trusted]
+            #[check(terminates)]
+            pub fn from_mut<'a>(v: &'a mut $type) -> (&'a mut Self, Ghost<&'a mut Perm<$atomic_type $(< $T >)?>>, Ghost<SyncView>) {
+                // const { assert!(core::mem::align_of::<$type>() == core::mem::align_of::<Self>()) };
+                let ato = unsafe { &mut *(v as *mut $type as *mut Self) };
+                (ato, Ghost::conjure(), Ghost::conjure())
+            }
 
             #[doc = "Clear the old unusable history, thanks to the full ownership of the atomic."]
             #[requires(*self == *own.ward())]

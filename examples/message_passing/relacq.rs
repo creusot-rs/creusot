@@ -103,7 +103,7 @@ pub fn message_passing() {
                         }
 
                         inv.state = State::Synchronisation(at_view, excl.into_inner());
-                        c.shoot_store(&mut inv.atomic_own, &mut sync_view);
+                        c.shoot_store(&mut inv.atomic_own, &mut sync_view, ());
                     })
                 }},
             );

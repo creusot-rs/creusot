@@ -92,8 +92,6 @@ module M_f
     forall self: t_AtomicPtr_T, x: t_SyncView, y: t_SyncView. le_log_SyncView x y
       -> get_timestamp_AtomicPtr_T self x <= get_timestamp_AtomicPtr_T self y
   
-  function timestamp_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_Acquire_None) : int
-  
   type tup2_ptr_T_SyncView = { f0: Opaque.ptr; f1: t_SyncView }
   
   type t_Option_tup2_ptr_T_SyncView = None | Some tup2_ptr_T_SyncView
@@ -105,12 +103,26 @@ module M_f
   
   meta "rewrite_def" function get_Int
   
+  predicate view_acquired_Acquire (hist: t_FMap_Int_tup2_ptr_T_SyncView) (sync_view: t_SyncView) (val': Opaque.ptr) (t: int) (acq_view: ()) =
+    match get_Int hist t with
+      | Some {f0 = v; f1 = v_view} -> v = val' /\ le_log_SyncView v_view sync_view
+      | None -> false
+      end
+  
   function val_AtomicPtr_T [@inline:trivial] (self: t_Perm_AtomicPtr_T) : t_FMap_Int_tup2_ptr_T_SyncView =
     val_unsized_AtomicPtr_T self
   
   meta "rewrite_def" function val_AtomicPtr_T
   
+  predicate load_post_Acquire (atomic: t_AtomicPtr_T) (own: t_Perm_AtomicPtr_T) (old_view: t_SyncView) (new_view: t_SyncView) (val': Opaque.ptr) (t: int) (acq_view: ()) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicPtr_T atomic old_view <= t
+    /\ t <= get_timestamp_AtomicPtr_T atomic new_view
+    /\ view_acquired_Acquire (val_AtomicPtr_T own) new_view val' t acq_view
+  
   function val_load_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_Acquire_None) : Opaque.ptr
+  
+  function timestamp_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_Acquire_None) : int
   
   let shoot_load_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_Acquire_None) (own: t_Perm_AtomicPtr_T)
     (sync_view: MutBorrow.t t_SyncView) (return (x: ())) =
@@ -118,15 +130,7 @@ module M_f
     /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicPtr_T self = ward_AtomicPtr_T'0 own)}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:shoot_load_AtomicPtr_T ensures] ([@stop_split] [@expl:shoot_load ensures #0] le_log_SyncView sync_view.current sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #1] get_timestamp_AtomicPtr_T (ward_AtomicPtr_T self) sync_view.current
-        <= timestamp_AtomicPtr_T self)
-      /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicPtr_T self
-        <= get_timestamp_AtomicPtr_T (ward_AtomicPtr_T self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] match get_Int (val_AtomicPtr_T own) (timestamp_AtomicPtr_T self) with
-        | Some {f0 = v; f1 = v_view} -> v = val_load_AtomicPtr_T self /\ le_log_SyncView v_view sync_view.final
-        | None -> false
-        end)}
+    {[@stop_split] [@expl:shoot_load ensures] load_post_Acquire (ward_AtomicPtr_T self) own sync_view.current sync_view.final (val_load_AtomicPtr_T self) (timestamp_AtomicPtr_T self) result}
       (! return {result}) ]
   
   predicate resolve_refmut_Ghost_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current

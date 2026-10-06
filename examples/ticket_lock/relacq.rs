@@ -212,6 +212,14 @@ impl<T> TicketLock<T> {
                 }
                 let mut view = SyncView::new();
                 c.shoot_load(&inv.perm_now_serving, &mut *view);
+                proof_assert!(match inv.perm_now_serving.val().get(c.timestamp()) {
+                    Some((v, _)) => v == c.val_load(),
+                    None => false
+                });
+                inv.auth_tickets.frag_lemma(ticket_own.as_ref().unwrap());
+                proof_assert!(inv.auth_tickets@.contains(ticket@));
+                proof_assert!(inv.ts_now_serving == Some(c.timestamp()));
+                proof_assert!(ticket@ < inv.next_ticket());
                 let auth_tickets_snap = snapshot!(inv.auth_tickets);
                 inv.auth_tickets.update(ticket_own.as_mut().unwrap(), CancelLocalUpdateUnit);
                 proof_assert!(exists<m> inv.auth_tickets@.op(m) == Some(auth_tickets_snap@));
@@ -262,7 +270,7 @@ impl<'a, T> TicketLockGuard<'a, T> {
             ghost!(|c: &mut Committer<_, _, _, Release>| {
                 self.lock.inner_inv.open(tokens.into_inner(), |inv: &mut TicketLockInv<T>| {
                     let (mut view, perm) = AtView::new(self.perm).into_inner();
-                    c.shoot_store(&mut inv.perm_now_serving, &mut view);
+                    c.shoot_store(&mut inv.perm_now_serving, &mut view, ());
                     inv.token.valid_op_lemma(&self.token);
                     std::mem::swap(&mut inv.token, &mut self.token);
 

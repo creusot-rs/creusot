@@ -203,7 +203,7 @@ impl<'a, T> SpinLockGuard<'a, T> {
                     inner_inv.excl.valid_op_lemma(&self.excl);
                     inner_inv.excl = self.excl.into_inner();
                     let (mut view, perm) = AtView::new(self.perm).into_inner();
-                    c.shoot_store(&mut inner_inv.perm_atomic, &mut view);
+                    c.shoot_store(&mut inner_inv.perm_atomic, &mut view, ());
                     inner_inv.perm = Some(perm);
                     inner_inv.ts = Some(*snapshot!(c.timestamp() + 1).into_ghost());
                 })

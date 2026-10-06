@@ -96,7 +96,7 @@ pub fn message_passing() {
 
                         let (mut sync_view, at_view) = AtView::new(ghost!(data_own.into_inner())).into_inner();
                         inv.at_view = Some(at_view);
-                        c.shoot_store(&mut inv.atomic_own, &mut sync_view);
+                        c.shoot_store(&mut inv.atomic_own, &mut sync_view, ());
                     })
                 }},
             );

@@ -2330,8 +2330,6 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     forall self: t_AtomicUsize, x: t_SyncView, y: t_SyncView. le_log_SyncView x y
       -> get_timestamp_AtomicUsize self x <= get_timestamp_AtomicUsize self y
   
-  function timestamp_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_None) : int
-  
   type t_FMap_Int_tup2_usize_SyncView
   
   type tup2_usize_SyncView = { f0: UInt64.t; f1: t_SyncView }
@@ -2345,6 +2343,14 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   meta "rewrite_def" function get_Int
   
+  function view_AcquireSyncView (self: t_AcquireSyncView) : t_SyncView
+  
+  predicate view_acquired_Relaxed (hist: t_FMap_Int_tup2_usize_SyncView) (sync_view: t_SyncView) (val': UInt64.t) (t: int) (acq_view: t_AcquireSyncView) =
+    match get_Int hist t with
+      | Some'1 {f0 = v; f1 = v_view} -> v = val' /\ le_log_SyncView v_view (view_AcquireSyncView acq_view)
+      | None'1 -> false
+      end
+  
   function val_unsized_AtomicUsize (self: t_Perm_AtomicUsize) : t_FMap_Int_tup2_usize_SyncView
   
   function val_AtomicUsize [@inline:trivial] (self: t_Perm_AtomicUsize) : t_FMap_Int_tup2_usize_SyncView =
@@ -2352,9 +2358,15 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   meta "rewrite_def" function val_AtomicUsize
   
+  predicate load_post_Relaxed (atomic: t_AtomicUsize) (own: t_Perm_AtomicUsize) (old_view: t_SyncView) (new_view: t_SyncView) (val': UInt64.t) (t: int) (acq_view: t_AcquireSyncView) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicUsize atomic old_view <= t
+    /\ t <= get_timestamp_AtomicUsize atomic new_view
+    /\ view_acquired_Relaxed (val_AtomicUsize own) new_view val' t acq_view
+  
   function val_load_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_None) : UInt64.t
   
-  function view_AcquireSyncView (self: t_AcquireSyncView) : t_SyncView
+  function timestamp_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_None) : int
   
   let shoot_load_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_None) (own: t_Perm_AtomicUsize)
     (sync_view: MutBorrow.t t_SyncView) (return (x: t_AcquireSyncView)) =
@@ -2362,13 +2374,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicUsize self = ward_AtomicUsize'0 own)}
     any
     [ return (result: t_AcquireSyncView) ->
-    {[@stop_split] [@expl:shoot_load_AtomicUsize ensures] ([@stop_split] [@expl:shoot_load ensures #0] le_log_SyncView sync_view.current sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #1] get_timestamp_AtomicUsize (ward_AtomicUsize self) sync_view.current
-        <= timestamp_AtomicUsize self)
-      /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicUsize self
-        <= get_timestamp_AtomicUsize (ward_AtomicUsize self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] get_Int (val_AtomicUsize own) (timestamp_AtomicUsize self)
-      = Some'1 { f0 = val_load_AtomicUsize self; f1 = view_AcquireSyncView result })}
+    {[@stop_split] [@expl:shoot_load ensures] load_post_Relaxed (ward_AtomicUsize self) own sync_view.current sync_view.final (val_load_AtomicUsize self) (timestamp_AtomicUsize self) result}
       (! return {result}) ]
   
   predicate resolve_refmut_Ghost_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -2949,9 +2955,21 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   function ward_AtomicUsize'1 (self: t_Committer_AtomicUsize_usize_Acquire_None) : t_AtomicUsize
   
-  function timestamp_AtomicUsize'0 (self: t_Committer_AtomicUsize_usize_Acquire_None) : int
+  predicate view_acquired_Acquire (hist: t_FMap_Int_tup2_usize_SyncView) (sync_view: t_SyncView) (val''0: UInt64.t) (t: int) (acq_view: ()) =
+    match get_Int hist t with
+      | Some'1 {f0 = v; f1 = v_view} -> v = val''0 /\ le_log_SyncView v_view sync_view
+      | None'1 -> false
+      end
+  
+  predicate load_post_Acquire (atomic: t_AtomicUsize) (own: t_Perm_AtomicUsize) (old_view: t_SyncView) (new_view: t_SyncView) (val''0: UInt64.t) (t: int) (acq_view: ()) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicUsize atomic old_view <= t
+    /\ t <= get_timestamp_AtomicUsize atomic new_view
+    /\ view_acquired_Acquire (val_AtomicUsize own) new_view val''0 t acq_view
   
   function val_load_AtomicUsize'0 (self: t_Committer_AtomicUsize_usize_Acquire_None) : UInt64.t
+  
+  function timestamp_AtomicUsize'0 (self: t_Committer_AtomicUsize_usize_Acquire_None) : int
   
   let shoot_load_AtomicUsize'0 (self: t_Committer_AtomicUsize_usize_Acquire_None) (own: t_Perm_AtomicUsize)
     (sync_view: MutBorrow.t t_SyncView) (return (x: ())) =
@@ -2959,15 +2977,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicUsize'1 self = ward_AtomicUsize'0 own)}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:shoot_load_AtomicUsize ensures] ([@stop_split] [@expl:shoot_load ensures #0] le_log_SyncView sync_view.current sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #1] get_timestamp_AtomicUsize (ward_AtomicUsize'1 self) sync_view.current
-        <= timestamp_AtomicUsize'0 self)
-      /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicUsize'0 self
-        <= get_timestamp_AtomicUsize (ward_AtomicUsize'1 self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] match get_Int (val_AtomicUsize own) (timestamp_AtomicUsize'0 self) with
-        | Some'1 {f0 = v; f1 = v_view} -> v = val_load_AtomicUsize'0 self /\ le_log_SyncView v_view sync_view.final
-        | None'1 -> false
-        end)}
+    {[@stop_split] [@expl:shoot_load ensures] load_post_Acquire (ward_AtomicUsize'1 self) own sync_view.current sync_view.final (val_load_AtomicUsize'0 self) (timestamp_AtomicUsize'0 self) result}
       (! return {result}) ]
   
   predicate resolve_Ghost_refmut_SyncView [@inline:trivial] (self: MutBorrow.t t_SyncView) =
@@ -5154,11 +5164,23 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
     forall self: t_AtomicUsize, x: t_SyncView, y: t_SyncView. le_log_SyncView x y
       -> get_timestamp_AtomicUsize self x <= get_timestamp_AtomicUsize self y
   
-  function timestamp_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_Relaxed) : int
+  function view_AcquireSyncView (self: t_AcquireSyncView) : t_SyncView
+  
+  predicate view_acquired_Relaxed (hist: t_FMap_Int_tup2_usize_SyncView) (sync_view: t_SyncView) (val': UInt64.t) (t: int) (acq_view: t_AcquireSyncView) =
+    match get_Int hist t with
+      | Some'0 {f0 = v; f1 = v_view} -> v = val' /\ le_log_SyncView v_view (view_AcquireSyncView acq_view)
+      | None'0 -> false
+      end
+  
+  predicate load_post_Relaxed (atomic: t_AtomicUsize) (own: t_Perm_AtomicUsize) (old_view: t_SyncView) (new_view: t_SyncView) (val': UInt64.t) (t: int) (acq_view: t_AcquireSyncView) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicUsize atomic old_view <= t
+    /\ t <= get_timestamp_AtomicUsize atomic new_view
+    /\ view_acquired_Relaxed (val_AtomicUsize own) new_view val' t acq_view
   
   function val_load_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_Relaxed) : UInt64.t
   
-  function view_AcquireSyncView (self: t_AcquireSyncView) : t_SyncView
+  function timestamp_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_Relaxed) : int
   
   let shoot_load_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_Relaxed) (own: t_Perm_AtomicUsize)
     (sync_view: MutBorrow.t t_SyncView) (return (x: t_AcquireSyncView)) =
@@ -5166,13 +5188,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
     /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicUsize self = ward_AtomicUsize'0 own)}
     any
     [ return (result: t_AcquireSyncView) ->
-    {[@stop_split] [@expl:shoot_load_AtomicUsize ensures] ([@stop_split] [@expl:shoot_load ensures #0] le_log_SyncView sync_view.current sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #1] get_timestamp_AtomicUsize (ward_AtomicUsize self) sync_view.current
-        <= timestamp_AtomicUsize self)
-      /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicUsize self
-        <= get_timestamp_AtomicUsize (ward_AtomicUsize self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] get_Int (val_AtomicUsize own) (timestamp_AtomicUsize self)
-      = Some'0 { f0 = val_load_AtomicUsize self; f1 = view_AcquireSyncView result })}
+    {[@stop_split] [@expl:shoot_load ensures] load_post_Relaxed (ward_AtomicUsize self) own sync_view.current sync_view.final (val_load_AtomicUsize self) (timestamp_AtomicUsize self) result}
       (! return {result}) ]
   
   predicate resolve_refmut_Ghost_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -5231,6 +5247,16 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   
   function view_ReleaseSyncView (self: t_ReleaseSyncView) : t_SyncView
   
+  predicate view_released_Relaxed (old_hist: t_FMap_Int_tup2_usize_SyncView) (new_hist: t_FMap_Int_tup2_usize_SyncView) (sync_view: t_SyncView) (val': UInt64.t) (t: int) (rel_view: t_ReleaseSyncView) =
+    get_Int old_hist t = None'0 /\ new_hist = insert_Int old_hist t { f0 = val'; f1 = view_ReleaseSyncView rel_view }
+  
+  predicate store_post_Relaxed (atomic: t_AtomicUsize) (own: MutBorrow.t t_Perm_AtomicUsize) (old_view: t_SyncView) (new_view: t_SyncView) (val': UInt64.t) (t: int) (rel_view: t_ReleaseSyncView) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicUsize atomic old_view < t
+    /\ t <= get_timestamp_AtomicUsize atomic new_view
+    /\ view_released_Relaxed (val_AtomicUsize own.current) (val_AtomicUsize own.final) new_view val' t rel_view
+    /\ ward_AtomicUsize'0 own.current = ward_AtomicUsize'0 own.final
+  
   let shoot_store_AtomicUsize (self: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed)
     (own: MutBorrow.t t_Perm_AtomicUsize) (sync_view: MutBorrow.t t_SyncView) (rel_view: t_ReleaseSyncView)
     (return (x: ())) =
@@ -5240,18 +5266,8 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
     [ return (result: ()) ->
     {[@stop_split] [@expl:shoot_store_AtomicUsize ensures] ([@stop_split] [@expl:shoot_store ensures #0] hist_inv_AtomicUsize self.current self.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #1] shot_store_AtomicUsize self.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #2] ward_AtomicUsize'0 own.current = ward_AtomicUsize'0 own.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #3] le_log_SyncView sync_view.current sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #4] get_timestamp_AtomicUsize (ward_AtomicUsize self.current) sync_view.current
-        <= timestamp_AtomicUsize self.current)
-      /\ ([@stop_split] [@expl:shoot_store ensures #5] timestamp_AtomicUsize self.current
-        < get_timestamp_AtomicUsize (ward_AtomicUsize self.current) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #6] get_Int (val_AtomicUsize own.current) (timestamp_AtomicUsize self.current
-          + 1)
-        = None'0)
-      /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicUsize own.final
-      = insert_Int (val_AtomicUsize own.current) (timestamp_AtomicUsize self.current
-      + 1) { f0 = val_store_AtomicUsize self.current; f1 = view_ReleaseSyncView rel_view })}
+      /\ ([@stop_split] [@expl:shoot_store ensures #2] store_post_Relaxed (ward_AtomicUsize self.current) own sync_view.current sync_view.final (val_store_AtomicUsize self.current) (timestamp_AtomicUsize self.current
+      + 1) rel_view)}
       (! return {result}) ]
   
   predicate resolve_refmut_Perm_AtomicUsize [@inline:trivial] (_1: MutBorrow.t t_Perm_AtomicUsize) =
@@ -6486,13 +6502,6 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
   
   meta "rewrite_def" function get_Int
   
-  function val_unsized_AtomicUsize (self: t_Perm_AtomicUsize) : t_FMap_Int_tup2_usize_SyncView
-  
-  function val_AtomicUsize [@inline:trivial] (self: t_Perm_AtomicUsize) : t_FMap_Int_tup2_usize_SyncView =
-    val_unsized_AtomicUsize self
-  
-  meta "rewrite_def" function val_AtomicUsize
-  
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
   meta "rewrite_def" predicate ge_log_Int
@@ -6515,26 +6524,33 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
     forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
+  predicate view_released_Release (old_hist: t_FMap_Int_tup2_usize_SyncView) (new_hist: t_FMap_Int_tup2_usize_SyncView) (sync_view: t_SyncView) (val': UInt64.t) (t: int) (rel_view: ()) =
+    get_Int old_hist t = None'0 /\ new_hist = insert_Int old_hist t { f0'0 = val'; f1'0 = sync_view }
+  
+  function val_unsized_AtomicUsize (self: t_Perm_AtomicUsize) : t_FMap_Int_tup2_usize_SyncView
+  
+  function val_AtomicUsize [@inline:trivial] (self: t_Perm_AtomicUsize) : t_FMap_Int_tup2_usize_SyncView =
+    val_unsized_AtomicUsize self
+  
+  meta "rewrite_def" function val_AtomicUsize
+  
+  predicate store_post_Release (atomic: t_AtomicUsize) (own: MutBorrow.t t_Perm_AtomicUsize) (old_view: t_SyncView) (new_view: t_SyncView) (val': UInt64.t) (t: int) (rel_view: ()) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicUsize atomic old_view < t
+    /\ t <= get_timestamp_AtomicUsize atomic new_view
+    /\ view_released_Release (val_AtomicUsize own.current) (val_AtomicUsize own.final) new_view val' t rel_view
+    /\ ward_AtomicUsize'0 own.current = ward_AtomicUsize'0 own.final
+  
   let shoot_store_AtomicUsize (self: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release)
-    (own: MutBorrow.t t_Perm_AtomicUsize) (sync_view: MutBorrow.t t_SyncView) (return (x: ())) =
+    (own: MutBorrow.t t_Perm_AtomicUsize) (sync_view: MutBorrow.t t_SyncView) (rel_view: ()) (return (x: ())) =
   {[@stop_split] [@expl:shoot_store_AtomicUsize requires] ([@stop_split] [@expl:shoot_store requires #0] not shot_store_AtomicUsize self.current)
     /\ ([@stop_split] [@expl:shoot_store requires #1] ward_AtomicUsize self.current = ward_AtomicUsize'0 own.current)}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:shoot_store_AtomicUsize ensures] ([@stop_split] [@expl:shoot_store ensures #0] hist_inv_AtomicUsize self.current self.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #1] shot_store_AtomicUsize self.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #2] ward_AtomicUsize'0 own.current = ward_AtomicUsize'0 own.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #3] le_log_SyncView sync_view.current sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #4] get_timestamp_AtomicUsize (ward_AtomicUsize self.current) sync_view.current
-        <= timestamp_AtomicUsize self.current)
-      /\ ([@stop_split] [@expl:shoot_store ensures #5] timestamp_AtomicUsize self.current
-        < get_timestamp_AtomicUsize (ward_AtomicUsize self.current) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #6] get_Int (val_AtomicUsize own.current) (timestamp_AtomicUsize self.current
-          + 1)
-        = None'0)
-      /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicUsize own.final
-      = insert_Int (val_AtomicUsize own.current) (timestamp_AtomicUsize self.current
-      + 1) { f0'0 = val_store_AtomicUsize self.current; f1'0 = sync_view.final })}
+      /\ ([@stop_split] [@expl:shoot_store ensures #2] store_post_Release (ward_AtomicUsize self.current) own sync_view.current sync_view.final (val_store_AtomicUsize self.current) (timestamp_AtomicUsize self.current
+      + 1) rel_view)}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -7006,7 +7022,7 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
             [ &_51 <- _bor ] [ &_52 <- { _52 with current = _bor.final } ] s19)
       | s19 = MutBorrow.borrow_final <t_SyncView> {_57.current} {MutBorrow.get_id _57}
           (fun (_bor: MutBorrow.t t_SyncView) -> [ &_56 <- _bor ] [ &_57 <- { _57 with current = _bor.final } ] s20)
-      | s20 = shoot_store_AtomicUsize {_48} {_51} {_56} (fun (_x: ()) -> [ &_47 <- _x ] s21)
+      | s20 = shoot_store_AtomicUsize {_48} {_51} {_56} {_58} (fun (_x: ()) -> [ &_47 <- _x ] s21)
       | s21 = -{resolve_refmut_SyncView _57}- s22
       | s22 = -{resolve_refmut_Perm_AtomicUsize _53}- s23
       | s23 = -{resolve_refmut_Perm_AtomicUsize _52}- s24
@@ -7015,56 +7031,56 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
       | s26 = MutBorrow.borrow_final <t_Authority_T'0> {inv'0.current.tokens_auth}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'0) 6}
           (fun (_bor: MutBorrow.t t_Authority_T'0) ->
-            [ &_62 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &_63 <- _bor ] -{inv_Authority_T'0 _bor.final}-
             [ &inv'0 <- { inv'0 with current = { inv'0.current with tokens_auth = _bor.final } } ] s27)
         [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 inv'0.current.tokens_auth} any) ]
-      | s27 = MutBorrow.borrow_final <t_Authority_T'0> {_62.current} {MutBorrow.get_id _62}
+      | s27 = MutBorrow.borrow_final <t_Authority_T'0> {_63.current} {MutBorrow.get_id _63}
           (fun (_bor: MutBorrow.t t_Authority_T'0) ->
-            [ &_61 <- _bor ] -{inv_Authority_T'0 _bor.final}-
-            [ &_62 <- { _62 with current = _bor.final } ] s28)
-        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _62.current} any) ]
-      | s28 = new_refmut_Authority_T {_61} (fun (_x: MutBorrow.t t_Authority_T'0) -> [ &_60 <- _x ] s29)
-      | s29 = discard_T {token} {_60} (fun (_x: ()) -> [ &_58 <- _x ] s30)
-      | s30 = s31 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T _62} any) ]
-      | s31 = -{resolve_refmut_Authority_T _62}- s32
+            [ &_62 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &_63 <- { _63 with current = _bor.final } ] s28)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _63.current} any) ]
+      | s28 = new_refmut_Authority_T {_62} (fun (_x: MutBorrow.t t_Authority_T'0) -> [ &_61 <- _x ] s29)
+      | s29 = discard_T {token} {_61} (fun (_x: ()) -> [ &_59 <- _x ] s30)
+      | s30 = s31 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T _63} any) ]
+      | s31 = -{resolve_refmut_Authority_T _63}- s32
       | s32 = [ &status_view <- { status'0 = UInt64.t'int (val_store_AtomicUsize c.current); view'0 = view } ] s33
       | s33 = MutBorrow.borrow_final <Seq.seq t_Authority> {inv'0.current.statuses_mono_auth}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'0) 5}
           (fun (_bor: MutBorrow.t (Seq.seq t_Authority)) ->
-            [ &_70 <- _bor ] -{inv_Seq_Authority _bor.final}-
+            [ &_71 <- _bor ] -{inv_Seq_Authority _bor.final}-
             [ &inv'0 <- { inv'0 with current = { inv'0.current with statuses_mono_auth = _bor.final } } ] s34)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Authority inv'0.current.statuses_mono_auth} any) ]
-      | s34 = index_mut_Seq_Authority {_70} {index_mod} (fun (_x: MutBorrow.t t_Authority) -> [ &_69 <- _x ] s35)
-      | s35 = MutBorrow.borrow_final <t_Authority> {_69.current} {MutBorrow.get_id _69}
+      | s34 = index_mut_Seq_Authority {_71} {index_mod} (fun (_x: MutBorrow.t t_Authority) -> [ &_70 <- _x ] s35)
+      | s35 = MutBorrow.borrow_final <t_Authority> {_70.current} {MutBorrow.get_id _70}
           (fun (_bor: MutBorrow.t t_Authority) ->
-            [ &_68 <- _bor ] -{inv_Authority _bor.final}-
-            [ &_69 <- { _69 with current = _bor.final } ] s36)
-        [ _ck -> (! {[@expl:type invariant] inv_Authority _69.current} any) ]
-      | s36 = increase {_68} {status_view} (fun (_x: ()) -> [ &_67 <- _x ] s37)
-      | s37 = s38 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority _69} any) ]
-      | s38 = -{resolve_refmut_Authority _69}- s39
-      | s39 = [ &_73 <- Some at_view ] s40
+            [ &_69 <- _bor ] -{inv_Authority _bor.final}-
+            [ &_70 <- { _70 with current = _bor.final } ] s36)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority _70.current} any) ]
+      | s36 = increase {_69} {status_view} (fun (_x: ()) -> [ &_68 <- _x ] s37)
+      | s37 = s38 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority _70} any) ]
+      | s38 = -{resolve_refmut_Authority _70}- s39
+      | s39 = [ &_74 <- Some at_view ] s40
       | s40 = MutBorrow.borrow_final <Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T> {inv'0.current.cells_own}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'0) 2}
           (fun (_bor: MutBorrow.t (Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T)) ->
-            [ &_76 <- _bor ] -{inv_Seq_Option_AtView_Perm_PCell_MaybeUninit_T _bor.final}-
+            [ &_77 <- _bor ] -{inv_Seq_Option_AtView_Perm_PCell_MaybeUninit_T _bor.final}-
             [ &inv'0 <- { inv'0 with current = { inv'0.current with cells_own = _bor.final } } ] s41)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Option_AtView_Perm_PCell_MaybeUninit_T inv'0.current.cells_own}
           any) ]
-      | s41 = index_mut_Seq_Option_AtView_Perm_PCell_MaybeUninit_T {_76} {index_mod}
-          (fun (_x: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T) -> [ &_75 <- _x ] s42)
-      | s42 = s43 [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Perm_PCell_MaybeUninit_T _75.current} any) ]
-      | s43 = -{resolve_Option_AtView_Perm_PCell_MaybeUninit_T _75.current}- s44
-      | s44 = [ &_75 <- { _75 with current = _73 } ] s45
-      | s45 = s46 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _75} any) ]
-      | s46 = -{resolve_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _75}- s47
+      | s41 = index_mut_Seq_Option_AtView_Perm_PCell_MaybeUninit_T {_77} {index_mod}
+          (fun (_x: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T) -> [ &_76 <- _x ] s42)
+      | s42 = s43 [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Perm_PCell_MaybeUninit_T _76.current} any) ]
+      | s43 = -{resolve_Option_AtView_Perm_PCell_MaybeUninit_T _76.current}- s44
+      | s44 = [ &_76 <- { _76 with current = _74 } ] s45
+      | s45 = s46 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _76} any) ]
+      | s46 = -{resolve_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _76}- s47
       | s47 = s48 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_QueueInv_T _32} any) ]
       | s48 = -{resolve_refmut_refmut_QueueInv_T _32}- s49
       | s49 = s50 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'0} any) ]
       | s50 = -{resolve_refmut_QueueInv_T inv'0}- s51
       | s51 = s52 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_QueueInv_T inv} any) ]
       | s52 = -{resolve_Ghost_refmut_QueueInv_T'0 inv}- s53
-      | s53 = [ &_78 <- () ] s54
+      | s53 = [ &_79 <- () ] s54
       | s54 = new_unit {_30} (fun (_x: ()) -> [ &_29 <- _x ] s55)
       | s55 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
@@ -7096,18 +7112,19 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
     | & _56: MutBorrow.t t_SyncView = Any.any_l ()
     | & _57: MutBorrow.t t_SyncView = Any.any_l ()
     | & _58: () = Any.any_l ()
-    | & _60: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _59: () = Any.any_l ()
     | & _61: MutBorrow.t t_Authority_T'0 = Any.any_l ()
     | & _62: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _63: MutBorrow.t t_Authority_T'0 = Any.any_l ()
     | & status_view: t_StatusWithView = Any.any_l ()
-    | & _67: () = Any.any_l ()
-    | & _68: MutBorrow.t t_Authority = Any.any_l ()
+    | & _68: () = Any.any_l ()
     | & _69: MutBorrow.t t_Authority = Any.any_l ()
-    | & _70: MutBorrow.t (Seq.seq t_Authority) = Any.any_l ()
-    | & _73: t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _75: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _76: MutBorrow.t (Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T) = Any.any_l ()
-    | & _78: () = Any.any_l () ])
+    | & _70: MutBorrow.t t_Authority = Any.any_l ()
+    | & _71: MutBorrow.t (Seq.seq t_Authority) = Any.any_l ()
+    | & _74: t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _76: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _77: MutBorrow.t (Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T) = Any.any_l ()
+    | & _79: () = Any.any_l () ])
     [ return (result: ()) ->
     {[@stop_split] [@expl:try_dequeue_store_inv_T ensures] ([@stop_split] [@expl:try_dequeue_store_inv ensures #0] protocol_QueueInv_T (fin_Ghost_refmut_QueueInv_T inv))
       /\ ([@stop_split] [@expl:try_dequeue_store_inv ensures #1] public_QueueInv_T (fin_Ghost_refmut_QueueInv_T inv)
@@ -7355,8 +7372,6 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
     forall self: t_AtomicUsize, x: t_SyncView, y: t_SyncView. le_log_SyncView x y
       -> get_timestamp_AtomicUsize self x <= get_timestamp_AtomicUsize self y
   
-  function timestamp_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_None) : int
-  
   type t_FMap_Int_tup2_usize_SyncView
   
   type tup2_usize_SyncView = { f0: UInt64.t; f1: t_SyncView }
@@ -7370,6 +7385,14 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   meta "rewrite_def" function get_Int
   
+  function view_AcquireSyncView (self: t_AcquireSyncView) : t_SyncView
+  
+  predicate view_acquired_Relaxed (hist: t_FMap_Int_tup2_usize_SyncView) (sync_view: t_SyncView) (val': UInt64.t) (t: int) (acq_view: t_AcquireSyncView) =
+    match get_Int hist t with
+      | Some'1 {f0 = v; f1 = v_view} -> v = val' /\ le_log_SyncView v_view (view_AcquireSyncView acq_view)
+      | None'1 -> false
+      end
+  
   function val_unsized_AtomicUsize (self: t_Perm_AtomicUsize) : t_FMap_Int_tup2_usize_SyncView
   
   function val_AtomicUsize [@inline:trivial] (self: t_Perm_AtomicUsize) : t_FMap_Int_tup2_usize_SyncView =
@@ -7377,9 +7400,15 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   meta "rewrite_def" function val_AtomicUsize
   
+  predicate load_post_Relaxed (atomic: t_AtomicUsize) (own: t_Perm_AtomicUsize) (old_view: t_SyncView) (new_view: t_SyncView) (val': UInt64.t) (t: int) (acq_view: t_AcquireSyncView) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicUsize atomic old_view <= t
+    /\ t <= get_timestamp_AtomicUsize atomic new_view
+    /\ view_acquired_Relaxed (val_AtomicUsize own) new_view val' t acq_view
+  
   function val_load_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_None) : UInt64.t
   
-  function view_AcquireSyncView (self: t_AcquireSyncView) : t_SyncView
+  function timestamp_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_None) : int
   
   let shoot_load_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_None) (own: t_Perm_AtomicUsize)
     (sync_view: MutBorrow.t t_SyncView) (return (x: t_AcquireSyncView)) =
@@ -7387,13 +7416,7 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
     /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicUsize self = ward_AtomicUsize'0 own)}
     any
     [ return (result: t_AcquireSyncView) ->
-    {[@stop_split] [@expl:shoot_load_AtomicUsize ensures] ([@stop_split] [@expl:shoot_load ensures #0] le_log_SyncView sync_view.current sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #1] get_timestamp_AtomicUsize (ward_AtomicUsize self) sync_view.current
-        <= timestamp_AtomicUsize self)
-      /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicUsize self
-        <= get_timestamp_AtomicUsize (ward_AtomicUsize self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] get_Int (val_AtomicUsize own) (timestamp_AtomicUsize self)
-      = Some'1 { f0 = val_load_AtomicUsize self; f1 = view_AcquireSyncView result })}
+    {[@stop_split] [@expl:shoot_load ensures] load_post_Relaxed (ward_AtomicUsize self) own sync_view.current sync_view.final (val_load_AtomicUsize self) (timestamp_AtomicUsize self) result}
       (! return {result}) ]
   
   predicate resolve_refmut_Ghost_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -7974,9 +7997,21 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   function ward_AtomicUsize'1 (self: t_Committer_AtomicUsize_usize_Acquire_None) : t_AtomicUsize
   
-  function timestamp_AtomicUsize'0 (self: t_Committer_AtomicUsize_usize_Acquire_None) : int
+  predicate view_acquired_Acquire (hist: t_FMap_Int_tup2_usize_SyncView) (sync_view: t_SyncView) (val''0: UInt64.t) (t: int) (acq_view: ()) =
+    match get_Int hist t with
+      | Some'1 {f0 = v; f1 = v_view} -> v = val''0 /\ le_log_SyncView v_view sync_view
+      | None'1 -> false
+      end
+  
+  predicate load_post_Acquire (atomic: t_AtomicUsize) (own: t_Perm_AtomicUsize) (old_view: t_SyncView) (new_view: t_SyncView) (val''0: UInt64.t) (t: int) (acq_view: ()) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicUsize atomic old_view <= t
+    /\ t <= get_timestamp_AtomicUsize atomic new_view
+    /\ view_acquired_Acquire (val_AtomicUsize own) new_view val''0 t acq_view
   
   function val_load_AtomicUsize'0 (self: t_Committer_AtomicUsize_usize_Acquire_None) : UInt64.t
+  
+  function timestamp_AtomicUsize'0 (self: t_Committer_AtomicUsize_usize_Acquire_None) : int
   
   let shoot_load_AtomicUsize'0 (self: t_Committer_AtomicUsize_usize_Acquire_None) (own: t_Perm_AtomicUsize)
     (sync_view: MutBorrow.t t_SyncView) (return (x: ())) =
@@ -7984,15 +8019,7 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
     /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicUsize'1 self = ward_AtomicUsize'0 own)}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:shoot_load_AtomicUsize ensures] ([@stop_split] [@expl:shoot_load ensures #0] le_log_SyncView sync_view.current sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #1] get_timestamp_AtomicUsize (ward_AtomicUsize'1 self) sync_view.current
-        <= timestamp_AtomicUsize'0 self)
-      /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicUsize'0 self
-        <= get_timestamp_AtomicUsize (ward_AtomicUsize'1 self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] match get_Int (val_AtomicUsize own) (timestamp_AtomicUsize'0 self) with
-        | Some'1 {f0 = v; f1 = v_view} -> v = val_load_AtomicUsize'0 self /\ le_log_SyncView v_view sync_view.final
-        | None'1 -> false
-        end)}
+    {[@stop_split] [@expl:shoot_load ensures] load_post_Acquire (ward_AtomicUsize'1 self) own sync_view.current sync_view.final (val_load_AtomicUsize'0 self) (timestamp_AtomicUsize'0 self) result}
       (! return {result}) ]
   
   predicate resolve_Ghost_refmut_SyncView [@inline:trivial] (self: MutBorrow.t t_SyncView) =
@@ -10182,11 +10209,23 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
     forall self: t_AtomicUsize, x: t_SyncView, y: t_SyncView. le_log_SyncView x y
       -> get_timestamp_AtomicUsize self x <= get_timestamp_AtomicUsize self y
   
-  function timestamp_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_Relaxed) : int
+  function view_AcquireSyncView (self: t_AcquireSyncView) : t_SyncView
+  
+  predicate view_acquired_Relaxed (hist: t_FMap_Int_tup2_usize_SyncView) (sync_view: t_SyncView) (val': UInt64.t) (t: int) (acq_view: t_AcquireSyncView) =
+    match get_Int hist t with
+      | Some'0 {f0 = v; f1 = v_view} -> v = val' /\ le_log_SyncView v_view (view_AcquireSyncView acq_view)
+      | None'0 -> false
+      end
+  
+  predicate load_post_Relaxed (atomic: t_AtomicUsize) (own: t_Perm_AtomicUsize) (old_view: t_SyncView) (new_view: t_SyncView) (val': UInt64.t) (t: int) (acq_view: t_AcquireSyncView) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicUsize atomic old_view <= t
+    /\ t <= get_timestamp_AtomicUsize atomic new_view
+    /\ view_acquired_Relaxed (val_AtomicUsize own) new_view val' t acq_view
   
   function val_load_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_Relaxed) : UInt64.t
   
-  function view_AcquireSyncView (self: t_AcquireSyncView) : t_SyncView
+  function timestamp_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_Relaxed) : int
   
   let shoot_load_AtomicUsize (self: t_Committer_AtomicUsize_usize_Relaxed_Relaxed) (own: t_Perm_AtomicUsize)
     (sync_view: MutBorrow.t t_SyncView) (return (x: t_AcquireSyncView)) =
@@ -10194,13 +10233,7 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
     /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicUsize self = ward_AtomicUsize'0 own)}
     any
     [ return (result: t_AcquireSyncView) ->
-    {[@stop_split] [@expl:shoot_load_AtomicUsize ensures] ([@stop_split] [@expl:shoot_load ensures #0] le_log_SyncView sync_view.current sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #1] get_timestamp_AtomicUsize (ward_AtomicUsize self) sync_view.current
-        <= timestamp_AtomicUsize self)
-      /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicUsize self
-        <= get_timestamp_AtomicUsize (ward_AtomicUsize self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] get_Int (val_AtomicUsize own) (timestamp_AtomicUsize self)
-      = Some'0 { f0 = val_load_AtomicUsize self; f1 = view_AcquireSyncView result })}
+    {[@stop_split] [@expl:shoot_load ensures] load_post_Relaxed (ward_AtomicUsize self) own sync_view.current sync_view.final (val_load_AtomicUsize self) (timestamp_AtomicUsize self) result}
       (! return {result}) ]
   
   predicate resolve_refmut_Ghost_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -10259,6 +10292,16 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
   
   function view_ReleaseSyncView (self: t_ReleaseSyncView) : t_SyncView
   
+  predicate view_released_Relaxed (old_hist: t_FMap_Int_tup2_usize_SyncView) (new_hist: t_FMap_Int_tup2_usize_SyncView) (sync_view: t_SyncView) (val': UInt64.t) (t: int) (rel_view: t_ReleaseSyncView) =
+    get_Int old_hist t = None'0 /\ new_hist = insert_Int old_hist t { f0 = val'; f1 = view_ReleaseSyncView rel_view }
+  
+  predicate store_post_Relaxed (atomic: t_AtomicUsize) (own: MutBorrow.t t_Perm_AtomicUsize) (old_view: t_SyncView) (new_view: t_SyncView) (val': UInt64.t) (t: int) (rel_view: t_ReleaseSyncView) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicUsize atomic old_view < t
+    /\ t <= get_timestamp_AtomicUsize atomic new_view
+    /\ view_released_Relaxed (val_AtomicUsize own.current) (val_AtomicUsize own.final) new_view val' t rel_view
+    /\ ward_AtomicUsize'0 own.current = ward_AtomicUsize'0 own.final
+  
   let shoot_store_AtomicUsize (self: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed)
     (own: MutBorrow.t t_Perm_AtomicUsize) (sync_view: MutBorrow.t t_SyncView) (rel_view: t_ReleaseSyncView)
     (return (x: ())) =
@@ -10268,18 +10311,8 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
     [ return (result: ()) ->
     {[@stop_split] [@expl:shoot_store_AtomicUsize ensures] ([@stop_split] [@expl:shoot_store ensures #0] hist_inv_AtomicUsize self.current self.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #1] shot_store_AtomicUsize self.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #2] ward_AtomicUsize'0 own.current = ward_AtomicUsize'0 own.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #3] le_log_SyncView sync_view.current sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #4] get_timestamp_AtomicUsize (ward_AtomicUsize self.current) sync_view.current
-        <= timestamp_AtomicUsize self.current)
-      /\ ([@stop_split] [@expl:shoot_store ensures #5] timestamp_AtomicUsize self.current
-        < get_timestamp_AtomicUsize (ward_AtomicUsize self.current) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #6] get_Int (val_AtomicUsize own.current) (timestamp_AtomicUsize self.current
-          + 1)
-        = None'0)
-      /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicUsize own.final
-      = insert_Int (val_AtomicUsize own.current) (timestamp_AtomicUsize self.current
-      + 1) { f0 = val_store_AtomicUsize self.current; f1 = view_ReleaseSyncView rel_view })}
+      /\ ([@stop_split] [@expl:shoot_store ensures #2] store_post_Relaxed (ward_AtomicUsize self.current) own sync_view.current sync_view.final (val_store_AtomicUsize self.current) (timestamp_AtomicUsize self.current
+      + 1) rel_view)}
       (! return {result}) ]
   
   predicate resolve_refmut_Perm_AtomicUsize [@inline:trivial] (_1: MutBorrow.t t_Perm_AtomicUsize) =
@@ -11502,13 +11535,6 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
   
   meta "rewrite_def" function get_Int
   
-  function val_unsized_AtomicUsize (self: t_Perm_AtomicUsize) : t_FMap_Int_tup2_usize_SyncView
-  
-  function val_AtomicUsize [@inline:trivial] (self: t_Perm_AtomicUsize) : t_FMap_Int_tup2_usize_SyncView =
-    val_unsized_AtomicUsize self
-  
-  meta "rewrite_def" function val_AtomicUsize
-  
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
   meta "rewrite_def" predicate ge_log_Int
@@ -11531,26 +11557,33 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
     forall self: t_FMap_Int_tup2_usize_SyncView, k: int, v: tup2_usize_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
+  predicate view_released_Release (old_hist: t_FMap_Int_tup2_usize_SyncView) (new_hist: t_FMap_Int_tup2_usize_SyncView) (sync_view: t_SyncView) (val': UInt64.t) (t: int) (rel_view: ()) =
+    get_Int old_hist t = None'0 /\ new_hist = insert_Int old_hist t { f0'0 = val'; f1'0 = sync_view }
+  
+  function val_unsized_AtomicUsize (self: t_Perm_AtomicUsize) : t_FMap_Int_tup2_usize_SyncView
+  
+  function val_AtomicUsize [@inline:trivial] (self: t_Perm_AtomicUsize) : t_FMap_Int_tup2_usize_SyncView =
+    val_unsized_AtomicUsize self
+  
+  meta "rewrite_def" function val_AtomicUsize
+  
+  predicate store_post_Release (atomic: t_AtomicUsize) (own: MutBorrow.t t_Perm_AtomicUsize) (old_view: t_SyncView) (new_view: t_SyncView) (val': UInt64.t) (t: int) (rel_view: ()) =
+    le_log_SyncView old_view new_view
+    /\ get_timestamp_AtomicUsize atomic old_view < t
+    /\ t <= get_timestamp_AtomicUsize atomic new_view
+    /\ view_released_Release (val_AtomicUsize own.current) (val_AtomicUsize own.final) new_view val' t rel_view
+    /\ ward_AtomicUsize'0 own.current = ward_AtomicUsize'0 own.final
+  
   let shoot_store_AtomicUsize (self: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release)
-    (own: MutBorrow.t t_Perm_AtomicUsize) (sync_view: MutBorrow.t t_SyncView) (return (x: ())) =
+    (own: MutBorrow.t t_Perm_AtomicUsize) (sync_view: MutBorrow.t t_SyncView) (rel_view: ()) (return (x: ())) =
   {[@stop_split] [@expl:shoot_store_AtomicUsize requires] ([@stop_split] [@expl:shoot_store requires #0] not shot_store_AtomicUsize self.current)
     /\ ([@stop_split] [@expl:shoot_store requires #1] ward_AtomicUsize self.current = ward_AtomicUsize'0 own.current)}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:shoot_store_AtomicUsize ensures] ([@stop_split] [@expl:shoot_store ensures #0] hist_inv_AtomicUsize self.current self.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #1] shot_store_AtomicUsize self.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #2] ward_AtomicUsize'0 own.current = ward_AtomicUsize'0 own.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #3] le_log_SyncView sync_view.current sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #4] get_timestamp_AtomicUsize (ward_AtomicUsize self.current) sync_view.current
-        <= timestamp_AtomicUsize self.current)
-      /\ ([@stop_split] [@expl:shoot_store ensures #5] timestamp_AtomicUsize self.current
-        < get_timestamp_AtomicUsize (ward_AtomicUsize self.current) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #6] get_Int (val_AtomicUsize own.current) (timestamp_AtomicUsize self.current
-          + 1)
-        = None'0)
-      /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicUsize own.final
-      = insert_Int (val_AtomicUsize own.current) (timestamp_AtomicUsize self.current
-      + 1) { f0'0 = val_store_AtomicUsize self.current; f1'0 = sync_view.final })}
+      /\ ([@stop_split] [@expl:shoot_store ensures #2] store_post_Release (ward_AtomicUsize self.current) own sync_view.current sync_view.final (val_store_AtomicUsize self.current) (timestamp_AtomicUsize self.current
+      + 1) rel_view)}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -12026,7 +12059,7 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
             [ &_54 <- _bor ] [ &_55 <- { _55 with current = _bor.final } ] s19)
       | s19 = MutBorrow.borrow_final <t_SyncView> {_60.current} {MutBorrow.get_id _60}
           (fun (_bor: MutBorrow.t t_SyncView) -> [ &_59 <- _bor ] [ &_60 <- { _60 with current = _bor.final } ] s20)
-      | s20 = shoot_store_AtomicUsize {_51} {_54} {_59} (fun (_x: ()) -> [ &_50 <- _x ] s21)
+      | s20 = shoot_store_AtomicUsize {_51} {_54} {_59} {_61} (fun (_x: ()) -> [ &_50 <- _x ] s21)
       | s21 = -{resolve_refmut_SyncView _60}- s22
       | s22 = -{resolve_refmut_Perm_AtomicUsize _56}- s23
       | s23 = -{resolve_refmut_Perm_AtomicUsize _55}- s24
@@ -12035,56 +12068,56 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
       | s26 = MutBorrow.borrow_final <t_Authority_T'0> {inv'0.current.tokens_auth}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'0) 6}
           (fun (_bor: MutBorrow.t t_Authority_T'0) ->
-            [ &_65 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &_66 <- _bor ] -{inv_Authority_T'0 _bor.final}-
             [ &inv'0 <- { inv'0 with current = { inv'0.current with tokens_auth = _bor.final } } ] s27)
         [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 inv'0.current.tokens_auth} any) ]
-      | s27 = MutBorrow.borrow_final <t_Authority_T'0> {_65.current} {MutBorrow.get_id _65}
+      | s27 = MutBorrow.borrow_final <t_Authority_T'0> {_66.current} {MutBorrow.get_id _66}
           (fun (_bor: MutBorrow.t t_Authority_T'0) ->
-            [ &_64 <- _bor ] -{inv_Authority_T'0 _bor.final}-
-            [ &_65 <- { _65 with current = _bor.final } ] s28)
-        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _65.current} any) ]
-      | s28 = new_refmut_Authority_T {_64} (fun (_x: MutBorrow.t t_Authority_T'0) -> [ &_63 <- _x ] s29)
-      | s29 = discard_T {token} {_63} (fun (_x: ()) -> [ &_61 <- _x ] s30)
-      | s30 = s31 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T _65} any) ]
-      | s31 = -{resolve_refmut_Authority_T _65}- s32
+            [ &_65 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &_66 <- { _66 with current = _bor.final } ] s28)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _66.current} any) ]
+      | s28 = new_refmut_Authority_T {_65} (fun (_x: MutBorrow.t t_Authority_T'0) -> [ &_64 <- _x ] s29)
+      | s29 = discard_T {token} {_64} (fun (_x: ()) -> [ &_62 <- _x ] s30)
+      | s30 = s31 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T _66} any) ]
+      | s31 = -{resolve_refmut_Authority_T _66}- s32
       | s32 = [ &status_view <- { status'0 = UInt64.t'int (val_store_AtomicUsize c.current); view'0 = view } ] s33
       | s33 = MutBorrow.borrow_final <Seq.seq t_Authority> {inv'0.current.statuses_mono_auth}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'0) 5}
           (fun (_bor: MutBorrow.t (Seq.seq t_Authority)) ->
-            [ &_73 <- _bor ] -{inv_Seq_Authority _bor.final}-
+            [ &_74 <- _bor ] -{inv_Seq_Authority _bor.final}-
             [ &inv'0 <- { inv'0 with current = { inv'0.current with statuses_mono_auth = _bor.final } } ] s34)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Authority inv'0.current.statuses_mono_auth} any) ]
-      | s34 = index_mut_Seq_Authority {_73} {index_mod} (fun (_x: MutBorrow.t t_Authority) -> [ &_72 <- _x ] s35)
-      | s35 = MutBorrow.borrow_final <t_Authority> {_72.current} {MutBorrow.get_id _72}
+      | s34 = index_mut_Seq_Authority {_74} {index_mod} (fun (_x: MutBorrow.t t_Authority) -> [ &_73 <- _x ] s35)
+      | s35 = MutBorrow.borrow_final <t_Authority> {_73.current} {MutBorrow.get_id _73}
           (fun (_bor: MutBorrow.t t_Authority) ->
-            [ &_71 <- _bor ] -{inv_Authority _bor.final}-
-            [ &_72 <- { _72 with current = _bor.final } ] s36)
-        [ _ck -> (! {[@expl:type invariant] inv_Authority _72.current} any) ]
-      | s36 = increase {_71} {status_view} (fun (_x: ()) -> [ &_70 <- _x ] s37)
-      | s37 = s38 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority _72} any) ]
-      | s38 = -{resolve_refmut_Authority _72}- s39
-      | s39 = [ &_76 <- Some at_view ] s40
+            [ &_72 <- _bor ] -{inv_Authority _bor.final}-
+            [ &_73 <- { _73 with current = _bor.final } ] s36)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority _73.current} any) ]
+      | s36 = increase {_72} {status_view} (fun (_x: ()) -> [ &_71 <- _x ] s37)
+      | s37 = s38 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority _73} any) ]
+      | s38 = -{resolve_refmut_Authority _73}- s39
+      | s39 = [ &_77 <- Some at_view ] s40
       | s40 = MutBorrow.borrow_final <Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T> {inv'0.current.cells_own}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'0) 2}
           (fun (_bor: MutBorrow.t (Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T)) ->
-            [ &_79 <- _bor ] -{inv_Seq_Option_AtView_Perm_PCell_MaybeUninit_T _bor.final}-
+            [ &_80 <- _bor ] -{inv_Seq_Option_AtView_Perm_PCell_MaybeUninit_T _bor.final}-
             [ &inv'0 <- { inv'0 with current = { inv'0.current with cells_own = _bor.final } } ] s41)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Option_AtView_Perm_PCell_MaybeUninit_T inv'0.current.cells_own}
           any) ]
-      | s41 = index_mut_Seq_Option_AtView_Perm_PCell_MaybeUninit_T {_79} {index_mod}
-          (fun (_x: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T) -> [ &_78 <- _x ] s42)
-      | s42 = s43 [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Perm_PCell_MaybeUninit_T _78.current} any) ]
-      | s43 = -{resolve_Option_AtView_Perm_PCell_MaybeUninit_T _78.current}- s44
-      | s44 = [ &_78 <- { _78 with current = _76 } ] s45
-      | s45 = s46 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _78} any) ]
-      | s46 = -{resolve_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _78}- s47
+      | s41 = index_mut_Seq_Option_AtView_Perm_PCell_MaybeUninit_T {_80} {index_mod}
+          (fun (_x: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T) -> [ &_79 <- _x ] s42)
+      | s42 = s43 [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Perm_PCell_MaybeUninit_T _79.current} any) ]
+      | s43 = -{resolve_Option_AtView_Perm_PCell_MaybeUninit_T _79.current}- s44
+      | s44 = [ &_79 <- { _79 with current = _77 } ] s45
+      | s45 = s46 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _79} any) ]
+      | s46 = -{resolve_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _79}- s47
       | s47 = s48 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_QueueInv_T _35} any) ]
       | s48 = -{resolve_refmut_refmut_QueueInv_T _35}- s49
       | s49 = s50 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'0} any) ]
       | s50 = -{resolve_refmut_QueueInv_T inv'0}- s51
       | s51 = s52 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_QueueInv_T inv} any) ]
       | s52 = -{resolve_Ghost_refmut_QueueInv_T'0 inv}- s53
-      | s53 = [ &_81 <- () ] s54
+      | s53 = [ &_82 <- () ] s54
       | s54 = new_unit {_33} (fun (_x: ()) -> [ &_32 <- _x ] s55)
       | s55 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
@@ -12116,18 +12149,19 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
     | & _59: MutBorrow.t t_SyncView = Any.any_l ()
     | & _60: MutBorrow.t t_SyncView = Any.any_l ()
     | & _61: () = Any.any_l ()
-    | & _63: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _62: () = Any.any_l ()
     | & _64: MutBorrow.t t_Authority_T'0 = Any.any_l ()
     | & _65: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _66: MutBorrow.t t_Authority_T'0 = Any.any_l ()
     | & status_view: t_StatusWithView = Any.any_l ()
-    | & _70: () = Any.any_l ()
-    | & _71: MutBorrow.t t_Authority = Any.any_l ()
+    | & _71: () = Any.any_l ()
     | & _72: MutBorrow.t t_Authority = Any.any_l ()
-    | & _73: MutBorrow.t (Seq.seq t_Authority) = Any.any_l ()
-    | & _76: t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _78: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _79: MutBorrow.t (Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T) = Any.any_l ()
-    | & _81: () = Any.any_l () ])
+    | & _73: MutBorrow.t t_Authority = Any.any_l ()
+    | & _74: MutBorrow.t (Seq.seq t_Authority) = Any.any_l ()
+    | & _77: t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _79: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _80: MutBorrow.t (Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T) = Any.any_l ()
+    | & _82: () = Any.any_l () ])
     [ return (result: ()) ->
     {[@stop_split] [@expl:try_enqueue_store_inv_T ensures] ([@stop_split] [@expl:try_enqueue_store_inv ensures #0] protocol_QueueInv_T (fin_Ghost_refmut_QueueInv_T inv))
       /\ ([@stop_split] [@expl:try_enqueue_store_inv ensures #1] public_QueueInv_T (fin_Ghost_refmut_QueueInv_T inv)
