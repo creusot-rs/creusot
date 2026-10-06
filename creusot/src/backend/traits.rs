@@ -1,6 +1,6 @@
 use crate::{
     backend::{
-        Why3Generator, clone_map::Dependencies, common_meta_decls, term::lower_pure,
+        Why3Generator, common_meta_decls, module_context::Dependencies, term::lower_pure,
         ty::translate_ty,
     },
     ctx::FileModule,
@@ -15,7 +15,6 @@ pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<
         let impl_did = refn.impl_item;
 
         let names = Dependencies::new(ctx, impl_did);
-        let namespace_ty = names.namespace_ty();
         let args: Vec<_> = refn
             .refn
             .args
@@ -27,16 +26,10 @@ pub(crate) fn lower_impl<'tcx>(ctx: &Why3Generator<'tcx>, def_id: DefId) -> Vec<
         if pre.iter().any(|t| t.is_false()) || post.is_true() {
             continue;
         }
-        let (mut decls, setters) = names.provide_deps(ctx);
+        let (mut decls, setters) = names.translate_deps(ctx);
         decls.extend(common_meta_decls());
         let name = Ident::fresh(ctx.crate_name(), "refines");
         decls.push(setters.mk_goal(name, args, pre.into_iter(), post));
-
-        if ctx.used_namespaces.get() {
-            let mut new_decls = ctx.generate_namespace_type(namespace_ty);
-            new_decls.extend(std::mem::take(&mut decls));
-            decls = new_decls;
-        }
 
         let attrs = ctx.span_attr(ctx.def_span(impl_did)).into_iter().collect();
         let meta = ctx.display_impl_of(impl_did);

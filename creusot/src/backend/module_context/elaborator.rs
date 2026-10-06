@@ -1,9 +1,9 @@
 use crate::{
     backend::{
         self, Why3Generator,
-        clone_map::{CloneNames, DepGraphBuilder, Dependency, Kind, Namer},
         closures::{closure_hist_inv, closure_post, closure_pre, ctor_post, ctor_pre},
         logic::{lower_logical_defn, spec_axioms},
+        module_context::{DepGraphBuilder, Dependency, Kind, ModuleContext, Namer},
         program,
         resolve::{ResolveDef, elaborate_resolve_def, structural_resolve},
         signature::{LogicSignature, lower_logic_sig, lower_program_sig},
@@ -57,7 +57,7 @@ pub enum Strength {
 /// and expands this into a complete dependency graph.
 pub(super) struct Expander<'a, 'ctx, 'tcx> {
     dep_bodies: HashMap<Dependency<'tcx>, Vec<Decl>>,
-    namer: &'a mut CloneNames<'ctx, 'tcx>,
+    namer: &'a mut ModuleContext<'ctx, 'tcx>,
     ctx: &'a Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
     dep_graph: DepGraphBuilder<'tcx>,
@@ -72,7 +72,7 @@ impl<'a, 'ctx, 'tcx> HasTyCtxt<'tcx> for Expander<'a, 'ctx, 'tcx> {
 }
 
 struct ExpansionProxy<'a, 'ctx, 'tcx> {
-    namer: &'a mut CloneNames<'ctx, 'tcx>,
+    namer: &'a mut ModuleContext<'ctx, 'tcx>,
     dep_graph: RefCell<&'a mut DepGraphBuilder<'tcx>>,
     source: Dependency<'tcx>,
 }
@@ -105,6 +105,10 @@ impl<'tcx> Namer<'tcx> for ExpansionProxy<'_, '_, 'tcx> {
 
     fn bitwise_mode(&self) -> bool {
         self.namer.bitwise_mode()
+    }
+
+    fn get_namespace_constructor(&self, namespace_fun: DefId) -> Ident {
+        self.namer.get_namespace_constructor(namespace_fun)
     }
 }
 
@@ -677,7 +681,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     /// `span`: span of the item being expanded
     pub(crate) fn new(
         ctx: &'a Why3Generator<'tcx>,
-        namer: &'a mut CloneNames<'ctx, 'tcx>,
+        namer: &'a mut ModuleContext<'ctx, 'tcx>,
         dep_graph: DepGraphBuilder<'tcx>,
         typing_env: TypingEnv<'tcx>,
         span: Span,
@@ -690,7 +694,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     }
 
     /// Expand the graph with new entries
-    pub fn update_graph(mut self) -> (super::DepGraph<'tcx>, HashMap<Dependency<'tcx>, Vec<Decl>>) {
+    pub fn build_graph(mut self) -> (super::DepGraph<'tcx>, HashMap<Dependency<'tcx>, Vec<Decl>>) {
         while let Some(t) = self.dep_graph.expansion_queue.pop_front() {
             self.expand(t);
         }

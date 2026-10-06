@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     backend::{
         DefKind, Why3Generator,
-        clone_map::Namer,
+        module_context::Namer,
         term::{lower_condition, lower_pure_spanned, lower_trigger},
         ty::translate_ty,
     },

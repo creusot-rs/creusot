@@ -26,8 +26,6 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     names.visit_source();
     let pre_sig = ctx.sig(def_id).clone().normalize_contract(ctx, ctx.typing_env(def_id));
 
-    let namespace_ty = names.namespace_ty();
-
     // FIXME: this corresponds to not checking the contract in logic functions
     // that are not recursive and that do not have any contract.
     // This is not unsound, but somewhat surprising.
@@ -114,15 +112,11 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
 
     let vc_ident = sig.why_sig.name.refresh_with(|s| format!("vc_{s}"));
 
-    let (mut decls, setters) = names.provide_deps(ctx);
+    let (mut decls, setters) = names.translate_deps(ctx);
     decls.extend(common_meta_decls());
     decls.extend(body_decls);
     let requires = sig.contract.requires.into_iter().map(|cond| cond.exp);
     decls.push(setters.mk_goal(vc_ident, vec![], requires, wp));
-
-    if ctx.used_namespaces.get() {
-        decls.splice(0..0, ctx.generate_namespace_type(namespace_ty));
-    }
 
     let attrs = ctx.span_attr(ctx.def_span(def_id)).into_iter().collect();
     let meta = ctx.display_impl_of(def_id);

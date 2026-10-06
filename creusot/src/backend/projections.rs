@@ -1,7 +1,7 @@
 use crate::{
     backend::{
         Why3Generator,
-        clone_map::Namer,
+        module_context::Namer,
         program::IntermediateStmt,
         ty::{translate_ty, uty_to_prelude},
     },
