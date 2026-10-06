@@ -567,6 +567,9 @@ impl<'tcx> Operand<'tcx> {
                     istmts.push(IntermediateStmt::Check(pre))
                 }
                 let dest = Ident::fresh_local("_dest");
+                // Here, we compute a strongest post by computing:
+                //       !wp e { x. x <> v }
+                // Which (somewhat surprisingly) is a sound SP in classical logic
                 if let Some(mut post) =
                     wp(lower.ctx, lower.names, None, &c.clone().spanned(), false, &|exp| {
                         Exp::var(dest).neq(exp)

@@ -6,7 +6,7 @@ use crate::{
         term::{lower_pure, lower_pure_weakdep},
         ty::{self, translate_ty},
     },
-    contracts_items::{Intrinsic, get_builtin, is_indirect, is_inline},
+    contracts_items::{Intrinsic, get_builtin, is_indirect, is_inline, is_opaque},
     ctx::*,
     naming::name,
     translated_item::FileModule,
@@ -28,18 +28,29 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
 
     let namespace_ty = names.namespace_ty();
 
+    // FIXME: this corresponds to not checking the contract in logic functions
+    // that are not recursive and that do not have any contract.
+    // This is not unsound, but somewhat surprising.
+    // However, enabling this causes large performance issues (because the VCGen is not optimized,
+    // it should be written in Flanagan-Saxe style) and all sorts of tests need to be adapted.
     if pre_sig.contract.is_empty() {
         return None;
     }
 
     if get_builtin(ctx.tcx, def_id).is_some() {
-        ctx.crash_and_error(
-            ctx.def_span(def_id),
-            "cannot specify both `creusot::builtin` and a contract on the same definition",
-        );
+        if !pre_sig.contract.is_empty() {
+            ctx.crash_and_error(
+                ctx.def_span(def_id),
+                "cannot specify both `creusot::builtin` and a contract on the same definition",
+            );
+        }
+        return None;
     }
 
-    if !ctx.has_body(def_id) {
+    if !ctx.has_body(def_id)
+        || ctx.intrinsic(def_id).synthetic()
+        || pre_sig.contract.is_empty() && is_opaque(ctx.tcx, def_id)
+    {
         return None;
     }
 
