@@ -5,22 +5,19 @@ use crate::{
     util::{impl_subject, path_of_span},
 };
 use creusot_args::options::SpanMode;
-use indexmap::IndexMap;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{GenericArgs, GenericArgsRef, Ty, TyCtxt, TypingEnv};
 use rustc_span::Span;
 use std::{
-    cell::{Cell, RefCell},
     ops::{Deref, DerefMut},
     path::PathBuf,
 };
 use why3::declaration::{Attribute, Decl, Meta, MetaArg, MetaIdent};
 
-pub(crate) mod clone_map;
 pub(crate) mod closures;
 pub(crate) mod dependency;
 pub(crate) mod logic;
-pub(crate) mod namespace;
+pub(crate) mod module_context;
 pub(crate) mod optimization;
 pub(crate) mod program;
 pub(crate) mod projections;
@@ -35,12 +32,6 @@ pub(crate) mod wto;
 /// Stores the translation of Rust items to why3.
 pub struct Why3Generator<'tcx> {
     pub ctx: TranslationCtx<'tcx>,
-    /// The set of namespaces that appears in the current function.
-    ///
-    /// It is reset at the start of each function.
-    namespaces: RefCell<IndexMap<DefId, why3::Ident>>,
-    /// `true` if we need to generate the namespace type for the current module.
-    used_namespaces: Cell<bool>,
     pub functions: Vec<TranslatedItem>,
 }
 
@@ -60,20 +51,13 @@ impl DerefMut for Why3Generator<'_> {
 
 impl<'tcx> Why3Generator<'tcx> {
     pub fn new(ctx: TranslationCtx<'tcx>) -> Self {
-        Why3Generator {
-            ctx,
-            functions: Default::default(),
-            namespaces: Default::default(),
-            used_namespaces: Cell::new(false),
-        }
+        Why3Generator { ctx, functions: Default::default() }
     }
 
     /// Translate `def_id` to a why3 module, and stores it internally.
     pub(crate) fn translate(&mut self, def_id: DefId) {
         debug!("translating {:?}", def_id);
 
-        // reset the namespace type for this module
-        self.namespaces.get_mut().clear();
         let translated_item = match self.item_type(def_id) {
             ItemType::Impl if self.tcx.impl_opt_trait_ref(def_id).is_some() => {
                 let modls = traits::lower_impl(self, def_id);
@@ -100,20 +84,6 @@ impl<'tcx> Why3Generator<'tcx> {
             | ItemType::Impl => return,
         };
         self.functions.push(translated_item);
-    }
-
-    /// Get the name of the namespace.
-    ///
-    /// This also:
-    /// - Caches the generated name for future uses
-    /// - Allow all the names defined in the current function to be later retrieved, in
-    ///   order to generate the namespace type.
-    pub(crate) fn get_namespace_constructor(&self, namespace_fun: DefId) -> why3::Ident {
-        self.used_namespaces.set(true);
-        *self.namespaces.borrow_mut().entry(namespace_fun).or_insert_with(|| {
-            let name = self.ctx.item_name(namespace_fun);
-            why3::Ident::fresh_local(format!("Namespace_{name}"))
-        })
     }
 
     /// Get a why3 attribute corresponding to this span.

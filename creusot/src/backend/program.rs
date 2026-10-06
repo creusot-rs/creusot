@@ -10,11 +10,10 @@
 
 use crate::{
     backend::{
-        Why3Generator,
-        clone_map::{Namer, PreMod},
-        common_meta_decls,
+        Why3Generator, common_meta_decls,
         dependency::Dependency,
         logic::vcgen::wp,
+        module_context::{Namer, PreMod},
         optimization::optimizations,
         projections::{Focus, borrow_generated_id, projections_to_expr},
         signature::{Contract, ProgramSignature, lower_program_sig},
@@ -66,7 +65,6 @@ pub(crate) fn translate_function<'tcx>(
     }
 
     let names = Dependencies::new(ctx, def_id);
-    let namespace_ty = names.namespace_ty();
 
     use DefKind::*;
     let const_name = match ctx.tcx().def_kind(def_id) {
@@ -91,7 +89,7 @@ pub(crate) fn translate_function<'tcx>(
     };
     let (body, sig) = to_why_body(ctx, &names, name, def_id);
 
-    let (mut decls, setters) = names.provide_deps(ctx);
+    let (mut decls, setters) = names.translate_deps(ctx);
     let body = setters.call_setters(body);
     let mut defn = to_why_defn(ctx, def_id, body, sig, const_name);
     // Refresh the name of the function. The previous name is already used for recursive calls,
@@ -104,12 +102,6 @@ pub(crate) fn translate_function<'tcx>(
     let meta = ctx.display_impl_of(def_id);
     let path = ctx.module_path(def_id);
     let name = path.why3_ident();
-
-    if ctx.used_namespaces.get() {
-        let mut new_decls = ctx.generate_namespace_type(namespace_ty);
-        new_decls.extend(std::mem::take(&mut decls));
-        decls = new_decls;
-    }
 
     Some(FileModule { path, modl: Module { name, decls: decls.into(), attrs, meta } })
 }

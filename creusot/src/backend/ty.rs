@@ -230,7 +230,6 @@ pub(crate) fn translate_adtdecl<'tcx>(
     match classify_adt(ctx, names.source_id(), *def, subst) {
         AdtKind::Namespace => {
             // Special treatment for the `Namespace` type: we must generate it after collecting all the possible variants.
-            ctx.used_namespaces.set(true);
             vec![]
         }
         AdtKind::Builtin(tys) => {

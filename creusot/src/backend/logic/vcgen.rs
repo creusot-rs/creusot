@@ -1,6 +1,7 @@
 use crate::{
     backend::{
         Why3Generator,
+        module_context::{Namer, PreMod},
         program::{PtrCastKind, ptr_cast_kind},
         projections::{borrow_generated_id, projections_term},
         signature::lower_contract,
@@ -11,7 +12,7 @@ use crate::{
         ty::{constructor, translate_ty, ty_to_prelude},
     },
     contracts_items::{is_builtin_ascription, is_new_namespace},
-    ctx::{HasTyCtxt, Namer, PreMod},
+    ctx::HasTyCtxt,
     naming::name,
     translation::pearlite::{BinOp, Literal, Pattern, Term, TermKind, UnOp},
     util::erased_identity_for_item,
@@ -161,7 +162,7 @@ impl<'tcx, N: Namer<'tcx>> VCGen<'_, 'tcx, N> {
             TermKind::Call { id, .. } if is_new_namespace(self.ctx.tcx, *id) => {
                 // Calling a function declared by `declare_namespace`: generate an identifier for it.
                 k(Exp::Constructor {
-                    ctor: Name::local(self.ctx.get_namespace_constructor(*id)),
+                    ctor: Name::local(self.names.get_namespace_constructor(*id)),
                     args: Box::new([Exp::int(0)]),
                 })
             }

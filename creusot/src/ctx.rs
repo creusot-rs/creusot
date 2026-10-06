@@ -59,7 +59,7 @@ use std::{
     ops::Deref,
 };
 
-pub(crate) use crate::{backend::clone_map::*, translated_item::*};
+pub(crate) use crate::{backend::module_context::*, translated_item::*};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, TypeVisitable, TypeFoldable)]
 pub struct BodyId {

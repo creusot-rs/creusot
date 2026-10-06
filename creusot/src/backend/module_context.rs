@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    backend::{Why3Generator, clone_map::elaborator::Expander, dependency::Dependency},
+    backend::{Why3Generator, dependency::Dependency, module_context::elaborator::Expander},
     contracts_items::{Intrinsic, get_builtin, is_bitwise},
     ctx::*,
     naming::name,
@@ -29,7 +29,9 @@ use rustc_type_ir::IsRigid;
 use why3::{
     Exp, Ident, Name, QName, Symbol,
     coma::{Defn, Expr, Param, Prototype},
-    declaration::{Attribute, Decl, Goal, Span as WSpan, TyDecl, Use},
+    declaration::{
+        AdtDecl, Attribute, ConstructorDecl, Decl, Goal, Span as WSpan, SumRecord, TyDecl, Use,
+    },
     ty::Type,
 };
 
@@ -59,6 +61,13 @@ pub enum PreMod {
     Any,
 }
 
+/// Implementors of this trait provide a way to give Coma names to Rust objects. They record
+/// each time a type is queried so that we are able to build a set of dependencies at the end of the
+/// translation.
+/// It is implemented by three types:
+///     - ModuleContext do not record any dependency, it simply maintain hash maps of names.
+///     - module_context::dependencies adds nodes in the dependency graph,
+///     - module_context::elaborator::adds nodes in the dependency graph, and edges to the current item
 pub(crate) trait Namer<'tcx> {
     fn item(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
         self.dependency(Dependency::Item(def_id, subst)).name()
@@ -194,6 +203,8 @@ pub(crate) trait Namer<'tcx> {
             .without_search_path()
     }
 
+    fn get_namespace_constructor(&self, namespace_fun: DefId) -> Ident;
+
     // TODO: get rid of this. `erase_and_anonymize_regions` should be the responsibility of the callers.
     // NOTE: should `Namer::ty()` be asserting with `has_erasable_regions` instead?
     fn raw_dependency(&self, dep: Dependency<'tcx>) -> &Kind;
@@ -233,7 +244,116 @@ pub(crate) trait Namer<'tcx> {
     fn bitwise_mode(&self) -> bool;
 }
 
-impl<'a, 'tcx> Namer<'tcx> for CloneNames<'a, 'tcx> {
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum Kind {
+    /// This does not corresponds to a defined symbol
+    Unnamed,
+    /// This symbol is locally defined
+    Named(Ident),
+    /// Used, UsedBuiltin: the symbols in the last argument must be acompanied by a `use` statement in Why3
+    UsedBuiltin(QName),
+}
+
+impl Kind {
+    fn ident(&self) -> Ident {
+        match self {
+            Kind::Unnamed => panic!("Unnamed item"),
+            Kind::Named(nm) => *nm,
+            Kind::UsedBuiltin(_) => {
+                panic!("cannot get ident of used module {self:?}")
+            }
+        }
+    }
+
+    fn name(&self) -> Name {
+        match self {
+            Kind::Unnamed => panic!("Unnamed item"),
+            Kind::Named(nm) => Name::local(*nm),
+            Kind::UsedBuiltin(qname) => Name::Global(qname.clone().without_search_path()),
+        }
+    }
+}
+
+/// The context information used for the generation of one Coma module
+/// It maintain the mappings from Rust objects to Coma names
+pub(crate) struct ModuleContext<'a, 'tcx> {
+    ctx: &'a TranslationCtx<'tcx>,
+    /// The main item being translated.
+    /// We need this to convert `ConstParam` into `DefId` in `tyconst_to_term_final` in `constant.rs`.
+    source_id: DefId,
+    // To normalize during dependency stuff (deprecated)
+    typing_env: TypingEnv<'tcx>,
+    // Internal state, used to determine whether we should emit spans at all
+    span_mode: SpanMode,
+    // Should we use the BW version of the machine integer prelude?
+    bitwise_mode: bool,
+    /// Tracks the name given to each dependency
+    names: OnceMap<Dependency<'tcx>, Box<Kind>>,
+    /// Maps spans to a unique name
+    spans: OnceMap<Span, Box<Ident>>,
+    /// Program functions to call to set the value of constants
+    constant_setters: Setters,
+    /// The set of namespaces that appears in the current function.
+    ///
+    /// It is reset at the start of each function.
+    namespaces: OnceMap<DefId, Box<Ident>>,
+}
+
+impl<'a, 'tcx> ModuleContext<'a, 'tcx> {
+    fn new(ctx: &'a TranslationCtx<'tcx>, source_id: DefId) -> Self {
+        ModuleContext {
+            ctx,
+            source_id,
+            typing_env: ctx.typing_env(source_id),
+            span_mode: ctx.opts.span_mode.clone(),
+            bitwise_mode: is_bitwise(ctx.tcx, source_id),
+            names: Default::default(),
+            spans: Default::default(),
+            constant_setters: Setters::new(),
+            namespaces: Default::default(),
+        }
+    }
+
+    /// Get the declarations for `type namespace = ...`
+    pub(crate) fn namespace_type_decls(&mut self) -> Vec<Decl> {
+        let namespaces_ty = Ty::new_adt(
+            self.tcx(),
+            self.tcx().adt_def(Intrinsic::Namespace.get(self.ctx)),
+            self.tcx().mk_args(&[]),
+        );
+        if self.namespaces.len() == 0 && !self.names.contains_key(&Dependency::Type(namespaces_ty))
+        {
+            return vec![];
+        }
+        let namespace_other_name = Ident::fresh_local("namespace_other");
+        let other_namespaces_type =
+            TyDecl::Opaque { ty_name: namespace_other_name, ty_params: [].into() };
+
+        let namespaces = TyDecl::Adt {
+            tys: [AdtDecl {
+                ty_name: self.ty(namespaces_ty).to_ident(),
+                ty_params: [].into(),
+                sumrecord: SumRecord::Sum(
+                    self.namespaces
+                        .iter_mut()
+                        .map(|(_, n)| ConstructorDecl {
+                            name: **n,
+                            fields: [Type::qconstructor(why3::QName::parse("int"))].into(),
+                        })
+                        .chain(std::iter::once(ConstructorDecl {
+                            name: Ident::fresh_local("Other"),
+                            fields: [Type::TConstructor(Name::local(namespace_other_name))].into(),
+                        }))
+                        .collect(),
+                ),
+            }]
+            .into(),
+        };
+        vec![Decl::TyDecl(other_namespaces_type.clone()), Decl::TyDecl(namespaces.clone())]
+    }
+}
+
+impl<'a, 'tcx> Namer<'tcx> for ModuleContext<'a, 'tcx> {
     fn raw_dependency(&self, key: Dependency<'tcx>) -> &Kind {
         self.names.insert(key, |_| {
             if let Some((did, _)) = key.did()
@@ -279,47 +399,25 @@ impl<'a, 'tcx> Namer<'tcx> for CloneNames<'a, 'tcx> {
     fn bitwise_mode(&self) -> bool {
         self.bitwise_mode
     }
-}
 
-impl<'a, 'tcx> CloneNames<'a, 'tcx> {
-    fn bitwise_mode(&self) -> bool {
-        self.bitwise_mode
+    /// Get the name of the namespace.
+    ///
+    /// This also:
+    /// - Caches the generated name for future uses
+    /// - Allow all the names defined in the current function to be later retrieved, in
+    ///   order to generate the namespace type.
+    fn get_namespace_constructor(&self, namespace_fun: DefId) -> Ident {
+        *self.namespaces.insert(namespace_fun, |_| {
+            let name = self.ctx.item_name(namespace_fun);
+            Box::new(Ident::fresh_local(format!("Namespace_{name}")))
+        })
     }
 }
 
-impl<'a, 'tcx> Namer<'tcx> for Dependencies<'a, 'tcx> {
-    fn tcx(&self) -> TyCtxt<'tcx> {
-        self.names.tcx()
-    }
-
-    fn source_id(&self) -> DefId {
-        self.names.source_id()
-    }
-
-    fn typing_env(&self) -> TypingEnv<'tcx> {
-        self.names.typing_env()
-    }
-
-    fn raw_dependency(&self, key: Dependency<'tcx>) -> &Kind {
-        self.dep_graph.borrow_mut().add_node(key);
-        self.names.raw_dependency(key)
-    }
-
-    fn register_constant_setter(&mut self, setter: Ident) {
-        self.names.register_constant_setter(setter);
-    }
-
-    fn span(&self, span: Span) -> Option<Ident> {
-        self.names.span(span)
-    }
-
-    fn bitwise_mode(&self) -> bool {
-        self.names.bitwise_mode()
-    }
-}
-
+/// A wrapper of `ModuleContext`, that additionally creates dependency nodes each time a name is
+/// queried.
 pub(crate) struct Dependencies<'a, 'tcx> {
-    names: CloneNames<'a, 'tcx>,
+    names: ModuleContext<'a, 'tcx>,
     dep_graph: RefCell<DepGraphBuilder<'tcx>>,
 }
 
@@ -356,74 +454,45 @@ impl<'tcx> DepGraphBuilder<'tcx> {
     }
 }
 
-pub(crate) struct CloneNames<'a, 'tcx> {
-    ctx: &'a TranslationCtx<'tcx>,
-    /// The main item being translated.
-    /// We need this to convert `ConstParam` into `DefId` in `tyconst_to_term_final` in `constant.rs`.
-    source_id: DefId,
-    // To normalize during dependency stuff (deprecated)
-    typing_env: TypingEnv<'tcx>,
-    // Internal state, used to determine whether we should emit spans at all
-    span_mode: SpanMode,
-    // Should we use the BW version of the machine integer prelude?
-    bitwise_mode: bool,
-    /// Tracks the name given to each dependency
-    names: OnceMap<Dependency<'tcx>, Box<Kind>>,
-    /// Maps spans to a unique name
-    spans: OnceMap<Span, Box<Ident>>,
-    /// Program functions to call to set the value of constants
-    constant_setters: Setters,
-}
-
-impl<'a, 'tcx> CloneNames<'a, 'tcx> {
-    fn new(ctx: &'a TranslationCtx<'tcx>, source_id: DefId) -> Self {
-        CloneNames {
-            ctx,
-            source_id,
-            typing_env: ctx.typing_env(source_id),
-            span_mode: ctx.opts.span_mode.clone(),
-            bitwise_mode: is_bitwise(ctx.tcx, source_id),
-            names: Default::default(),
-            spans: Default::default(),
-            constant_setters: Setters::new(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Kind {
-    /// This does not corresponds to a defined symbol
-    Unnamed,
-    /// This symbol is locally defined
-    Named(Ident),
-    /// Used, UsedBuiltin: the symbols in the last argument must be acompanied by a `use` statement in Why3
-    UsedBuiltin(QName),
-}
-
-impl Kind {
-    fn ident(&self) -> Ident {
-        match self {
-            Kind::Unnamed => panic!("Unnamed item"),
-            Kind::Named(nm) => *nm,
-            Kind::UsedBuiltin(_) => {
-                panic!("cannot get ident of used module {self:?}")
-            }
-        }
+impl<'a, 'tcx> Namer<'tcx> for Dependencies<'a, 'tcx> {
+    fn tcx(&self) -> TyCtxt<'tcx> {
+        self.names.tcx()
     }
 
-    fn name(&self) -> Name {
-        match self {
-            Kind::Unnamed => panic!("Unnamed item"),
-            Kind::Named(nm) => Name::local(*nm),
-            Kind::UsedBuiltin(qname) => Name::Global(qname.clone().without_search_path()),
-        }
+    fn source_id(&self) -> DefId {
+        self.names.source_id()
+    }
+
+    fn typing_env(&self) -> TypingEnv<'tcx> {
+        self.names.typing_env()
+    }
+
+    fn raw_dependency(&self, key: Dependency<'tcx>) -> &Kind {
+        self.dep_graph.borrow_mut().add_node(key);
+        self.names.raw_dependency(key)
+    }
+
+    fn register_constant_setter(&mut self, setter: Ident) {
+        self.names.register_constant_setter(setter);
+    }
+
+    fn span(&self, span: Span) -> Option<Ident> {
+        self.names.span(span)
+    }
+
+    fn bitwise_mode(&self) -> bool {
+        self.names.bitwise_mode()
+    }
+
+    fn get_namespace_constructor(&self, namespace_fun: DefId) -> Ident {
+        self.names.get_namespace_constructor(namespace_fun)
     }
 }
 
 impl<'a, 'tcx> Dependencies<'a, 'tcx> {
     pub(crate) fn new(ctx: &'a TranslationCtx<'tcx>, self_id: DefId) -> Self {
         debug!("cloning self: {:?}", self_id);
-        let names = CloneNames::new(ctx, self_id);
+        let names = ModuleContext::new(ctx, self_id);
         let dep_graph = RefCell::new(DepGraphBuilder::default());
         Dependencies { names, dep_graph }
     }
@@ -435,22 +504,18 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
         self.dep_graph.borrow_mut().visited.insert(source);
     }
 
-    /// Get a name for the `Namespace` type, _without_ adding it to the list of dependencies.
-    pub(crate) fn namespace_ty(&self) -> Name {
-        self.names.ty_adt(Intrinsic::Namespace.get(self.names.ctx), GenericArgsRef::default())
-    }
-
-    pub(crate) fn provide_deps(mut self, ctx: &Why3Generator<'tcx>) -> (Vec<Decl>, Setters) {
+    pub(crate) fn translate_deps(mut self, ctx: &Why3Generator<'tcx>) -> (Vec<Decl>, Setters) {
         trace!("emitting dependencies for {:?}", self.source_id());
         let tcx = self.tcx();
-        let mut decls = Vec::new();
         let typing_env = self.typing_env();
         let source_id = self.source_id();
         let span = tcx.def_span(source_id);
 
         let graph =
             Expander::new(ctx, &mut self.names, self.dep_graph.into_inner(), typing_env, span);
-        let (graph, mut bodies) = graph.update_graph();
+        let (graph, mut bodies) = graph.build_graph();
+
+        let mut decls = self.names.namespace_type_decls();
 
         for scc in petgraph::algo::tarjan_scc(&graph).into_iter() {
             // Then we construct a sub-graph ignoring weak edges.

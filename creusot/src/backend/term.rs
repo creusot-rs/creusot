@@ -247,7 +247,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Call { id, .. } if is_new_namespace(self.ctx.tcx, *id) => {
                 // Calling a function declared by `declare_namespace`: generate an identifier for it.
                 Exp::Constructor {
-                    ctor: Name::local(self.ctx.get_namespace_constructor(*id)),
+                    ctor: Name::local(self.names.get_namespace_constructor(*id)),
                     args: Box::new([Exp::int(0)]),
                 }
             }
