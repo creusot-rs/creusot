@@ -281,14 +281,13 @@ impl<'tcx, N: Namer<'tcx>> VCGen<'_, 'tcx, N> {
             }
             // VC(|x| A(x), Q) = (forall<x>, VC(A(x), true)) /\ Q(|x| A(x))
             &TermKind::Closure { arg, arg_ty, ref body } => {
-                let safe =
-                    if self.safety {
-                        let body = self.build_wp(body, &|_| Exp::mk_true());
-                        Exp::forall([(arg.0, self.ty(arg_ty, t.span))], body)
-                    } else {
-                        Exp::mk_true()
-                    };
-                safe.lazy_and(k(self.lower_pure(t)))
+                let body = self.build_wp(body, &|_| Exp::mk_true());
+                let safe = Exp::forall([(arg.0, self.ty(arg_ty, t.span))], body);
+                if self.safety {
+                    safe.lazy_and(k(self.lower_pure(t)))
+                } else {
+                    safe.implies(k(self.lower_pure(t)))
+                }
             }
             // VC((T...), Q) = VC(T[0], |t0| ... VC(T[N], |tn| Q(t0..tn))))
             TermKind::Tuple { fields } => {
@@ -355,12 +354,8 @@ impl<'tcx, N: Namer<'tcx>> VCGen<'_, 'tcx, N> {
             // VC(let P = A in B, Q) = VC(A, |a| let P = a in VC(B, Q))
             TermKind::Let { pattern, arg, body } => self.build_wp(arg, &|arg| {
                 let pattern = self.lower_pat(pattern);
-                if pattern.is_wildcard() && arg.is_unit() {
-                    self.build_wp(body, k)
-                } else {
-                    let body = self.build_wp(body, k).boxed();
-                    Exp::Let { pattern, arg: arg.clone().boxed(), body }
-                }
+                let body = self.build_wp(body, k);
+                Exp::let_pat(pattern, arg, body)
             }),
             // VC(A.f, Q) = VC(A, |a| Q(a.f))
             TermKind::Projection { lhs, idx } => {

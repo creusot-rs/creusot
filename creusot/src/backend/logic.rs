@@ -95,7 +95,7 @@ pub(crate) fn translate_logic(ctx: &Why3Generator, def_id: DefId) -> Option<File
     let postcondition = sig.contract.ensures_conj(&name.name().to_string());
 
     let term = ctx.ctx.logic_term(def_id).unwrap();
-    let k = |exp| Exp::let_(name::result(), exp, postcondition.clone());
+    let k = |exp| Exp::let_id(name::result(), exp, postcondition.clone());
     let wp = if let Some(wp) = wp(
         ctx,
         &names,

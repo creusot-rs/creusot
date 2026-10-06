@@ -237,8 +237,8 @@ module M_impl_Bdd__size (* Bdd<'arena> *)
       | {f0 = True'; f1 = _} -> [@stop_split] [@expl:size ensures] ge_log_Int 0 0
       | {f0 = False'; f1 = _} -> [@stop_split] [@expl:size ensures] ge_log_Int 0 0
       | {f0 = If _ childt childf; f1 = _} -> ([@stop_split] [@expl:size ensures] ge_log_Int (size childt) 0)
-      -> (let ht = size childt in ([@stop_split] [@expl:size ensures] ge_log_Int (size childf) 0)
-      -> (let hf = size childf in [@stop_split] [@expl:size ensures] ge_log_Int (1 + ht + hf) 0))
+      -> ([@stop_split] [@expl:size ensures] ge_log_Int (size childf) 0)
+      -> ([@stop_split] [@expl:size ensures] ge_log_Int (1 + size childt + size childf) 0)
       end
 end
 module M_impl_Clone_for_Bdd__clone (* <Bdd<'arena> as std::clone::Clone> *)
@@ -524,8 +524,7 @@ module M_impl_Context__bdd_canonical (* Context<'arena> *)
         /\ ([@stop_split] [@expl:discr_valuation requires #2] is_valid_bdd self b)
         /\ ([@stop_split] [@expl:discr_valuation requires #3] a <> b))
       /\ (([@stop_split] [@expl:discr_valuation ensures] interp a (discr_valuation self a b)
-        <> interp b (discr_valuation self a b))
-      -> (let _ = discr_valuation self a b in [@stop_split] [@expl:bdd_canonical ensures] a = b))
+        <> interp b (discr_valuation self a b)) -> ([@stop_split] [@expl:bdd_canonical ensures] a = b))
     else
       [@stop_split] [@expl:bdd_canonical ensures] a = b
     )
@@ -1037,12 +1036,11 @@ module M_impl_Context__set_irrelevent_var (* Context<'arena> *)
         /\ ([@stop_split] [@expl:set_irrelevent_var requires #1] is_valid_bdd self childt)
         /\ ([@stop_split] [@expl:set_irrelevent_var requires #2] UInt64.t'int x < leastvar childt))
       /\ (([@stop_split] [@expl:set_irrelevent_var ensures] interp childt v = interp childt (Map.set v x b))
-      -> (let _ = set_irrelevent_var self childt x v b in ([@stop_split] [@expl:set_irrelevent_var requires] ([@stop_split] [@expl:set_irrelevent_var requires #0] inv_Context self)
+      -> ([@stop_split] [@expl:set_irrelevent_var requires] ([@stop_split] [@expl:set_irrelevent_var requires #0] inv_Context self)
         /\ ([@stop_split] [@expl:set_irrelevent_var requires #1] is_valid_bdd self childf)
         /\ ([@stop_split] [@expl:set_irrelevent_var requires #2] UInt64.t'int x < leastvar childf))
       /\ (([@stop_split] [@expl:set_irrelevent_var ensures] interp childf v = interp childf (Map.set v x b))
-      -> (let _ = set_irrelevent_var self childf x v b in [@stop_split] [@expl:set_irrelevent_var ensures] interp a v
-      = interp a (Map.set v x b)))))
+      -> ([@stop_split] [@expl:set_irrelevent_var ensures] interp a v = interp a (Map.set v x b))))
       | _ -> [@stop_split] [@expl:set_irrelevent_var ensures] interp a v = interp a (Map.set v x b)
       end
 end

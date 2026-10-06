@@ -576,19 +576,24 @@ impl Exp {
         Exp::Const(Constant::Int(i, None))
     }
 
-    pub fn let_(id: impl Into<Ident>, arg: Exp, mut body: Exp) -> Exp {
-        let ident = id.into();
+    pub fn let_pat(pattern: Pattern, arg: Exp, mut body: Exp) -> Exp {
         let occurences = body.occurences();
-
-        if !occurences.contains_key(&ident) {
+        let binders = pattern.binders();
+        if binders.iter().all(|b| !occurences.contains_key(b)) {
             body
         // Remove this if performance is a concern
-        } else if occurences[&ident] == 1 {
-            body.subst(&mut [(ident, arg)].into_iter().collect());
+        } else if let Pattern::VarP(id) = &pattern
+            && occurences[id] == 1
+        {
+            body.subst(&mut [(*id, arg)].into_iter().collect());
             body
         } else {
-            Exp::Let { pattern: Pattern::VarP(ident), arg: Box::new(arg), body: Box::new(body) }
+            Exp::Let { pattern, arg: Box::new(arg), body: Box::new(body) }
         }
+    }
+
+    pub fn let_id(id: impl Into<Ident>, arg: Exp, body: Exp) -> Exp {
+        Self::let_pat(Pattern::VarP(id.into()), arg, body)
     }
 
     /// Returns a type abscribtion expression (e.g. `(1: int)`), of the form `(self: ty)`.
