@@ -126,7 +126,7 @@ extern_spec! {
         }
 
         #[check(ghost)]
-        #[requires(self != None)]
+        #[requires(mode!().nopanic() ==> self != None)]
         #[ensures(Some(result) == self)]
         fn expect(self, msg: &str) -> T {
             match self {
@@ -136,7 +136,7 @@ extern_spec! {
         }
 
         #[check(ghost)]
-        #[requires(self != None)]
+        #[requires(mode!().nopanic() ==> self != None)]
         #[ensures(Some(result) == self)]
         fn unwrap(self) -> T {
             match self {
