@@ -135,11 +135,11 @@ module M_message_passing
   
   function ward_PCell_i32 (self: t_Perm_PCell_i32) : t_PCell_i32
   
-  function val_unsized_PermCell_i32 (self: t_Perm_PermCell_i32) : Int32.t
+  function val_unsized_PCell_i32 (self: t_Perm_PCell_i32) : Int32.t
   
-  function val_PermCell_i32 [@inline:trivial] (self: t_Perm_PermCell_i32) : Int32.t = val_unsized_PermCell_i32 self
+  function val_PCell_i32 [@inline:trivial] (self: t_Perm_PCell_i32) : Int32.t = val_unsized_PCell_i32 self
   
-  meta "rewrite_def" function val_PermCell_i32
+  meta "rewrite_def" function val_PCell_i32
   
   let new_i32 (value: Int32.t) (return (x: tup2_PCell_i32_Ghost_Perm_PCell_i32)) = any
     [ return (result: tup2_PCell_i32_Ghost_Perm_PCell_i32) ->
@@ -322,10 +322,10 @@ module M_message_passing
     any
     [ return (result: MutBorrow.t Int32.t) ->
     {[@stop_split] [@expl:borrow_mut_i32 ensures] ([@stop_split] [@expl:borrow_mut ensures #0] self
-        = ward_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm))
-      /\ ([@stop_split] [@expl:borrow_mut ensures #1] result.current = val_unsized_PermCell_i32 perm.current)
+        = ward_PCell_i32 (fin_Ghost_refmut_Perm_PCell_i32 perm))
+      /\ ([@stop_split] [@expl:borrow_mut ensures #1] result.current = val_unsized_PCell_i32 perm.current)
       /\ ([@stop_split] [@expl:borrow_mut ensures #2] result.final
-      = val_unsized_PermCell_i32 (fin_Ghost_refmut_Perm_PermCell_i32 perm))}
+      = val_unsized_PCell_i32 (fin_Ghost_refmut_Perm_PCell_i32 perm))}
       (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
@@ -1004,7 +1004,7 @@ module M_message_passing
   predicate inv_Option_AtView_Perm_PCell_i32 (_1: t_Option_AtView_Perm_PCell_i32)
   
   axiom inv_axiom'3 [@rewrite]:
-    forall _1: t_Option_AtView_Perm_PermCell_i32 [inv_Option_AtView_Perm_PermCell_i32 _1]. inv_Option_AtView_Perm_PermCell_i32 _1
+    forall _1: t_Option_AtView_Perm_PCell_i32 [inv_Option_AtView_Perm_PCell_i32 _1]. inv_Option_AtView_Perm_PCell_i32 _1
       = match _1 with
         | None'3 -> true
         | Some'3 f0'9 -> inv_AtView_Perm_PCell_i32 f0'9
@@ -1192,7 +1192,7 @@ module M_message_passing
   predicate resolve_Option_AtView_Perm_PCell_i32 (_1: t_Option_AtView_Perm_PCell_i32)
   
   axiom resolve_axiom'0 [@rewrite]:
-    forall _1: t_Option_AtView_Perm_PermCell_i32 [resolve_Option_AtView_Perm_PermCell_i32 _1]. resolve_Option_AtView_Perm_PermCell_i32 _1
+    forall _1: t_Option_AtView_Perm_PCell_i32 [resolve_Option_AtView_Perm_PCell_i32 _1]. resolve_Option_AtView_Perm_PCell_i32 _1
       = match _1 with
         | None'3 -> true
         | Some'3 x0 -> resolve_AtView_Perm_PCell_i32 x0
@@ -1670,13 +1670,12 @@ module M_message_passing
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
-  let unwrap_AtView_Perm_PermCell_i32 (self: t_Option_AtView_Perm_PermCell_i32)
-    (return (x: t_AtView_Perm_PermCell_i32)) =
-  {[@stop_split] [@expl:unwrap_AtView_Perm_PermCell_i32 requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_Option_AtView_Perm_PermCell_i32 self)
+  let unwrap_AtView_Perm_PCell_i32 (self: t_Option_AtView_Perm_PCell_i32) (return (x: t_AtView_Perm_PCell_i32)) =
+  {[@stop_split] [@expl:unwrap_AtView_Perm_PCell_i32 requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_Option_AtView_Perm_PCell_i32 self)
     /\ ([@stop_split] [@expl:unwrap requires] self <> None'3)}
     any
-    [ return (result: t_AtView_Perm_PermCell_i32) ->
-    {[@stop_split] [@expl:unwrap_AtView_Perm_PermCell_i32 ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_AtView_Perm_PermCell_i32 result)
+    [ return (result: t_AtView_Perm_PCell_i32) ->
+    {[@stop_split] [@expl:unwrap_AtView_Perm_PCell_i32 ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_AtView_Perm_PCell_i32 result)
       /\ ([@stop_split] [@expl:unwrap ensures] Some'3 result = self)}
       (! return {result}) ]
   
@@ -1907,26 +1906,26 @@ module M_message_passing
       | s3 = new'0 {false} {_4} (fun (_x: tup2_AtomicBool_Ghost_Perm_AtomicBool) -> [ &_3 <- _x ] s4)
       | s4 = [ &atomic <- _3.f0 ] s5
       | s5 = [ &atomic_own'0 <- _3.f1 ] s6
-      | s6 = new_i32 {(0: Int32.t)} (fun (_x: tup2_PermCell_i32_Ghost_Perm_PermCell_i32) -> [ &_9 <- _x ] s7)
+      | s6 = new_i32 {(0: Int32.t)} (fun (_x: tup2_PCell_i32_Ghost_Perm_PCell_i32) -> [ &_9 <- _x ] s7)
       | s7 = [ &data <- _9.f0'1 ] s8
       | s8 = [ &data_own <- _9.f1'1 ] s9
-      | s9 = alloc_Excl_unit {{ f0'2 = () }} (fun (_x: t_Resource_Excl_unit) -> [ &excl_write <- _x ] s10)
-      | s10 = alloc_Excl_unit {{ f0'2 = () }} (fun (_x: t_Resource_Excl_unit) -> [ &excl_read <- _x ] s11)
-      | s11 = into_inner_Perm_AtomicBool {atomic_own'0} (fun (_x: t_Perm_AtomicBool) -> [ &_19 <- _x ] s12)
-      | s12 = [ &_21 <- NotWrittenYet ] s13
-      | s13 = [ &_18 <- { atomic_own = _19;
-                          state = _21;
-                          public_data = { f0'3 = data;
-                                          f1'3 = id_Excl_unit excl_write;
-                                          f2'3 = id_Excl_unit excl_read } } ] s14
-      | s14 = new_MessagePassingAtomicInv {_18} (fun (_x: t_MessagePassingAtomicInv) -> [ &_17 <- _x ] s15)
-      | s15 = new_MessagePassingAtomicInv'0 {_17} {Namespace_MESSAGE_PASSING 0}
-          (fun (_x: t_AtomicInvariant_MessagePassingAtomicInv) -> [ &inv <- _x ] s16)
-      | s16 = s17 [ _ck -> (! {[@expl:type invariant] inv_AtomicBool atomic} any) ]
-      | s17 = -{resolve_AtomicBool atomic}- s18
-      | s18 = [ &_30 <- { c0 = inv; c1 = data; c2 = atomic; c3 = excl_write; c4 = data_own; c5 = excl_read } ] s19
-      | s19 = scope_closure0 {_30} (fun (_x: ()) -> [ &_29 <- _x ] s20)
-      | s20 = return {_ret} ] ]
+      | s9 = [ &_11 <- { f0'2 = () } ] s10
+      | s10 = alloc_Excl_unit {_11} (fun (_x: t_Resource_Excl_unit) -> [ &excl_write <- _x ] s11)
+      | s11 = [ &_14 <- { f0'2 = () } ] s12
+      | s12 = alloc_Excl_unit {_14} (fun (_x: t_Resource_Excl_unit) -> [ &excl_read <- _x ] s13)
+      | s13 = into_inner_Perm_AtomicBool {atomic_own'0} (fun (_x: t_Perm_AtomicBool) -> [ &_19 <- _x ] s14)
+      | s14 = [ &_21 <- NotWrittenYet ] s15
+      | s15 = [ &_22 <- { f0'3 = data; f1'3 = id_Excl_unit excl_write; f2'3 = id_Excl_unit excl_read } ] s16
+      | s16 = [ &_18 <- { atomic_own = _19; state = _21; public_data = _22 } ] s17
+      | s17 = new_MessagePassingAtomicInv {_18} (fun (_x: t_MessagePassingAtomicInv) -> [ &_17 <- _x ] s18)
+      | s18 = [ &_27 <- Namespace_MESSAGE_PASSING 0 ] s19
+      | s19 = new_MessagePassingAtomicInv'0 {_17} {_27}
+          (fun (_x: t_AtomicInvariant_MessagePassingAtomicInv) -> [ &inv <- _x ] s20)
+      | s20 = s21 [ _ck -> (! {[@expl:type invariant] inv_AtomicBool atomic} any) ]
+      | s21 = -{resolve_AtomicBool atomic}- s22
+      | s22 = [ &_30 <- { c0 = inv; c1 = data; c2 = atomic; c3 = excl_write; c4 = data_own; c5 = excl_read } ] s23
+      | s23 = scope_closure0 {_30} (fun (_x: ()) -> [ &_29 <- _x ] s24)
+      | s24 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & atomic: t_AtomicBool = Any.any_l ()
     | & atomic_own'0: t_Perm_AtomicBool = Any.any_l ()
@@ -1934,16 +1933,20 @@ module M_message_passing
     | & _4: MutBorrow.t t_SyncView = Any.any_l ()
     | & _5: MutBorrow.t t_SyncView = Any.any_l ()
     | & _6: t_SyncView = Any.any_l ()
-    | & data: t_PermCell_i32 = Any.any_l ()
-    | & data_own: t_Perm_PermCell_i32 = Any.any_l ()
-    | & _9: tup2_PermCell_i32_Ghost_Perm_PermCell_i32 = Any.any_l ()
+    | & data: t_PCell_i32 = Any.any_l ()
+    | & data_own: t_Perm_PCell_i32 = Any.any_l ()
+    | & _9: tup2_PCell_i32_Ghost_Perm_PCell_i32 = Any.any_l ()
     | & excl_write: t_Resource_Excl_unit = Any.any_l ()
+    | & _11: t_Excl_unit = Any.any_l ()
     | & excl_read: t_Resource_Excl_unit = Any.any_l ()
+    | & _14: t_Excl_unit = Any.any_l ()
     | & inv: t_AtomicInvariant_MessagePassingAtomicInv = Any.any_l ()
     | & _17: t_MessagePassingAtomicInv = Any.any_l ()
     | & _18: t_MessagePassingAtomicInv = Any.any_l ()
     | & _19: t_Perm_AtomicBool = Any.any_l ()
     | & _21: t_State = Any.any_l ()
+    | & _22: tup3_PCell_i32_Id_Id = Any.any_l ()
+    | & _27: t_Namespace = Any.any_l ()
     | & _29: () = Any.any_l ()
     | & _30: closure0 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
