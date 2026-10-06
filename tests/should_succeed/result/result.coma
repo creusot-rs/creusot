@@ -23,8 +23,8 @@ module M_test_result
       /\ ([@stop_split] [@expl:ok ensures #1] (exists e: Int32.t. self = Err e) -> result = None)}
       (! return {result}) ]
   
-  let unwrap_i32 (self: t_Option_i32) (mode: Mode.t) (return (x: Int32.t)) = {[@stop_split] [@expl:unwrap requires] self
-    <> None}
+  let unwrap_i32 (self: t_Option_i32) (mode: Mode.t) (return (x: Int32.t)) =
+  {[@stop_split] [@expl:unwrap requires] Mode.nopanic mode -> self <> None}
     any [ return (result: Int32.t) -> {[@stop_split] [@expl:unwrap ensures] Some result = self} (! return {result}) ]
   
   let is_none_i32 (self: t_Option_i32) (mode: Mode.t) (return (x: bool)) = any
@@ -193,7 +193,7 @@ module M_test_result
     [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self = None'0)} (! return {result}) ]
   
   let unwrap_Result_i32_i32 (self: t_Option_Result_i32_i32) (mode: Mode.t) (return (x: t_Result_i32_i32)) =
-  {[@stop_split] [@expl:unwrap requires] self <> None'0}
+  {[@stop_split] [@expl:unwrap requires] Mode.nopanic mode -> self <> None'0}
     any
     [ return (result: t_Result_i32_i32) -> {[@stop_split] [@expl:unwrap ensures] Some'0 result = self}
       (! return {result}) ]
