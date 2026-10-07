@@ -850,9 +850,8 @@ pub trait OptionExt<T> {
 
     /// Same as [`Option::as_ref`], but in logic.
     #[logic(opaque)]
-    #[builtin("identity")]
     fn as_ref_logic(&self) -> Option<&T> {
-        dead
+        self.map_logic(|v| &v)
     }
 }
 
