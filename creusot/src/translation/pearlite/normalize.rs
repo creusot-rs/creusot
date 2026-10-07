@@ -48,12 +48,12 @@ impl<'a, 'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'a, 'tcx> {
                 )
             };
 
-            (*id, *subst) = resolved; 
+            (*id, *subst) = resolved;
 
             if let Some(mut new_term) =
                 subst_alias(self.ctx, self.typing_env, *id, subst, args.clone())
             {
-                self.visit_mut_term(&mut new_term); 
+                self.visit_mut_term(&mut new_term);
                 *term = new_term;
             } else {
                 term.kind =
