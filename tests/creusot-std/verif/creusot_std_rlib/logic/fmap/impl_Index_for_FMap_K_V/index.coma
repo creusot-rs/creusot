@@ -92,13 +92,15 @@ axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_ref_V [inv_Option_ref_V _1]. i
       | Some f0 -> inv_ref_V f0
       end
 
+function as_ref_Option_V (self: t_Option_V) : t_Option_ref_V
+
 let get_K (self: t_FMap_K_V) (key: t_K) (return (x: t_Option_ref_V)) =
 {[@stop_split] [@expl:get_K requires] ([@stop_split] [@expl:get 'self' type invariant] inv_ref_FMap_K_V self)
   /\ ([@stop_split] [@expl:get 'key' type invariant] inv_ref_K key)}
   any
   [ return (result: t_Option_ref_V) ->
   {[@stop_split] [@expl:get_K ensures] ([@stop_split] [@expl:get result type invariant] inv_Option_ref_V result)
-    /\ ([@stop_split] [@expl:get ensures] result = lookup_K self key)}
+    /\ ([@stop_split] [@expl:get ensures] result = as_ref_Option_V (lookup_K self key))}
     (! return {result}) ]
 
 let unwrap_ref_V (self: t_Option_ref_V) (return (x: t_V)) =
