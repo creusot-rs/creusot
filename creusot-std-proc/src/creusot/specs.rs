@@ -179,6 +179,19 @@ fn ensures_inner(attr: TS1, tokens: TS1, has_logic_alias: Option<bool>) -> TS1 {
         Const(mut item) => {
             let ensures_tokens =
                 fn_spec_item(ens_name.clone(), FnSpecResultKind::NoResult, ens_body);
+
+            let logic_alias = match has_logic_alias {
+                Some(true) => {
+                    quote_spanned! { ensures_tokens.span() => #[creusot::decl::prophetic_alias = #name_tag] }
+                }
+                Some(false) => {
+                    quote_spanned! { ensures_tokens.span() => #[creusot::decl::logic_alias = #name_tag] }
+                }
+                None => {
+                    quote!()
+                }
+            };
+
             let attrs = std::mem::take(&mut item.attrs);
             let dummy = Expr::Tuple(syn::ExprTuple {
                 attrs: vec![],
@@ -196,6 +209,7 @@ fn ensures_inner(attr: TS1, tokens: TS1, has_logic_alias: Option<bool>) -> TS1 {
                 #[creusot::clause::ensures=#name_tag]
                 #(#attrs)*
                 #documentation
+                #logic_alias
                 #item
             })
         }
