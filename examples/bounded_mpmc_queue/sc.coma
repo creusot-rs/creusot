@@ -2581,8 +2581,6 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   function tail_T'0 (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
   
-  function pop_first_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T'0 self
-  
   predicate precondition_F (self: t_F) (args: MutBorrow.t t_QueueCommitter_T)
   
   predicate postcondition_once_F (self: t_F) (args: MutBorrow.t t_QueueCommitter_T) (result: ())
@@ -2643,7 +2641,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       <= val''0 witness)
     /\ ([@stop_split] [@expl:try_dequeue_cas_inv requires #7] forall c'0: MutBorrow.t t_QueueCommitter_T. not c'0.current.shot
       -> c'0.current.ward = self
-      -> gt_log_Int (Seq.length c'0.current.old_seq) 0 /\ c'0.current.new_seq = pop_first_T c'0.current.old_seq
+      -> gt_log_Int (Seq.length c'0.current.old_seq) 0 /\ c'0.current.new_seq = tail_T'0 c'0.current.old_seq
       -> precondition_F f c'0 /\ (postcondition_once_F f c'0 () -> c'0.final.shot /\ hist_inv_T c'0.current c'0.final))}
     any
     [ return (result: tup2_TokenR_T_Perm_PermCell_MaybeUninit_T) ->
@@ -2662,7 +2660,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       /\ ([@stop_split] [@expl:try_dequeue_cas_inv ensures #7] exists c'0: MutBorrow.t t_QueueCommitter_T. not c'0.current.shot
           /\ c'0.current.ward = self
           /\ gt_log_Int (Seq.length c'0.current.old_seq) 0
-          /\ c'0.current.new_seq = pop_first_T c'0.current.old_seq
+          /\ c'0.current.new_seq = tail_T'0 c'0.current.old_seq
           /\ postcondition_once_F f c'0 ()
           /\ view_MaybeUninit_T (val_PermCell_MaybeUninit_T result.f1'4) = Some'2 (Seq.get c'0.current.old_seq 0))
       /\ ([@stop_split] [@expl:try_dequeue_cas_inv ensures #8] 2
@@ -3623,7 +3621,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     /\ ([@stop_split] [@expl:try_dequeue requires #0] contains tokens (Namespace_BOUNDED_MPMC_QUEUE 0))
     /\ ([@stop_split] [@expl:try_dequeue requires #1] forall c: MutBorrow.t t_QueueCommitter_T. not c.current.shot
       -> c.current.ward = self
-      -> gt_log_Int (Seq.length c.current.old_seq) 0 /\ c.current.new_seq = pop_first_T c.current.old_seq
+      -> gt_log_Int (Seq.length c.current.old_seq) 0 /\ c.current.new_seq = tail_T'0 c.current.old_seq
       -> precondition_F f c /\ (postcondition_once_F f c () -> c.final.shot /\ hist_inv_T c.current c.final))}
     (! bb0
     [ bb0 = s0
@@ -3818,7 +3816,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
         | Some'2 result'0 -> exists c: MutBorrow.t t_QueueCommitter_T. not c.current.shot
           /\ c.current.ward = self
           /\ gt_log_Int (Seq.length c.current.old_seq) 0
-          /\ c.current.new_seq = pop_first_T c.current.old_seq
+          /\ c.current.new_seq = tail_T'0 c.current.old_seq
           /\ postcondition_once_F f c () /\ result'0 = Seq.get c.current.old_seq 0
         | None'2 -> resolve_Ghost_F'0 f
         end)}
@@ -4121,8 +4119,6 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   function seq_T'0 (self: t_QueueInv_T) : Seq.seq t_T = seq_T self.values_auth
   
   function tail_T'0 (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
-  
-  function pop_first_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T'0 self
   
   function budget_T (self: t_Authority_T) : int
   
@@ -4581,7 +4577,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
       <= val' witness)
     /\ ([@stop_split] [@expl:try_dequeue_cas_inv requires #7] forall c'0: MutBorrow.t t_QueueCommitter_T. not c'0.current.shot
       -> c'0.current.ward = self
-      -> gt_log_Int (Seq.length c'0.current.old_seq) 0 /\ c'0.current.new_seq = pop_first_T c'0.current.old_seq
+      -> gt_log_Int (Seq.length c'0.current.old_seq) 0 /\ c'0.current.new_seq = tail_T'0 c'0.current.old_seq
       -> precondition_F f c'0 /\ (postcondition_once_F f c'0 () -> c'0.final.shot /\ hist_inv_T c'0.current c'0.final))}
     (! bb0
     [ bb0 = s0
@@ -4636,7 +4632,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
       | s28 = {[@expl:assertion] val_T inv'1.current.tokens_auth tail = None'0} s29
       | s29 = {[@expl:assertion] tail < head_T inv'1.current} s30
       | s30 = [ &old_seq'0 <- seq_T'0 inv'1.current ] s31
-      | s31 = [ &new_seq'0 <- pop_first_T old_seq'0 ] s32
+      | s31 = [ &new_seq'0 <- tail_T'0 old_seq'0 ] s32
       | s32 = into_ghost_Int {budget_T inv'1.current.values_auth} (fun (_x: int) -> [ &_117 <- _x ] s33)
       | s33 = deref_Ghost_Int {_117} (fun (_x: int) -> [ &_115 <- _x ] s34)
       | s34 = [ &budget'0 <- _115 ] s35
@@ -4786,7 +4782,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
       /\ ([@stop_split] [@expl:try_dequeue_cas_inv ensures #7] exists c'0: MutBorrow.t t_QueueCommitter_T. not c'0.current.shot
           /\ c'0.current.ward = self
           /\ gt_log_Int (Seq.length c'0.current.old_seq) 0
-          /\ c'0.current.new_seq = pop_first_T c'0.current.old_seq
+          /\ c'0.current.new_seq = tail_T'0 c'0.current.old_seq
           /\ postcondition_once_F f c'0 ()
           /\ view_MaybeUninit_T (val_PermCell_MaybeUninit_T result.f1'0) = Some'1 (Seq.get c'0.current.old_seq 0))
       /\ ([@stop_split] [@expl:try_dequeue_cas_inv ensures #8] 2

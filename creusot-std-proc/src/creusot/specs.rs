@@ -326,10 +326,11 @@ fn logic_alias_inner(attr: TS1, tokens: TS1, is_prophetic: bool) -> TS1 {
             Ok(term) => {
                 quote!(result == #term)
             }
-            Err(err) => {
+            r => {
+                let span = r.map_or_else(|t| t.span(), |e| e.span());
                 let name = if is_prophetic { "prophetic_alias" } else { "logic_alias" };
                 return syn::Error::new(
-                    err.span(),
+                    span,
                     format!(
                         "`{name}` should contain a path to a logic function with the same signature, or \
                         a valid pearlite term"

@@ -87,32 +87,30 @@ meta "rewrite_def" function cons_T
 
 function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
 
-function pop_first_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T self
+function add_at_T (self: Seq.seq t_T) (position: int) (value: t_T) : Seq.seq t_T
 
-function add_T (self: Seq.seq t_T) (position: int) (value: t_T) : Seq.seq t_T
-
-axiom add_T_def: forall self: Seq.seq t_T, position: int, value: t_T [add_T self position value]. 0 <= position
+axiom add_at_T_def: forall self: Seq.seq t_T, position: int, value: t_T [add_at_T self position value]. 0 <= position
       /\ position <= Seq.length self
-    -> add_T self position value
+    -> add_at_T self position value
     = (if position = 0 then
       cons_T self value
     else
-      cons_T (add_T (pop_first_T self) (position - 1) value) (Seq.get self 0)
+      cons_T (add_at_T (tail_T self) (position - 1) value) (Seq.get self 0)
     )
 
-axiom add_T_spec: forall self: Seq.seq t_T, position: int, value: t_T [add_T self position value]. 0 <= position
-      /\ position <= Seq.length self -> Seq.length (add_T self position value) = Seq.length self + 1
+axiom add_at_T_spec: forall self: Seq.seq t_T, position: int, value: t_T [add_at_T self position value]. 0 <= position
+      /\ position <= Seq.length self -> Seq.length (add_at_T self position value) = Seq.length self + 1
 
-axiom add_T_spec'0: forall self: Seq.seq t_T, position: int, value: t_T [add_T self position value]. 0 <= position
+axiom add_at_T_spec'0: forall self: Seq.seq t_T, position: int, value: t_T [add_at_T self position value]. 0 <= position
       /\ position <= Seq.length self
     -> (forall i: int. 0 <= i /\ i <= Seq.length self
       -> (if i < position then
-        Seq.get (add_T self position value) i = Seq.get self i
+        Seq.get (add_at_T self position value) i = Seq.get self i
       else
         if i = position then
-          Seq.get (add_T self position value) i = value
+          Seq.get (add_at_T self position value) i = value
         else
-          Seq.get (add_T self position value) i = Seq.get self (i - 1)
+          Seq.get (add_at_T self position value) i = Seq.get self (i - 1)
       
       ))
 
@@ -170,5 +168,5 @@ let insert_T (self: MutBorrow.t (Seq.seq t_T)) (position: int) (x: t_T) (return 
   | & _17: MutBorrow.t (Seq.seq t_T) = Any.any_l ()
   | & _19: () = Any.any_l ()
   | & _20: MutBorrow.t (Seq.seq t_T) = Any.any_l () ] [ function_variant: int = position ])
-  [ return (result: ()) -> {[@stop_split] [@expl:insert ensures] self.final = add_T self.current position x}
+  [ return (result: ()) -> {[@stop_split] [@expl:insert ensures] self.final = add_at_T self.current position x}
     (! return {result}) ]

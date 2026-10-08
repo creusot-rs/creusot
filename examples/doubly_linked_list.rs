@@ -255,7 +255,7 @@ mod imp {
         #[ensures(if self@.len() == 0 {
             result == None && ^self == *self
         } else {
-           result == Some(self@[0]) && (^self)@ == (*self)@.pop_first()
+           result == Some(self@[0]) && (^self)@ == (*self)@.tail()
         })]
         pub fn pop_front(&mut self) -> Option<T> {
             if self.head.is_null() {
@@ -279,7 +279,7 @@ mod imp {
         #[ensures(if self@.len() == 0 {
             result == None && ^self == *self
         } else {
-           result == Some(self@[self@.len() - 1]) && (^self)@ == (*self)@.pop_last()
+           result == Some(self@[self@.len() - 1]) && (^self)@ == (*self)@.init()
         })]
         pub fn pop_back(&mut self) -> Option<T> {
             if self.tail.is_null() {
@@ -463,7 +463,7 @@ mod imp {
             (^self).list()@ == Seq::singleton(value)
         } else {
             (^self).pos() == self.pos() &&
-            (^self).list()@ == self.list()@.add(self.pos(), value)
+            (^self).list()@ == self.list()@.add_at(self.pos(), value)
         })]
         #[ensures(^(^self).list() == ^(*self).list())]
         pub fn insert_before(&mut self, value: T) {
@@ -531,7 +531,7 @@ mod imp {
             (^self).list()@ == Seq::singleton(value)
         } else {
             (^self).pos() == self.pos() &&
-            (^self).list()@ == self.list()@.add(self.pos() + 1, value)
+            (^self).list()@ == self.list()@.add_at(self.pos() + 1, value)
         })]
         #[ensures(^(^self).list() == ^(*self).list())]
         pub fn insert_after(&mut self, value: T) {

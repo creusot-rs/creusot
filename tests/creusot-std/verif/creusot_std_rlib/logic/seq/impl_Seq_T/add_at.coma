@@ -15,8 +15,6 @@ meta "rewrite_def" function cons_T
 
 function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
 
-function pop_first_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T self
-
 predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
 
 meta "rewrite_def" predicate ge_log_Int
@@ -40,38 +38,38 @@ constant position : int
 
 constant value : t_T
 
-function add_T (self: Seq.seq t_T) (position: int) (value: t_T) : Seq.seq t_T
+function add_at_T (self: Seq.seq t_T) (position: int) (value: t_T) : Seq.seq t_T
 
-goal vc_add_T: 0 <= position /\ position <= Seq.length self
+goal vc_add_at_T: 0 <= position /\ position <= Seq.length self
   -> (if position = 0 then
-    let result = cons_T self value in [@stop_split] [@expl:add_T ensures] ([@stop_split] [@expl:add ensures #0] Seq.length result
+    let result = cons_T self value in [@stop_split] [@expl:add_at_T ensures] ([@stop_split] [@expl:add_at ensures #0] Seq.length result
       = Seq.length self + 1)
-    /\ ([@stop_split] [@expl:add ensures #1] forall i: int. 0 <= i /\ i <= Seq.length self
+    /\ ([@stop_split] [@expl:add_at ensures #1] forall i: int. 0 <= i /\ i <= Seq.length self
       -> (if i < position then
         Seq.get result i = Seq.get self i
       else
         if i = position then Seq.get result i = value else Seq.get result i = Seq.get self (i - 1)
       ))
   else
-    (([@stop_split] [@expl:add requires] 0 <= position - 1 /\ position - 1 <= Seq.length (pop_first_T self))
+    (([@stop_split] [@expl:add_at requires] 0 <= position - 1 /\ position - 1 <= Seq.length (tail_T self))
       /\ ([@expl:variant decreases] well_founded_relation_Int position (position - 1)))
-    /\ (([@stop_split] [@expl:add ensures] ([@stop_split] [@expl:add ensures #0] Seq.length (add_T (pop_first_T self) (position
+    /\ (([@stop_split] [@expl:add_at ensures] ([@stop_split] [@expl:add_at ensures #0] Seq.length (add_at_T (tail_T self) (position
           - 1) value)
-        = Seq.length (pop_first_T self) + 1)
-      /\ ([@stop_split] [@expl:add ensures #1] forall i: int. 0 <= i /\ i <= Seq.length (pop_first_T self)
+        = Seq.length (tail_T self) + 1)
+      /\ ([@stop_split] [@expl:add_at ensures #1] forall i: int. 0 <= i /\ i <= Seq.length (tail_T self)
         -> (if i < position - 1 then
-          Seq.get (add_T (pop_first_T self) (position - 1) value) i = Seq.get (pop_first_T self) i
+          Seq.get (add_at_T (tail_T self) (position - 1) value) i = Seq.get (tail_T self) i
         else
           if i = position - 1 then
-            Seq.get (add_T (pop_first_T self) (position - 1) value) i = value
+            Seq.get (add_at_T (tail_T self) (position - 1) value) i = value
           else
-            Seq.get (add_T (pop_first_T self) (position - 1) value) i = Seq.get (pop_first_T self) (i - 1)
+            Seq.get (add_at_T (tail_T self) (position - 1) value) i = Seq.get (tail_T self) (i - 1)
         
         )))
-    -> (let result = cons_T (add_T (pop_first_T self) (position
-    - 1) value) (Seq.get self 0) in [@stop_split] [@expl:add_T ensures] ([@stop_split] [@expl:add ensures #0] Seq.length result
+    -> (let result = cons_T (add_at_T (tail_T self) (position
+    - 1) value) (Seq.get self 0) in [@stop_split] [@expl:add_at_T ensures] ([@stop_split] [@expl:add_at ensures #0] Seq.length result
       = Seq.length self + 1)
-    /\ ([@stop_split] [@expl:add ensures #1] forall i: int. 0 <= i /\ i <= Seq.length self
+    /\ ([@stop_split] [@expl:add_at ensures #1] forall i: int. 0 <= i /\ i <= Seq.length self
       -> (if i < position then
         Seq.get result i = Seq.get self i
       else

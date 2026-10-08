@@ -991,12 +991,12 @@ impl<T> Queue<T> {
     // User committer
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
-        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_first() ==>
+        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.tail() ==>
         f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(exists<c: &mut QueueCommitter<T>>
         !c.shot && *c.ward == *self &&
-        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_first() &&
+        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.tail() &&
         f.postcondition_once((c,),()) &&
         result.1.val()@ == Some(c.old_seq[0])
     )]
@@ -1035,7 +1035,7 @@ impl<T> Queue<T> {
             proof_assert!(*tail < inv.head());
 
             let old_seq = snapshot!(inv.seq());
-            let new_seq = snapshot!(old_seq.pop_first());
+            let new_seq = snapshot!(old_seq.tail());
             let budget = *snapshot!(inv.values_auth.budget()).into_ghost();
             f.into_inner()(&mut QueueCommitter {
                 auth: &mut inv.values_auth,
@@ -1097,13 +1097,13 @@ impl<T> Queue<T> {
     #[requires(tokens.contains(BOUNDED_MPMC_QUEUE()))]
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
-        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_first() ==>
+        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.tail() ==>
         f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(match result {
         Some(result) => exists<c: &mut QueueCommitter<T>>
             !c.shot && *c.ward == *self &&
-            c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_first() &&
+            c.old_seq.len() > 0 && *c.new_seq == c.old_seq.tail() &&
             f.postcondition_once((c,),()) &&
             result == c.old_seq[0],
         None => resolve(f)

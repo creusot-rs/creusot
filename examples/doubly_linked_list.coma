@@ -32,7 +32,7 @@ module M_example
   
   meta "rewrite_def" predicate inv_refmut_List_i32
   
-  function pop_last_i32 (self: Seq.seq Int32.t) : Seq.seq Int32.t = Seq.([..]) self 0 (Seq.length self - 1)
+  function init_i32 (self: Seq.seq Int32.t) : Seq.seq Int32.t = Seq.([..]) self 0 (Seq.length self - 1)
   
   let pop_back_i32 (self: MutBorrow.t t_List_i32) (return (x: t_Option_i32)) =
   {[@stop_split] [@expl:pop_back 'self' type invariant] inv_refmut_List_i32 self}
@@ -42,7 +42,7 @@ module M_example
         result = None /\ self.final = self.current
       else
         result = Some (Seq.get (view_List_i32 self.current) (Seq.length (view_List_i32 self.current) - 1))
-        /\ view_List_i32 self.final = pop_last_i32 (view_List_i32 self.current)
+        /\ view_List_i32 self.final = init_i32 (view_List_i32 self.current)
       }
       (! return {result}) ]
   
@@ -70,8 +70,6 @@ module M_example
   
   function tail_i32 (self: Seq.seq Int32.t) : Seq.seq Int32.t = Seq.([..]) self 1 (Seq.length self)
   
-  function pop_first_i32 (self: Seq.seq Int32.t) : Seq.seq Int32.t = tail_i32 self
-  
   let pop_front_i32 (self: MutBorrow.t t_List_i32) (return (x: t_Option_i32)) =
   {[@stop_split] [@expl:pop_front 'self' type invariant] inv_refmut_List_i32 self}
     any
@@ -80,7 +78,7 @@ module M_example
         result = None /\ self.final = self.current
       else
         result = Some (Seq.get (view_List_i32 self.current) 0)
-        /\ view_List_i32 self.final = pop_first_i32 (view_List_i32 self.current)
+        /\ view_List_i32 self.final = tail_i32 (view_List_i32 self.current)
       }
       (! return {result}) ]
   
@@ -168,23 +166,23 @@ module M_example
   
   meta "rewrite_def" predicate inv_refmut_Cursor_i32
   
-  function add_i32 (self: Seq.seq Int32.t) (position: int) (value: Int32.t) : Seq.seq Int32.t
+  function add_at_i32 (self: Seq.seq Int32.t) (position: int) (value: Int32.t) : Seq.seq Int32.t
   
-  axiom add_i32_spec: forall self: Seq.seq Int32.t, position: int, value: Int32.t [add_i32 self position value]. 0
+  axiom add_at_i32_spec: forall self: Seq.seq Int32.t, position: int, value: Int32.t [add_at_i32 self position value]. 0
           <= position
-        /\ position <= Seq.length self -> Seq.length (add_i32 self position value) = Seq.length self + 1
+        /\ position <= Seq.length self -> Seq.length (add_at_i32 self position value) = Seq.length self + 1
   
-  axiom add_i32_spec'0: forall self: Seq.seq Int32.t, position: int, value: Int32.t [add_i32 self position value]. 0
-          <= position
+  axiom add_at_i32_spec'0:
+    forall self: Seq.seq Int32.t, position: int, value: Int32.t [add_at_i32 self position value]. 0 <= position
         /\ position <= Seq.length self
       -> (forall i: int. 0 <= i /\ i <= Seq.length self
         -> (if i < position then
-          Seq.get (add_i32 self position value) i = Seq.get self i
+          Seq.get (add_at_i32 self position value) i = Seq.get self i
         else
           if i = position then
-            Seq.get (add_i32 self position value) i = value
+            Seq.get (add_at_i32 self position value) i = value
           else
-            Seq.get (add_i32 self position value) i = Seq.get self (i - 1)
+            Seq.get (add_at_i32 self position value) i = Seq.get self (i - 1)
         
         ))
   
@@ -198,7 +196,7 @@ module M_example
         else
           pos_i32 self.final = pos_i32 self.current
           /\ view_List_i32 (list_i32 self.final).current
-          = add_i32 (view_List_i32 (list_i32 self.current).current) (pos_i32 self.current + 1) value
+          = add_at_i32 (view_List_i32 (list_i32 self.current).current) (pos_i32 self.current + 1) value
         )
       /\ ([@stop_split] [@expl:insert_after ensures #1] (list_i32 self.final).final = (list_i32 self.current).final)}
       (! return {result}) ]
@@ -233,7 +231,7 @@ module M_example
         else
           pos_i32 self.final = pos_i32 self.current
           /\ view_List_i32 (list_i32 self.final).current
-          = add_i32 (view_List_i32 (list_i32 self.current).current) (pos_i32 self.current) value
+          = add_at_i32 (view_List_i32 (list_i32 self.current).current) (pos_i32 self.current) value
         )
       /\ ([@stop_split] [@expl:insert_before ensures #1] (list_i32 self.final).final = (list_i32 self.current).final)}
       (! return {result}) ]
@@ -2731,25 +2729,25 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
   let add_Int (self: int) (other: int) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:add ensures] result = self + other} (! return {result}) ]
   
-  function add_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (position: int) (value: t_Perm_ptr_Node_T) : Seq.seq t_Perm_ptr_Node_T
+  function add_at_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (position: int) (value: t_Perm_ptr_Node_T) : Seq.seq t_Perm_ptr_Node_T
   
-  axiom add_Perm_ptr_Node_T_spec:
-    forall self: Seq.seq t_Perm_ptr_Node_T, position: int, value: t_Perm_ptr_Node_T [add_Perm_ptr_Node_T self position value]. 0
+  axiom add_at_Perm_ptr_Node_T_spec:
+    forall self: Seq.seq t_Perm_ptr_Node_T, position: int, value: t_Perm_ptr_Node_T [add_at_Perm_ptr_Node_T self position value]. 0
           <= position
-        /\ position <= Seq.length self -> Seq.length (add_Perm_ptr_Node_T self position value) = Seq.length self + 1
+        /\ position <= Seq.length self -> Seq.length (add_at_Perm_ptr_Node_T self position value) = Seq.length self + 1
   
-  axiom add_Perm_ptr_Node_T_spec'0:
-    forall self: Seq.seq t_Perm_ptr_Node_T, position: int, value: t_Perm_ptr_Node_T [add_Perm_ptr_Node_T self position value]. 0
+  axiom add_at_Perm_ptr_Node_T_spec'0:
+    forall self: Seq.seq t_Perm_ptr_Node_T, position: int, value: t_Perm_ptr_Node_T [add_at_Perm_ptr_Node_T self position value]. 0
           <= position
         /\ position <= Seq.length self
       -> (forall i: int. 0 <= i /\ i <= Seq.length self
         -> (if i < position then
-          Seq.get (add_Perm_ptr_Node_T self position value) i = Seq.get self i
+          Seq.get (add_at_Perm_ptr_Node_T self position value) i = Seq.get self i
         else
           if i = position then
-            Seq.get (add_Perm_ptr_Node_T self position value) i = value
+            Seq.get (add_at_Perm_ptr_Node_T self position value) i = value
           else
-            Seq.get (add_Perm_ptr_Node_T self position value) i = Seq.get self (i - 1)
+            Seq.get (add_at_Perm_ptr_Node_T self position value) i = Seq.get self (i - 1)
         
         ))
   
@@ -2760,7 +2758,7 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
     /\ ([@stop_split] [@expl:insert requires] 0 <= position /\ position <= Seq.length self.current)}
     any
     [ return (result: ()) -> {[@stop_split] [@expl:insert ensures] self.final
-      = add_Perm_ptr_Node_T self.current position x}
+      = add_at_Perm_ptr_Node_T self.current position x}
       (! return {result}) ]
   
   function pos_T (self: t_Cursor_T) : int = self.pos
@@ -2769,21 +2767,22 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
       -> gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
       -> 0 <= pos_T self /\ pos_T self < Seq.length (view_List_T (list_T self).current)
   
-  function add_T (self: Seq.seq t_T) (position: int) (value: t_T) : Seq.seq t_T
+  function add_at_T (self: Seq.seq t_T) (position: int) (value: t_T) : Seq.seq t_T
   
-  axiom add_T_spec: forall self: Seq.seq t_T, position: int, value: t_T [add_T self position value]. 0 <= position
-        /\ position <= Seq.length self -> Seq.length (add_T self position value) = Seq.length self + 1
+  axiom add_at_T_spec: forall self: Seq.seq t_T, position: int, value: t_T [add_at_T self position value]. 0 <= position
+        /\ position <= Seq.length self -> Seq.length (add_at_T self position value) = Seq.length self + 1
   
-  axiom add_T_spec'0: forall self: Seq.seq t_T, position: int, value: t_T [add_T self position value]. 0 <= position
+  axiom add_at_T_spec'0: forall self: Seq.seq t_T, position: int, value: t_T [add_at_T self position value]. 0
+          <= position
         /\ position <= Seq.length self
       -> (forall i: int. 0 <= i /\ i <= Seq.length self
         -> (if i < position then
-          Seq.get (add_T self position value) i = Seq.get self i
+          Seq.get (add_at_T self position value) i = Seq.get self i
         else
           if i = position then
-            Seq.get (add_T self position value) i = value
+            Seq.get (add_at_T self position value) i = value
           else
-            Seq.get (add_T self position value) i = Seq.get self (i - 1)
+            Seq.get (add_at_T self position value) i = Seq.get self (i - 1)
         
         ))
   
@@ -3181,7 +3180,7 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
         else
           pos_T self.final = pos_T self.current
           /\ view_List_T (list_T self.final).current
-          = add_T (view_List_T (list_T self.current).current) (pos_T self.current + 1) value
+          = add_at_T (view_List_T (list_T self.current).current) (pos_T self.current + 1) value
         )
       /\ ([@stop_split] [@expl:insert_after ensures #1] (list_T self.final).final = (list_T self.current).final)}
       (! return {result}) ]
@@ -3562,25 +3561,25 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
   let sub_Int (self: int) (other: int) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:sub ensures] result = self - other} (! return {result}) ]
   
-  function add_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (position: int) (value: t_Perm_ptr_Node_T) : Seq.seq t_Perm_ptr_Node_T
+  function add_at_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (position: int) (value: t_Perm_ptr_Node_T) : Seq.seq t_Perm_ptr_Node_T
   
-  axiom add_Perm_ptr_Node_T_spec:
-    forall self: Seq.seq t_Perm_ptr_Node_T, position: int, value: t_Perm_ptr_Node_T [add_Perm_ptr_Node_T self position value]. 0
+  axiom add_at_Perm_ptr_Node_T_spec:
+    forall self: Seq.seq t_Perm_ptr_Node_T, position: int, value: t_Perm_ptr_Node_T [add_at_Perm_ptr_Node_T self position value]. 0
           <= position
-        /\ position <= Seq.length self -> Seq.length (add_Perm_ptr_Node_T self position value) = Seq.length self + 1
+        /\ position <= Seq.length self -> Seq.length (add_at_Perm_ptr_Node_T self position value) = Seq.length self + 1
   
-  axiom add_Perm_ptr_Node_T_spec'0:
-    forall self: Seq.seq t_Perm_ptr_Node_T, position: int, value: t_Perm_ptr_Node_T [add_Perm_ptr_Node_T self position value]. 0
+  axiom add_at_Perm_ptr_Node_T_spec'0:
+    forall self: Seq.seq t_Perm_ptr_Node_T, position: int, value: t_Perm_ptr_Node_T [add_at_Perm_ptr_Node_T self position value]. 0
           <= position
         /\ position <= Seq.length self
       -> (forall i: int. 0 <= i /\ i <= Seq.length self
         -> (if i < position then
-          Seq.get (add_Perm_ptr_Node_T self position value) i = Seq.get self i
+          Seq.get (add_at_Perm_ptr_Node_T self position value) i = Seq.get self i
         else
           if i = position then
-            Seq.get (add_Perm_ptr_Node_T self position value) i = value
+            Seq.get (add_at_Perm_ptr_Node_T self position value) i = value
           else
-            Seq.get (add_Perm_ptr_Node_T self position value) i = Seq.get self (i - 1)
+            Seq.get (add_at_Perm_ptr_Node_T self position value) i = Seq.get self (i - 1)
         
         ))
   
@@ -3591,7 +3590,7 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
     /\ ([@stop_split] [@expl:insert requires] 0 <= position /\ position <= Seq.length self.current)}
     any
     [ return (result: ()) -> {[@stop_split] [@expl:insert ensures] self.final
-      = add_Perm_ptr_Node_T self.current position x}
+      = add_at_Perm_ptr_Node_T self.current position x}
       (! return {result}) ]
   
   function pos_T (self: t_Cursor_T) : int = self.pos
@@ -3600,21 +3599,22 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
       -> gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
       -> 0 <= pos_T self /\ pos_T self < Seq.length (view_List_T (list_T self).current)
   
-  function add_T (self: Seq.seq t_T) (position: int) (value: t_T) : Seq.seq t_T
+  function add_at_T (self: Seq.seq t_T) (position: int) (value: t_T) : Seq.seq t_T
   
-  axiom add_T_spec: forall self: Seq.seq t_T, position: int, value: t_T [add_T self position value]. 0 <= position
-        /\ position <= Seq.length self -> Seq.length (add_T self position value) = Seq.length self + 1
+  axiom add_at_T_spec: forall self: Seq.seq t_T, position: int, value: t_T [add_at_T self position value]. 0 <= position
+        /\ position <= Seq.length self -> Seq.length (add_at_T self position value) = Seq.length self + 1
   
-  axiom add_T_spec'0: forall self: Seq.seq t_T, position: int, value: t_T [add_T self position value]. 0 <= position
+  axiom add_at_T_spec'0: forall self: Seq.seq t_T, position: int, value: t_T [add_at_T self position value]. 0
+          <= position
         /\ position <= Seq.length self
       -> (forall i: int. 0 <= i /\ i <= Seq.length self
         -> (if i < position then
-          Seq.get (add_T self position value) i = Seq.get self i
+          Seq.get (add_at_T self position value) i = Seq.get self i
         else
           if i = position then
-            Seq.get (add_T self position value) i = value
+            Seq.get (add_at_T self position value) i = value
           else
-            Seq.get (add_T self position value) i = Seq.get self (i - 1)
+            Seq.get (add_at_T self position value) i = Seq.get self (i - 1)
         
         ))
   
@@ -4006,7 +4006,7 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
         else
           pos_T self.final = pos_T self.current
           /\ view_List_T (list_T self.final).current
-          = add_T (view_List_T (list_T self.current).current) (pos_T self.current) value
+          = add_at_T (view_List_T (list_T self.current).current) (pos_T self.current) value
         )
       /\ ([@stop_split] [@expl:insert_before ensures #1] (list_T self.final).final = (list_T self.current).final)}
       (! return {result}) ]
@@ -4860,8 +4860,6 @@ module M_imp__impl_Drop_for_List_T__drop (* <imp::List<T> as std::ops::Drop> *)
   
   function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
   
-  function pop_first_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T self
-  
   let pop_front_T (self: MutBorrow.t t_List_T) (return (x: t_Option_T)) =
   {[@stop_split] [@expl:pop_front 'self' type invariant] inv_refmut_List_T self}
     any
@@ -4871,7 +4869,7 @@ module M_imp__impl_Drop_for_List_T__drop (* <imp::List<T> as std::ops::Drop> *)
         result = None /\ self.final = self.current
       else
         result = Some (Seq.get (view_List_T self.current) 0)
-        /\ view_List_T self.final = pop_first_T (view_List_T self.current)
+        /\ view_List_T self.final = tail_T (view_List_T self.current)
       )}
       (! return {result}) ]
   
@@ -7507,7 +7505,7 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
   function view_List_T (self: t_List_T) : Seq.seq t_T =
     map_Perm_ptr_Node_T self.permissions (fun (p: t_Perm_ptr_Node_T) -> (val_ptr_Node_T p).data)
   
-  function pop_last_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 0 (Seq.length self - 1)
+  function init_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 0 (Seq.length self - 1)
   
   meta "compute_max_steps" 1000000
   
@@ -7659,7 +7657,7 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
         result = None /\ self.final = self.current
       else
         result = Some (Seq.get (view_List_T self.current) (Seq.length (view_List_T self.current) - 1))
-        /\ view_List_T self.final = pop_last_T (view_List_T self.current)
+        /\ view_List_T self.final = init_T (view_List_T self.current)
       )}
       (! return {result}) ]
 end
@@ -8057,8 +8055,6 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
   
   function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
   
-  function pop_first_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T self
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -8206,7 +8202,7 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
         result = None /\ self.final = self.current
       else
         result = Some (Seq.get (view_List_T self.current) 0)
-        /\ view_List_T self.final = pop_first_T (view_List_T self.current)
+        /\ view_List_T self.final = tail_T (view_List_T self.current)
       )}
       (! return {result}) ]
 end
