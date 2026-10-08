@@ -12,7 +12,7 @@ Run the default tests:
 ./t
 ```
 
-For additional options, see `./t all`
+For additional options, see `./t --help`.
 
 ## 2.1. UI Tests
 
@@ -95,59 +95,28 @@ There are several places to edit in the file: the `pin-depends` field at the end
 of the file (URLs and `git-XXXX` versions), and the `git-XXXX` versions in the
 `depends:` field.
 
-## Upgrading a prover to a newer version
+Note that we use and maintain a mirror of Why3find at https://github.com/creusot-rs/why3find.
+It includes patches for compatibility with the development version of Why3,
+and those patches are tagged at each release of Creusot so that they remain available
+in the future.
 
-- Install why3-tools: `opam pin git+https://github.com/xldenis/why3-tools`
-- Install the newer prover, make it available in `$PATH`
-- Setup Creusot to use it: `./INSTALL --no-check-version <PROVER> --external <PROVER>`
-- Run `eval $(cargo run --bin dev-env)`
-- Use the `./testsuite_upgrade_prover` script to update why3 sessions in the testsuite.
-  Launch the script without arguments to have some usage instructions.
-  To instead regenerate a session from scratch, use the `./testsuite_regenerate` script.
-- Once the testsuite is migrated, update `creusot-setup/src/{tools,tools_versions_urls}.rs`
+# Nix cheat sheet
 
-## Release
+Main build command:
 
-To make a release, you must be added as an owner of the relevant crates to publish on crates.io
-(`why3`, `pearlite-syn`, `creusot-std-proc`, `creusot-std`). Ask the current owners to add you
-(listed on https://crates.io/crates/creusot-std).
-
-Install the `cargo-release` tool, which automates various tasks:
-
-```
-cargo install cargo-release
+```sh
+NIXPKGS_ALLOW_UNFREE=1 nix build --impure
+# Also: nix shell, nix develop
 ```
 
-1. `git fetch; git checkout origin/master -b release` to make sure you're starting from `master` and make a new branch `release`.
-2. Add a list of changes under "Unreleased" in `CHANGELOG.md`. Free style. Suggested approach: list merged PRs, group by themes, write up summaries or highlight important features.
-    The following script can be a useful start, converting the git log to a markdown list of links:
+After upgrading `rust-toolchain`:
 
-    ```
-    PREV_VERSION=v0.10.0
-    git log $PREV_VERSION..master --pretty=format:'%s'|grep "(#[0-9]*)$"|sed 's_\s*\(.*\S\)\s*(#\([0-9]*\))_- \[\1\](https://github.com/creusot-rs/creusot/pull/\2)_'
-    ```
-
-3. (This step is not reversible!) `cargo release --no-tag --no-push X.Y.Z --execute` (where `X.Y.Z` is the new version number). This will:
-
-  a. Bump versions in `Cargo.toml` and `CHANGELOG.md`.
-  b. Commit those changes.
-  c. Publish the publishable packages on crates.io.
-     (Note: CI will need those packages to be published, that's why this step must come before opening the PR.)
-
-4. `git push origin release`, open a PR. Merge it ASAP.
-5. `git checkout master; git pull`
-6. `git tag vX.Y.Z; git push origin vX.Y.Z` (the tags looks better this way IMO, but it's also OK to remove the `--no-tag` option from `cargo release` above)
-7. [Make the release on Github.](https://github.com/creusot-rs/creusot/releases/new)
-
-## Pre-release versioning
-
-Whenever `creusot-std` changes, if the current version is `0.Y.0`, you should bump all versions to `0.{Y+1}.0-dev`. The `-dev` prerelease suffix
-lets `cargo-creusot` tell the difference from the released version on crates.io and remind you to do a `cargo creusot init` to update dependencies
-in `Cargo.toml` (or you can run Creusot with `cargo creusot --no-check-version` if you really want to use the released version).
-When that involves a breaking change in `creusot-rustc`, CI will probably fail so that will remind you to do this anyway.
-
-```shell
-cargo release version 0.{Y+1}.0-dev --execute
-git add -u
-git commit -m "Bump to version 0.{Y+1}.0-dev"
+```sh
+nix flake update rust-overlay
 ```
+
+After upgrading Why3, Why3find, or provers:
+
+1. remove the corresponding hash in `flake.nix`;
+2. run `nix build` (see above);
+3. copy the hash from the error message back into `flake.nix`.

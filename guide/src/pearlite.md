@@ -29,6 +29,8 @@ The logical quantifiers ∀ and ∃ are written `forall` and `exists` in Pearlit
 
 ```rust
 #[requires(forall<i: Int> i >= 0 && i < list@.len() ==> list@[i] == 0)]
+// alternative syntax
+#[requires(forall(|i: Int| i >= 0 && i < list@.len() ==> list@[i] == 0))]
 fn requires_all_zeros(list: &[i32]) {
     // ...
 }
