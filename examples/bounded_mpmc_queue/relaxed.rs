@@ -1,4 +1,4 @@
-// TIME 4 DEPTH 10
+// TIME 5 DEPTH 10
 
 //! This implementation is an adaption from:
 //! https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
