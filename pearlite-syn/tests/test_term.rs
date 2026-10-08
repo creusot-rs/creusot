@@ -82,29 +82,32 @@ fn test_forall() {
         quant_token: Keyword [forall],
         lt_token: Lt,
         args: [
-            QuantArg {
-                ident: Ident {
-                    sym: x,
+            Pat::Type {
+                attrs: [],
+                pat: Pat::Ident {
+                    attrs: [],
+                    by_ref: None,
+                    mutability: None,
+                    ident: Ident {
+                        sym: x,
+                    },
+                    subpat: None,
                 },
-                ty: Some(
-                    (
-                        Colon,
-                        Type::Path {
-                            qself: None,
-                            path: Path {
-                                leading_colon: None,
-                                segments: [
-                                    PathSegment {
-                                        ident: Ident {
-                                            sym: u32,
-                                        },
-                                        arguments: PathArguments::None,
-                                    },
-                                ],
+                colon_token: Colon,
+                ty: Type::Path {
+                    qself: None,
+                    path: Path {
+                        leading_colon: None,
+                        segments: [
+                            PathSegment {
+                                ident: Ident {
+                                    sym: u32,
+                                },
+                                arguments: PathArguments::None,
                             },
-                        },
-                    ),
-                ),
+                        ],
+                    },
+                },
             },
         ],
         gt_token: Gt,
@@ -127,29 +130,32 @@ fn test_exists() {
         quant_token: Keyword [exists],
         lt_token: Lt,
         args: [
-            QuantArg {
-                ident: Ident {
-                    sym: x,
+            Pat::Type {
+                attrs: [],
+                pat: Pat::Ident {
+                    attrs: [],
+                    by_ref: None,
+                    mutability: None,
+                    ident: Ident {
+                        sym: x,
+                    },
+                    subpat: None,
                 },
-                ty: Some(
-                    (
-                        Colon,
-                        Type::Path {
-                            qself: None,
-                            path: Path {
-                                leading_colon: None,
-                                segments: [
-                                    PathSegment {
-                                        ident: Ident {
-                                            sym: u32,
-                                        },
-                                        arguments: PathArguments::None,
-                                    },
-                                ],
+                colon_token: Colon,
+                ty: Type::Path {
+                    qself: None,
+                    path: Path {
+                        leading_colon: None,
+                        segments: [
+                            PathSegment {
+                                ident: Ident {
+                                    sym: u32,
+                                },
+                                arguments: PathArguments::None,
                             },
-                        },
-                    ),
-                ),
+                        ],
+                    },
+                },
             },
         ],
         gt_token: Gt,
@@ -172,54 +178,60 @@ fn test_trigger() {
         quant_token: Keyword [forall],
         lt_token: Lt,
         args: [
-            QuantArg {
-                ident: Ident {
-                    sym: x,
+            Pat::Type {
+                attrs: [],
+                pat: Pat::Ident {
+                    attrs: [],
+                    by_ref: None,
+                    mutability: None,
+                    ident: Ident {
+                        sym: x,
+                    },
+                    subpat: None,
                 },
-                ty: Some(
-                    (
-                        Colon,
-                        Type::Path {
-                            qself: None,
-                            path: Path {
-                                leading_colon: None,
-                                segments: [
-                                    PathSegment {
-                                        ident: Ident {
-                                            sym: u32,
-                                        },
-                                        arguments: PathArguments::None,
-                                    },
-                                ],
+                colon_token: Colon,
+                ty: Type::Path {
+                    qself: None,
+                    path: Path {
+                        leading_colon: None,
+                        segments: [
+                            PathSegment {
+                                ident: Ident {
+                                    sym: u32,
+                                },
+                                arguments: PathArguments::None,
                             },
-                        },
-                    ),
-                ),
+                        ],
+                    },
+                },
             },
             Comma,
-            QuantArg {
-                ident: Ident {
-                    sym: y,
+            Pat::Type {
+                attrs: [],
+                pat: Pat::Ident {
+                    attrs: [],
+                    by_ref: None,
+                    mutability: None,
+                    ident: Ident {
+                        sym: y,
+                    },
+                    subpat: None,
                 },
-                ty: Some(
-                    (
-                        Colon,
-                        Type::Path {
-                            qself: None,
-                            path: Path {
-                                leading_colon: None,
-                                segments: [
-                                    PathSegment {
-                                        ident: Ident {
-                                            sym: u32,
-                                        },
-                                        arguments: PathArguments::None,
-                                    },
-                                ],
+                colon_token: Colon,
+                ty: Type::Path {
+                    qself: None,
+                    path: Path {
+                        leading_colon: None,
+                        segments: [
+                            PathSegment {
+                                ident: Ident {
+                                    sym: u32,
+                                },
+                                arguments: PathArguments::None,
                             },
-                        },
-                    ),
-                ),
+                        ],
+                    },
+                },
             },
         ],
         gt_token: Gt,
@@ -251,38 +263,44 @@ fn test_trigger() {
                             },
                             paren_token: Paren,
                             args: [
-                                TermPath {
-                                    inner: ExprPath {
-                                        attrs: [],
-                                        qself: None,
-                                        path: Path {
-                                            leading_colon: None,
-                                            segments: [
-                                                PathSegment {
-                                                    ident: Ident {
-                                                        sym: x,
+                                TermWithTriggers {
+                                    trigger: [],
+                                    term: TermPath {
+                                        inner: ExprPath {
+                                            attrs: [],
+                                            qself: None,
+                                            path: Path {
+                                                leading_colon: None,
+                                                segments: [
+                                                    PathSegment {
+                                                        ident: Ident {
+                                                            sym: x,
+                                                        },
+                                                        arguments: PathArguments::None,
                                                     },
-                                                    arguments: PathArguments::None,
-                                                },
-                                            ],
+                                                ],
+                                            },
                                         },
                                     },
                                 },
                                 Comma,
-                                TermPath {
-                                    inner: ExprPath {
-                                        attrs: [],
-                                        qself: None,
-                                        path: Path {
-                                            leading_colon: None,
-                                            segments: [
-                                                PathSegment {
-                                                    ident: Ident {
-                                                        sym: y,
+                                TermWithTriggers {
+                                    trigger: [],
+                                    term: TermPath {
+                                        inner: ExprPath {
+                                            attrs: [],
+                                            qself: None,
+                                            path: Path {
+                                                leading_colon: None,
+                                                segments: [
+                                                    PathSegment {
+                                                        ident: Ident {
+                                                            sym: y,
+                                                        },
+                                                        arguments: PathArguments::None,
                                                     },
-                                                    arguments: PathArguments::None,
-                                                },
-                                            ],
+                                                ],
+                                            },
                                         },
                                     },
                                 },
@@ -316,20 +334,23 @@ fn test_trigger() {
                             },
                             paren_token: Paren,
                             args: [
-                                TermPath {
-                                    inner: ExprPath {
-                                        attrs: [],
-                                        qself: None,
-                                        path: Path {
-                                            leading_colon: None,
-                                            segments: [
-                                                PathSegment {
-                                                    ident: Ident {
-                                                        sym: x,
+                                TermWithTriggers {
+                                    trigger: [],
+                                    term: TermPath {
+                                        inner: ExprPath {
+                                            attrs: [],
+                                            qself: None,
+                                            path: Path {
+                                                leading_colon: None,
+                                                segments: [
+                                                    PathSegment {
+                                                        ident: Ident {
+                                                            sym: x,
+                                                        },
+                                                        arguments: PathArguments::None,
                                                     },
-                                                    arguments: PathArguments::None,
-                                                },
-                                            ],
+                                                ],
+                                            },
                                         },
                                     },
                                 },
@@ -356,20 +377,23 @@ fn test_trigger() {
                             },
                             paren_token: Paren,
                             args: [
-                                TermPath {
-                                    inner: ExprPath {
-                                        attrs: [],
-                                        qself: None,
-                                        path: Path {
-                                            leading_colon: None,
-                                            segments: [
-                                                PathSegment {
-                                                    ident: Ident {
-                                                        sym: y,
+                                TermWithTriggers {
+                                    trigger: [],
+                                    term: TermPath {
+                                        inner: ExprPath {
+                                            attrs: [],
+                                            qself: None,
+                                            path: Path {
+                                                leading_colon: None,
+                                                segments: [
+                                                    PathSegment {
+                                                        ident: Ident {
+                                                            sym: y,
+                                                        },
+                                                        arguments: PathArguments::None,
                                                     },
-                                                    arguments: PathArguments::None,
-                                                },
-                                            ],
+                                                ],
+                                            },
                                         },
                                     },
                                 },
