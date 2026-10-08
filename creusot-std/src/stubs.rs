@@ -4,6 +4,12 @@ use crate::{
     prelude::*,
 };
 
+#[intrinsic("indirect_trigger")]
+#[logic(opaque)]
+pub fn indirect_trigger() -> bool {
+    dead
+}
+
 #[logic(opaque)]
 #[intrinsic("equal")]
 pub fn equal<T: ?Sized>(_: T, _: T) -> bool {

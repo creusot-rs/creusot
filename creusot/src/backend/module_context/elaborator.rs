@@ -310,6 +310,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
 
         let mut add_edge = |axiom| self.dep_graph.add_edge(dep, Strength::Weak, axiom);
         match ctx.intrinsic(def_id) {
+            Intrinsic::IndirectTrigger => return vec![],
             Intrinsic::Inv => add_edge(Dependency::TyInvAxiom(subst.type_at(0))),
             Intrinsic::Resolve => add_edge(Dependency::ResolveAxiom(subst.type_at(0))),
             _ => (),

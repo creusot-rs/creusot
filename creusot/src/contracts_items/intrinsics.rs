@@ -127,6 +127,7 @@ contracts_items! {
     "closure_result"            ClosureResult
     "dead"                      Dead
     "equal"                     Equal
+    "indirect_trigger"          IndirectTrigger
     "exists"                    Exists
     "fn_ghost"                  FnGhost
     "fn_ghost_wrapper"          FnGhostWrapper
