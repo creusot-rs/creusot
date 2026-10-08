@@ -16,7 +16,7 @@ use rustc_hir::def_id::DefId;
 use why3::{
     Name,
     declaration::*,
-    exp::{BinOp, Exp, Trigger},
+    exp::{self, BinOp, Exp, Pattern, Trigger},
 };
 
 pub mod vcgen;
@@ -227,9 +227,31 @@ pub(crate) fn spec_axioms(sig: &LogicSignature) -> impl Iterator<Item = Decl> {
 
 fn definition_axiom(sig: &LogicSignature, body: Exp, suffix: &str, rewrite: bool) -> Axiom {
     let call = function_call(&sig.why_sig);
-    let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
+    let (mut trigger, body) = extract_indirect_trigger(body);
+
+    let mut v = vec![Trigger::single(call.clone())];
+    v.append(&mut Vec::from(trigger));
+    trigger = v.into_boxed_slice();
+
+    let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call), Box::new(body));
     let condition = sig.contract.requires_implies(equation);
-    let axiom = Exp::forall_trig(sig.why_sig.args.clone(), [Trigger::single(call)], condition);
+    let axiom = Exp::forall_trig(sig.why_sig.args.clone(), trigger, condition);
     let name = sig.why_sig.name.refresh_with(|s| format!("{s}_{suffix}"));
     Axiom { name, rewrite, axiom }
+}
+
+fn extract_indirect_trigger(body: Exp) -> (Box<[Trigger]>, Exp) {
+    let mut trigger = Box::new([]) as Box<[Trigger]>;
+    let body = match body {
+        Exp::Let {
+            pattern: Pattern::VarP(v),
+            arg: box Exp::Quant(exp::Quant::Forall, _, trig, _),
+            box body,
+        } if v.name().to_string() == "dead" => {
+            trigger = trig;
+            body
+        }
+        _ => body,
+    };
+    (trigger, body)
 }
