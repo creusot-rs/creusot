@@ -89,6 +89,7 @@ enum ContractSource {
 
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable, TyEncodable, TyDecodable)]
 pub struct PreContract<'tcx> {
+    pub(crate) indirect_trig: Box<[Trigger<'tcx>]>,
     pub(crate) variant: Option<Term<'tcx>>,
     pub(crate) requires: Vec<Condition<'tcx>>,
     pub(crate) ensures: Vec<(Box<[Trigger<'tcx>]>, Condition<'tcx>)>,
@@ -101,6 +102,7 @@ impl<'tcx> PreContract<'tcx> {
     // FIXME: is this used?
     pub fn new_extern() -> Self {
         PreContract {
+            indirect_trig: Box::new([]),
             variant: None,
             requires: Vec::new(),
             ensures: Vec::new(),
@@ -197,6 +199,7 @@ impl<'tcx> Substable<'tcx> for Condition<'tcx> {
 /// expressions.
 #[derive(Clone, Debug)]
 pub struct ContractClauses {
+    indirect_trig: Option<DefId>,
     variant: Option<DefId>,
     requires: Vec<DefId>,
     ensures: Vec<DefId>,
@@ -250,10 +253,19 @@ impl ContractClauses {
             log::trace!("variant clause {:?}", var_id);
             *ctx.term(var_id, sort).no_triggers()
         });
+        let indirect_trig = self
+            .indirect_trig
+            .map(|var_id| {
+                log::trace!("indirect trigger clause {:?}", var_id);
+                let TermWithTriggers { triggers, .. } = ctx.term(var_id, sort);
+                triggers
+            })
+            .unwrap_or(Box::new([]));
+
         log::trace!("purity: {}", self.purity);
         EarlyBinder::bind(
             ctx.tcx,
-            PreContract { variant, requires, ensures, purity: self.purity, source },
+            PreContract { variant, requires, ensures, purity: self.purity, source, indirect_trig },
         )
     }
 }
@@ -299,7 +311,11 @@ pub(crate) fn contract_clauses_of(
         ProgramPurity::Impure
     };
 
-    Ok(ContractClauses { requires, ensures, variant, purity })
+    let indirect_trig = creusot_clause_attrs(ctx.tcx, def_id, "indirect")
+        .map(get_creusot_item)
+        .next()
+        .transpose()?;
+    Ok(ContractClauses { requires, ensures, variant, purity, indirect_trig })
 }
 
 pub(crate) fn inherited_extern_spec<'tcx, 'a>(
@@ -428,6 +444,7 @@ impl<'tcx> PreSignature<'tcx> {
 pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> PreSignature<'tcx> {
     if ctx.def_kind(def_id) == DefKind::ConstParam {
         let contract = PreContract {
+            indirect_trig: Box::new([]),
             variant: None,
             requires: vec![],
             ensures: vec![],

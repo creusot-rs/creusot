@@ -121,9 +121,3 @@ impl<T: ?Sized + View> ViewStub for T {
         dead
     }
 }
-
-#[intrinsic("indirect_trigger")]
-#[logic(opaque)]
-pub fn indirect_trigger() -> bool {
-    dead
-}

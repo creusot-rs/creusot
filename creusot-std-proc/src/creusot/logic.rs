@@ -12,10 +12,10 @@ use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::{ToTokens, TokenStreamExt as _, quote, quote_spanned};
 use syn::{
-    Attribute, Error, Ident, Item, Pat, Result, Signature, Token, VisRestricted, Visibility,
-    braced, parenthesized,
+    Attribute, Error, Ident, Item, Result, Signature, Token, VisRestricted, Visibility, braced,
+    parenthesized,
     parse::{Parse, ParseStream},
-    parse_macro_input, parse_quote_spanned,
+    parse_macro_input, parse_quote,
     punctuated::Punctuated,
     spanned::Spanned as _,
 };
@@ -112,29 +112,31 @@ pub fn logic(in_tags: TS1, tokens: TS1) -> TS1 {
             if let Some(open_toks) = open_toks {
                 body.stmts.insert(0, pearlite_syn::TermStmt::Item(Item::Verbatim(open_toks)));
             }
-            if let Some(term_with_trig) = term_with_trig {
-                body.stmts.insert(
-                    0,
-                    pearlite_syn::TermStmt::Local(TLocal {
-                        let_token: Default::default(),
-                        pat: Pat::Path(parse_quote_spanned!(Span::mixed_site() => dead)),
-                        init: Some((
-                            Default::default(),
-                            Box::new(Term::Quant(TermQuant {
-                                quant_token: QuantToken::Forall(Default::default()),
-                                lt_token: Default::default(),
-                                args: Punctuated::from_iter([Pat::Tuple(syn::PatTuple {
-                                    attrs: Vec::new(),
-                                    paren_token: Default::default(),
-                                    elems: Punctuated::new(),
-                                })]),
-                                gt_token: Default::default(),
-                                term: term_with_trig,
-                            })),
-                        )),
-                        semi_token: Default::default(),
-                    }),
+            if let Some((name, term_with_trig)) = term_with_trig {
+                let term = pretyping::encode_term_with_triggers(&term_with_trig);
+                let toks = super::specs::fn_spec_item(
+                    name.clone(),
+                    super::specs::FnSpecResultKind::NoResult,
+                    term,
                 );
+
+                let mut trigger_sig = sig.clone();
+                trigger_sig.ident = name;
+                trigger_sig.output = match trigger_sig.output {
+                    syn::ReturnType::Default => parse_quote!(-> ::core::marker::PhantomData<()>),
+                    syn::ReturnType::Type(rarrow, ty) => {
+                        parse_quote!(#rarrow ::core::marker::PhantomData<#ty>)
+                    }
+                };
+                let companion = quote! {
+                    #[creusot::no_translate]
+                    #[doc(hidden)]
+                    #trigger_sig {
+                        #toks
+                        ::core::marker::PhantomData
+                    }
+                };
+                body.stmts.insert(0, pearlite_syn::TermStmt::Item(Item::Verbatim(companion)));
             }
             let req_body = pretyping::encode_block(&body);
 
@@ -345,7 +347,7 @@ macro_rules! impl_logic_tag {
                 doc_str
             }
 
-            fn tokens(&self, nm: &Ident) -> (TokenStream, Option<TokenStream>, Option<TermWithTriggers>) {
+            fn tokens(&self, nm: &Ident) -> (TokenStream, Option<TokenStream>, Option<(Ident, TermWithTriggers)>) {
                 let (mut tokens, mut open_toks, mut term_with_trig) = (TokenStream::new(), None, None);
                 tokens.extend(quote!(#[creusot::decl::logic]));
                 if let Some(vis) = &self.open {
@@ -361,14 +363,15 @@ macro_rules! impl_logic_tag {
                 }
 
                 if let Some(trigger) = &self.indirect {
-                    let term = syn::parse_quote!(::creusot_std::__stubs::indirect_trigger());
+                    let indirect_name = generate_unique_ident(&nm.to_string(), Span::call_site());
+                    let name_tag = indirect_name.to_string();
                     let term = TermWithTriggers {
                         trigger: trigger.clone(),
-                        term: Box::new(term),
+                        term: Box::new(syn::parse_quote!(true)),
                     };
 
-                    term_with_trig = Some(term);
-                    tokens.extend(quote!(#[creusot::decl::logic::indirect]));
+                    tokens.extend(quote!(#[creusot::clause::indirect=#name_tag]));
+                    term_with_trig = Some((indirect_name, term));
                 }
                 $(
                     if self.$variant {

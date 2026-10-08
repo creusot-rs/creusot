@@ -1,5 +1,5 @@
 extern crate creusot_std;
-use creusot_std::{logic::Mapping, prelude::*};
+use creusot_std::prelude::*;
 
 #[logic(indirect)]
 pub fn indirect() -> Int {
