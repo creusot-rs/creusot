@@ -160,12 +160,6 @@ impl<T> Seq<T> {
         self.subsequence(1, self.len())
     }
 
-    /// Alias for [`Self::tail`].
-    #[logic(open)]
-    pub fn pop_first(self) -> Self {
-        self.tail()
-    }
-
     /// Returns the sequence without its last element.
     ///
     /// If the sequence is empty, the result is meaningless.
@@ -175,12 +169,12 @@ impl<T> Seq<T> {
     /// ```
     /// # use creusot_std::prelude::*;
     /// let s = snapshot!(seq![5, 10, 15]);
-    /// proof_assert!(s.pop_last() == seq![5, 10]);
-    /// proof_assert!(s.pop_last().pop_last() == Seq::singleton(5));
-    /// proof_assert!(s.pop_last().pop_last().pop_last() == Seq::empty());
+    /// proof_assert!(s.init() == seq![5, 10]);
+    /// proof_assert!(s.init().init() == Seq::singleton(5));
+    /// proof_assert!(s.init().init().init() == Seq::empty());
     /// ```
     #[logic(open)]
-    pub fn pop_last(self) -> Self {
+    pub fn init(self) -> Self {
         self.subsequence(0, self.len() - 1)
     }
 
@@ -352,11 +346,11 @@ impl<T> Seq<T> {
         }
     )]
     #[variant(position)]
-    pub fn add(self, position: Int, value: T) -> Self {
+    pub fn add_at(self, position: Int, value: T) -> Self {
         if position == 0 {
             self.cons(value)
         } else {
-            self.pop_first().add(position - 1, value).cons(self[0])
+            self.tail().add_at(position - 1, value).cons(self[0])
         }
     }
 
@@ -741,7 +735,7 @@ impl<T> Seq<T> {
     /// ```
     #[check(ghost)]
     #[requires(0 <= position && position <= self.len())]
-    #[ensures((^self) == self.add(position, x))]
+    #[ensures((^self) == self.add_at(position, x))]
     #[variant(position)]
     pub fn insert(&mut self, position: Int, x: T) {
         let after = self.split_off(position);

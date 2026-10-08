@@ -89,7 +89,7 @@ impl<T> List<T> {
     #[check(terminates)]
     #[ensures(match result {
         None => (*self)@ == Seq::empty() && (^self)@ == Seq::empty(),
-        Some(x) => (*self)@.len() > 0 && x == (*self)@[0] && (^self)@ == (*self)@.pop_first()
+        Some(x) => (*self)@.len() > 0 && x == (*self)@[0] && (^self)@ == (*self)@.tail()
     })]
     pub fn pop_front(&mut self) -> Option<T> {
         if self.first.is_null() {

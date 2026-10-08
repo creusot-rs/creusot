@@ -57,7 +57,7 @@ impl<T> FSet<T> {
     /// Returns a new set, where `e` has been added if it was not present.
     #[logic(open, inline)]
     pub fn add(self, e: T) -> Self {
-        Self::add2(e, self)
+        Self::add_(e, self)
     }
 
     /// [`Self::insert`], but with the order of arguments flipped.
@@ -66,7 +66,7 @@ impl<T> FSet<T> {
     #[doc(hidden)]
     #[logic]
     #[builtin("set.Fset.add")]
-    pub fn add2(_: T, _: Self) -> Self {
+    pub fn add_(_: T, _: Self) -> Self {
         dead
     }
 
