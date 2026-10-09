@@ -1,6 +1,6 @@
 # Changelog
 
-Following is the changelog of Creusot, a verification tool for safe Rust programs. Using Creusot you can prove -- formally -- that your Rust program behaves in a specific manner.
+Creusot is a verification tool for safe Rust programs. Using Creusot you can prove -- formally -- that your Rust program behaves in a specific manner.
 
 Creusot allows you to annotate your code using *contracts* which describe correctness conditions for your program. Creusot then uses SMT solvers to check that these contracts hold for all possible runs of the program. All of this is done statically without running your program, and contracts are erased at compilation time.
 
@@ -11,6 +11,68 @@ Creusot is currently best suited for the verification of code like data-structur
 <!-- next-header -->
 
 ## [Unreleased] - ReleaseDate
+
+### Features
+
+- [**Logic vcgen improvements**](https://github.com/creusot-rs/creusot/pull/2288)
+
+    + Snapshots now assert pre- and postconditions of logic functions calls. This enables "applying" lemmas inside programs.
+    + Snapshot of mappings can also be used to prove universally quantified propositions.
+
+- [**Precise span tracking for better go-to-definition in rust-analyzer**](https://github.com/creusot-rs/creusot/pull/2272)
+- [Document rust-analyzer configuration](https://github.com/creusot-rs/creusot/pull/2299)
+- [implement alternative pearlite quantifier syntax](https://github.com/creusot-rs/creusot/pull/2301)
+- [erasure: Handle pointer unsizing and ghost assignments](https://github.com/creusot-rs/creusot/pull/2289)
+- [`logic(indirect)` attribute](https://github.com/creusot-rs/creusot/pull/2282)
+- [Support constructor closures](https://github.com/creusot-rs/creusot/pull/2230)
+
+### creusot-std
+
+- [**Guarded borrows**](https://github.com/creusot-rs/creusot/pull/2243) (+ fixes [#2253](https://github.com/creusot-rs/creusot/pull/2253), defunctionalize [#2281](https://github.com/creusot-rs/creusot/pull/2281))
+- [Add `const` to `snapshot_from_fn`](https://github.com/creusot-rs/creusot/pull/2293)
+- [Add specification for slice `is_empty`](https://github.com/creusot-rs/creusot/pull/2287)
+- [Renaming : `PermCell` -> `PCell`](https://github.com/creusot-rs/creusot/pull/2284)
+- [Make the type `auth::Fragment` opaque](https://github.com/creusot-rs/creusot/pull/2278)
+- [Add specification for the `TryInto` blanket impl](https://github.com/creusot-rs/creusot/pull/2275)
+- [Thread tokens](https://github.com/creusot-rs/creusot/pull/2261)
+- [Improve extern spec of `[T]::split_at_mut`](https://github.com/creusot-rs/creusot/pull/2267) (+ fixes [#2271](https://github.com/creusot-rs/creusot/pull/2271))
+- [Add specification for `TryFrom` for arrays&co](https://github.com/creusot-rs/creusot/pull/2269)
+- [Add/improve extern specs of slice](https://github.com/creusot-rs/creusot/pull/2263)
+- [Add specs for `Wrapping` arithmetic operators](https://github.com/creusot-rs/creusot/pull/2196)
+- [Make `FSet::unions` opaque](https://github.com/creusot-rs/creusot/pull/2262)
+- [Add `extern_spec` for `NonZero`](https://github.com/creusot-rs/creusot/pull/2220)
+- [`Ghost::new_logic` is the identity](https://github.com/creusot-rs/creusot/pull/2238)
+- [Make the spec of `FMap::is_empty` coherent with its ghost counterpart](https://github.com/creusot-rs/creusot/pull/2237)
+- [Add `OrdLogic` for `(A, B)`](https://github.com/creusot-rs/creusot/pull/2216)
+
+### Fixes
+
+- [More accurate error message for improper uses of dead](https://github.com/creusot-rs/creusot/pull/2297)
+- [Do not check that additional predicates are verified in `#[trusted]` context](https://github.com/creusot-rs/creusot/pull/2276)
+- [Relax the requirements on `ghost!` in `ghost!`](https://github.com/creusot-rs/creusot/pull/2273)
+- [Enforce purity check in extern specs](https://github.com/creusot-rs/creusot/pull/2260)
+- [Fix #2254, by checking trait impl additional predicates in the validation phase, before termination](https://github.com/creusot-rs/creusot/pull/2257)
+- [Cleanup the resolution logic, and fix a small bug where places may get resolved after a function call instead of before](https://github.com/creusot-rs/creusot/pull/2242)
+- [Use `core::iter` instead of `std::iter` in proc macro for for loop.](https://github.com/creusot-rs/creusot/pull/2240)
+- [Use number of cores as default parallelism](https://github.com/creusot-rs/creusot/pull/2236)
+- [Properly error on async](https://github.com/creusot-rs/creusot/pull/2214)
+
+### Toolchain
+
+- [Add prover profiles limited to trigger-based quantifier instantiation](https://github.com/creusot-rs/creusot/pull/2283)
+- [Fix syn dependency version requirement](https://github.com/creusot-rs/creusot/pull/2268)
+- [Bump why3](https://github.com/creusot-rs/creusot/pull/2256)
+- [Upgrade Why3 and Why3find](https://github.com/creusot-rs/creusot/pull/2221)
+- [Add `aarch64-darwin` support in Nix](https://github.com/creusot-rs/creusot/pull/2252)
+- [Support aarch64 Linux in creusot-install](https://github.com/creusot-rs/creusot/pull/2225)
+- [Upgrade toolchain to 2026-08-03 and adapt tests to new Cargo build dir layout](https://github.com/creusot-rs/creusot/pull/2215)
+
+### Concurrency examples
+
+- [Add spin lock example.](https://github.com/creusot-rs/creusot/pull/2075)
+- [Add a simple relaxed variant](https://github.com/creusot-rs/creusot/pull/2251)
+- [Add message passing's "`rlx_options`" variant](https://github.com/creusot-rs/creusot/pull/2247)
+- [Add simplified version of `std::sync::mpmc`](https://github.com/creusot-rs/creusot/pull/2245)
 
 ## [0.13.0] - 2026-07-27
 
