@@ -2,19 +2,42 @@
   # Dependencies
   creusot,
   libiconv,
-  makeWrapper,
   rustToolchain,
 
   # Librairies
   buildEnv,
   lib,
+  makeWrapper,
   stdenv,
+  writeShellScriptBin,
 }:
 
+let
+  components = rustToolchain.passthru.availableComponents;
+
+  rustSysroot = stdenv.mkDerivation {
+    name = "rust-sysroot";
+    buildCommand = ''
+      mkdir -p $out
+      cp -rs --no-preserve=mode ${components.rustc}/libexec $out/
+      cp -rs --no-preserve=mode ${components.rust-src}/lib $out/
+      rm -f $out/lib/rustlib/src/rust/library/Cargo.lock
+    '';
+  };
+
+  rustcWrapped = writeShellScriptBin "rustc" ''
+    if [ "$1" = "--print" ] && [ "$2" = "sysroot" ]; then
+      echo ${rustSysroot}
+      exit 0
+    fi
+    exec "${rustToolchain}/bin/rustc" "$@"
+  '';
+in
 # Arguments
 {
-  cargo ? rustToolchain.passthru.availableComponents.cargo,
+  cargo ? components.cargo,
   isFree,
+  rust-analyzer ? null,
 }:
 
 let
@@ -28,6 +51,7 @@ buildEnv {
     creusot.creusot
     why3Framework
   ]
+  ++ lib.optional (rust-analyzer != null) (lib.hiPrio rust-analyzer)
   ++ lib.optional stdenv.isDarwin libiconv;
 
   nativeBuildInputs = [ makeWrapper ];
@@ -40,6 +64,10 @@ buildEnv {
     wrapProgram $out/bin/cargo-creusot \
       --set CARGO "$out/bin/cargo" \
       --set CREUSOT_DATA_HOME "$out"
+  ''
+  + lib.optionalString (rust-analyzer != null) ''
+    wrapProgram $out/bin/rust-analyzer \
+      --prefix PATH : "${rustcWrapped}/bin"
   '';
 
   passthru = { inherit why3Framework; };
