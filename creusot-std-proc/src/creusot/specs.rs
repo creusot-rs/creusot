@@ -280,7 +280,7 @@ impl Parse for Attributes {
     }
 }
 
-enum FnSpecResultKind {
+pub(crate) enum FnSpecResultKind {
     NoResult,            // No result identifier (for ensures clauses)
     Typed(Pat, Type),    // The result identifier is typed explicitly (i.e. `|result : #ty| ...`)
     Unified(Pat, Ident), // The type of the result identifier is unified with the type of another variable
@@ -288,7 +288,11 @@ enum FnSpecResultKind {
 
 // Generate a token stream for the item representing a specific
 // `requires` or `ensures`
-fn fn_spec_item(tag: Ident, reskind: FnSpecResultKind, fn_spec_body: TokenStream) -> TokenStream {
+pub(crate) fn fn_spec_item(
+    tag: Ident,
+    reskind: FnSpecResultKind,
+    fn_spec_body: TokenStream,
+) -> TokenStream {
     let name_tag = tag.to_string();
     let unify_ty_result = if let FnSpecResultKind::Unified(result, res) = &reskind {
         // Tell type inference that res and result have the same type

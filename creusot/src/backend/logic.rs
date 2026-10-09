@@ -3,14 +3,14 @@ use crate::{
         Why3Generator, common_meta_decls,
         logic::vcgen::{SelfCall, wp},
         signature::{LogicSignature, lower_logic_sig},
-        term::{lower_pure, lower_pure_weakdep},
+        term::{lower_pure, lower_pure_weakdep, lower_trigger},
         ty::{self, translate_ty},
     },
-    contracts_items::{Intrinsic, get_builtin, is_indirect, is_inline, is_opaque},
+    contracts_items::{Intrinsic, get_builtin, indirect_witness_name, is_inline, is_opaque},
     ctx::*,
     naming::name,
     translated_item::FileModule,
-    translation::pearlite::Term,
+    translation::pearlite::TermWithTriggers,
 };
 use rustc_hir::def_id::DefId;
 use why3::{
@@ -131,12 +131,14 @@ pub(crate) fn lower_logical_defn<'tcx>(
     names: &impl Namer<'tcx>,
     sig: LogicSignature,
     kind: DeclKind,
-    body: Term<'tcx>,
+    body: TermWithTriggers<'tcx>,
     def_id: DefId,
 ) -> Vec<Decl> {
     let mut decls = vec![];
     let inline = is_inline(ctx.tcx, def_id);
-    let indirect = is_indirect(ctx.tcx, def_id);
+    let indirect = indirect_witness_name(ctx.tcx, def_id).is_some();
+    let triggers = body.triggers;
+    let body = *body.term;
 
     // We don't pull dependencies for FnDef items, because it may be more private than
     // the definition is transparent
@@ -187,7 +189,13 @@ pub(crate) fn lower_logical_defn<'tcx>(
         decls.extend(meta_decl);
     } else {
         decls.push(Decl::LogicDecl(LogicDecl { kind: Some(kind), sig: sig.why_sig.clone() }));
-        decls.push(Decl::Axiom(definition_axiom(&sig, body, "def", inline)));
+        decls.push(Decl::Axiom(definition_axiom(
+            &sig,
+            body,
+            "def",
+            inline,
+            triggers.into_iter().map(|trig| lower_trigger(ctx, names, &trig)).collect(),
+        )));
     }
 
     if !sig.contract.ensures.is_empty() {
@@ -225,11 +233,19 @@ pub(crate) fn spec_axioms(sig: &LogicSignature) -> impl Iterator<Item = Decl> {
     })
 }
 
-fn definition_axiom(sig: &LogicSignature, body: Exp, suffix: &str, rewrite: bool) -> Axiom {
+fn definition_axiom(
+    sig: &LogicSignature,
+    body: Exp,
+    suffix: &str,
+    rewrite: bool,
+    mut triggers: Vec<Trigger>,
+) -> Axiom {
     let call = function_call(&sig.why_sig);
-    let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call.clone()), Box::new(body));
+    triggers.push(Trigger::single(call.clone()));
+
+    let equation = Exp::BinaryOp(BinOp::Eq, Box::new(call), Box::new(body));
     let condition = sig.contract.requires_implies(equation);
-    let axiom = Exp::forall_trig(sig.why_sig.args.clone(), [Trigger::single(call)], condition);
+    let axiom = Exp::forall_trig(sig.why_sig.args.clone(), triggers, condition);
     let name = sig.why_sig.name.refresh_with(|s| format!("{s}_{suffix}"));
     Axiom { name, rewrite, axiom }
 }
