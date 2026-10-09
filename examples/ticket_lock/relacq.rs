@@ -1,4 +1,4 @@
-// DEPTH 10
+// DEPTH 10 TIME 5
 
 use creusot_std::{
     cell::PCell,
