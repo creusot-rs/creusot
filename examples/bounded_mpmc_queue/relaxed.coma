@@ -1567,6 +1567,25 @@ module M_impl_Queue_T__new (* Queue<T> *)
   
   function mod_len_T (self: t_QueueInv_T) (i: int) : int = EuclideanDivision.mod i (len_T self)
   
+  predicate three_statuses_inv_T [@inline:trivial] (self: t_QueueInv_T) (k: int) =
+    let status_view = val' (Seq.get self.statuses_mono_auth (mod_len_T self k)) in match val_T self.tokens_auth k with
+      | R -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
+      | W value -> status_view.status'0 = 2 * k /\ k < head_T self /\ value = Seq.get (seq_T'1 self) (k - tail_T self)
+      | None -> match Seq.get self.cells_own (mod_len_T self k) with
+        | Some'0 at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PCell_MaybeUninit_T at_view)
+        /\ (if head_T self <= k then
+          status_view.status'0 = 2 * k
+        else
+          status_view.status'0 = 2 * k + 1
+          /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T (val_Perm_PCell_MaybeUninit_T at_view))
+          = Some'4 (Seq.get (seq_T'1 self) (k - tail_T self))
+        )
+        | _ -> false
+        end
+      end
+  
+  meta "rewrite_def" predicate three_statuses_inv_T
+  
   predicate protocol_QueueInv_T [@inline:trivial] (self: t_QueueInv_T) =
     gt_log_Int (len_T self) 0
     /\ len_T self = Seq.length self.cells_own
@@ -1605,23 +1624,8 @@ module M_impl_Queue_T__new (* Queue<T> *)
           | _ -> true
           end)
     /\ Seq.length (seq_T'1 self) = head_T self - tail_T self
-    /\ (forall k: int [val_T self.tokens_auth k]. tail_T self <= k /\ k < tail_T self + len_T self
-        -> (let status_view = val' (Seq.get self.statuses_mono_auth (mod_len_T self k)) in match val_T self.tokens_auth k with
-          | R -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
-          | W value -> status_view.status'0 = 2 * k
-          /\ k < head_T self /\ value = Seq.get (seq_T'1 self) (k - tail_T self)
-          | None -> match Seq.get self.cells_own (mod_len_T self k) with
-            | Some'0 at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PCell_MaybeUninit_T at_view)
-            /\ (if head_T self <= k then
-              status_view.status'0 = 2 * k
-            else
-              status_view.status'0 = 2 * k + 1
-              /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T (val_Perm_PCell_MaybeUninit_T at_view))
-              = Some'4 (Seq.get (seq_T'1 self) (k - tail_T self))
-            )
-            | _ -> false
-            end
-          end))
+    /\ (forall k: int [val_T self.tokens_auth k | mod_len_T self k]. tail_T self <= k /\ k < tail_T self + len_T self
+        -> three_statuses_inv_T self k)
     /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth k = None)
   
   meta "rewrite_def" predicate protocol_QueueInv_T
@@ -2552,6 +2556,25 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   meta "rewrite_def" function val_PCell_MaybeUninit_T
   
+  predicate three_statuses_inv_T [@inline:trivial] (self: t_QueueInv_T) (k: int) =
+    let status_view = val' (Seq.get self.statuses_mono_auth'0 (mod_len_T self k)) in match val_T self.tokens_auth'0 k with
+      | R'2 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
+      | W'2 value -> status_view.status'0 = 2 * k /\ k < head_T self /\ value = Seq.get (seq_T'0 self) (k - tail_T self)
+      | None'2 -> match Seq.get self.cells_own'0 (mod_len_T self k) with
+        | Some'0 at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PCell_MaybeUninit_T at_view)
+        /\ (if head_T self <= k then
+          status_view.status'0 = 2 * k
+        else
+          status_view.status'0 = 2 * k + 1
+          /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T (val_Perm_PCell_MaybeUninit_T at_view))
+          = Some'3 (Seq.get (seq_T'0 self) (k - tail_T self))
+        )
+        | _ -> false
+        end
+      end
+  
+  meta "rewrite_def" predicate three_statuses_inv_T
+  
   predicate protocol_QueueInv_T [@inline:trivial] (self: t_QueueInv_T) =
     gt_log_Int (len_T self) 0
     /\ len_T self = Seq.length self.cells_own'0
@@ -2590,23 +2613,8 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
           | _ -> true
           end)
     /\ Seq.length (seq_T'0 self) = head_T self - tail_T self
-    /\ (forall k: int [val_T self.tokens_auth'0 k]. tail_T self <= k /\ k < tail_T self + len_T self
-        -> (let status_view = val' (Seq.get self.statuses_mono_auth'0 (mod_len_T self k)) in match val_T self.tokens_auth'0 k with
-          | R'2 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
-          | W'2 value -> status_view.status'0 = 2 * k
-          /\ k < head_T self /\ value = Seq.get (seq_T'0 self) (k - tail_T self)
-          | None'2 -> match Seq.get self.cells_own'0 (mod_len_T self k) with
-            | Some'0 at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PCell_MaybeUninit_T at_view)
-            /\ (if head_T self <= k then
-              status_view.status'0 = 2 * k
-            else
-              status_view.status'0 = 2 * k + 1
-              /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T (val_Perm_PCell_MaybeUninit_T at_view))
-              = Some'3 (Seq.get (seq_T'0 self) (k - tail_T self))
-            )
-            | _ -> false
-            end
-          end))
+    /\ (forall k: int [val_T self.tokens_auth'0 k | mod_len_T self k]. tail_T self <= k /\ k < tail_T self + len_T self
+        -> three_statuses_inv_T self k)
     /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth'0 k = None'2)
   
   meta "rewrite_def" predicate protocol_QueueInv_T
@@ -3781,94 +3789,118 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       [ s0 = [ &_7 <- self.c0'4 ] s1
       | s1 = MutBorrow.borrow_final <t_QueueInv_T> {inv'0.current} {MutBorrow.get_id inv'0}
           (fun (_bor: MutBorrow.t t_QueueInv_T) ->
-            [ &_9 <- _bor ] -{inv_QueueInv_T _bor.final}-
+            [ &_11 <- _bor ] -{inv_QueueInv_T _bor.final}-
             [ &inv'0 <- { inv'0 with current = _bor.final } ] s2)
         [ _ck -> (! {[@expl:type invariant] inv_QueueInv_T inv'0.current} any) ]
-      | s2 = new_refmut_QueueInv_T {_9} (fun (_x: MutBorrow.t t_QueueInv_T) -> [ &_8 <- _x ] s3)
-      | s3 = MutBorrow.borrow_final <t_Committer_AtomicUsize_usize_Relaxed_Relaxed> {self.c1'4.current}
+      | s2 = MutBorrow.borrow_final <t_QueueInv_T> {_11.current} {MutBorrow.get_id _11}
+          (fun (_bor: MutBorrow.t t_QueueInv_T) ->
+            [ &_10 <- _bor ] -{inv_QueueInv_T _bor.final}-
+            [ &_11 <- { _11 with current = _bor.final } ] s3)
+        [ _ck -> (! {[@expl:type invariant] inv_QueueInv_T _11.current} any) ]
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T _11} any) ]
+      | s4 = -{resolve_refmut_QueueInv_T _11}- s5
+      | s5 = MutBorrow.borrow_final <t_QueueInv_T> {_10.current} {MutBorrow.get_id _10}
+          (fun (_bor: MutBorrow.t t_QueueInv_T) ->
+            [ &_9 <- _bor ] -{inv_QueueInv_T _bor.final}-
+            [ &_10 <- { _10 with current = _bor.final } ] s6)
+        [ _ck -> (! {[@expl:type invariant] inv_QueueInv_T _10.current} any) ]
+      | s6 = new_refmut_QueueInv_T {_9} (fun (_x: MutBorrow.t t_QueueInv_T) -> [ &_8 <- _x ] s7)
+      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T _10} any) ]
+      | s8 = -{resolve_refmut_QueueInv_T _10}- s9
+      | s9 = MutBorrow.borrow_final <t_Committer_AtomicUsize_usize_Relaxed_Relaxed> {self.c1'4.current}
           {MutBorrow.get_id self.c1'4}
           (fun (_bor: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) ->
-            [ &_11 <- _bor ] [ &self <- { self with c1'4 = { self.c1'4 with current = _bor.final } } ] s4)
-      | s4 = new_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed {_11}
-          (fun (_x: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) -> [ &_10 <- _x ] s5)
-      | s5 = [ &_12 <- self.c2'4 ] s6
-      | s6 = MutBorrow.borrow_final <t_Option_Fragment> {self.c3'4.current} {MutBorrow.get_id self.c3'4}
+            [ &_15 <- _bor ] [ &self <- { self with c1'4 = { self.c1'4 with current = _bor.final } } ] s10)
+      | s10 = MutBorrow.borrow_final <t_Committer_AtomicUsize_usize_Relaxed_Relaxed> {_15.current}
+          {MutBorrow.get_id _15}
+          (fun (_bor: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) ->
+            [ &_14 <- _bor ] [ &_15 <- { _15 with current = _bor.final } ] s11)
+      | s11 = -{resolve_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed _15}- s12
+      | s12 = MutBorrow.borrow_final <t_Committer_AtomicUsize_usize_Relaxed_Relaxed> {_14.current}
+          {MutBorrow.get_id _14}
+          (fun (_bor: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) ->
+            [ &_13 <- _bor ] [ &_14 <- { _14 with current = _bor.final } ] s13)
+      | s13 = new_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed {_13}
+          (fun (_x: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) -> [ &_12 <- _x ] s14)
+      | s14 = -{resolve_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed _14}- s15
+      | s15 = [ &_16 <- self.c2'4 ] s16
+      | s16 = MutBorrow.borrow_final <t_Option_Fragment> {self.c3'4.current} {MutBorrow.get_id self.c3'4}
           (fun (_bor: MutBorrow.t t_Option_Fragment) ->
-            [ &_17 <- _bor ] -{inv_Ghost_Option_Fragment _bor.final}-
-            [ &self <- { self with c3'4 = { self.c3'4 with current = _bor.final } } ] s7)
+            [ &_21 <- _bor ] -{inv_Ghost_Option_Fragment _bor.final}-
+            [ &self <- { self with c3'4 = { self.c3'4 with current = _bor.final } } ] s17)
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment self.c3'4.current} any) ]
-      | s7 = deref_mut_Ghost_Option_Fragment {_17} (fun (_x: MutBorrow.t t_Option_Fragment) -> [ &_16 <- _x ] s8)
-      | s8 = MutBorrow.borrow_final <t_Option_Fragment> {_16.current} {MutBorrow.get_id _16}
+      | s17 = deref_mut_Ghost_Option_Fragment {_21} (fun (_x: MutBorrow.t t_Option_Fragment) -> [ &_20 <- _x ] s18)
+      | s18 = MutBorrow.borrow_final <t_Option_Fragment> {_20.current} {MutBorrow.get_id _20}
           (fun (_bor: MutBorrow.t t_Option_Fragment) ->
-            [ &_15 <- _bor ] -{inv_Option_Fragment _bor.final}-
-            [ &_16 <- { _16 with current = _bor.final } ] s9)
-        [ _ck -> (! {[@expl:type invariant] inv_Option_Fragment _16.current} any) ]
-      | s9 = take_Fragment {_15} (fun (_x: t_Option_Fragment) -> [ &_14 <- _x ] s10)
-      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_Fragment _16} any) ]
-      | s11 = -{resolve_refmut_Option_Fragment _16}- s12
-      | s12 = unwrap_Fragment {_14} (fun (_x: t_Fragment) -> [ &_13 <- _x ] s13)
-      | s13 = try_dequeue_cas_inv_T {_7} {_8} {_10} {_12} {_13} {self.c4'4}
-          (fun (_x: tup2_TokenR_T_Perm_PCell_MaybeUninit_T) -> [ &_6 <- _x ] s14)
-      | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'0} any) ]
-      | s15 = -{resolve_refmut_QueueInv_T inv'0}- s16
-      | s16 = into_inner_tup2_TokenR_T_Perm_PCell_MaybeUninit_T {_6}
-          (fun (_x: tup2_TokenR_T_Perm_PCell_MaybeUninit_T) -> [ &_5 <- _x ] s17)
-      | s17 = [ &t <- _5.f0'5 ] s18
-      | s18 = [ &co <- _5.f1'5 ] s19
-      | s19 = [ &_19 <- Some'4 t ] s20
-      | s20 = MutBorrow.borrow_final <t_Option_TokenR_T> {self.c5'4.current} {MutBorrow.get_id self.c5'4}
+            [ &_19 <- _bor ] -{inv_Option_Fragment _bor.final}-
+            [ &_20 <- { _20 with current = _bor.final } ] s19)
+        [ _ck -> (! {[@expl:type invariant] inv_Option_Fragment _20.current} any) ]
+      | s19 = take_Fragment {_19} (fun (_x: t_Option_Fragment) -> [ &_18 <- _x ] s20)
+      | s20 = s21 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_Fragment _20} any) ]
+      | s21 = -{resolve_refmut_Option_Fragment _20}- s22
+      | s22 = unwrap_Fragment {_18} (fun (_x: t_Fragment) -> [ &_17 <- _x ] s23)
+      | s23 = try_dequeue_cas_inv_T {_7} {_8} {_12} {_16} {_17} {self.c4'4}
+          (fun (_x: tup2_TokenR_T_Perm_PCell_MaybeUninit_T) -> [ &_6 <- _x ] s24)
+      | s24 = s25 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'0} any) ]
+      | s25 = -{resolve_refmut_QueueInv_T inv'0}- s26
+      | s26 = into_inner_tup2_TokenR_T_Perm_PCell_MaybeUninit_T {_6}
+          (fun (_x: tup2_TokenR_T_Perm_PCell_MaybeUninit_T) -> [ &_5 <- _x ] s27)
+      | s27 = [ &t <- _5.f0'5 ] s28
+      | s28 = [ &co <- _5.f1'5 ] s29
+      | s29 = [ &_23 <- Some'4 t ] s30
+      | s30 = MutBorrow.borrow_final <t_Option_TokenR_T> {self.c5'4.current} {MutBorrow.get_id self.c5'4}
           (fun (_bor: MutBorrow.t t_Option_TokenR_T) ->
-            [ &_22 <- _bor ] -{inv_Ghost_Option_TokenR_T _bor.final}-
-            [ &self <- { self with c5'4 = { self.c5'4 with current = _bor.final } } ] s21)
+            [ &_26 <- _bor ] -{inv_Ghost_Option_TokenR_T _bor.final}-
+            [ &self <- { self with c5'4 = { self.c5'4 with current = _bor.final } } ] s31)
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenR_T self.c5'4.current} any) ]
-      | s21 = deref_mut_Ghost_Option_TokenR_T {_22} (fun (_x: MutBorrow.t t_Option_TokenR_T) -> [ &_21 <- _x ] s22)
-      | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_Option_TokenR_T _21.current} any) ]
-      | s23 = -{resolve_Option_TokenR_T _21.current}- s24
-      | s24 = [ &_21 <- { _21 with current = _19 } ] s25
-      | s25 = s26 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_TokenR_T _21} any) ]
-      | s26 = -{resolve_refmut_Option_TokenR_T _21}- s27
-      | s27 = [ &_23 <- Some'5 co ] s28
-      | s28 = MutBorrow.borrow_final <t_Option_Perm_PCell_MaybeUninit_T> {self.c6'4.current}
+      | s31 = deref_mut_Ghost_Option_TokenR_T {_26} (fun (_x: MutBorrow.t t_Option_TokenR_T) -> [ &_25 <- _x ] s32)
+      | s32 = s33 [ _ck -> (! {[@expl:type invariant] inv_Option_TokenR_T _25.current} any) ]
+      | s33 = -{resolve_Option_TokenR_T _25.current}- s34
+      | s34 = [ &_25 <- { _25 with current = _23 } ] s35
+      | s35 = s36 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_TokenR_T _25} any) ]
+      | s36 = -{resolve_refmut_Option_TokenR_T _25}- s37
+      | s37 = [ &_27 <- Some'5 co ] s38
+      | s38 = MutBorrow.borrow_final <t_Option_Perm_PCell_MaybeUninit_T> {self.c6'4.current}
           {MutBorrow.get_id self.c6'4}
           (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
-            [ &_26 <- _bor ] [ &self <- { self with c6'4 = { self.c6'4 with current = _bor.final } } ] s29)
-      | s29 = deref_mut_Ghost_Option_Perm_PCell_MaybeUninit_T {_26}
-          (fun (_x: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_25 <- _x ] s30)
-      | s30 = [ &_25 <- { _25 with current = _23 } ] s31
-      | s31 = -{resolve_refmut_Option_Perm_PCell_MaybeUninit_T _25}- s32
-      | s32 = -{match self with
+            [ &_30 <- _bor ] [ &self <- { self with c6'4 = { self.c6'4 with current = _bor.final } } ] s39)
+      | s39 = deref_mut_Ghost_Option_Perm_PCell_MaybeUninit_T {_30}
+          (fun (_x: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_29 <- _x ] s40)
+      | s40 = [ &_29 <- { _29 with current = _27 } ] s41
+      | s41 = -{resolve_refmut_Option_Perm_PCell_MaybeUninit_T _29}- s42
+      | s42 = -{match self with
           | {c6'4 = x} -> resolve_refmut_Ghost_Option_Perm_PCell_MaybeUninit_T x
           | _ -> true
           end}-
-        s33
-      | s33 = s34
+        s43
+      | s43 = s44
         [ _ck -> (! {[@expl:type invariant] match self with
             | {c5'4 = x} -> inv_refmut_Ghost_Option_TokenR_T x
             | _ -> true
             end}
           any) ]
-      | s34 = -{match self with
+      | s44 = -{match self with
           | {c5'4 = x} -> resolve_refmut_Ghost_Option_TokenR_T x
           | _ -> true
           end}-
-        s35
-      | s35 = s36
+        s45
+      | s45 = s46
         [ _ck -> (! {[@expl:type invariant] match self with
             | {c3'4 = x} -> inv_refmut_Ghost_Option_Fragment x
             | _ -> true
             end}
           any) ]
-      | s36 = -{match self with
+      | s46 = -{match self with
           | {c3'4 = x} -> resolve_refmut_Ghost_Option_Fragment x
           | _ -> true
           end}-
-        s37
-      | s37 = -{match self with
+        s47
+      | s47 = -{match self with
           | {c1'4 = x} -> resolve_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed x
           | _ -> true
           end}-
-        s38
-      | s38 = return {_ret} ] ]
+        s48
+      | s48 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: closure0'1 = self
     | & inv'0: MutBorrow.t t_QueueInv_T = inv'0
@@ -3879,20 +3911,24 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     | & _7: t_Queue_T = Any.any_l ()
     | & _8: MutBorrow.t t_QueueInv_T = Any.any_l ()
     | & _9: MutBorrow.t t_QueueInv_T = Any.any_l ()
-    | & _10: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed = Any.any_l ()
-    | & _11: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed = Any.any_l ()
-    | & _12: t_F = Any.any_l ()
-    | & _13: t_Fragment = Any.any_l ()
-    | & _14: t_Option_Fragment = Any.any_l ()
-    | & _15: MutBorrow.t t_Option_Fragment = Any.any_l ()
-    | & _16: MutBorrow.t t_Option_Fragment = Any.any_l ()
-    | & _17: MutBorrow.t t_Option_Fragment = Any.any_l ()
-    | & _19: t_Option_TokenR_T = Any.any_l ()
-    | & _21: MutBorrow.t t_Option_TokenR_T = Any.any_l ()
-    | & _22: MutBorrow.t t_Option_TokenR_T = Any.any_l ()
-    | & _23: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _25: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _26: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l () ] [ return (result: ()) -> return {result} ]
+    | & _10: MutBorrow.t t_QueueInv_T = Any.any_l ()
+    | & _11: MutBorrow.t t_QueueInv_T = Any.any_l ()
+    | & _12: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed = Any.any_l ()
+    | & _13: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed = Any.any_l ()
+    | & _14: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed = Any.any_l ()
+    | & _15: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed = Any.any_l ()
+    | & _16: t_F = Any.any_l ()
+    | & _17: t_Fragment = Any.any_l ()
+    | & _18: t_Option_Fragment = Any.any_l ()
+    | & _19: MutBorrow.t t_Option_Fragment = Any.any_l ()
+    | & _20: MutBorrow.t t_Option_Fragment = Any.any_l ()
+    | & _21: MutBorrow.t t_Option_Fragment = Any.any_l ()
+    | & _23: t_Option_TokenR_T = Any.any_l ()
+    | & _25: MutBorrow.t t_Option_TokenR_T = Any.any_l ()
+    | & _26: MutBorrow.t t_Option_TokenR_T = Any.any_l ()
+    | & _27: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _29: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _30: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l () ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'1'pre
   
@@ -4229,6 +4265,11 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     c1'6: MutBorrow.t t_Option_TokenR_T;
     c2'6: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T }
   
+  predicate resolve_refmut_Committer_AtomicUsize_usize_None_Release [@inline:trivial] (_1: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Committer_AtomicUsize_usize_None_Release
+  
   let new_refmut_Committer_AtomicUsize_usize_None_Release (x: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release)
     (return (x'0: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release)) = any
     [ return (result: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) ->
@@ -4346,72 +4387,98 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_QueueInv_T> {inv'0.current} {MutBorrow.get_id inv'0}
           (fun (_bor: MutBorrow.t t_QueueInv_T) ->
-            [ &_4 <- _bor ] -{inv_QueueInv_T _bor.final}-
+            [ &_6 <- _bor ] -{inv_QueueInv_T _bor.final}-
             [ &inv'0 <- { inv'0 with current = _bor.final } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_QueueInv_T inv'0.current} any) ]
-      | s1 = new_refmut_QueueInv_T {_4} (fun (_x: MutBorrow.t t_QueueInv_T) -> [ &_3 <- _x ] s2)
-      | s2 = MutBorrow.borrow_mut <t_Committer_AtomicUsize_usize_None_Release> {self.current.c0'6.current}
+      | s1 = MutBorrow.borrow_final <t_QueueInv_T> {_6.current} {MutBorrow.get_id _6}
+          (fun (_bor: MutBorrow.t t_QueueInv_T) ->
+            [ &_5 <- _bor ] -{inv_QueueInv_T _bor.final}-
+            [ &_6 <- { _6 with current = _bor.final } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_QueueInv_T _6.current} any) ]
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T _6} any) ]
+      | s3 = -{resolve_refmut_QueueInv_T _6}- s4
+      | s4 = MutBorrow.borrow_final <t_QueueInv_T> {_5.current} {MutBorrow.get_id _5}
+          (fun (_bor: MutBorrow.t t_QueueInv_T) ->
+            [ &_4 <- _bor ] -{inv_QueueInv_T _bor.final}-
+            [ &_5 <- { _5 with current = _bor.final } ] s5)
+        [ _ck -> (! {[@expl:type invariant] inv_QueueInv_T _5.current} any) ]
+      | s5 = new_refmut_QueueInv_T {_4} (fun (_x: MutBorrow.t t_QueueInv_T) -> [ &_3 <- _x ] s6)
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T _5} any) ]
+      | s7 = -{resolve_refmut_QueueInv_T _5}- s8
+      | s8 = MutBorrow.borrow_mut <t_Committer_AtomicUsize_usize_None_Release> {self.current.c0'6.current}
           (fun (_bor: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) ->
-            [ &_6 <- _bor ]
+            [ &_10 <- _bor ]
             [ &self <- { self with current = { self.current with c0'6 = { self.current.c0'6 with current = _bor.final } } } ]
-            s3)
-      | s3 = new_refmut_Committer_AtomicUsize_usize_None_Release {_6}
-          (fun (_x: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) -> [ &_5 <- _x ] s4)
-      | s4 = MutBorrow.borrow_mut <t_Option_TokenR_T> {self.current.c1'6.current}
+            s9)
+      | s9 = MutBorrow.borrow_final <t_Committer_AtomicUsize_usize_None_Release> {_10.current} {MutBorrow.get_id _10}
+          (fun (_bor: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) ->
+            [ &_9 <- _bor ] [ &_10 <- { _10 with current = _bor.final } ] s10)
+      | s10 = -{resolve_refmut_Committer_AtomicUsize_usize_None_Release _10}- s11
+      | s11 = MutBorrow.borrow_final <t_Committer_AtomicUsize_usize_None_Release> {_9.current} {MutBorrow.get_id _9}
+          (fun (_bor: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) ->
+            [ &_8 <- _bor ] [ &_9 <- { _9 with current = _bor.final } ] s12)
+      | s12 = new_refmut_Committer_AtomicUsize_usize_None_Release {_8}
+          (fun (_x: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) -> [ &_7 <- _x ] s13)
+      | s13 = -{resolve_refmut_Committer_AtomicUsize_usize_None_Release _9}- s14
+      | s14 = MutBorrow.borrow_mut <t_Option_TokenR_T> {self.current.c1'6.current}
           (fun (_bor: MutBorrow.t t_Option_TokenR_T) ->
-            [ &_12 <- _bor ] -{inv_Ghost_Option_TokenR_T _bor.final}-
+            [ &_16 <- _bor ] -{inv_Ghost_Option_TokenR_T _bor.final}-
             [ &self <- { self with current = { self.current with c1'6 = { self.current.c1'6 with current = _bor.final } } } ]
-            s5) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenR_T self.current.c1'6.current} any) ]
-      | s5 = deref_mut_Ghost_Option_TokenR_T {_12} (fun (_x: MutBorrow.t t_Option_TokenR_T) -> [ &_11 <- _x ] s6)
-      | s6 = MutBorrow.borrow_final <t_Option_TokenR_T> {_11.current} {MutBorrow.get_id _11}
+            s15) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenR_T self.current.c1'6.current} any) ]
+      | s15 = deref_mut_Ghost_Option_TokenR_T {_16} (fun (_x: MutBorrow.t t_Option_TokenR_T) -> [ &_15 <- _x ] s16)
+      | s16 = MutBorrow.borrow_final <t_Option_TokenR_T> {_15.current} {MutBorrow.get_id _15}
           (fun (_bor: MutBorrow.t t_Option_TokenR_T) ->
-            [ &_10 <- _bor ] -{inv_Option_TokenR_T _bor.final}-
-            [ &_11 <- { _11 with current = _bor.final } ] s7)
-        [ _ck -> (! {[@expl:type invariant] inv_Option_TokenR_T _11.current} any) ]
-      | s7 = take_TokenR_T {_10} (fun (_x: t_Option_TokenR_T) -> [ &_9 <- _x ] s8)
-      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_TokenR_T _11} any) ]
-      | s9 = -{resolve_refmut_Option_TokenR_T _11}- s10
-      | s10 = unwrap_TokenR_T {_9} (fun (_x: t_TokenR_T) -> [ &_8 <- _x ] s11)
-      | s11 = new_TokenR_T {_8} (fun (_x: t_TokenR_T) -> [ &_7 <- _x ] s12)
-      | s12 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {self.current.c2'6.current}
+            [ &_14 <- _bor ] -{inv_Option_TokenR_T _bor.final}-
+            [ &_15 <- { _15 with current = _bor.final } ] s17)
+        [ _ck -> (! {[@expl:type invariant] inv_Option_TokenR_T _15.current} any) ]
+      | s17 = take_TokenR_T {_14} (fun (_x: t_Option_TokenR_T) -> [ &_13 <- _x ] s18)
+      | s18 = s19 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_TokenR_T _15} any) ]
+      | s19 = -{resolve_refmut_Option_TokenR_T _15}- s20
+      | s20 = unwrap_TokenR_T {_13} (fun (_x: t_TokenR_T) -> [ &_12 <- _x ] s21)
+      | s21 = new_TokenR_T {_12} (fun (_x: t_TokenR_T) -> [ &_11 <- _x ] s22)
+      | s22 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {self.current.c2'6.current}
           (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
-            [ &_18 <- _bor ]
+            [ &_22 <- _bor ]
             [ &self <- { self with current = { self.current with c2'6 = { self.current.c2'6 with current = _bor.final } } } ]
-            s13)
-      | s13 = deref_mut_Ghost_Option_Perm_PCell_MaybeUninit_T {_18}
-          (fun (_x: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_17 <- _x ] s14)
-      | s14 = MutBorrow.borrow_final <t_Option_Perm_PCell_MaybeUninit_T> {_17.current} {MutBorrow.get_id _17}
+            s23)
+      | s23 = deref_mut_Ghost_Option_Perm_PCell_MaybeUninit_T {_22}
+          (fun (_x: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_21 <- _x ] s24)
+      | s24 = MutBorrow.borrow_final <t_Option_Perm_PCell_MaybeUninit_T> {_21.current} {MutBorrow.get_id _21}
           (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
-            [ &_16 <- _bor ] [ &_17 <- { _17 with current = _bor.final } ] s15)
-      | s15 = take_Perm_PCell_MaybeUninit_T {_16} (fun (_x: t_Option_Perm_PCell_MaybeUninit_T) -> [ &_15 <- _x ] s16)
-      | s16 = -{resolve_refmut_Option_Perm_PCell_MaybeUninit_T _17}- s17
-      | s17 = unwrap_Perm_PCell_MaybeUninit_T {_15} (fun (_x: t_Perm_PCell_MaybeUninit_T) -> [ &_14 <- _x ] s18)
-      | s18 = new_Perm_PCell_MaybeUninit_T {_14} (fun (_x: t_Perm_PCell_MaybeUninit_T) -> [ &_13 <- _x ] s19)
-      | s19 = try_dequeue_store_inv_T {_3} {_5} {_7} {_13} (fun (_x: ()) -> [ &_ret <- _x ] s20)
-      | s20 = s21 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'0} any) ]
-      | s21 = -{resolve_refmut_QueueInv_T inv'0}- s22
-      | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure0'0 self} any) ]
-      | s23 = -{resolve_refmut_closure0'0 self}- s24
-      | s24 = return {_ret} ] ]
+            [ &_20 <- _bor ] [ &_21 <- { _21 with current = _bor.final } ] s25)
+      | s25 = take_Perm_PCell_MaybeUninit_T {_20} (fun (_x: t_Option_Perm_PCell_MaybeUninit_T) -> [ &_19 <- _x ] s26)
+      | s26 = -{resolve_refmut_Option_Perm_PCell_MaybeUninit_T _21}- s27
+      | s27 = unwrap_Perm_PCell_MaybeUninit_T {_19} (fun (_x: t_Perm_PCell_MaybeUninit_T) -> [ &_18 <- _x ] s28)
+      | s28 = new_Perm_PCell_MaybeUninit_T {_18} (fun (_x: t_Perm_PCell_MaybeUninit_T) -> [ &_17 <- _x ] s29)
+      | s29 = try_dequeue_store_inv_T {_3} {_7} {_11} {_17} (fun (_x: ()) -> [ &_ret <- _x ] s30)
+      | s30 = s31 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'0} any) ]
+      | s31 = -{resolve_refmut_QueueInv_T inv'0}- s32
+      | s32 = s33 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure0'0 self} any) ]
+      | s33 = -{resolve_refmut_closure0'0 self}- s34
+      | s34 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t closure0'2 = self
     | & inv'0: MutBorrow.t t_QueueInv_T = inv'0
     | & _3: MutBorrow.t t_QueueInv_T = Any.any_l ()
     | & _4: MutBorrow.t t_QueueInv_T = Any.any_l ()
-    | & _5: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = Any.any_l ()
-    | & _6: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = Any.any_l ()
-    | & _7: t_TokenR_T = Any.any_l ()
-    | & _8: t_TokenR_T = Any.any_l ()
-    | & _9: t_Option_TokenR_T = Any.any_l ()
-    | & _10: MutBorrow.t t_Option_TokenR_T = Any.any_l ()
-    | & _11: MutBorrow.t t_Option_TokenR_T = Any.any_l ()
-    | & _12: MutBorrow.t t_Option_TokenR_T = Any.any_l ()
-    | & _13: t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _14: t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _15: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _16: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _17: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _18: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l () ]
+    | & _5: MutBorrow.t t_QueueInv_T = Any.any_l ()
+    | & _6: MutBorrow.t t_QueueInv_T = Any.any_l ()
+    | & _7: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = Any.any_l ()
+    | & _8: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = Any.any_l ()
+    | & _9: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = Any.any_l ()
+    | & _10: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = Any.any_l ()
+    | & _11: t_TokenR_T = Any.any_l ()
+    | & _12: t_TokenR_T = Any.any_l ()
+    | & _13: t_Option_TokenR_T = Any.any_l ()
+    | & _14: MutBorrow.t t_Option_TokenR_T = Any.any_l ()
+    | & _15: MutBorrow.t t_Option_TokenR_T = Any.any_l ()
+    | & _16: MutBorrow.t t_Option_TokenR_T = Any.any_l ()
+    | & _17: t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _18: t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _19: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _20: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _21: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _22: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l () ]
     [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0'0 self.current self.final}
       return {result} ]
   
@@ -4445,11 +4512,6 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     precondition_closure0'2 self.f0'8 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'2
-  
-  predicate resolve_refmut_Committer_AtomicUsize_usize_None_Release [@inline:trivial] (_1: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Committer_AtomicUsize_usize_None_Release
   
   predicate resolve_closure0'0 [@inline:trivial] (_1: closure0'2) =
     resolve_refmut_Ghost_Option_Perm_PCell_MaybeUninit_T _1.c2'6
@@ -5090,7 +5152,9 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   
   function mod_len_wrap_T (self: t_QueueInv_T) (i: int) : ()
   
-  axiom mod_len_wrap_T_spec: forall self: t_QueueInv_T, i: int. mod_len_T self (i + len_T self) = mod_len_T self i
+  axiom mod_len_wrap_T_spec: forall self: t_QueueInv_T, i: int [mod_len_T self (i + len_T self)]. mod_len_T self (i
+        + len_T self)
+      = mod_len_T self i
   
   type t_Committer_AtomicUsize_usize_Relaxed_Relaxed
   
@@ -5582,6 +5646,10 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   
   meta "rewrite_def" predicate inv_refmut_Authority_T'0
   
+  predicate resolve_refmut_Authority_T'0 [@inline:trivial] (_1: MutBorrow.t t_Authority_T'0) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Authority_T'0
+  
   predicate invariant_Ghost_refmut_Authority_T [@inline:trivial] (self: MutBorrow.t t_Authority_T'0) =
     inv_refmut_Authority_T'0 self
   
@@ -5641,10 +5709,6 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
         -> val_T auth'0.current i = val_T (fin_Ghost_refmut_Authority_T auth'0) i)}
       (! return {result}) ]
   
-  predicate resolve_refmut_Authority_T'0 [@inline:trivial] (_1: MutBorrow.t t_Authority_T'0) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Authority_T'0
-  
   predicate resolve_refmut_refmut_QueueInv_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_QueueInv_T)) =
     _1.final = _1.current
   
@@ -5663,6 +5727,42 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
     resolve_Ghost_refmut_QueueInv_T _1
   
   meta "rewrite_def" predicate resolve_Ghost_refmut_QueueInv_T'0
+  
+  predicate ge_log_SyncView [@inline:trivial] (self: t_SyncView) (other: t_SyncView) = le_log_SyncView other self
+  
+  meta "rewrite_def" predicate ge_log_SyncView
+  
+  type t_MaybeUninit_T
+  
+  type t_Option_T = None'2 | Some'2 t_T
+  
+  function view_MaybeUninit_T (self: t_MaybeUninit_T) : t_Option_T
+  
+  function val_unsized_PCell_MaybeUninit_T (self: t_Perm_PCell_MaybeUninit_T) : t_MaybeUninit_T
+  
+  function val_PCell_MaybeUninit_T [@inline:trivial] (self: t_Perm_PCell_MaybeUninit_T) : t_MaybeUninit_T =
+    val_unsized_PCell_MaybeUninit_T self
+  
+  meta "rewrite_def" function val_PCell_MaybeUninit_T
+  
+  predicate three_statuses_inv_T [@inline:trivial] (self: t_QueueInv_T) (k: int) =
+    let status_view = val''0 (Seq.get self.statuses_mono_auth (mod_len_T self k)) in match val_T self.tokens_auth k with
+      | R'1 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
+      | W'1 value -> status_view.status'0 = 2 * k /\ k < head_T self /\ value = Seq.get (seq_T'0 self) (k - tail_T self)
+      | None'1 -> match Seq.get self.cells_own (mod_len_T self k) with
+        | Some at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PCell_MaybeUninit_T at_view)
+        /\ (if head_T self <= k then
+          status_view.status'0 = 2 * k
+        else
+          status_view.status'0 = 2 * k + 1
+          /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T (val_Perm_PCell_MaybeUninit_T at_view))
+          = Some'2 (Seq.get (seq_T'0 self) (k - tail_T self))
+        )
+        | _ -> false
+        end
+      end
+  
+  meta "rewrite_def" predicate three_statuses_inv_T
   
   let into_inner_TokenR_T (self: t_TokenR_T) (return (x: t_TokenR_T)) =
   {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_TokenR_T self}
@@ -5768,23 +5868,6 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   
   function ward_PCell_MaybeUninit_T (self: t_Perm_PCell_MaybeUninit_T) : t_PCell_MaybeUninit_T
   
-  predicate ge_log_SyncView [@inline:trivial] (self: t_SyncView) (other: t_SyncView) = le_log_SyncView other self
-  
-  meta "rewrite_def" predicate ge_log_SyncView
-  
-  type t_MaybeUninit_T
-  
-  type t_Option_T = None'2 | Some'2 t_T
-  
-  function view_MaybeUninit_T (self: t_MaybeUninit_T) : t_Option_T
-  
-  function val_unsized_PCell_MaybeUninit_T (self: t_Perm_PCell_MaybeUninit_T) : t_MaybeUninit_T
-  
-  function val_PCell_MaybeUninit_T [@inline:trivial] (self: t_Perm_PCell_MaybeUninit_T) : t_MaybeUninit_T =
-    val_unsized_PCell_MaybeUninit_T self
-  
-  meta "rewrite_def" function val_PCell_MaybeUninit_T
-  
   predicate protocol_QueueInv_T [@inline:trivial] (self: t_QueueInv_T) =
     gt_log_Int (len_T self) 0
     /\ len_T self = Seq.length self.cells_own
@@ -5823,23 +5906,8 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
           | _ -> true
           end)
     /\ Seq.length (seq_T'0 self) = head_T self - tail_T self
-    /\ (forall k: int [val_T self.tokens_auth k]. tail_T self <= k /\ k < tail_T self + len_T self
-        -> (let status_view = val''0 (Seq.get self.statuses_mono_auth (mod_len_T self k)) in match val_T self.tokens_auth k with
-          | R'1 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
-          | W'1 value -> status_view.status'0 = 2 * k
-          /\ k < head_T self /\ value = Seq.get (seq_T'0 self) (k - tail_T self)
-          | None'1 -> match Seq.get self.cells_own (mod_len_T self k) with
-            | Some at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PCell_MaybeUninit_T at_view)
-            /\ (if head_T self <= k then
-              status_view.status'0 = 2 * k
-            else
-              status_view.status'0 = 2 * k + 1
-              /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T (val_Perm_PCell_MaybeUninit_T at_view))
-              = Some'2 (Seq.get (seq_T'0 self) (k - tail_T self))
-            )
-            | _ -> false
-            end
-          end))
+    /\ (forall k: int [val_T self.tokens_auth k | mod_len_T self k]. tail_T self <= k /\ k < tail_T self + len_T self
+        -> three_statuses_inv_T self k)
     /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth k = None'1)
   
   meta "rewrite_def" predicate protocol_QueueInv_T
@@ -5910,14 +5978,19 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
             [ &inv'1 <- _bor ] -{inv_QueueInv_T _bor.final}-
             [ &_55 <- { _55 with current = { _55.current with current = _bor.final } } ] s3)
         [ _ck -> (! {[@expl:type invariant] inv_QueueInv_T _55.current.current} any) ]
-      | s3 = [ &tail <- tail_T inv'1.current ] s4
-      | s4 = [ &tail_plus_len <- tail + len_T inv'1.current ] s5
-      | s5 = [ &_68 <- mod_len_T inv'1.current tail ] s6
-      | s6 = into_ghost_Int {_68} (fun (_x: int) -> [ &_67 <- _x ] s7)
-      | s7 = deref_Ghost_Int {_67} (fun (_x: int) -> [ &_65 <- _x ] s8)
-      | s8 = [ &tail_mod <- _65 ] s9
-      | s9 = [ &_72 <- () ] s10
-      | s10 = {[@expl:assertion] tail_mod = mod_len_T inv'1.current tail_plus_len} s11
+      | s3 = [ &old_inv <- inv'1.current ] s4
+      | s4 = [ &tail <- tail_T inv'1.current ] s5
+      | s5 = [ &tail_plus_len <- tail + len_T inv'1.current ] s6
+      | s6 = [ &_71 <- mod_len_T inv'1.current tail ] s7
+      | s7 = into_ghost_Int {_71} (fun (_x: int) -> [ &_70 <- _x ] s8)
+      | s8 = deref_Ghost_Int {_70} (fun (_x: int) -> [ &_68 <- _x ] s9)
+      | s9 = [ &tail_mod <- _68 ] s10
+      | s10 = any
+        [ any_ (_dest: ()) -> (! -{([@stop_split] [@expl:mod_len_wrap ensures] mod_len_T inv'1.current (tail
+              + len_T inv'1.current)
+            = mod_len_T inv'1.current tail)
+          /\ _dest = mod_len_wrap_T inv'1.current tail}-
+          [ &_75 <- _dest ] s11) ] [ _ck -> (! any) ]
       | s11 = deref_Ghost_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed {c}
           (fun (_x: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) -> [ &_81 <- _x ] s12)
       | s12 = [ &_84 <- inv'1.current.tail_own ] s13
@@ -6046,31 +6119,53 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
       | s79 = MutBorrow.borrow_final <t_Authority_T'0> {inv'1.current.tokens_auth}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'1) 6}
           (fun (_bor: MutBorrow.t t_Authority_T'0) ->
-            [ &_167 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &_169 <- _bor ] -{inv_Authority_T'0 _bor.final}-
             [ &inv'1 <- { inv'1 with current = { inv'1.current with tokens_auth = _bor.final } } ] s80)
         [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 inv'1.current.tokens_auth} any) ]
-      | s80 = MutBorrow.borrow_final <t_Authority_T'0> {_167.current} {MutBorrow.get_id _167}
+      | s80 = MutBorrow.borrow_final <t_Authority_T'0> {_169.current} {MutBorrow.get_id _169}
+          (fun (_bor: MutBorrow.t t_Authority_T'0) ->
+            [ &_168 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &_169 <- { _169 with current = _bor.final } ] s81)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _169.current} any) ]
+      | s81 = s82 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T'0 _169} any) ]
+      | s82 = -{resolve_refmut_Authority_T'0 _169}- s83
+      | s83 = MutBorrow.borrow_final <t_Authority_T'0> {_168.current} {MutBorrow.get_id _168}
+          (fun (_bor: MutBorrow.t t_Authority_T'0) ->
+            [ &_167 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &_168 <- { _168 with current = _bor.final } ] s84)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _168.current} any) ]
+      | s84 = s85 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T'0 _168} any) ]
+      | s85 = -{resolve_refmut_Authority_T'0 _168}- s86
+      | s86 = MutBorrow.borrow_final <t_Authority_T'0> {_167.current} {MutBorrow.get_id _167}
           (fun (_bor: MutBorrow.t t_Authority_T'0) ->
             [ &_166 <- _bor ] -{inv_Authority_T'0 _bor.final}-
-            [ &_167 <- { _167 with current = _bor.final } ] s81)
+            [ &_167 <- { _167 with current = _bor.final } ] s87)
         [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _167.current} any) ]
-      | s81 = new_refmut_Authority_T {_166} (fun (_x: MutBorrow.t t_Authority_T'0) -> [ &_165 <- _x ] s82)
-      | s82 = into_ghost_Int {tail_plus_len} (fun (_x: int) -> [ &_171 <- _x ] s83)
-      | s83 = deref_Ghost_Int {_171} (fun (_x: int) -> [ &_169 <- _x ] s84)
-      | s84 = alloc_T {_165} {_169} (fun (_x: t_TokenR_T) -> [ &token <- _x ] s85)
-      | s85 = s86 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T'0 _167} any) ]
-      | s86 = -{resolve_refmut_Authority_T'0 _167}- s87
-      | s87 = s88 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_QueueInv_T _55} any) ]
-      | s88 = -{resolve_refmut_refmut_QueueInv_T _55}- s89
-      | s89 = s90 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'1} any) ]
-      | s90 = -{resolve_refmut_QueueInv_T inv'1}- s91
-      | s91 = s92 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_QueueInv_T inv} any) ]
-      | s92 = -{resolve_Ghost_refmut_QueueInv_T'0 inv}- s93
-      | s93 = into_inner_TokenR_T {token} (fun (_x: t_TokenR_T) -> [ &_173 <- _x ] s94)
-      | s94 = [ &_53 <- { f0'1 = _173; f1'1 = cell_own } ] s95
-      | s95 = new_tup2_TokenR_T_Perm_PCell_MaybeUninit_T {_53}
-          (fun (_x: tup2_TokenR_T_Perm_PCell_MaybeUninit_T) -> [ &_ret <- _x ] s96)
-      | s96 = return {_ret} ] ]
+      | s87 = new_refmut_Authority_T {_166} (fun (_x: MutBorrow.t t_Authority_T'0) -> [ &_165 <- _x ] s88)
+      | s88 = s89 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T'0 _167} any) ]
+      | s89 = -{resolve_refmut_Authority_T'0 _167}- s90
+      | s90 = into_ghost_Int {tail_plus_len} (fun (_x: int) -> [ &_173 <- _x ] s91)
+      | s91 = deref_Ghost_Int {_173} (fun (_x: int) -> [ &_171 <- _x ] s92)
+      | s92 = alloc_T {_165} {_171} (fun (_x: t_TokenR_T) -> [ &token <- _x ] s93)
+      | s93 = s94 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_QueueInv_T _55} any) ]
+      | s94 = -{resolve_refmut_refmut_QueueInv_T _55}- s95
+      | s95 = s96 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'1} any) ]
+      | s96 = -{resolve_refmut_QueueInv_T inv'1}- s97
+      | s97 = s98 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_QueueInv_T inv} any) ]
+      | s98 = -{resolve_Ghost_refmut_QueueInv_T'0 inv}- s99
+      | s99 = {[@expl:assertion] tail_T inv'1.current = tail_T old_inv + 1} s100
+      | s100 = {[@expl:assertion] head_T inv'1.current = head_T old_inv} s101
+      | s101 = {[@expl:assertion] len_T inv'1.current = len_T old_inv} s102
+      | s102 = {[@expl:assertion] forall k: int. mod_len_T inv'1.current k = mod_len_T old_inv k} s103
+      | s103 = {[@expl:assertion] inv'1.current.statuses_mono_auth = old_inv.statuses_mono_auth} s104
+      | s104 = {[@expl:assertion] forall k: int. tail < k /\ k < tail_plus_len -> three_statuses_inv_T inv'1.final k}
+        s105
+      | s105 = {[@expl:assertion] three_statuses_inv_T inv'1.current tail_plus_len} s106
+      | s106 = into_inner_TokenR_T {token} (fun (_x: t_TokenR_T) -> [ &_204 <- _x ] s107)
+      | s107 = [ &_53 <- { f0'1 = _204; f1'1 = cell_own } ] s108
+      | s108 = new_tup2_TokenR_T_Perm_PCell_MaybeUninit_T {_53}
+          (fun (_x: tup2_TokenR_T_Perm_PCell_MaybeUninit_T) -> [ &_ret <- _x ] s109)
+      | s109 = return {_ret} ] ]
     [ & _ret: tup2_TokenR_T_Perm_PCell_MaybeUninit_T = Any.any_l ()
     | & self: t_Queue_T = self
     | & inv: MutBorrow.t t_QueueInv_T = inv
@@ -6082,13 +6177,14 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
     | & inv'1: MutBorrow.t t_QueueInv_T = Any.any_l ()
     | & _55: MutBorrow.t (MutBorrow.t t_QueueInv_T) = Any.any_l ()
     | & _56: MutBorrow.t (MutBorrow.t t_QueueInv_T) = Any.any_l ()
+    | & old_inv: t_QueueInv_T = Any.any_l ()
     | & tail: int = Any.any_l ()
     | & tail_plus_len: int = Any.any_l ()
     | & tail_mod: int = Any.any_l ()
-    | & _65: int = Any.any_l ()
-    | & _67: int = Any.any_l ()
     | & _68: int = Any.any_l ()
-    | & _72: () = Any.any_l ()
+    | & _70: int = Any.any_l ()
+    | & _71: int = Any.any_l ()
+    | & _75: () = Any.any_l ()
     | & _79: t_AcquireSyncView = Any.any_l ()
     | & _81: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed = Any.any_l ()
     | & _84: t_Perm_AtomicUsize = Any.any_l ()
@@ -6141,9 +6237,11 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
     | & _165: MutBorrow.t t_Authority_T'0 = Any.any_l ()
     | & _166: MutBorrow.t t_Authority_T'0 = Any.any_l ()
     | & _167: MutBorrow.t t_Authority_T'0 = Any.any_l ()
-    | & _169: int = Any.any_l ()
+    | & _168: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _169: MutBorrow.t t_Authority_T'0 = Any.any_l ()
     | & _171: int = Any.any_l ()
-    | & _173: t_TokenR_T = Any.any_l () ])
+    | & _173: int = Any.any_l ()
+    | & _204: t_TokenR_T = Any.any_l () ])
     [ return (result: tup2_TokenR_T_Perm_PCell_MaybeUninit_T) ->
     {[@stop_split] [@expl:try_dequeue_cas_inv_T ensures] ([@stop_split] [@expl:try_dequeue_cas_inv result type invariant] inv_Ghost_tup2_TokenR_T_Perm_PCell_MaybeUninit_T result)
       /\ ([@stop_split] [@expl:try_dequeue_cas_inv ensures #0] protocol_QueueInv_T (fin_Ghost_refmut_QueueInv_T inv))
@@ -6559,6 +6657,10 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
   
   meta "rewrite_def" predicate inv_refmut_Authority_T
   
+  predicate resolve_refmut_Authority_T [@inline:trivial] (_1: MutBorrow.t t_Authority_T'0) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Authority_T
+  
   predicate invariant_Ghost_refmut_Authority_T [@inline:trivial] (self: MutBorrow.t t_Authority_T'0) =
     inv_refmut_Authority_T self
   
@@ -6619,10 +6721,6 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
       /\ ([@stop_split] [@expl:discard ensures #3] forall i: int. i <> index_T this
         -> val_T auth.current i = val_T (fin_Ghost_refmut_Authority_T auth) i)}
       (! return {result}) ]
-  
-  predicate resolve_refmut_Authority_T [@inline:trivial] (_1: MutBorrow.t t_Authority_T'0) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Authority_T
   
   type t_StatusWithView = { status'0: int; view'0: t_SyncView }
   
@@ -6780,17 +6878,6 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
   axiom mod_len_inj_T_spec: forall self: t_QueueInv_T, i: int, j: int. mod_len_T self i = mod_len_T self j
       -> - len_T self < i - j /\ i - j < len_T self -> i = j
   
-  let new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
-  
-  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
-  
-  meta "rewrite_def" predicate gt_log_Int
-  
-  function budget_T (self: t_Authority_T) : int
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
   constant any_tup2_usize_SyncView : tup2_usize_SyncView
   
   function unwrap_Option_tup2_usize_SyncView (self: t_Option_tup2_usize_SyncView) : tup2_usize_SyncView =
@@ -6809,11 +6896,22 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
   
   meta "rewrite_def" function index_FMap_Int_tup2_usize_SyncView
   
+  function tail_T (self: t_QueueInv_T) : int =
+    UInt64.t'int (index_FMap_Int_tup2_usize_SyncView (val_AtomicUsize self.tail_own) self.tail_last_ts).f0'0
+  
   function head_T (self: t_QueueInv_T) : int =
     UInt64.t'int (index_FMap_Int_tup2_usize_SyncView (val_AtomicUsize self.head_own) self.head_last_ts).f0'0
   
-  function tail_T (self: t_QueueInv_T) : int =
-    UInt64.t'int (index_FMap_Int_tup2_usize_SyncView (val_AtomicUsize self.tail_own) self.tail_last_ts).f0'0
+  let new_unit (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  function budget_T (self: t_Authority_T) : int
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   function ward_PCell_MaybeUninit_T (self: t_Perm_PCell_MaybeUninit_T) : t_PCell_MaybeUninit_T
   
@@ -6837,6 +6935,25 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
     val_unsized_PCell_MaybeUninit_T self
   
   meta "rewrite_def" function val_PCell_MaybeUninit_T
+  
+  predicate three_statuses_inv_T [@inline:trivial] (self: t_QueueInv_T) (k: int) =
+    let status_view = val' (Seq.get self.statuses_mono_auth (mod_len_T self k)) in match val_T self.tokens_auth k with
+      | R'1 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
+      | W'1 value -> status_view.status'0 = 2 * k /\ k < head_T self /\ value = Seq.get (seq_T'0 self) (k - tail_T self)
+      | None'1 -> match Seq.get self.cells_own (mod_len_T self k) with
+        | Some at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PCell_MaybeUninit_T at_view)
+        /\ (if head_T self <= k then
+          status_view.status'0 = 2 * k
+        else
+          status_view.status'0 = 2 * k + 1
+          /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T (val_Perm_PCell_MaybeUninit_T at_view))
+          = Some'2 (Seq.get (seq_T'0 self) (k - tail_T self))
+        )
+        | _ -> false
+        end
+      end
+  
+  meta "rewrite_def" predicate three_statuses_inv_T
   
   predicate protocol_QueueInv_T [@inline:trivial] (self: t_QueueInv_T) =
     gt_log_Int (len_T self) 0
@@ -6876,23 +6993,8 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
           | _ -> true
           end)
     /\ Seq.length (seq_T'0 self) = head_T self - tail_T self
-    /\ (forall k: int [val_T self.tokens_auth k]. tail_T self <= k /\ k < tail_T self + len_T self
-        -> (let status_view = val' (Seq.get self.statuses_mono_auth (mod_len_T self k)) in match val_T self.tokens_auth k with
-          | R'1 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
-          | W'1 value -> status_view.status'0 = 2 * k
-          /\ k < head_T self /\ value = Seq.get (seq_T'0 self) (k - tail_T self)
-          | None'1 -> match Seq.get self.cells_own (mod_len_T self k) with
-            | Some at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PCell_MaybeUninit_T at_view)
-            /\ (if head_T self <= k then
-              status_view.status'0 = 2 * k
-            else
-              status_view.status'0 = 2 * k + 1
-              /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T (val_Perm_PCell_MaybeUninit_T at_view))
-              = Some'2 (Seq.get (seq_T'0 self) (k - tail_T self))
-            )
-            | _ -> false
-            end
-          end))
+    /\ (forall k: int [val_T self.tokens_auth k | mod_len_T self k]. tail_T self <= k /\ k < tail_T self + len_T self
+        -> three_statuses_inv_T self k)
     /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth k = None'1)
   
   meta "rewrite_def" predicate protocol_QueueInv_T
@@ -6955,102 +7057,121 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
             [ &inv'0 <- _bor ] -{inv_QueueInv_T _bor.final}-
             [ &_32 <- { _32 with current = { _32.current with current = _bor.final } } ] s3)
         [ _ck -> (! {[@expl:type invariant] inv_QueueInv_T _32.current.current} any) ]
-      | s3 = [ &_38 <- mod_len_T inv'0.current (index_T token) ] s4
-      | s4 = into_ghost_Int {_38} (fun (_x: int) -> [ &_37 <- _x ] s5)
-      | s5 = deref_Ghost_Int {_37} (fun (_x: int) -> [ &_35 <- _x ] s6)
-      | s6 = [ &index_mod <- _35 ] s7
-      | s7 = new_Perm_PCell_MaybeUninit_T {cell_own}
-          (fun (_x: tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T) -> [ &_45 <- _x ] s8)
-      | s8 = into_inner_tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T {_45}
-          (fun (_x: tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T) -> [ &_44 <- _x ] s9)
-      | s9 = [ &view <- _44.f0 ] s10
-      | s10 = [ &at_view <- _44.f1 ] s11
-      | s11 = MutBorrow.borrow_mut <MutBorrow.t t_Committer_AtomicUsize_usize_None_Release> {c}
+      | s3 = [ &old_inv <- inv'0.current ] s4
+      | s4 = [ &_41 <- mod_len_T inv'0.current (index_T token) ] s5
+      | s5 = into_ghost_Int {_41} (fun (_x: int) -> [ &_40 <- _x ] s6)
+      | s6 = deref_Ghost_Int {_40} (fun (_x: int) -> [ &_38 <- _x ] s7)
+      | s7 = [ &index_mod <- _38 ] s8
+      | s8 = new_Perm_PCell_MaybeUninit_T {cell_own}
+          (fun (_x: tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T) -> [ &_48 <- _x ] s9)
+      | s9 = into_inner_tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T {_48}
+          (fun (_x: tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T) -> [ &_47 <- _x ] s10)
+      | s10 = [ &view <- _47.f0 ] s11
+      | s11 = [ &at_view <- _47.f1 ] s12
+      | s12 = MutBorrow.borrow_mut <MutBorrow.t t_Committer_AtomicUsize_usize_None_Release> {c}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_None_Release)) ->
-            [ &_50 <- _bor ] [ &c <- _bor.final ] s12)
-      | s12 = deref_mut_Ghost_refmut_Committer_AtomicUsize_usize_None_Release {_50}
-          (fun (_x: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_None_Release)) -> [ &_49 <- _x ] s13)
-      | s13 = MutBorrow.borrow_final <Seq.seq t_Perm_AtomicUsize> {inv'0.current.statuses_own}
+            [ &_53 <- _bor ] [ &c <- _bor.final ] s13)
+      | s13 = deref_mut_Ghost_refmut_Committer_AtomicUsize_usize_None_Release {_53}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_None_Release)) -> [ &_52 <- _x ] s14)
+      | s14 = MutBorrow.borrow_final <Seq.seq t_Perm_AtomicUsize> {inv'0.current.statuses_own}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'0) 3}
           (fun (_bor: MutBorrow.t (Seq.seq t_Perm_AtomicUsize)) ->
-            [ &_54 <- _bor ] [ &inv'0 <- { inv'0 with current = { inv'0.current with statuses_own = _bor.final } } ]
-            s14)
-      | s14 = index_mut_Seq_Perm_AtomicUsize {_54} {index_mod}
-          (fun (_x: MutBorrow.t t_Perm_AtomicUsize) -> [ &_53 <- _x ] s15)
-      | s15 = MutBorrow.borrow_final <t_Perm_AtomicUsize> {_53.current} {MutBorrow.get_id _53}
+            [ &_57 <- _bor ] [ &inv'0 <- { inv'0 with current = { inv'0.current with statuses_own = _bor.final } } ]
+            s15)
+      | s15 = index_mut_Seq_Perm_AtomicUsize {_57} {index_mod}
+          (fun (_x: MutBorrow.t t_Perm_AtomicUsize) -> [ &_56 <- _x ] s16)
+      | s16 = MutBorrow.borrow_final <t_Perm_AtomicUsize> {_56.current} {MutBorrow.get_id _56}
           (fun (_bor: MutBorrow.t t_Perm_AtomicUsize) ->
-            [ &_52 <- _bor ] [ &_53 <- { _53 with current = _bor.final } ] s16)
-      | s16 = MutBorrow.borrow_mut <t_SyncView> {view}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_57 <- _bor ] [ &view <- _bor.final ] s17)
-      | s17 = MutBorrow.borrow_mut <t_Committer_AtomicUsize_usize_None_Release> {_49.current.current}
+            [ &_55 <- _bor ] [ &_56 <- { _56 with current = _bor.final } ] s17)
+      | s17 = MutBorrow.borrow_mut <t_SyncView> {view}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_60 <- _bor ] [ &view <- _bor.final ] s18)
+      | s18 = MutBorrow.borrow_mut <t_Committer_AtomicUsize_usize_None_Release> {_52.current.current}
           (fun (_bor: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) ->
-            [ &_48 <- _bor ] [ &_49 <- { _49 with current = { _49.current with current = _bor.final } } ] s18)
-      | s18 = MutBorrow.borrow_final <t_Perm_AtomicUsize> {_52.current} {MutBorrow.get_id _52}
+            [ &_51 <- _bor ] [ &_52 <- { _52 with current = { _52.current with current = _bor.final } } ] s19)
+      | s19 = MutBorrow.borrow_final <t_Perm_AtomicUsize> {_55.current} {MutBorrow.get_id _55}
           (fun (_bor: MutBorrow.t t_Perm_AtomicUsize) ->
-            [ &_51 <- _bor ] [ &_52 <- { _52 with current = _bor.final } ] s19)
-      | s19 = MutBorrow.borrow_final <t_SyncView> {_57.current} {MutBorrow.get_id _57}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_56 <- _bor ] [ &_57 <- { _57 with current = _bor.final } ] s20)
-      | s20 = shoot_store_AtomicUsize {_48} {_51} {_56} (fun (_x: ()) -> [ &_47 <- _x ] s21)
-      | s21 = -{resolve_refmut_SyncView _57}- s22
-      | s22 = -{resolve_refmut_Perm_AtomicUsize _53}- s23
-      | s23 = -{resolve_refmut_Perm_AtomicUsize _52}- s24
-      | s24 = -{resolve_refmut_refmut_Committer_AtomicUsize_usize_None_Release _49}- s25
-      | s25 = -{resolve_Ghost_refmut_Committer_AtomicUsize_usize_None_Release'0 c}- s26
-      | s26 = MutBorrow.borrow_final <t_Authority_T'0> {inv'0.current.tokens_auth}
+            [ &_54 <- _bor ] [ &_55 <- { _55 with current = _bor.final } ] s20)
+      | s20 = MutBorrow.borrow_final <t_SyncView> {_60.current} {MutBorrow.get_id _60}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_59 <- _bor ] [ &_60 <- { _60 with current = _bor.final } ] s21)
+      | s21 = shoot_store_AtomicUsize {_51} {_54} {_59} (fun (_x: ()) -> [ &_50 <- _x ] s22)
+      | s22 = -{resolve_refmut_SyncView _60}- s23
+      | s23 = -{resolve_refmut_Perm_AtomicUsize _56}- s24
+      | s24 = -{resolve_refmut_Perm_AtomicUsize _55}- s25
+      | s25 = -{resolve_refmut_refmut_Committer_AtomicUsize_usize_None_Release _52}- s26
+      | s26 = -{resolve_Ghost_refmut_Committer_AtomicUsize_usize_None_Release'0 c}- s27
+      | s27 = MutBorrow.borrow_final <t_Authority_T'0> {inv'0.current.tokens_auth}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'0) 6}
           (fun (_bor: MutBorrow.t t_Authority_T'0) ->
-            [ &_62 <- _bor ] -{inv_Authority_T'0 _bor.final}-
-            [ &inv'0 <- { inv'0 with current = { inv'0.current with tokens_auth = _bor.final } } ] s27)
+            [ &_67 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &inv'0 <- { inv'0 with current = { inv'0.current with tokens_auth = _bor.final } } ] s28)
         [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 inv'0.current.tokens_auth} any) ]
-      | s27 = MutBorrow.borrow_final <t_Authority_T'0> {_62.current} {MutBorrow.get_id _62}
+      | s28 = MutBorrow.borrow_final <t_Authority_T'0> {_67.current} {MutBorrow.get_id _67}
           (fun (_bor: MutBorrow.t t_Authority_T'0) ->
-            [ &_61 <- _bor ] -{inv_Authority_T'0 _bor.final}-
-            [ &_62 <- { _62 with current = _bor.final } ] s28)
-        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _62.current} any) ]
-      | s28 = new_refmut_Authority_T {_61} (fun (_x: MutBorrow.t t_Authority_T'0) -> [ &_60 <- _x ] s29)
-      | s29 = discard_T {token} {_60} (fun (_x: ()) -> [ &_58 <- _x ] s30)
-      | s30 = s31 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T _62} any) ]
-      | s31 = -{resolve_refmut_Authority_T _62}- s32
-      | s32 = [ &status_view <- { status'0 = UInt64.t'int (val_store_AtomicUsize c.current); view'0 = view } ] s33
-      | s33 = MutBorrow.borrow_final <Seq.seq t_Authority> {inv'0.current.statuses_mono_auth}
+            [ &_66 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &_67 <- { _67 with current = _bor.final } ] s29)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _67.current} any) ]
+      | s29 = s30 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T _67} any) ]
+      | s30 = -{resolve_refmut_Authority_T _67}- s31
+      | s31 = MutBorrow.borrow_final <t_Authority_T'0> {_66.current} {MutBorrow.get_id _66}
+          (fun (_bor: MutBorrow.t t_Authority_T'0) ->
+            [ &_65 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &_66 <- { _66 with current = _bor.final } ] s32)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _66.current} any) ]
+      | s32 = s33 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T _66} any) ]
+      | s33 = -{resolve_refmut_Authority_T _66}- s34
+      | s34 = MutBorrow.borrow_final <t_Authority_T'0> {_65.current} {MutBorrow.get_id _65}
+          (fun (_bor: MutBorrow.t t_Authority_T'0) ->
+            [ &_64 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &_65 <- { _65 with current = _bor.final } ] s35)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _65.current} any) ]
+      | s35 = new_refmut_Authority_T {_64} (fun (_x: MutBorrow.t t_Authority_T'0) -> [ &_63 <- _x ] s36)
+      | s36 = s37 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T _65} any) ]
+      | s37 = -{resolve_refmut_Authority_T _65}- s38
+      | s38 = discard_T {token} {_63} (fun (_x: ()) -> [ &_61 <- _x ] s39)
+      | s39 = [ &status_view <- { status'0 = UInt64.t'int (val_store_AtomicUsize c.current); view'0 = view } ] s40
+      | s40 = MutBorrow.borrow_final <Seq.seq t_Authority> {inv'0.current.statuses_mono_auth}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'0) 5}
           (fun (_bor: MutBorrow.t (Seq.seq t_Authority)) ->
-            [ &_70 <- _bor ] -{inv_Seq_Authority _bor.final}-
-            [ &inv'0 <- { inv'0 with current = { inv'0.current with statuses_mono_auth = _bor.final } } ] s34)
+            [ &_75 <- _bor ] -{inv_Seq_Authority _bor.final}-
+            [ &inv'0 <- { inv'0 with current = { inv'0.current with statuses_mono_auth = _bor.final } } ] s41)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Authority inv'0.current.statuses_mono_auth} any) ]
-      | s34 = index_mut_Seq_Authority {_70} {index_mod} (fun (_x: MutBorrow.t t_Authority) -> [ &_69 <- _x ] s35)
-      | s35 = MutBorrow.borrow_final <t_Authority> {_69.current} {MutBorrow.get_id _69}
+      | s41 = index_mut_Seq_Authority {_75} {index_mod} (fun (_x: MutBorrow.t t_Authority) -> [ &_74 <- _x ] s42)
+      | s42 = MutBorrow.borrow_final <t_Authority> {_74.current} {MutBorrow.get_id _74}
           (fun (_bor: MutBorrow.t t_Authority) ->
-            [ &_68 <- _bor ] -{inv_Authority _bor.final}-
-            [ &_69 <- { _69 with current = _bor.final } ] s36)
-        [ _ck -> (! {[@expl:type invariant] inv_Authority _69.current} any) ]
-      | s36 = increase {_68} {status_view} (fun (_x: ()) -> [ &_67 <- _x ] s37)
-      | s37 = s38 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority _69} any) ]
-      | s38 = -{resolve_refmut_Authority _69}- s39
-      | s39 = [ &_73 <- Some at_view ] s40
-      | s40 = MutBorrow.borrow_final <Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T> {inv'0.current.cells_own}
+            [ &_73 <- _bor ] -{inv_Authority _bor.final}-
+            [ &_74 <- { _74 with current = _bor.final } ] s43)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority _74.current} any) ]
+      | s43 = increase {_73} {status_view} (fun (_x: ()) -> [ &_72 <- _x ] s44)
+      | s44 = s45 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority _74} any) ]
+      | s45 = -{resolve_refmut_Authority _74}- s46
+      | s46 = [ &_78 <- Some at_view ] s47
+      | s47 = MutBorrow.borrow_final <Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T> {inv'0.current.cells_own}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'0) 2}
           (fun (_bor: MutBorrow.t (Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T)) ->
-            [ &_76 <- _bor ] -{inv_Seq_Option_AtView_Perm_PCell_MaybeUninit_T _bor.final}-
-            [ &inv'0 <- { inv'0 with current = { inv'0.current with cells_own = _bor.final } } ] s41)
+            [ &_81 <- _bor ] -{inv_Seq_Option_AtView_Perm_PCell_MaybeUninit_T _bor.final}-
+            [ &inv'0 <- { inv'0 with current = { inv'0.current with cells_own = _bor.final } } ] s48)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Option_AtView_Perm_PCell_MaybeUninit_T inv'0.current.cells_own}
           any) ]
-      | s41 = index_mut_Seq_Option_AtView_Perm_PCell_MaybeUninit_T {_76} {index_mod}
-          (fun (_x: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T) -> [ &_75 <- _x ] s42)
-      | s42 = s43 [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Perm_PCell_MaybeUninit_T _75.current} any) ]
-      | s43 = -{resolve_Option_AtView_Perm_PCell_MaybeUninit_T _75.current}- s44
-      | s44 = [ &_75 <- { _75 with current = _73 } ] s45
-      | s45 = s46 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _75} any) ]
-      | s46 = -{resolve_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _75}- s47
-      | s47 = s48 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_QueueInv_T _32} any) ]
-      | s48 = -{resolve_refmut_refmut_QueueInv_T _32}- s49
-      | s49 = s50 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'0} any) ]
-      | s50 = -{resolve_refmut_QueueInv_T inv'0}- s51
-      | s51 = s52 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_QueueInv_T inv} any) ]
-      | s52 = -{resolve_Ghost_refmut_QueueInv_T'0 inv}- s53
-      | s53 = [ &_78 <- () ] s54
-      | s54 = new_unit {_30} (fun (_x: ()) -> [ &_29 <- _x ] s55)
-      | s55 = return {_ret} ] ]
+      | s48 = index_mut_Seq_Option_AtView_Perm_PCell_MaybeUninit_T {_81} {index_mod}
+          (fun (_x: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T) -> [ &_80 <- _x ] s49)
+      | s49 = s50 [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Perm_PCell_MaybeUninit_T _80.current} any) ]
+      | s50 = -{resolve_Option_AtView_Perm_PCell_MaybeUninit_T _80.current}- s51
+      | s51 = [ &_80 <- { _80 with current = _78 } ] s52
+      | s52 = s53 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _80} any) ]
+      | s53 = -{resolve_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _80}- s54
+      | s54 = s55 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_QueueInv_T _32} any) ]
+      | s55 = -{resolve_refmut_refmut_QueueInv_T _32}- s56
+      | s56 = s57 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'0} any) ]
+      | s57 = -{resolve_refmut_QueueInv_T inv'0}- s58
+      | s58 = s59 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_QueueInv_T inv} any) ]
+      | s59 = -{resolve_Ghost_refmut_QueueInv_T'0 inv}- s60
+      | s60 = [ &_83 <- () ] s61
+      | s61 = {[@expl:assertion] tail_T inv'0.current = tail_T old_inv} s62
+      | s62 = {[@expl:assertion] head_T inv'0.current = head_T old_inv} s63
+      | s63 = {[@expl:assertion] len_T inv'0.current = len_T old_inv} s64
+      | s64 = {[@expl:assertion] forall k: int. mod_len_T inv'0.current k = mod_len_T old_inv k} s65
+      | s65 = new_unit {_30} (fun (_x: ()) -> [ &_29 <- _x ] s66)
+      | s66 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & inv: MutBorrow.t t_QueueInv_T = inv
     | & c: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = c
@@ -7061,37 +7182,40 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
     | & inv'0: MutBorrow.t t_QueueInv_T = Any.any_l ()
     | & _32: MutBorrow.t (MutBorrow.t t_QueueInv_T) = Any.any_l ()
     | & _33: MutBorrow.t (MutBorrow.t t_QueueInv_T) = Any.any_l ()
+    | & old_inv: t_QueueInv_T = Any.any_l ()
     | & index_mod: int = Any.any_l ()
-    | & _35: int = Any.any_l ()
-    | & _37: int = Any.any_l ()
     | & _38: int = Any.any_l ()
+    | & _40: int = Any.any_l ()
+    | & _41: int = Any.any_l ()
     | & view: t_SyncView = Any.any_l ()
     | & at_view: t_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _44: tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _45: tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _47: () = Any.any_l ()
-    | & _48: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = Any.any_l ()
-    | & _49: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) = Any.any_l ()
-    | & _50: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) = Any.any_l ()
-    | & _51: MutBorrow.t t_Perm_AtomicUsize = Any.any_l ()
-    | & _52: MutBorrow.t t_Perm_AtomicUsize = Any.any_l ()
-    | & _53: MutBorrow.t t_Perm_AtomicUsize = Any.any_l ()
-    | & _54: MutBorrow.t (Seq.seq t_Perm_AtomicUsize) = Any.any_l ()
-    | & _56: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _57: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _58: () = Any.any_l ()
-    | & _60: MutBorrow.t t_Authority_T'0 = Any.any_l ()
-    | & _61: MutBorrow.t t_Authority_T'0 = Any.any_l ()
-    | & _62: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _47: tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _48: tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _50: () = Any.any_l ()
+    | & _51: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = Any.any_l ()
+    | & _52: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) = Any.any_l ()
+    | & _53: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) = Any.any_l ()
+    | & _54: MutBorrow.t t_Perm_AtomicUsize = Any.any_l ()
+    | & _55: MutBorrow.t t_Perm_AtomicUsize = Any.any_l ()
+    | & _56: MutBorrow.t t_Perm_AtomicUsize = Any.any_l ()
+    | & _57: MutBorrow.t (Seq.seq t_Perm_AtomicUsize) = Any.any_l ()
+    | & _59: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _60: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _61: () = Any.any_l ()
+    | & _63: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _64: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _65: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _66: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _67: MutBorrow.t t_Authority_T'0 = Any.any_l ()
     | & status_view: t_StatusWithView = Any.any_l ()
-    | & _67: () = Any.any_l ()
-    | & _68: MutBorrow.t t_Authority = Any.any_l ()
-    | & _69: MutBorrow.t t_Authority = Any.any_l ()
-    | & _70: MutBorrow.t (Seq.seq t_Authority) = Any.any_l ()
-    | & _73: t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _75: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _76: MutBorrow.t (Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T) = Any.any_l ()
-    | & _78: () = Any.any_l () ])
+    | & _72: () = Any.any_l ()
+    | & _73: MutBorrow.t t_Authority = Any.any_l ()
+    | & _74: MutBorrow.t t_Authority = Any.any_l ()
+    | & _75: MutBorrow.t (Seq.seq t_Authority) = Any.any_l ()
+    | & _78: t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _80: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _81: MutBorrow.t (Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T) = Any.any_l ()
+    | & _83: () = Any.any_l () ])
     [ return (result: ()) ->
     {[@stop_split] [@expl:try_dequeue_store_inv_T ensures] ([@stop_split] [@expl:try_dequeue_store_inv ensures #0] protocol_QueueInv_T (fin_Ghost_refmut_QueueInv_T inv))
       /\ ([@stop_split] [@expl:try_dequeue_store_inv ensures #1] public_QueueInv_T (fin_Ghost_refmut_QueueInv_T inv)
@@ -7573,6 +7697,25 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   meta "rewrite_def" function val_PCell_MaybeUninit_T
   
+  predicate three_statuses_inv_T [@inline:trivial] (self: t_QueueInv_T) (k: int) =
+    let status_view = val' (Seq.get self.statuses_mono_auth'0 (mod_len_T self k)) in match val_T self.tokens_auth'0 k with
+      | R'2 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
+      | W'2 value -> status_view.status'0 = 2 * k /\ k < head_T self /\ value = Seq.get (seq_T'0 self) (k - tail_T self)
+      | None'2 -> match Seq.get self.cells_own'0 (mod_len_T self k) with
+        | Some'0 at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PCell_MaybeUninit_T at_view)
+        /\ (if head_T self <= k then
+          status_view.status'0 = 2 * k
+        else
+          status_view.status'0 = 2 * k + 1
+          /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T (val_Perm_PCell_MaybeUninit_T at_view))
+          = Some'3 (Seq.get (seq_T'0 self) (k - tail_T self))
+        )
+        | _ -> false
+        end
+      end
+  
+  meta "rewrite_def" predicate three_statuses_inv_T
+  
   predicate protocol_QueueInv_T [@inline:trivial] (self: t_QueueInv_T) =
     gt_log_Int (len_T self) 0
     /\ len_T self = Seq.length self.cells_own'0
@@ -7611,23 +7754,8 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
           | _ -> true
           end)
     /\ Seq.length (seq_T'0 self) = head_T self - tail_T self
-    /\ (forall k: int [val_T self.tokens_auth'0 k]. tail_T self <= k /\ k < tail_T self + len_T self
-        -> (let status_view = val' (Seq.get self.statuses_mono_auth'0 (mod_len_T self k)) in match val_T self.tokens_auth'0 k with
-          | R'2 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
-          | W'2 value -> status_view.status'0 = 2 * k
-          /\ k < head_T self /\ value = Seq.get (seq_T'0 self) (k - tail_T self)
-          | None'2 -> match Seq.get self.cells_own'0 (mod_len_T self k) with
-            | Some'0 at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PCell_MaybeUninit_T at_view)
-            /\ (if head_T self <= k then
-              status_view.status'0 = 2 * k
-            else
-              status_view.status'0 = 2 * k + 1
-              /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T (val_Perm_PCell_MaybeUninit_T at_view))
-              = Some'3 (Seq.get (seq_T'0 self) (k - tail_T self))
-            )
-            | _ -> false
-            end
-          end))
+    /\ (forall k: int [val_T self.tokens_auth'0 k | mod_len_T self k]. tail_T self <= k /\ k < tail_T self + len_T self
+        -> three_statuses_inv_T self k)
     /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth'0 k = None'2)
   
   meta "rewrite_def" predicate protocol_QueueInv_T
@@ -8808,94 +8936,118 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
       | s1 = [ &_10 <- self.c1'4 ] s2
       | s2 = MutBorrow.borrow_final <t_QueueInv_T> {inv'0.current} {MutBorrow.get_id inv'0}
           (fun (_bor: MutBorrow.t t_QueueInv_T) ->
-            [ &_12 <- _bor ] -{inv_QueueInv_T _bor.final}-
+            [ &_14 <- _bor ] -{inv_QueueInv_T _bor.final}-
             [ &inv'0 <- { inv'0 with current = _bor.final } ] s3)
         [ _ck -> (! {[@expl:type invariant] inv_QueueInv_T inv'0.current} any) ]
-      | s3 = new_refmut_QueueInv_T {_12} (fun (_x: MutBorrow.t t_QueueInv_T) -> [ &_11 <- _x ] s4)
-      | s4 = MutBorrow.borrow_final <t_Committer_AtomicUsize_usize_Relaxed_Relaxed> {self.c2'4.current}
+      | s3 = MutBorrow.borrow_final <t_QueueInv_T> {_14.current} {MutBorrow.get_id _14}
+          (fun (_bor: MutBorrow.t t_QueueInv_T) ->
+            [ &_13 <- _bor ] -{inv_QueueInv_T _bor.final}-
+            [ &_14 <- { _14 with current = _bor.final } ] s4)
+        [ _ck -> (! {[@expl:type invariant] inv_QueueInv_T _14.current} any) ]
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T _14} any) ]
+      | s5 = -{resolve_refmut_QueueInv_T _14}- s6
+      | s6 = MutBorrow.borrow_final <t_QueueInv_T> {_13.current} {MutBorrow.get_id _13}
+          (fun (_bor: MutBorrow.t t_QueueInv_T) ->
+            [ &_12 <- _bor ] -{inv_QueueInv_T _bor.final}-
+            [ &_13 <- { _13 with current = _bor.final } ] s7)
+        [ _ck -> (! {[@expl:type invariant] inv_QueueInv_T _13.current} any) ]
+      | s7 = new_refmut_QueueInv_T {_12} (fun (_x: MutBorrow.t t_QueueInv_T) -> [ &_11 <- _x ] s8)
+      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T _13} any) ]
+      | s9 = -{resolve_refmut_QueueInv_T _13}- s10
+      | s10 = MutBorrow.borrow_final <t_Committer_AtomicUsize_usize_Relaxed_Relaxed> {self.c2'4.current}
           {MutBorrow.get_id self.c2'4}
           (fun (_bor: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) ->
-            [ &_14 <- _bor ] [ &self <- { self with c2'4 = { self.c2'4 with current = _bor.final } } ] s5)
-      | s5 = new_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed {_14}
-          (fun (_x: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) -> [ &_13 <- _x ] s6)
-      | s6 = [ &_16 <- self.c3'4 ] s7
-      | s7 = MutBorrow.borrow_final <t_Option_Fragment> {self.c4'4.current} {MutBorrow.get_id self.c4'4}
+            [ &_18 <- _bor ] [ &self <- { self with c2'4 = { self.c2'4 with current = _bor.final } } ] s11)
+      | s11 = MutBorrow.borrow_final <t_Committer_AtomicUsize_usize_Relaxed_Relaxed> {_18.current}
+          {MutBorrow.get_id _18}
+          (fun (_bor: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) ->
+            [ &_17 <- _bor ] [ &_18 <- { _18 with current = _bor.final } ] s12)
+      | s12 = -{resolve_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed _18}- s13
+      | s13 = MutBorrow.borrow_final <t_Committer_AtomicUsize_usize_Relaxed_Relaxed> {_17.current}
+          {MutBorrow.get_id _17}
+          (fun (_bor: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) ->
+            [ &_16 <- _bor ] [ &_17 <- { _17 with current = _bor.final } ] s14)
+      | s14 = new_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed {_16}
+          (fun (_x: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) -> [ &_15 <- _x ] s15)
+      | s15 = -{resolve_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed _17}- s16
+      | s16 = [ &_20 <- self.c3'4 ] s17
+      | s17 = MutBorrow.borrow_final <t_Option_Fragment> {self.c4'4.current} {MutBorrow.get_id self.c4'4}
           (fun (_bor: MutBorrow.t t_Option_Fragment) ->
-            [ &_21 <- _bor ] -{inv_Ghost_Option_Fragment _bor.final}-
-            [ &self <- { self with c4'4 = { self.c4'4 with current = _bor.final } } ] s8)
+            [ &_25 <- _bor ] -{inv_Ghost_Option_Fragment _bor.final}-
+            [ &self <- { self with c4'4 = { self.c4'4 with current = _bor.final } } ] s18)
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment self.c4'4.current} any) ]
-      | s8 = deref_mut_Ghost_Option_Fragment {_21} (fun (_x: MutBorrow.t t_Option_Fragment) -> [ &_20 <- _x ] s9)
-      | s9 = MutBorrow.borrow_final <t_Option_Fragment> {_20.current} {MutBorrow.get_id _20}
+      | s18 = deref_mut_Ghost_Option_Fragment {_25} (fun (_x: MutBorrow.t t_Option_Fragment) -> [ &_24 <- _x ] s19)
+      | s19 = MutBorrow.borrow_final <t_Option_Fragment> {_24.current} {MutBorrow.get_id _24}
           (fun (_bor: MutBorrow.t t_Option_Fragment) ->
-            [ &_19 <- _bor ] -{inv_Option_Fragment _bor.final}-
-            [ &_20 <- { _20 with current = _bor.final } ] s10)
-        [ _ck -> (! {[@expl:type invariant] inv_Option_Fragment _20.current} any) ]
-      | s10 = take_Fragment {_19} (fun (_x: t_Option_Fragment) -> [ &_18 <- _x ] s11)
-      | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_Fragment _20} any) ]
-      | s12 = -{resolve_refmut_Option_Fragment _20}- s13
-      | s13 = unwrap_Fragment {_18} (fun (_x: t_Fragment) -> [ &_17 <- _x ] s14)
-      | s14 = try_enqueue_cas_inv_T {_10} {_11} {_13} {item_snap} {_16} {_17} {self.c5'4}
-          (fun (_x: tup2_TokenW_T_Perm_PCell_MaybeUninit_T) -> [ &_9 <- _x ] s15)
-      | s15 = s16 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'0} any) ]
-      | s16 = -{resolve_refmut_QueueInv_T inv'0}- s17
-      | s17 = into_inner_tup2_TokenW_T_Perm_PCell_MaybeUninit_T {_9}
-          (fun (_x: tup2_TokenW_T_Perm_PCell_MaybeUninit_T) -> [ &_8 <- _x ] s18)
-      | s18 = [ &t <- _8.f0'5 ] s19
-      | s19 = [ &co <- _8.f1'5 ] s20
-      | s20 = [ &_23 <- Some'4 t ] s21
-      | s21 = MutBorrow.borrow_final <t_Option_TokenW_T> {self.c6'4.current} {MutBorrow.get_id self.c6'4}
+            [ &_23 <- _bor ] -{inv_Option_Fragment _bor.final}-
+            [ &_24 <- { _24 with current = _bor.final } ] s20)
+        [ _ck -> (! {[@expl:type invariant] inv_Option_Fragment _24.current} any) ]
+      | s20 = take_Fragment {_23} (fun (_x: t_Option_Fragment) -> [ &_22 <- _x ] s21)
+      | s21 = s22 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_Fragment _24} any) ]
+      | s22 = -{resolve_refmut_Option_Fragment _24}- s23
+      | s23 = unwrap_Fragment {_22} (fun (_x: t_Fragment) -> [ &_21 <- _x ] s24)
+      | s24 = try_enqueue_cas_inv_T {_10} {_11} {_15} {item_snap} {_20} {_21} {self.c5'4}
+          (fun (_x: tup2_TokenW_T_Perm_PCell_MaybeUninit_T) -> [ &_9 <- _x ] s25)
+      | s25 = s26 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'0} any) ]
+      | s26 = -{resolve_refmut_QueueInv_T inv'0}- s27
+      | s27 = into_inner_tup2_TokenW_T_Perm_PCell_MaybeUninit_T {_9}
+          (fun (_x: tup2_TokenW_T_Perm_PCell_MaybeUninit_T) -> [ &_8 <- _x ] s28)
+      | s28 = [ &t <- _8.f0'5 ] s29
+      | s29 = [ &co <- _8.f1'5 ] s30
+      | s30 = [ &_27 <- Some'4 t ] s31
+      | s31 = MutBorrow.borrow_final <t_Option_TokenW_T> {self.c6'4.current} {MutBorrow.get_id self.c6'4}
           (fun (_bor: MutBorrow.t t_Option_TokenW_T) ->
-            [ &_26 <- _bor ] -{inv_Ghost_Option_TokenW_T _bor.final}-
-            [ &self <- { self with c6'4 = { self.c6'4 with current = _bor.final } } ] s22)
+            [ &_30 <- _bor ] -{inv_Ghost_Option_TokenW_T _bor.final}-
+            [ &self <- { self with c6'4 = { self.c6'4 with current = _bor.final } } ] s32)
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenW_T self.c6'4.current} any) ]
-      | s22 = deref_mut_Ghost_Option_TokenW_T {_26} (fun (_x: MutBorrow.t t_Option_TokenW_T) -> [ &_25 <- _x ] s23)
-      | s23 = s24 [ _ck -> (! {[@expl:type invariant] inv_Option_TokenW_T _25.current} any) ]
-      | s24 = -{resolve_Option_TokenW_T _25.current}- s25
-      | s25 = [ &_25 <- { _25 with current = _23 } ] s26
-      | s26 = s27 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_TokenW_T _25} any) ]
-      | s27 = -{resolve_refmut_Option_TokenW_T _25}- s28
-      | s28 = [ &_27 <- Some'5 co ] s29
-      | s29 = MutBorrow.borrow_final <t_Option_Perm_PCell_MaybeUninit_T> {self.c7'4.current}
+      | s32 = deref_mut_Ghost_Option_TokenW_T {_30} (fun (_x: MutBorrow.t t_Option_TokenW_T) -> [ &_29 <- _x ] s33)
+      | s33 = s34 [ _ck -> (! {[@expl:type invariant] inv_Option_TokenW_T _29.current} any) ]
+      | s34 = -{resolve_Option_TokenW_T _29.current}- s35
+      | s35 = [ &_29 <- { _29 with current = _27 } ] s36
+      | s36 = s37 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_TokenW_T _29} any) ]
+      | s37 = -{resolve_refmut_Option_TokenW_T _29}- s38
+      | s38 = [ &_31 <- Some'5 co ] s39
+      | s39 = MutBorrow.borrow_final <t_Option_Perm_PCell_MaybeUninit_T> {self.c7'4.current}
           {MutBorrow.get_id self.c7'4}
           (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
-            [ &_30 <- _bor ] [ &self <- { self with c7'4 = { self.c7'4 with current = _bor.final } } ] s30)
-      | s30 = deref_mut_Ghost_Option_Perm_PCell_MaybeUninit_T {_30}
-          (fun (_x: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_29 <- _x ] s31)
-      | s31 = [ &_29 <- { _29 with current = _27 } ] s32
-      | s32 = -{resolve_refmut_Option_Perm_PCell_MaybeUninit_T _29}- s33
-      | s33 = -{match self with
+            [ &_34 <- _bor ] [ &self <- { self with c7'4 = { self.c7'4 with current = _bor.final } } ] s40)
+      | s40 = deref_mut_Ghost_Option_Perm_PCell_MaybeUninit_T {_34}
+          (fun (_x: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_33 <- _x ] s41)
+      | s41 = [ &_33 <- { _33 with current = _31 } ] s42
+      | s42 = -{resolve_refmut_Option_Perm_PCell_MaybeUninit_T _33}- s43
+      | s43 = -{match self with
           | {c7'4 = x} -> resolve_refmut_Ghost_Option_Perm_PCell_MaybeUninit_T x
           | _ -> true
           end}-
-        s34
-      | s34 = s35
+        s44
+      | s44 = s45
         [ _ck -> (! {[@expl:type invariant] match self with
             | {c6'4 = x} -> inv_refmut_Ghost_Option_TokenW_T x
             | _ -> true
             end}
           any) ]
-      | s35 = -{match self with
+      | s45 = -{match self with
           | {c6'4 = x} -> resolve_refmut_Ghost_Option_TokenW_T x
           | _ -> true
           end}-
-        s36
-      | s36 = s37
+        s46
+      | s46 = s47
         [ _ck -> (! {[@expl:type invariant] match self with
             | {c4'4 = x} -> inv_refmut_Ghost_Option_Fragment x
             | _ -> true
             end}
           any) ]
-      | s37 = -{match self with
+      | s47 = -{match self with
           | {c4'4 = x} -> resolve_refmut_Ghost_Option_Fragment x
           | _ -> true
           end}-
-        s38
-      | s38 = -{match self with
+        s48
+      | s48 = -{match self with
           | {c2'4 = x} -> resolve_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed x
           | _ -> true
           end}-
-        s39
-      | s39 = return {_ret} ] ]
+        s49
+      | s49 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: closure0'1 = self
     | & inv'0: MutBorrow.t t_QueueInv_T = inv'0
@@ -8907,20 +9059,24 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
     | & _10: t_Queue_T = Any.any_l ()
     | & _11: MutBorrow.t t_QueueInv_T = Any.any_l ()
     | & _12: MutBorrow.t t_QueueInv_T = Any.any_l ()
-    | & _13: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed = Any.any_l ()
-    | & _14: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed = Any.any_l ()
-    | & _16: t_F = Any.any_l ()
-    | & _17: t_Fragment = Any.any_l ()
-    | & _18: t_Option_Fragment = Any.any_l ()
-    | & _19: MutBorrow.t t_Option_Fragment = Any.any_l ()
-    | & _20: MutBorrow.t t_Option_Fragment = Any.any_l ()
-    | & _21: MutBorrow.t t_Option_Fragment = Any.any_l ()
-    | & _23: t_Option_TokenW_T = Any.any_l ()
-    | & _25: MutBorrow.t t_Option_TokenW_T = Any.any_l ()
-    | & _26: MutBorrow.t t_Option_TokenW_T = Any.any_l ()
-    | & _27: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _29: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _30: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l () ] [ return (result: ()) -> return {result} ]
+    | & _13: MutBorrow.t t_QueueInv_T = Any.any_l ()
+    | & _14: MutBorrow.t t_QueueInv_T = Any.any_l ()
+    | & _15: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed = Any.any_l ()
+    | & _16: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed = Any.any_l ()
+    | & _17: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed = Any.any_l ()
+    | & _18: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed = Any.any_l ()
+    | & _20: t_F = Any.any_l ()
+    | & _21: t_Fragment = Any.any_l ()
+    | & _22: t_Option_Fragment = Any.any_l ()
+    | & _23: MutBorrow.t t_Option_Fragment = Any.any_l ()
+    | & _24: MutBorrow.t t_Option_Fragment = Any.any_l ()
+    | & _25: MutBorrow.t t_Option_Fragment = Any.any_l ()
+    | & _27: t_Option_TokenW_T = Any.any_l ()
+    | & _29: MutBorrow.t t_Option_TokenW_T = Any.any_l ()
+    | & _30: MutBorrow.t t_Option_TokenW_T = Any.any_l ()
+    | & _31: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _33: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _34: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l () ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'1'pre
   
@@ -9260,6 +9416,11 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
     c1'6: MutBorrow.t t_Option_TokenW_T;
     c2'6: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T }
   
+  predicate resolve_refmut_Committer_AtomicUsize_usize_None_Release [@inline:trivial] (_1: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Committer_AtomicUsize_usize_None_Release
+  
   let new_refmut_Committer_AtomicUsize_usize_None_Release (x: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release)
     (return (x'0: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release)) = any
     [ return (result: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) ->
@@ -9379,72 +9540,98 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <t_QueueInv_T> {inv'0.current} {MutBorrow.get_id inv'0}
           (fun (_bor: MutBorrow.t t_QueueInv_T) ->
-            [ &_4 <- _bor ] -{inv_QueueInv_T _bor.final}-
+            [ &_6 <- _bor ] -{inv_QueueInv_T _bor.final}-
             [ &inv'0 <- { inv'0 with current = _bor.final } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_QueueInv_T inv'0.current} any) ]
-      | s1 = new_refmut_QueueInv_T {_4} (fun (_x: MutBorrow.t t_QueueInv_T) -> [ &_3 <- _x ] s2)
-      | s2 = MutBorrow.borrow_mut <t_Committer_AtomicUsize_usize_None_Release> {self.current.c0'6.current}
+      | s1 = MutBorrow.borrow_final <t_QueueInv_T> {_6.current} {MutBorrow.get_id _6}
+          (fun (_bor: MutBorrow.t t_QueueInv_T) ->
+            [ &_5 <- _bor ] -{inv_QueueInv_T _bor.final}-
+            [ &_6 <- { _6 with current = _bor.final } ] s2)
+        [ _ck -> (! {[@expl:type invariant] inv_QueueInv_T _6.current} any) ]
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T _6} any) ]
+      | s3 = -{resolve_refmut_QueueInv_T _6}- s4
+      | s4 = MutBorrow.borrow_final <t_QueueInv_T> {_5.current} {MutBorrow.get_id _5}
+          (fun (_bor: MutBorrow.t t_QueueInv_T) ->
+            [ &_4 <- _bor ] -{inv_QueueInv_T _bor.final}-
+            [ &_5 <- { _5 with current = _bor.final } ] s5)
+        [ _ck -> (! {[@expl:type invariant] inv_QueueInv_T _5.current} any) ]
+      | s5 = new_refmut_QueueInv_T {_4} (fun (_x: MutBorrow.t t_QueueInv_T) -> [ &_3 <- _x ] s6)
+      | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T _5} any) ]
+      | s7 = -{resolve_refmut_QueueInv_T _5}- s8
+      | s8 = MutBorrow.borrow_mut <t_Committer_AtomicUsize_usize_None_Release> {self.current.c0'6.current}
           (fun (_bor: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) ->
-            [ &_6 <- _bor ]
+            [ &_10 <- _bor ]
             [ &self <- { self with current = { self.current with c0'6 = { self.current.c0'6 with current = _bor.final } } } ]
-            s3)
-      | s3 = new_refmut_Committer_AtomicUsize_usize_None_Release {_6}
-          (fun (_x: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) -> [ &_5 <- _x ] s4)
-      | s4 = MutBorrow.borrow_mut <t_Option_TokenW_T> {self.current.c1'6.current}
+            s9)
+      | s9 = MutBorrow.borrow_final <t_Committer_AtomicUsize_usize_None_Release> {_10.current} {MutBorrow.get_id _10}
+          (fun (_bor: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) ->
+            [ &_9 <- _bor ] [ &_10 <- { _10 with current = _bor.final } ] s10)
+      | s10 = -{resolve_refmut_Committer_AtomicUsize_usize_None_Release _10}- s11
+      | s11 = MutBorrow.borrow_final <t_Committer_AtomicUsize_usize_None_Release> {_9.current} {MutBorrow.get_id _9}
+          (fun (_bor: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) ->
+            [ &_8 <- _bor ] [ &_9 <- { _9 with current = _bor.final } ] s12)
+      | s12 = new_refmut_Committer_AtomicUsize_usize_None_Release {_8}
+          (fun (_x: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) -> [ &_7 <- _x ] s13)
+      | s13 = -{resolve_refmut_Committer_AtomicUsize_usize_None_Release _9}- s14
+      | s14 = MutBorrow.borrow_mut <t_Option_TokenW_T> {self.current.c1'6.current}
           (fun (_bor: MutBorrow.t t_Option_TokenW_T) ->
-            [ &_12 <- _bor ] -{inv_Ghost_Option_TokenW_T _bor.final}-
+            [ &_16 <- _bor ] -{inv_Ghost_Option_TokenW_T _bor.final}-
             [ &self <- { self with current = { self.current with c1'6 = { self.current.c1'6 with current = _bor.final } } } ]
-            s5) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenW_T self.current.c1'6.current} any) ]
-      | s5 = deref_mut_Ghost_Option_TokenW_T {_12} (fun (_x: MutBorrow.t t_Option_TokenW_T) -> [ &_11 <- _x ] s6)
-      | s6 = MutBorrow.borrow_final <t_Option_TokenW_T> {_11.current} {MutBorrow.get_id _11}
+            s15) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenW_T self.current.c1'6.current} any) ]
+      | s15 = deref_mut_Ghost_Option_TokenW_T {_16} (fun (_x: MutBorrow.t t_Option_TokenW_T) -> [ &_15 <- _x ] s16)
+      | s16 = MutBorrow.borrow_final <t_Option_TokenW_T> {_15.current} {MutBorrow.get_id _15}
           (fun (_bor: MutBorrow.t t_Option_TokenW_T) ->
-            [ &_10 <- _bor ] -{inv_Option_TokenW_T _bor.final}-
-            [ &_11 <- { _11 with current = _bor.final } ] s7)
-        [ _ck -> (! {[@expl:type invariant] inv_Option_TokenW_T _11.current} any) ]
-      | s7 = take_TokenW_T {_10} (fun (_x: t_Option_TokenW_T) -> [ &_9 <- _x ] s8)
-      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_TokenW_T _11} any) ]
-      | s9 = -{resolve_refmut_Option_TokenW_T _11}- s10
-      | s10 = unwrap_TokenW_T {_9} (fun (_x: t_TokenW_T) -> [ &_8 <- _x ] s11)
-      | s11 = new_TokenW_T {_8} (fun (_x: t_TokenW_T) -> [ &_7 <- _x ] s12)
-      | s12 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {self.current.c2'6.current}
+            [ &_14 <- _bor ] -{inv_Option_TokenW_T _bor.final}-
+            [ &_15 <- { _15 with current = _bor.final } ] s17)
+        [ _ck -> (! {[@expl:type invariant] inv_Option_TokenW_T _15.current} any) ]
+      | s17 = take_TokenW_T {_14} (fun (_x: t_Option_TokenW_T) -> [ &_13 <- _x ] s18)
+      | s18 = s19 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_TokenW_T _15} any) ]
+      | s19 = -{resolve_refmut_Option_TokenW_T _15}- s20
+      | s20 = unwrap_TokenW_T {_13} (fun (_x: t_TokenW_T) -> [ &_12 <- _x ] s21)
+      | s21 = new_TokenW_T {_12} (fun (_x: t_TokenW_T) -> [ &_11 <- _x ] s22)
+      | s22 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {self.current.c2'6.current}
           (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
-            [ &_18 <- _bor ]
+            [ &_22 <- _bor ]
             [ &self <- { self with current = { self.current with c2'6 = { self.current.c2'6 with current = _bor.final } } } ]
-            s13)
-      | s13 = deref_mut_Ghost_Option_Perm_PCell_MaybeUninit_T {_18}
-          (fun (_x: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_17 <- _x ] s14)
-      | s14 = MutBorrow.borrow_final <t_Option_Perm_PCell_MaybeUninit_T> {_17.current} {MutBorrow.get_id _17}
+            s23)
+      | s23 = deref_mut_Ghost_Option_Perm_PCell_MaybeUninit_T {_22}
+          (fun (_x: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_21 <- _x ] s24)
+      | s24 = MutBorrow.borrow_final <t_Option_Perm_PCell_MaybeUninit_T> {_21.current} {MutBorrow.get_id _21}
           (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
-            [ &_16 <- _bor ] [ &_17 <- { _17 with current = _bor.final } ] s15)
-      | s15 = take_Perm_PCell_MaybeUninit_T {_16} (fun (_x: t_Option_Perm_PCell_MaybeUninit_T) -> [ &_15 <- _x ] s16)
-      | s16 = -{resolve_refmut_Option_Perm_PCell_MaybeUninit_T _17}- s17
-      | s17 = unwrap_Perm_PCell_MaybeUninit_T {_15} (fun (_x: t_Perm_PCell_MaybeUninit_T) -> [ &_14 <- _x ] s18)
-      | s18 = new_Perm_PCell_MaybeUninit_T {_14} (fun (_x: t_Perm_PCell_MaybeUninit_T) -> [ &_13 <- _x ] s19)
-      | s19 = try_enqueue_store_inv_T {_3} {_5} {_7} {_13} (fun (_x: ()) -> [ &_ret <- _x ] s20)
-      | s20 = s21 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'0} any) ]
-      | s21 = -{resolve_refmut_QueueInv_T inv'0}- s22
-      | s22 = s23 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure0'0 self} any) ]
-      | s23 = -{resolve_refmut_closure0'0 self}- s24
-      | s24 = return {_ret} ] ]
+            [ &_20 <- _bor ] [ &_21 <- { _21 with current = _bor.final } ] s25)
+      | s25 = take_Perm_PCell_MaybeUninit_T {_20} (fun (_x: t_Option_Perm_PCell_MaybeUninit_T) -> [ &_19 <- _x ] s26)
+      | s26 = -{resolve_refmut_Option_Perm_PCell_MaybeUninit_T _21}- s27
+      | s27 = unwrap_Perm_PCell_MaybeUninit_T {_19} (fun (_x: t_Perm_PCell_MaybeUninit_T) -> [ &_18 <- _x ] s28)
+      | s28 = new_Perm_PCell_MaybeUninit_T {_18} (fun (_x: t_Perm_PCell_MaybeUninit_T) -> [ &_17 <- _x ] s29)
+      | s29 = try_enqueue_store_inv_T {_3} {_7} {_11} {_17} (fun (_x: ()) -> [ &_ret <- _x ] s30)
+      | s30 = s31 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'0} any) ]
+      | s31 = -{resolve_refmut_QueueInv_T inv'0}- s32
+      | s32 = s33 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure0'0 self} any) ]
+      | s33 = -{resolve_refmut_closure0'0 self}- s34
+      | s34 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t closure0'2 = self
     | & inv'0: MutBorrow.t t_QueueInv_T = inv'0
     | & _3: MutBorrow.t t_QueueInv_T = Any.any_l ()
     | & _4: MutBorrow.t t_QueueInv_T = Any.any_l ()
-    | & _5: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = Any.any_l ()
-    | & _6: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = Any.any_l ()
-    | & _7: t_TokenW_T = Any.any_l ()
-    | & _8: t_TokenW_T = Any.any_l ()
-    | & _9: t_Option_TokenW_T = Any.any_l ()
-    | & _10: MutBorrow.t t_Option_TokenW_T = Any.any_l ()
-    | & _11: MutBorrow.t t_Option_TokenW_T = Any.any_l ()
-    | & _12: MutBorrow.t t_Option_TokenW_T = Any.any_l ()
-    | & _13: t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _14: t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _15: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _16: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _17: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _18: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l () ]
+    | & _5: MutBorrow.t t_QueueInv_T = Any.any_l ()
+    | & _6: MutBorrow.t t_QueueInv_T = Any.any_l ()
+    | & _7: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = Any.any_l ()
+    | & _8: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = Any.any_l ()
+    | & _9: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = Any.any_l ()
+    | & _10: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = Any.any_l ()
+    | & _11: t_TokenW_T = Any.any_l ()
+    | & _12: t_TokenW_T = Any.any_l ()
+    | & _13: t_Option_TokenW_T = Any.any_l ()
+    | & _14: MutBorrow.t t_Option_TokenW_T = Any.any_l ()
+    | & _15: MutBorrow.t t_Option_TokenW_T = Any.any_l ()
+    | & _16: MutBorrow.t t_Option_TokenW_T = Any.any_l ()
+    | & _17: t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _18: t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _19: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _20: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _21: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _22: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l () ]
     [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0'0 self.current self.final}
       return {result} ]
   
@@ -9478,11 +9665,6 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
     precondition_closure0'2 self.f0'8 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'2
-  
-  predicate resolve_refmut_Committer_AtomicUsize_usize_None_Release [@inline:trivial] (_1: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Committer_AtomicUsize_usize_None_Release
   
   predicate resolve_closure0'0 [@inline:trivial] (_1: closure0'2) =
     resolve_refmut_Ghost_Option_Perm_PCell_MaybeUninit_T _1.c2'6
@@ -10602,6 +10784,10 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
   
   meta "rewrite_def" predicate inv_refmut_Authority_T'0
   
+  predicate resolve_refmut_Authority_T'0 [@inline:trivial] (_1: MutBorrow.t t_Authority_T'0) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Authority_T'0
+  
   predicate invariant_Ghost_refmut_Authority_T [@inline:trivial] (self: MutBorrow.t t_Authority_T'0) =
     inv_refmut_Authority_T'0 self
   
@@ -10664,10 +10850,6 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
         -> val_T auth'0.current i = val_T (fin_Ghost_refmut_Authority_T auth'0) i)}
       (! return {result}) ]
   
-  predicate resolve_refmut_Authority_T'0 [@inline:trivial] (_1: MutBorrow.t t_Authority_T'0) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Authority_T'0
-  
   predicate resolve_refmut_refmut_QueueInv_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_QueueInv_T)) =
     _1.final = _1.current
   
@@ -10686,6 +10868,42 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
     resolve_Ghost_refmut_QueueInv_T _1
   
   meta "rewrite_def" predicate resolve_Ghost_refmut_QueueInv_T'0
+  
+  predicate ge_log_SyncView [@inline:trivial] (self: t_SyncView) (other: t_SyncView) = le_log_SyncView other self
+  
+  meta "rewrite_def" predicate ge_log_SyncView
+  
+  type t_MaybeUninit_T
+  
+  type t_Option_T = None'2 | Some'2 t_T
+  
+  function view_MaybeUninit_T (self: t_MaybeUninit_T) : t_Option_T
+  
+  function val_unsized_PCell_MaybeUninit_T (self: t_Perm_PCell_MaybeUninit_T) : t_MaybeUninit_T
+  
+  function val_PCell_MaybeUninit_T [@inline:trivial] (self: t_Perm_PCell_MaybeUninit_T) : t_MaybeUninit_T =
+    val_unsized_PCell_MaybeUninit_T self
+  
+  meta "rewrite_def" function val_PCell_MaybeUninit_T
+  
+  predicate three_statuses_inv_T [@inline:trivial] (self: t_QueueInv_T) (k: int) =
+    let status_view = val''0 (Seq.get self.statuses_mono_auth (mod_len_T self k)) in match val_T self.tokens_auth k with
+      | R'1 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
+      | W'1 value -> status_view.status'0 = 2 * k /\ k < head_T self /\ value = Seq.get (seq_T'0 self) (k - tail_T self)
+      | None'1 -> match Seq.get self.cells_own (mod_len_T self k) with
+        | Some at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PCell_MaybeUninit_T at_view)
+        /\ (if head_T self <= k then
+          status_view.status'0 = 2 * k
+        else
+          status_view.status'0 = 2 * k + 1
+          /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T (val_Perm_PCell_MaybeUninit_T at_view))
+          = Some'2 (Seq.get (seq_T'0 self) (k - tail_T self))
+        )
+        | _ -> false
+        end
+      end
+  
+  meta "rewrite_def" predicate three_statuses_inv_T
   
   let into_inner_TokenW_T (self: t_TokenW_T) (return (x: t_TokenW_T)) =
   {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_TokenW_T self}
@@ -10791,23 +11009,6 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
   
   function ward_PCell_MaybeUninit_T (self: t_Perm_PCell_MaybeUninit_T) : t_PCell_MaybeUninit_T
   
-  predicate ge_log_SyncView [@inline:trivial] (self: t_SyncView) (other: t_SyncView) = le_log_SyncView other self
-  
-  meta "rewrite_def" predicate ge_log_SyncView
-  
-  type t_MaybeUninit_T
-  
-  type t_Option_T = None'2 | Some'2 t_T
-  
-  function view_MaybeUninit_T (self: t_MaybeUninit_T) : t_Option_T
-  
-  function val_unsized_PCell_MaybeUninit_T (self: t_Perm_PCell_MaybeUninit_T) : t_MaybeUninit_T
-  
-  function val_PCell_MaybeUninit_T [@inline:trivial] (self: t_Perm_PCell_MaybeUninit_T) : t_MaybeUninit_T =
-    val_unsized_PCell_MaybeUninit_T self
-  
-  meta "rewrite_def" function val_PCell_MaybeUninit_T
-  
   predicate protocol_QueueInv_T [@inline:trivial] (self: t_QueueInv_T) =
     gt_log_Int (len_T self) 0
     /\ len_T self = Seq.length self.cells_own
@@ -10846,23 +11047,8 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
           | _ -> true
           end)
     /\ Seq.length (seq_T'0 self) = head_T self - tail_T self
-    /\ (forall k: int [val_T self.tokens_auth k]. tail_T self <= k /\ k < tail_T self + len_T self
-        -> (let status_view = val''0 (Seq.get self.statuses_mono_auth (mod_len_T self k)) in match val_T self.tokens_auth k with
-          | R'1 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
-          | W'1 value -> status_view.status'0 = 2 * k
-          /\ k < head_T self /\ value = Seq.get (seq_T'0 self) (k - tail_T self)
-          | None'1 -> match Seq.get self.cells_own (mod_len_T self k) with
-            | Some at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PCell_MaybeUninit_T at_view)
-            /\ (if head_T self <= k then
-              status_view.status'0 = 2 * k
-            else
-              status_view.status'0 = 2 * k + 1
-              /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T (val_Perm_PCell_MaybeUninit_T at_view))
-              = Some'2 (Seq.get (seq_T'0 self) (k - tail_T self))
-            )
-            | _ -> false
-            end
-          end))
+    /\ (forall k: int [val_T self.tokens_auth k | mod_len_T self k]. tail_T self <= k /\ k < tail_T self + len_T self
+        -> three_statuses_inv_T self k)
     /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth k = None'1)
   
   meta "rewrite_def" predicate protocol_QueueInv_T
@@ -10932,165 +11118,192 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
             [ &inv'1 <- _bor ] -{inv_QueueInv_T _bor.final}-
             [ &_53 <- { _53 with current = { _53.current with current = _bor.final } } ] s3)
         [ _ck -> (! {[@expl:type invariant] inv_QueueInv_T _53.current.current} any) ]
-      | s3 = [ &head <- head_T inv'1.current ] s4
-      | s4 = [ &_62 <- mod_len_T inv'1.current head ] s5
-      | s5 = into_ghost_Int {_62} (fun (_x: int) -> [ &_61 <- _x ] s6)
-      | s6 = deref_Ghost_Int {_61} (fun (_x: int) -> [ &_59 <- _x ] s7)
-      | s7 = [ &head_mod <- _59 ] s8
-      | s8 = deref_Ghost_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed {c}
-          (fun (_x: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) -> [ &_68 <- _x ] s9)
-      | s9 = [ &_71 <- inv'1.current.head_own ] s10
-      | s10 = MutBorrow.borrow_mut <t_SyncView> {view}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_75 <- _bor ] [ &view <- _bor.final ] s11)
-      | s11 = MutBorrow.borrow_final <t_SyncView> {_75.current} {MutBorrow.get_id _75}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_74 <- _bor ] [ &_75 <- { _75 with current = _bor.final } ] s12)
-      | s12 = deref_mut_Ghost_SyncView {_74} (fun (_x: MutBorrow.t t_SyncView) -> [ &_73 <- _x ] s13)
-      | s13 = MutBorrow.borrow_final <t_SyncView> {_73.current} {MutBorrow.get_id _73}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_72 <- _bor ] [ &_73 <- { _73 with current = _bor.final } ] s14)
-      | s14 = shoot_load_AtomicUsize {_68.current} {_71} {_72} (fun (_x: t_AcquireSyncView) -> [ &_66 <- _x ] s15)
-      | s15 = -{resolve_refmut_Ghost_SyncView _75}- s16
-      | s16 = -{resolve_refmut_SyncView _73}- s17
-      | s17 = MutBorrow.borrow_mut <MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed> {c}
+      | s3 = [ &old_inv <- inv'1.current ] s4
+      | s4 = [ &head <- head_T inv'1.current ] s5
+      | s5 = [ &_65 <- mod_len_T inv'1.current head ] s6
+      | s6 = into_ghost_Int {_65} (fun (_x: int) -> [ &_64 <- _x ] s7)
+      | s7 = deref_Ghost_Int {_64} (fun (_x: int) -> [ &_62 <- _x ] s8)
+      | s8 = [ &head_mod <- _62 ] s9
+      | s9 = deref_Ghost_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed {c}
+          (fun (_x: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) -> [ &_71 <- _x ] s10)
+      | s10 = [ &_74 <- inv'1.current.head_own ] s11
+      | s11 = MutBorrow.borrow_mut <t_SyncView> {view}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_78 <- _bor ] [ &view <- _bor.final ] s12)
+      | s12 = MutBorrow.borrow_final <t_SyncView> {_78.current} {MutBorrow.get_id _78}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_77 <- _bor ] [ &_78 <- { _78 with current = _bor.final } ] s13)
+      | s13 = deref_mut_Ghost_SyncView {_77} (fun (_x: MutBorrow.t t_SyncView) -> [ &_76 <- _x ] s14)
+      | s14 = MutBorrow.borrow_final <t_SyncView> {_76.current} {MutBorrow.get_id _76}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_75 <- _bor ] [ &_76 <- { _76 with current = _bor.final } ] s15)
+      | s15 = shoot_load_AtomicUsize {_71.current} {_74} {_75} (fun (_x: t_AcquireSyncView) -> [ &_69 <- _x ] s16)
+      | s16 = -{resolve_refmut_Ghost_SyncView _78}- s17
+      | s17 = -{resolve_refmut_SyncView _76}- s18
+      | s18 = MutBorrow.borrow_mut <MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed> {c}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed)) ->
-            [ &_79 <- _bor ] [ &c <- _bor.final ] s18)
-      | s18 = deref_mut_Ghost_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed {_79}
-          (fun (_x: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed)) -> [ &_78 <- _x ] s19)
-      | s19 = MutBorrow.borrow_final <t_Perm_AtomicUsize> {inv'1.current.head_own}
+            [ &_82 <- _bor ] [ &c <- _bor.final ] s19)
+      | s19 = deref_mut_Ghost_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed {_82}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed)) -> [ &_81 <- _x ] s20)
+      | s20 = MutBorrow.borrow_final <t_Perm_AtomicUsize> {inv'1.current.head_own}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'1) 0}
           (fun (_bor: MutBorrow.t t_Perm_AtomicUsize) ->
-            [ &_81 <- _bor ] [ &inv'1 <- { inv'1 with current = { inv'1.current with head_own = _bor.final } } ] s20)
-      | s20 = MutBorrow.borrow_mut <t_SyncView> {view}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_85 <- _bor ] [ &view <- _bor.final ] s21)
-      | s21 = MutBorrow.borrow_final <t_SyncView> {_85.current} {MutBorrow.get_id _85}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_84 <- _bor ] [ &_85 <- { _85 with current = _bor.final } ] s22)
-      | s22 = deref_mut_Ghost_SyncView {_84} (fun (_x: MutBorrow.t t_SyncView) -> [ &_83 <- _x ] s23)
-      | s23 = new (fun (_x: t_ReleaseSyncView) -> [ &_89 <- _x ] s24)
-      | s24 = deref_Ghost_ReleaseSyncView {_89} (fun (_x: t_ReleaseSyncView) -> [ &_87 <- _x ] s25)
-      | s25 = MutBorrow.borrow_mut <t_Committer_AtomicUsize_usize_Relaxed_Relaxed> {_78.current.current}
+            [ &_84 <- _bor ] [ &inv'1 <- { inv'1 with current = { inv'1.current with head_own = _bor.final } } ] s21)
+      | s21 = MutBorrow.borrow_mut <t_SyncView> {view}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_88 <- _bor ] [ &view <- _bor.final ] s22)
+      | s22 = MutBorrow.borrow_final <t_SyncView> {_88.current} {MutBorrow.get_id _88}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_87 <- _bor ] [ &_88 <- { _88 with current = _bor.final } ] s23)
+      | s23 = deref_mut_Ghost_SyncView {_87} (fun (_x: MutBorrow.t t_SyncView) -> [ &_86 <- _x ] s24)
+      | s24 = new (fun (_x: t_ReleaseSyncView) -> [ &_92 <- _x ] s25)
+      | s25 = deref_Ghost_ReleaseSyncView {_92} (fun (_x: t_ReleaseSyncView) -> [ &_90 <- _x ] s26)
+      | s26 = MutBorrow.borrow_mut <t_Committer_AtomicUsize_usize_Relaxed_Relaxed> {_81.current.current}
           (fun (_bor: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) ->
-            [ &_77 <- _bor ] [ &_78 <- { _78 with current = { _78.current with current = _bor.final } } ] s26)
-      | s26 = MutBorrow.borrow_final <t_Perm_AtomicUsize> {_81.current} {MutBorrow.get_id _81}
+            [ &_80 <- _bor ] [ &_81 <- { _81 with current = { _81.current with current = _bor.final } } ] s27)
+      | s27 = MutBorrow.borrow_final <t_Perm_AtomicUsize> {_84.current} {MutBorrow.get_id _84}
           (fun (_bor: MutBorrow.t t_Perm_AtomicUsize) ->
-            [ &_80 <- _bor ] [ &_81 <- { _81 with current = _bor.final } ] s27)
-      | s27 = MutBorrow.borrow_final <t_SyncView> {_83.current} {MutBorrow.get_id _83}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_82 <- _bor ] [ &_83 <- { _83 with current = _bor.final } ] s28)
-      | s28 = shoot_store_AtomicUsize {_77} {_80} {_82} {_87} (fun (_x: ()) -> [ &_76 <- _x ] s29)
-      | s29 = -{resolve_refmut_Ghost_SyncView _85}- s30
-      | s30 = -{resolve_refmut_SyncView _83}- s31
-      | s31 = -{resolve_refmut_Perm_AtomicUsize _81}- s32
-      | s32 = -{resolve_refmut_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed _78}- s33
-      | s33 = -{resolve_Ghost_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed'0 c}- s34
-      | s34 = new'0 {(1: Int128.t)} (fun (_x: int) -> [ &_93 <- _x ] s35)
-      | s35 = into_inner_Int {_93} (fun (_x: int) -> [ &_92 <- _x ] s36)
-      | s36 = MutBorrow.borrow_final <int> {inv'1.current.head_last_ts}
+            [ &_83 <- _bor ] [ &_84 <- { _84 with current = _bor.final } ] s28)
+      | s28 = MutBorrow.borrow_final <t_SyncView> {_86.current} {MutBorrow.get_id _86}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_85 <- _bor ] [ &_86 <- { _86 with current = _bor.final } ] s29)
+      | s29 = shoot_store_AtomicUsize {_80} {_83} {_85} {_90} (fun (_x: ()) -> [ &_79 <- _x ] s30)
+      | s30 = -{resolve_refmut_Ghost_SyncView _88}- s31
+      | s31 = -{resolve_refmut_SyncView _86}- s32
+      | s32 = -{resolve_refmut_Perm_AtomicUsize _84}- s33
+      | s33 = -{resolve_refmut_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed _81}- s34
+      | s34 = -{resolve_Ghost_refmut_Committer_AtomicUsize_usize_Relaxed_Relaxed'0 c}- s35
+      | s35 = new'0 {(1: Int128.t)} (fun (_x: int) -> [ &_96 <- _x ] s36)
+      | s36 = into_inner_Int {_96} (fun (_x: int) -> [ &_95 <- _x ] s37)
+      | s37 = MutBorrow.borrow_final <int> {inv'1.current.head_last_ts}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'1) 7}
           (fun (_bor: MutBorrow.t int) ->
-            [ &_91 <- _bor ] [ &inv'1 <- { inv'1 with current = { inv'1.current with head_last_ts = _bor.final } } ]
-            s37)
-      | s37 = add_assign_Int {_91} {_92} (fun (_x: ()) -> [ &_90 <- _x ] s38)
-      | s38 = {[@expl:assertion] UInt64.t'int (val_load_AtomicUsize c.current) = head} s39
-      | s39 = index_Seq_Authority {inv'1.current.statuses_mono_auth} {head_mod}
-          (fun (_x: t_Authority) -> [ &_100 <- _x ] s40)
-      | s40 = s41 [ _ck -> (! {[@expl:type invariant] inv_Fragment witness} any) ]
-      | s41 = -{resolve_Fragment witness}- s42
-      | s42 = [ &_104 <- witness ] s43
-      | s43 = frag_lemma {_100} {_104} (fun (_x: ()) -> [ &_98 <- _x ] s44)
-      | s44 = {[@expl:assertion] val_T inv'1.current.tokens_auth head = None'1} s45
-      | s45 = {[@expl:assertion] val_T inv'1.current.tokens_auth (head - len_T inv'1.current) = None'1} s46
-      | s46 = {[@expl:assertion] head < tail_T inv'1.current + len_T inv'1.current} s47
-      | s47 = [ &old_seq'0 <- seq_T'0 inv'1.current ] s48
-      | s48 = [ &new_seq'0 <- Seq.snoc old_seq'0 item'0 ] s49
-      | s49 = [ &_128 <- budget_T inv'1.current.values_auth ] s50
-      | s50 = into_ghost_Int {_128} (fun (_x: int) -> [ &_127 <- _x ] s51)
-      | s51 = deref_Ghost_Int {_127} (fun (_x: int) -> [ &_125 <- _x ] s52)
-      | s52 = [ &budget'0 <- _125 ] s53
-      | s53 = into_inner_F {f} (fun (_x: t_F) -> [ &_132 <- _x ] s54)
-      | s54 = MutBorrow.borrow_final <t_Authority_T> {inv'1.current.values_auth}
+            [ &_94 <- _bor ] [ &inv'1 <- { inv'1 with current = { inv'1.current with head_last_ts = _bor.final } } ]
+            s38)
+      | s38 = add_assign_Int {_94} {_95} (fun (_x: ()) -> [ &_93 <- _x ] s39)
+      | s39 = {[@expl:assertion] UInt64.t'int (val_load_AtomicUsize c.current) = head} s40
+      | s40 = index_Seq_Authority {inv'1.current.statuses_mono_auth} {head_mod}
+          (fun (_x: t_Authority) -> [ &_103 <- _x ] s41)
+      | s41 = s42 [ _ck -> (! {[@expl:type invariant] inv_Fragment witness} any) ]
+      | s42 = -{resolve_Fragment witness}- s43
+      | s43 = [ &_107 <- witness ] s44
+      | s44 = frag_lemma {_103} {_107} (fun (_x: ()) -> [ &_101 <- _x ] s45)
+      | s45 = {[@expl:assertion] val_T inv'1.current.tokens_auth head = None'1} s46
+      | s46 = {[@expl:assertion] val_T inv'1.current.tokens_auth (head - len_T inv'1.current) = None'1} s47
+      | s47 = {[@expl:assertion] head < tail_T inv'1.current + len_T inv'1.current} s48
+      | s48 = [ &old_seq'0 <- seq_T'0 inv'1.current ] s49
+      | s49 = [ &new_seq'0 <- Seq.snoc old_seq'0 item'0 ] s50
+      | s50 = [ &_131 <- budget_T inv'1.current.values_auth ] s51
+      | s51 = into_ghost_Int {_131} (fun (_x: int) -> [ &_130 <- _x ] s52)
+      | s52 = deref_Ghost_Int {_130} (fun (_x: int) -> [ &_128 <- _x ] s53)
+      | s53 = [ &budget'0 <- _128 ] s54
+      | s54 = into_inner_F {f} (fun (_x: t_F) -> [ &_135 <- _x ] s55)
+      | s55 = MutBorrow.borrow_final <t_Authority_T> {inv'1.current.values_auth}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'1) 4}
           (fun (_bor: MutBorrow.t t_Authority_T) ->
-            [ &_139 <- _bor ] -{inv_Authority_T _bor.final}-
-            [ &inv'1 <- { inv'1 with current = { inv'1.current with values_auth = _bor.final } } ] s55)
+            [ &_142 <- _bor ] -{inv_Authority_T _bor.final}-
+            [ &inv'1 <- { inv'1 with current = { inv'1.current with values_auth = _bor.final } } ] s56)
         [ _ck -> (! {[@expl:type invariant] inv_Authority_T inv'1.current.values_auth} any) ]
-      | s55 = MutBorrow.borrow_final <t_Authority_T> {_139.current} {MutBorrow.get_id _139}
+      | s56 = MutBorrow.borrow_final <t_Authority_T> {_142.current} {MutBorrow.get_id _142}
           (fun (_bor: MutBorrow.t t_Authority_T) ->
-            [ &_138 <- _bor ] -{inv_Authority_T _bor.final}-
-            [ &_139 <- { _139 with current = _bor.final } ] s56)
-        [ _ck -> (! {[@expl:type invariant] inv_Authority_T _139.current} any) ]
-      | s56 = [ &_140 <- self ] s57
-      | s57 = [ &_137 <- { auth = _138;
+            [ &_141 <- _bor ] -{inv_Authority_T _bor.final}-
+            [ &_142 <- { _142 with current = _bor.final } ] s57)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_T _142.current} any) ]
+      | s57 = [ &_143 <- self ] s58
+      | s58 = [ &_140 <- { auth = _141;
                            budget = budget'0;
-                           ward = _140;
+                           ward = _143;
                            old_seq = old_seq'0;
                            new_seq = new_seq'0;
-                           shot = false } ] s58
-      | s58 = MutBorrow.borrow_mut <t_QueueCommitter_T> {_137}
+                           shot = false } ] s59
+      | s59 = MutBorrow.borrow_mut <t_QueueCommitter_T> {_140}
           (fun (_bor: MutBorrow.t t_QueueCommitter_T) ->
-            [ &_136 <- _bor ] -{inv_QueueCommitter_T _bor.final}-
-            [ &_137 <- _bor.final ] s59) [ _ck -> (! {[@expl:type invariant] inv_QueueCommitter_T _137} any) ]
-      | s59 = MutBorrow.borrow_final <t_QueueCommitter_T> {_136.current} {MutBorrow.get_id _136}
+            [ &_139 <- _bor ] -{inv_QueueCommitter_T _bor.final}-
+            [ &_140 <- _bor.final ] s60) [ _ck -> (! {[@expl:type invariant] inv_QueueCommitter_T _140} any) ]
+      | s60 = MutBorrow.borrow_final <t_QueueCommitter_T> {_139.current} {MutBorrow.get_id _139}
           (fun (_bor: MutBorrow.t t_QueueCommitter_T) ->
-            [ &_135 <- _bor ] -{inv_QueueCommitter_T _bor.final}-
-            [ &_136 <- { _136 with current = _bor.final } ] s60)
-        [ _ck -> (! {[@expl:type invariant] inv_QueueCommitter_T _136.current} any) ]
-      | s60 = [ &_134 <- _135 ] s61
-      | s61 = call_once_F {_132} {_134} (fun (_x: ()) -> [ &_131 <- _x ] s62)
-      | s62 = s63 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T _139} any) ]
-      | s63 = -{resolve_refmut_Authority_T _139}- s64
-      | s64 = s65 [ _ck -> (! {[@expl:type invariant] inv_QueueCommitter_T _137} any) ]
-      | s65 = -{resolve_QueueCommitter_T _137}- s66
-      | s66 = s67 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueCommitter_T _136} any) ]
-      | s67 = -{resolve_refmut_QueueCommitter_T _136}- s68
-      | s68 = MutBorrow.borrow_final <Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T> {inv'1.current.cells_own}
+            [ &_138 <- _bor ] -{inv_QueueCommitter_T _bor.final}-
+            [ &_139 <- { _139 with current = _bor.final } ] s61)
+        [ _ck -> (! {[@expl:type invariant] inv_QueueCommitter_T _139.current} any) ]
+      | s61 = [ &_137 <- _138 ] s62
+      | s62 = call_once_F {_135} {_137} (fun (_x: ()) -> [ &_134 <- _x ] s63)
+      | s63 = s64 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T _142} any) ]
+      | s64 = -{resolve_refmut_Authority_T _142}- s65
+      | s65 = s66 [ _ck -> (! {[@expl:type invariant] inv_QueueCommitter_T _140} any) ]
+      | s66 = -{resolve_QueueCommitter_T _140}- s67
+      | s67 = s68 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueCommitter_T _139} any) ]
+      | s68 = -{resolve_refmut_QueueCommitter_T _139}- s69
+      | s69 = MutBorrow.borrow_final <Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T> {inv'1.current.cells_own}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'1) 2}
           (fun (_bor: MutBorrow.t (Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T)) ->
-            [ &_151 <- _bor ] -{inv_Seq_Option_AtView_Perm_PCell_MaybeUninit_T _bor.final}-
-            [ &inv'1 <- { inv'1 with current = { inv'1.current with cells_own = _bor.final } } ] s69)
+            [ &_154 <- _bor ] -{inv_Seq_Option_AtView_Perm_PCell_MaybeUninit_T _bor.final}-
+            [ &inv'1 <- { inv'1 with current = { inv'1.current with cells_own = _bor.final } } ] s70)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Option_AtView_Perm_PCell_MaybeUninit_T inv'1.current.cells_own}
           any) ]
-      | s69 = index_mut_Seq_Option_AtView_Perm_PCell_MaybeUninit_T {_151} {head_mod}
-          (fun (_x: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T) -> [ &_150 <- _x ] s70)
-      | s70 = MutBorrow.borrow_final <t_Option_AtView_Perm_PCell_MaybeUninit_T> {_150.current} {MutBorrow.get_id _150}
+      | s70 = index_mut_Seq_Option_AtView_Perm_PCell_MaybeUninit_T {_154} {head_mod}
+          (fun (_x: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T) -> [ &_153 <- _x ] s71)
+      | s71 = MutBorrow.borrow_final <t_Option_AtView_Perm_PCell_MaybeUninit_T> {_153.current} {MutBorrow.get_id _153}
           (fun (_bor: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T) ->
-            [ &_149 <- _bor ] -{inv_Option_AtView_Perm_PCell_MaybeUninit_T _bor.final}-
-            [ &_150 <- { _150 with current = _bor.final } ] s71)
-        [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Perm_PCell_MaybeUninit_T _150.current} any) ]
-      | s71 = take_AtView_Perm_PCell_MaybeUninit_T {_149}
-          (fun (_x: t_Option_AtView_Perm_PCell_MaybeUninit_T) -> [ &_148 <- _x ] s72)
-      | s72 = s73 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _150} any) ]
-      | s73 = -{resolve_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _150}- s74
-      | s74 = unwrap_AtView_Perm_PCell_MaybeUninit_T {_148}
-          (fun (_x: t_AtView_Perm_PCell_MaybeUninit_T) -> [ &_147 <- _x ] s75)
-      | s75 = deref_Ghost_SyncView {view} (fun (_x: t_SyncView) -> [ &_154 <- _x ] s76)
-      | s76 = sync_Perm_PCell_MaybeUninit_T {_147} {_154}
-          (fun (_x: t_Perm_PCell_MaybeUninit_T) -> [ &cell_own <- _x ] s77)
-      | s77 = MutBorrow.borrow_final <t_Authority_T'0> {inv'1.current.tokens_auth}
+            [ &_152 <- _bor ] -{inv_Option_AtView_Perm_PCell_MaybeUninit_T _bor.final}-
+            [ &_153 <- { _153 with current = _bor.final } ] s72)
+        [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Perm_PCell_MaybeUninit_T _153.current} any) ]
+      | s72 = take_AtView_Perm_PCell_MaybeUninit_T {_152}
+          (fun (_x: t_Option_AtView_Perm_PCell_MaybeUninit_T) -> [ &_151 <- _x ] s73)
+      | s73 = s74 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _153} any) ]
+      | s74 = -{resolve_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _153}- s75
+      | s75 = unwrap_AtView_Perm_PCell_MaybeUninit_T {_151}
+          (fun (_x: t_AtView_Perm_PCell_MaybeUninit_T) -> [ &_150 <- _x ] s76)
+      | s76 = deref_Ghost_SyncView {view} (fun (_x: t_SyncView) -> [ &_157 <- _x ] s77)
+      | s77 = sync_Perm_PCell_MaybeUninit_T {_150} {_157}
+          (fun (_x: t_Perm_PCell_MaybeUninit_T) -> [ &cell_own <- _x ] s78)
+      | s78 = MutBorrow.borrow_final <t_Authority_T'0> {inv'1.current.tokens_auth}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'1) 6}
           (fun (_bor: MutBorrow.t t_Authority_T'0) ->
-            [ &_159 <- _bor ] -{inv_Authority_T'0 _bor.final}-
-            [ &inv'1 <- { inv'1 with current = { inv'1.current with tokens_auth = _bor.final } } ] s78)
+            [ &_164 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &inv'1 <- { inv'1 with current = { inv'1.current with tokens_auth = _bor.final } } ] s79)
         [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 inv'1.current.tokens_auth} any) ]
-      | s78 = MutBorrow.borrow_final <t_Authority_T'0> {_159.current} {MutBorrow.get_id _159}
+      | s79 = MutBorrow.borrow_final <t_Authority_T'0> {_164.current} {MutBorrow.get_id _164}
           (fun (_bor: MutBorrow.t t_Authority_T'0) ->
-            [ &_158 <- _bor ] -{inv_Authority_T'0 _bor.final}-
-            [ &_159 <- { _159 with current = _bor.final } ] s79)
-        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _159.current} any) ]
-      | s79 = new_refmut_Authority_T {_158} (fun (_x: MutBorrow.t t_Authority_T'0) -> [ &_157 <- _x ] s80)
-      | s80 = into_ghost_Int {head} (fun (_x: int) -> [ &_163 <- _x ] s81)
-      | s81 = deref_Ghost_Int {_163} (fun (_x: int) -> [ &_161 <- _x ] s82)
-      | s82 = alloc_T {_157} {_161} {item'0} (fun (_x: t_TokenW_T) -> [ &token <- _x ] s83)
-      | s83 = s84 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T'0 _159} any) ]
-      | s84 = -{resolve_refmut_Authority_T'0 _159}- s85
-      | s85 = s86 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_QueueInv_T _53} any) ]
-      | s86 = -{resolve_refmut_refmut_QueueInv_T _53}- s87
-      | s87 = s88 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'1} any) ]
-      | s88 = -{resolve_refmut_QueueInv_T inv'1}- s89
-      | s89 = s90 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_QueueInv_T inv} any) ]
-      | s90 = -{resolve_Ghost_refmut_QueueInv_T'0 inv}- s91
-      | s91 = into_inner_TokenW_T {token} (fun (_x: t_TokenW_T) -> [ &_166 <- _x ] s92)
-      | s92 = [ &_51 <- { f0'1 = _166; f1'1 = cell_own } ] s93
-      | s93 = new_tup2_TokenW_T_Perm_PCell_MaybeUninit_T {_51}
-          (fun (_x: tup2_TokenW_T_Perm_PCell_MaybeUninit_T) -> [ &_ret <- _x ] s94)
-      | s94 = return {_ret} ] ]
+            [ &_163 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &_164 <- { _164 with current = _bor.final } ] s80)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _164.current} any) ]
+      | s80 = s81 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T'0 _164} any) ]
+      | s81 = -{resolve_refmut_Authority_T'0 _164}- s82
+      | s82 = MutBorrow.borrow_final <t_Authority_T'0> {_163.current} {MutBorrow.get_id _163}
+          (fun (_bor: MutBorrow.t t_Authority_T'0) ->
+            [ &_162 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &_163 <- { _163 with current = _bor.final } ] s83)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _163.current} any) ]
+      | s83 = s84 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T'0 _163} any) ]
+      | s84 = -{resolve_refmut_Authority_T'0 _163}- s85
+      | s85 = MutBorrow.borrow_final <t_Authority_T'0> {_162.current} {MutBorrow.get_id _162}
+          (fun (_bor: MutBorrow.t t_Authority_T'0) ->
+            [ &_161 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &_162 <- { _162 with current = _bor.final } ] s86)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _162.current} any) ]
+      | s86 = new_refmut_Authority_T {_161} (fun (_x: MutBorrow.t t_Authority_T'0) -> [ &_160 <- _x ] s87)
+      | s87 = s88 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T'0 _162} any) ]
+      | s88 = -{resolve_refmut_Authority_T'0 _162}- s89
+      | s89 = into_ghost_Int {head} (fun (_x: int) -> [ &_168 <- _x ] s90)
+      | s90 = deref_Ghost_Int {_168} (fun (_x: int) -> [ &_166 <- _x ] s91)
+      | s91 = alloc_T {_160} {_166} {item'0} (fun (_x: t_TokenW_T) -> [ &token <- _x ] s92)
+      | s92 = s93 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_QueueInv_T _53} any) ]
+      | s93 = -{resolve_refmut_refmut_QueueInv_T _53}- s94
+      | s94 = s95 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'1} any) ]
+      | s95 = -{resolve_refmut_QueueInv_T inv'1}- s96
+      | s96 = s97 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_QueueInv_T inv} any) ]
+      | s97 = -{resolve_Ghost_refmut_QueueInv_T'0 inv}- s98
+      | s98 = {[@expl:assertion] head_T inv'1.current = head_T old_inv + 1} s99
+      | s99 = {[@expl:assertion] tail_T inv'1.current = tail_T old_inv} s100
+      | s100 = {[@expl:assertion] len_T inv'1.current = len_T old_inv} s101
+      | s101 = {[@expl:assertion] forall k: int. mod_len_T inv'1.current k = mod_len_T old_inv k} s102
+      | s102 = {[@expl:assertion] inv'1.current.statuses_mono_auth = old_inv.statuses_mono_auth} s103
+      | s103 = {[@expl:assertion] forall k: int. tail_T inv'1.current <= k /\ k < head_T old_inv
+          -> three_statuses_inv_T inv'1.final k}
+        s104
+      | s104 = {[@expl:assertion] three_statuses_inv_T inv'1.current (head_T old_inv)} s105
+      | s105 = {[@expl:assertion] forall k: int. head_T old_inv < k /\ k < tail_T inv'1.current + len_T inv'1.current
+          -> three_statuses_inv_T inv'1.final k}
+        s106
+      | s106 = into_inner_TokenW_T {token} (fun (_x: t_TokenW_T) -> [ &_203 <- _x ] s107)
+      | s107 = [ &_51 <- { f0'1 = _203; f1'1 = cell_own } ] s108
+      | s108 = new_tup2_TokenW_T_Perm_PCell_MaybeUninit_T {_51}
+          (fun (_x: tup2_TokenW_T_Perm_PCell_MaybeUninit_T) -> [ &_ret <- _x ] s109)
+      | s109 = return {_ret} ] ]
     [ & _ret: tup2_TokenW_T_Perm_PCell_MaybeUninit_T = Any.any_l ()
     | & self: t_Queue_T = self
     | & inv: MutBorrow.t t_QueueInv_T = inv
@@ -11103,66 +11316,69 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
     | & inv'1: MutBorrow.t t_QueueInv_T = Any.any_l ()
     | & _53: MutBorrow.t (MutBorrow.t t_QueueInv_T) = Any.any_l ()
     | & _54: MutBorrow.t (MutBorrow.t t_QueueInv_T) = Any.any_l ()
+    | & old_inv: t_QueueInv_T = Any.any_l ()
     | & head: int = Any.any_l ()
     | & head_mod: int = Any.any_l ()
-    | & _59: int = Any.any_l ()
-    | & _61: int = Any.any_l ()
     | & _62: int = Any.any_l ()
-    | & _66: t_AcquireSyncView = Any.any_l ()
-    | & _68: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed = Any.any_l ()
-    | & _71: t_Perm_AtomicUsize = Any.any_l ()
-    | & _72: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _73: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _74: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _64: int = Any.any_l ()
+    | & _65: int = Any.any_l ()
+    | & _69: t_AcquireSyncView = Any.any_l ()
+    | & _71: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed = Any.any_l ()
+    | & _74: t_Perm_AtomicUsize = Any.any_l ()
     | & _75: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _76: () = Any.any_l ()
-    | & _77: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed = Any.any_l ()
-    | & _78: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) = Any.any_l ()
-    | & _79: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) = Any.any_l ()
-    | & _80: MutBorrow.t t_Perm_AtomicUsize = Any.any_l ()
-    | & _81: MutBorrow.t t_Perm_AtomicUsize = Any.any_l ()
-    | & _82: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _83: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _84: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _76: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _77: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _78: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _79: () = Any.any_l ()
+    | & _80: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed = Any.any_l ()
+    | & _81: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) = Any.any_l ()
+    | & _82: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed) = Any.any_l ()
+    | & _83: MutBorrow.t t_Perm_AtomicUsize = Any.any_l ()
+    | & _84: MutBorrow.t t_Perm_AtomicUsize = Any.any_l ()
     | & _85: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _87: t_ReleaseSyncView = Any.any_l ()
-    | & _89: t_ReleaseSyncView = Any.any_l ()
-    | & _90: () = Any.any_l ()
-    | & _91: MutBorrow.t int = Any.any_l ()
-    | & _92: int = Any.any_l ()
-    | & _93: int = Any.any_l ()
-    | & _98: () = Any.any_l ()
-    | & _100: t_Authority = Any.any_l ()
-    | & _104: t_Fragment = Any.any_l ()
+    | & _86: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _87: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _88: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _90: t_ReleaseSyncView = Any.any_l ()
+    | & _92: t_ReleaseSyncView = Any.any_l ()
+    | & _93: () = Any.any_l ()
+    | & _94: MutBorrow.t int = Any.any_l ()
+    | & _95: int = Any.any_l ()
+    | & _96: int = Any.any_l ()
+    | & _101: () = Any.any_l ()
+    | & _103: t_Authority = Any.any_l ()
+    | & _107: t_Fragment = Any.any_l ()
     | & old_seq'0: Seq.seq t_T = Any.any_l ()
     | & new_seq'0: Seq.seq t_T = Any.any_l ()
     | & budget'0: int = Any.any_l ()
-    | & _125: int = Any.any_l ()
-    | & _127: int = Any.any_l ()
     | & _128: int = Any.any_l ()
-    | & _131: () = Any.any_l ()
-    | & _132: t_F = Any.any_l ()
-    | & _134: MutBorrow.t t_QueueCommitter_T = Any.any_l ()
-    | & _135: MutBorrow.t t_QueueCommitter_T = Any.any_l ()
-    | & _136: MutBorrow.t t_QueueCommitter_T = Any.any_l ()
-    | & _137: t_QueueCommitter_T = Any.any_l ()
-    | & _138: MutBorrow.t t_Authority_T = Any.any_l ()
-    | & _139: MutBorrow.t t_Authority_T = Any.any_l ()
-    | & _140: t_Queue_T = Any.any_l ()
+    | & _130: int = Any.any_l ()
+    | & _131: int = Any.any_l ()
+    | & _134: () = Any.any_l ()
+    | & _135: t_F = Any.any_l ()
+    | & _137: MutBorrow.t t_QueueCommitter_T = Any.any_l ()
+    | & _138: MutBorrow.t t_QueueCommitter_T = Any.any_l ()
+    | & _139: MutBorrow.t t_QueueCommitter_T = Any.any_l ()
+    | & _140: t_QueueCommitter_T = Any.any_l ()
+    | & _141: MutBorrow.t t_Authority_T = Any.any_l ()
+    | & _142: MutBorrow.t t_Authority_T = Any.any_l ()
+    | & _143: t_Queue_T = Any.any_l ()
     | & cell_own: t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _147: t_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _148: t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _149: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _150: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _151: MutBorrow.t (Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T) = Any.any_l ()
-    | & _154: t_SyncView = Any.any_l ()
+    | & _150: t_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _151: t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _152: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _153: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _154: MutBorrow.t (Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T) = Any.any_l ()
+    | & _157: t_SyncView = Any.any_l ()
     | & token: t_TokenW_T = Any.any_l ()
-    | & _157: MutBorrow.t t_Authority_T'0 = Any.any_l ()
-    | & _158: MutBorrow.t t_Authority_T'0 = Any.any_l ()
-    | & _159: MutBorrow.t t_Authority_T'0 = Any.any_l ()
-    | & _161: int = Any.any_l ()
-    | & _163: int = Any.any_l ()
-    | & _166: t_TokenW_T = Any.any_l () ])
+    | & _160: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _161: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _162: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _163: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _164: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _166: int = Any.any_l ()
+    | & _168: int = Any.any_l ()
+    | & _203: t_TokenW_T = Any.any_l () ])
     [ return (result: tup2_TokenW_T_Perm_PCell_MaybeUninit_T) ->
     {[@stop_split] [@expl:try_enqueue_cas_inv_T ensures] ([@stop_split] [@expl:try_enqueue_cas_inv result type invariant] inv_Ghost_tup2_TokenW_T_Perm_PCell_MaybeUninit_T result)
       /\ ([@stop_split] [@expl:try_enqueue_cas_inv ensures #0] protocol_QueueInv_T (fin_Ghost_refmut_QueueInv_T inv))
@@ -11571,6 +11787,10 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
   
   meta "rewrite_def" predicate inv_refmut_Authority_T
   
+  predicate resolve_refmut_Authority_T [@inline:trivial] (_1: MutBorrow.t t_Authority_T'0) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Authority_T
+  
   predicate invariant_Ghost_refmut_Authority_T [@inline:trivial] (self: MutBorrow.t t_Authority_T'0) =
     inv_refmut_Authority_T self
   
@@ -11633,10 +11853,6 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
       /\ ([@stop_split] [@expl:discard ensures #3] forall i: int. i <> index_T this
         -> val_T auth.current i = val_T (fin_Ghost_refmut_Authority_T auth) i)}
       (! return {result}) ]
-  
-  predicate resolve_refmut_Authority_T [@inline:trivial] (_1: MutBorrow.t t_Authority_T'0) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Authority_T
   
   type t_StatusWithView = { status'0: int; view'0: t_SyncView }
   
@@ -11794,17 +12010,6 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
   axiom mod_len_inj_T_spec: forall self: t_QueueInv_T, i: int, j: int. mod_len_T self i = mod_len_T self j
       -> - len_T self < i - j /\ i - j < len_T self -> i = j
   
-  let new_unit (x: ()) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
-  
-  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
-  
-  meta "rewrite_def" predicate gt_log_Int
-  
-  function budget_T (self: t_Authority_T) : int
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
   constant any_tup2_usize_SyncView : tup2_usize_SyncView
   
   function unwrap_Option_tup2_usize_SyncView (self: t_Option_tup2_usize_SyncView) : tup2_usize_SyncView =
@@ -11823,11 +12028,22 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
   
   meta "rewrite_def" function index_FMap_Int_tup2_usize_SyncView
   
+  function tail_T (self: t_QueueInv_T) : int =
+    UInt64.t'int (index_FMap_Int_tup2_usize_SyncView (val_AtomicUsize self.tail_own) self.tail_last_ts).f0'0
+  
   function head_T (self: t_QueueInv_T) : int =
     UInt64.t'int (index_FMap_Int_tup2_usize_SyncView (val_AtomicUsize self.head_own) self.head_last_ts).f0'0
   
-  function tail_T (self: t_QueueInv_T) : int =
-    UInt64.t'int (index_FMap_Int_tup2_usize_SyncView (val_AtomicUsize self.tail_own) self.tail_last_ts).f0'0
+  let new_unit (x: ()) (return (x'0: ())) = any
+    [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  function budget_T (self: t_Authority_T) : int
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   function ward_PCell_MaybeUninit_T (self: t_Perm_PCell_MaybeUninit_T) : t_PCell_MaybeUninit_T
   
@@ -11851,6 +12067,25 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
     val_unsized_PCell_MaybeUninit_T self
   
   meta "rewrite_def" function val_PCell_MaybeUninit_T
+  
+  predicate three_statuses_inv_T [@inline:trivial] (self: t_QueueInv_T) (k: int) =
+    let status_view = val' (Seq.get self.statuses_mono_auth (mod_len_T self k)) in match val_T self.tokens_auth k with
+      | R'1 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
+      | W'1 value -> status_view.status'0 = 2 * k /\ k < head_T self /\ value = Seq.get (seq_T'0 self) (k - tail_T self)
+      | None'1 -> match Seq.get self.cells_own (mod_len_T self k) with
+        | Some at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PCell_MaybeUninit_T at_view)
+        /\ (if head_T self <= k then
+          status_view.status'0 = 2 * k
+        else
+          status_view.status'0 = 2 * k + 1
+          /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T (val_Perm_PCell_MaybeUninit_T at_view))
+          = Some'2 (Seq.get (seq_T'0 self) (k - tail_T self))
+        )
+        | _ -> false
+        end
+      end
+  
+  meta "rewrite_def" predicate three_statuses_inv_T
   
   predicate protocol_QueueInv_T [@inline:trivial] (self: t_QueueInv_T) =
     gt_log_Int (len_T self) 0
@@ -11890,23 +12125,8 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
           | _ -> true
           end)
     /\ Seq.length (seq_T'0 self) = head_T self - tail_T self
-    /\ (forall k: int [val_T self.tokens_auth k]. tail_T self <= k /\ k < tail_T self + len_T self
-        -> (let status_view = val' (Seq.get self.statuses_mono_auth (mod_len_T self k)) in match val_T self.tokens_auth k with
-          | R'1 -> status_view.status'0 = 2 * (k - len_T self) + 1 /\ head_T self <= k
-          | W'1 value -> status_view.status'0 = 2 * k
-          /\ k < head_T self /\ value = Seq.get (seq_T'0 self) (k - tail_T self)
-          | None'1 -> match Seq.get self.cells_own (mod_len_T self k) with
-            | Some at_view -> ge_log_SyncView status_view.view'0 (view_Perm_PCell_MaybeUninit_T at_view)
-            /\ (if head_T self <= k then
-              status_view.status'0 = 2 * k
-            else
-              status_view.status'0 = 2 * k + 1
-              /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T (val_Perm_PCell_MaybeUninit_T at_view))
-              = Some'2 (Seq.get (seq_T'0 self) (k - tail_T self))
-            )
-            | _ -> false
-            end
-          end))
+    /\ (forall k: int [val_T self.tokens_auth k | mod_len_T self k]. tail_T self <= k /\ k < tail_T self + len_T self
+        -> three_statuses_inv_T self k)
     /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth k = None'1)
   
   meta "rewrite_def" predicate protocol_QueueInv_T
@@ -11971,102 +12191,121 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
             [ &inv'0 <- _bor ] -{inv_QueueInv_T _bor.final}-
             [ &_35 <- { _35 with current = { _35.current with current = _bor.final } } ] s3)
         [ _ck -> (! {[@expl:type invariant] inv_QueueInv_T _35.current.current} any) ]
-      | s3 = [ &_41 <- mod_len_T inv'0.current (index_T token) ] s4
-      | s4 = into_ghost_Int {_41} (fun (_x: int) -> [ &_40 <- _x ] s5)
-      | s5 = deref_Ghost_Int {_40} (fun (_x: int) -> [ &_38 <- _x ] s6)
-      | s6 = [ &index_mod <- _38 ] s7
-      | s7 = new_Perm_PCell_MaybeUninit_T {cell_own}
-          (fun (_x: tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T) -> [ &_48 <- _x ] s8)
-      | s8 = into_inner_tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T {_48}
-          (fun (_x: tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T) -> [ &_47 <- _x ] s9)
-      | s9 = [ &view <- _47.f0 ] s10
-      | s10 = [ &at_view <- _47.f1 ] s11
-      | s11 = MutBorrow.borrow_mut <MutBorrow.t t_Committer_AtomicUsize_usize_None_Release> {c}
+      | s3 = [ &old_inv <- inv'0.current ] s4
+      | s4 = [ &_44 <- mod_len_T inv'0.current (index_T token) ] s5
+      | s5 = into_ghost_Int {_44} (fun (_x: int) -> [ &_43 <- _x ] s6)
+      | s6 = deref_Ghost_Int {_43} (fun (_x: int) -> [ &_41 <- _x ] s7)
+      | s7 = [ &index_mod <- _41 ] s8
+      | s8 = new_Perm_PCell_MaybeUninit_T {cell_own}
+          (fun (_x: tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T) -> [ &_51 <- _x ] s9)
+      | s9 = into_inner_tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T {_51}
+          (fun (_x: tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T) -> [ &_50 <- _x ] s10)
+      | s10 = [ &view <- _50.f0 ] s11
+      | s11 = [ &at_view <- _50.f1 ] s12
+      | s12 = MutBorrow.borrow_mut <MutBorrow.t t_Committer_AtomicUsize_usize_None_Release> {c}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_None_Release)) ->
-            [ &_53 <- _bor ] [ &c <- _bor.final ] s12)
-      | s12 = deref_mut_Ghost_refmut_Committer_AtomicUsize_usize_None_Release {_53}
-          (fun (_x: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_None_Release)) -> [ &_52 <- _x ] s13)
-      | s13 = MutBorrow.borrow_final <Seq.seq t_Perm_AtomicUsize> {inv'0.current.statuses_own}
+            [ &_56 <- _bor ] [ &c <- _bor.final ] s13)
+      | s13 = deref_mut_Ghost_refmut_Committer_AtomicUsize_usize_None_Release {_56}
+          (fun (_x: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_None_Release)) -> [ &_55 <- _x ] s14)
+      | s14 = MutBorrow.borrow_final <Seq.seq t_Perm_AtomicUsize> {inv'0.current.statuses_own}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'0) 3}
           (fun (_bor: MutBorrow.t (Seq.seq t_Perm_AtomicUsize)) ->
-            [ &_57 <- _bor ] [ &inv'0 <- { inv'0 with current = { inv'0.current with statuses_own = _bor.final } } ]
-            s14)
-      | s14 = index_mut_Seq_Perm_AtomicUsize {_57} {index_mod}
-          (fun (_x: MutBorrow.t t_Perm_AtomicUsize) -> [ &_56 <- _x ] s15)
-      | s15 = MutBorrow.borrow_final <t_Perm_AtomicUsize> {_56.current} {MutBorrow.get_id _56}
+            [ &_60 <- _bor ] [ &inv'0 <- { inv'0 with current = { inv'0.current with statuses_own = _bor.final } } ]
+            s15)
+      | s15 = index_mut_Seq_Perm_AtomicUsize {_60} {index_mod}
+          (fun (_x: MutBorrow.t t_Perm_AtomicUsize) -> [ &_59 <- _x ] s16)
+      | s16 = MutBorrow.borrow_final <t_Perm_AtomicUsize> {_59.current} {MutBorrow.get_id _59}
           (fun (_bor: MutBorrow.t t_Perm_AtomicUsize) ->
-            [ &_55 <- _bor ] [ &_56 <- { _56 with current = _bor.final } ] s16)
-      | s16 = MutBorrow.borrow_mut <t_SyncView> {view}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_60 <- _bor ] [ &view <- _bor.final ] s17)
-      | s17 = MutBorrow.borrow_mut <t_Committer_AtomicUsize_usize_None_Release> {_52.current.current}
+            [ &_58 <- _bor ] [ &_59 <- { _59 with current = _bor.final } ] s17)
+      | s17 = MutBorrow.borrow_mut <t_SyncView> {view}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_63 <- _bor ] [ &view <- _bor.final ] s18)
+      | s18 = MutBorrow.borrow_mut <t_Committer_AtomicUsize_usize_None_Release> {_55.current.current}
           (fun (_bor: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) ->
-            [ &_51 <- _bor ] [ &_52 <- { _52 with current = { _52.current with current = _bor.final } } ] s18)
-      | s18 = MutBorrow.borrow_final <t_Perm_AtomicUsize> {_55.current} {MutBorrow.get_id _55}
+            [ &_54 <- _bor ] [ &_55 <- { _55 with current = { _55.current with current = _bor.final } } ] s19)
+      | s19 = MutBorrow.borrow_final <t_Perm_AtomicUsize> {_58.current} {MutBorrow.get_id _58}
           (fun (_bor: MutBorrow.t t_Perm_AtomicUsize) ->
-            [ &_54 <- _bor ] [ &_55 <- { _55 with current = _bor.final } ] s19)
-      | s19 = MutBorrow.borrow_final <t_SyncView> {_60.current} {MutBorrow.get_id _60}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_59 <- _bor ] [ &_60 <- { _60 with current = _bor.final } ] s20)
-      | s20 = shoot_store_AtomicUsize {_51} {_54} {_59} (fun (_x: ()) -> [ &_50 <- _x ] s21)
-      | s21 = -{resolve_refmut_SyncView _60}- s22
-      | s22 = -{resolve_refmut_Perm_AtomicUsize _56}- s23
-      | s23 = -{resolve_refmut_Perm_AtomicUsize _55}- s24
-      | s24 = -{resolve_refmut_refmut_Committer_AtomicUsize_usize_None_Release _52}- s25
-      | s25 = -{resolve_Ghost_refmut_Committer_AtomicUsize_usize_None_Release'0 c}- s26
-      | s26 = MutBorrow.borrow_final <t_Authority_T'0> {inv'0.current.tokens_auth}
+            [ &_57 <- _bor ] [ &_58 <- { _58 with current = _bor.final } ] s20)
+      | s20 = MutBorrow.borrow_final <t_SyncView> {_63.current} {MutBorrow.get_id _63}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_62 <- _bor ] [ &_63 <- { _63 with current = _bor.final } ] s21)
+      | s21 = shoot_store_AtomicUsize {_54} {_57} {_62} (fun (_x: ()) -> [ &_53 <- _x ] s22)
+      | s22 = -{resolve_refmut_SyncView _63}- s23
+      | s23 = -{resolve_refmut_Perm_AtomicUsize _59}- s24
+      | s24 = -{resolve_refmut_Perm_AtomicUsize _58}- s25
+      | s25 = -{resolve_refmut_refmut_Committer_AtomicUsize_usize_None_Release _55}- s26
+      | s26 = -{resolve_Ghost_refmut_Committer_AtomicUsize_usize_None_Release'0 c}- s27
+      | s27 = MutBorrow.borrow_final <t_Authority_T'0> {inv'0.current.tokens_auth}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'0) 6}
           (fun (_bor: MutBorrow.t t_Authority_T'0) ->
-            [ &_65 <- _bor ] -{inv_Authority_T'0 _bor.final}-
-            [ &inv'0 <- { inv'0 with current = { inv'0.current with tokens_auth = _bor.final } } ] s27)
+            [ &_70 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &inv'0 <- { inv'0 with current = { inv'0.current with tokens_auth = _bor.final } } ] s28)
         [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 inv'0.current.tokens_auth} any) ]
-      | s27 = MutBorrow.borrow_final <t_Authority_T'0> {_65.current} {MutBorrow.get_id _65}
+      | s28 = MutBorrow.borrow_final <t_Authority_T'0> {_70.current} {MutBorrow.get_id _70}
           (fun (_bor: MutBorrow.t t_Authority_T'0) ->
-            [ &_64 <- _bor ] -{inv_Authority_T'0 _bor.final}-
-            [ &_65 <- { _65 with current = _bor.final } ] s28)
-        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _65.current} any) ]
-      | s28 = new_refmut_Authority_T {_64} (fun (_x: MutBorrow.t t_Authority_T'0) -> [ &_63 <- _x ] s29)
-      | s29 = discard_T {token} {_63} (fun (_x: ()) -> [ &_61 <- _x ] s30)
-      | s30 = s31 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T _65} any) ]
-      | s31 = -{resolve_refmut_Authority_T _65}- s32
-      | s32 = [ &status_view <- { status'0 = UInt64.t'int (val_store_AtomicUsize c.current); view'0 = view } ] s33
-      | s33 = MutBorrow.borrow_final <Seq.seq t_Authority> {inv'0.current.statuses_mono_auth}
+            [ &_69 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &_70 <- { _70 with current = _bor.final } ] s29)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _70.current} any) ]
+      | s29 = s30 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T _70} any) ]
+      | s30 = -{resolve_refmut_Authority_T _70}- s31
+      | s31 = MutBorrow.borrow_final <t_Authority_T'0> {_69.current} {MutBorrow.get_id _69}
+          (fun (_bor: MutBorrow.t t_Authority_T'0) ->
+            [ &_68 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &_69 <- { _69 with current = _bor.final } ] s32)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _69.current} any) ]
+      | s32 = s33 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T _69} any) ]
+      | s33 = -{resolve_refmut_Authority_T _69}- s34
+      | s34 = MutBorrow.borrow_final <t_Authority_T'0> {_68.current} {MutBorrow.get_id _68}
+          (fun (_bor: MutBorrow.t t_Authority_T'0) ->
+            [ &_67 <- _bor ] -{inv_Authority_T'0 _bor.final}-
+            [ &_68 <- { _68 with current = _bor.final } ] s35)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_T'0 _68.current} any) ]
+      | s35 = new_refmut_Authority_T {_67} (fun (_x: MutBorrow.t t_Authority_T'0) -> [ &_66 <- _x ] s36)
+      | s36 = s37 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_T _68} any) ]
+      | s37 = -{resolve_refmut_Authority_T _68}- s38
+      | s38 = discard_T {token} {_66} (fun (_x: ()) -> [ &_64 <- _x ] s39)
+      | s39 = [ &status_view <- { status'0 = UInt64.t'int (val_store_AtomicUsize c.current); view'0 = view } ] s40
+      | s40 = MutBorrow.borrow_final <Seq.seq t_Authority> {inv'0.current.statuses_mono_auth}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'0) 5}
           (fun (_bor: MutBorrow.t (Seq.seq t_Authority)) ->
-            [ &_73 <- _bor ] -{inv_Seq_Authority _bor.final}-
-            [ &inv'0 <- { inv'0 with current = { inv'0.current with statuses_mono_auth = _bor.final } } ] s34)
+            [ &_78 <- _bor ] -{inv_Seq_Authority _bor.final}-
+            [ &inv'0 <- { inv'0 with current = { inv'0.current with statuses_mono_auth = _bor.final } } ] s41)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Authority inv'0.current.statuses_mono_auth} any) ]
-      | s34 = index_mut_Seq_Authority {_73} {index_mod} (fun (_x: MutBorrow.t t_Authority) -> [ &_72 <- _x ] s35)
-      | s35 = MutBorrow.borrow_final <t_Authority> {_72.current} {MutBorrow.get_id _72}
+      | s41 = index_mut_Seq_Authority {_78} {index_mod} (fun (_x: MutBorrow.t t_Authority) -> [ &_77 <- _x ] s42)
+      | s42 = MutBorrow.borrow_final <t_Authority> {_77.current} {MutBorrow.get_id _77}
           (fun (_bor: MutBorrow.t t_Authority) ->
-            [ &_71 <- _bor ] -{inv_Authority _bor.final}-
-            [ &_72 <- { _72 with current = _bor.final } ] s36)
-        [ _ck -> (! {[@expl:type invariant] inv_Authority _72.current} any) ]
-      | s36 = increase {_71} {status_view} (fun (_x: ()) -> [ &_70 <- _x ] s37)
-      | s37 = s38 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority _72} any) ]
-      | s38 = -{resolve_refmut_Authority _72}- s39
-      | s39 = [ &_76 <- Some at_view ] s40
-      | s40 = MutBorrow.borrow_final <Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T> {inv'0.current.cells_own}
+            [ &_76 <- _bor ] -{inv_Authority _bor.final}-
+            [ &_77 <- { _77 with current = _bor.final } ] s43)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority _77.current} any) ]
+      | s43 = increase {_76} {status_view} (fun (_x: ()) -> [ &_75 <- _x ] s44)
+      | s44 = s45 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority _77} any) ]
+      | s45 = -{resolve_refmut_Authority _77}- s46
+      | s46 = [ &_81 <- Some at_view ] s47
+      | s47 = MutBorrow.borrow_final <Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T> {inv'0.current.cells_own}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'0) 2}
           (fun (_bor: MutBorrow.t (Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T)) ->
-            [ &_79 <- _bor ] -{inv_Seq_Option_AtView_Perm_PCell_MaybeUninit_T _bor.final}-
-            [ &inv'0 <- { inv'0 with current = { inv'0.current with cells_own = _bor.final } } ] s41)
+            [ &_84 <- _bor ] -{inv_Seq_Option_AtView_Perm_PCell_MaybeUninit_T _bor.final}-
+            [ &inv'0 <- { inv'0 with current = { inv'0.current with cells_own = _bor.final } } ] s48)
         [ _ck -> (! {[@expl:type invariant] inv_Seq_Option_AtView_Perm_PCell_MaybeUninit_T inv'0.current.cells_own}
           any) ]
-      | s41 = index_mut_Seq_Option_AtView_Perm_PCell_MaybeUninit_T {_79} {index_mod}
-          (fun (_x: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T) -> [ &_78 <- _x ] s42)
-      | s42 = s43 [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Perm_PCell_MaybeUninit_T _78.current} any) ]
-      | s43 = -{resolve_Option_AtView_Perm_PCell_MaybeUninit_T _78.current}- s44
-      | s44 = [ &_78 <- { _78 with current = _76 } ] s45
-      | s45 = s46 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _78} any) ]
-      | s46 = -{resolve_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _78}- s47
-      | s47 = s48 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_QueueInv_T _35} any) ]
-      | s48 = -{resolve_refmut_refmut_QueueInv_T _35}- s49
-      | s49 = s50 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'0} any) ]
-      | s50 = -{resolve_refmut_QueueInv_T inv'0}- s51
-      | s51 = s52 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_QueueInv_T inv} any) ]
-      | s52 = -{resolve_Ghost_refmut_QueueInv_T'0 inv}- s53
-      | s53 = [ &_81 <- () ] s54
-      | s54 = new_unit {_33} (fun (_x: ()) -> [ &_32 <- _x ] s55)
-      | s55 = return {_ret} ] ]
+      | s48 = index_mut_Seq_Option_AtView_Perm_PCell_MaybeUninit_T {_84} {index_mod}
+          (fun (_x: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T) -> [ &_83 <- _x ] s49)
+      | s49 = s50 [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Perm_PCell_MaybeUninit_T _83.current} any) ]
+      | s50 = -{resolve_Option_AtView_Perm_PCell_MaybeUninit_T _83.current}- s51
+      | s51 = [ &_83 <- { _83 with current = _81 } ] s52
+      | s52 = s53 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _83} any) ]
+      | s53 = -{resolve_refmut_Option_AtView_Perm_PCell_MaybeUninit_T _83}- s54
+      | s54 = s55 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_QueueInv_T _35} any) ]
+      | s55 = -{resolve_refmut_refmut_QueueInv_T _35}- s56
+      | s56 = s57 [ _ck -> (! {[@expl:type invariant] inv_refmut_QueueInv_T inv'0} any) ]
+      | s57 = -{resolve_refmut_QueueInv_T inv'0}- s58
+      | s58 = s59 [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_QueueInv_T inv} any) ]
+      | s59 = -{resolve_Ghost_refmut_QueueInv_T'0 inv}- s60
+      | s60 = [ &_86 <- () ] s61
+      | s61 = {[@expl:assertion] tail_T inv'0.current = tail_T old_inv} s62
+      | s62 = {[@expl:assertion] head_T inv'0.current = head_T old_inv} s63
+      | s63 = {[@expl:assertion] len_T inv'0.current = len_T old_inv} s64
+      | s64 = {[@expl:assertion] forall k: int. mod_len_T inv'0.current k = mod_len_T old_inv k} s65
+      | s65 = new_unit {_33} (fun (_x: ()) -> [ &_32 <- _x ] s66)
+      | s66 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & inv: MutBorrow.t t_QueueInv_T = inv
     | & c: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = c
@@ -12077,37 +12316,40 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
     | & inv'0: MutBorrow.t t_QueueInv_T = Any.any_l ()
     | & _35: MutBorrow.t (MutBorrow.t t_QueueInv_T) = Any.any_l ()
     | & _36: MutBorrow.t (MutBorrow.t t_QueueInv_T) = Any.any_l ()
+    | & old_inv: t_QueueInv_T = Any.any_l ()
     | & index_mod: int = Any.any_l ()
-    | & _38: int = Any.any_l ()
-    | & _40: int = Any.any_l ()
     | & _41: int = Any.any_l ()
+    | & _43: int = Any.any_l ()
+    | & _44: int = Any.any_l ()
     | & view: t_SyncView = Any.any_l ()
     | & at_view: t_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _47: tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _48: tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _50: () = Any.any_l ()
-    | & _51: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = Any.any_l ()
-    | & _52: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) = Any.any_l ()
-    | & _53: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) = Any.any_l ()
-    | & _54: MutBorrow.t t_Perm_AtomicUsize = Any.any_l ()
-    | & _55: MutBorrow.t t_Perm_AtomicUsize = Any.any_l ()
-    | & _56: MutBorrow.t t_Perm_AtomicUsize = Any.any_l ()
-    | & _57: MutBorrow.t (Seq.seq t_Perm_AtomicUsize) = Any.any_l ()
-    | & _59: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _60: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _61: () = Any.any_l ()
-    | & _63: MutBorrow.t t_Authority_T'0 = Any.any_l ()
-    | & _64: MutBorrow.t t_Authority_T'0 = Any.any_l ()
-    | & _65: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _50: tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _51: tup2_SyncView_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _53: () = Any.any_l ()
+    | & _54: MutBorrow.t t_Committer_AtomicUsize_usize_None_Release = Any.any_l ()
+    | & _55: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) = Any.any_l ()
+    | & _56: MutBorrow.t (MutBorrow.t t_Committer_AtomicUsize_usize_None_Release) = Any.any_l ()
+    | & _57: MutBorrow.t t_Perm_AtomicUsize = Any.any_l ()
+    | & _58: MutBorrow.t t_Perm_AtomicUsize = Any.any_l ()
+    | & _59: MutBorrow.t t_Perm_AtomicUsize = Any.any_l ()
+    | & _60: MutBorrow.t (Seq.seq t_Perm_AtomicUsize) = Any.any_l ()
+    | & _62: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _63: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _64: () = Any.any_l ()
+    | & _66: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _67: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _68: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _69: MutBorrow.t t_Authority_T'0 = Any.any_l ()
+    | & _70: MutBorrow.t t_Authority_T'0 = Any.any_l ()
     | & status_view: t_StatusWithView = Any.any_l ()
-    | & _70: () = Any.any_l ()
-    | & _71: MutBorrow.t t_Authority = Any.any_l ()
-    | & _72: MutBorrow.t t_Authority = Any.any_l ()
-    | & _73: MutBorrow.t (Seq.seq t_Authority) = Any.any_l ()
-    | & _76: t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _78: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _79: MutBorrow.t (Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T) = Any.any_l ()
-    | & _81: () = Any.any_l () ])
+    | & _75: () = Any.any_l ()
+    | & _76: MutBorrow.t t_Authority = Any.any_l ()
+    | & _77: MutBorrow.t t_Authority = Any.any_l ()
+    | & _78: MutBorrow.t (Seq.seq t_Authority) = Any.any_l ()
+    | & _81: t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _83: MutBorrow.t t_Option_AtView_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _84: MutBorrow.t (Seq.seq t_Option_AtView_Perm_PCell_MaybeUninit_T) = Any.any_l ()
+    | & _86: () = Any.any_l () ])
     [ return (result: ()) ->
     {[@stop_split] [@expl:try_enqueue_store_inv_T ensures] ([@stop_split] [@expl:try_enqueue_store_inv ensures #0] protocol_QueueInv_T (fin_Ghost_refmut_QueueInv_T inv))
       /\ ([@stop_split] [@expl:try_enqueue_store_inv ensures #1] public_QueueInv_T (fin_Ghost_refmut_QueueInv_T inv)
