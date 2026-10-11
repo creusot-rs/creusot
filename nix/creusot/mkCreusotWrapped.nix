@@ -15,39 +15,56 @@
 
 let
   components = rustToolchain.passthru.availableComponents;
-
-  rustSysroot = stdenv.mkDerivation {
-    name = "rust-sysroot";
-    buildCommand = ''
-      mkdir -p $out
-      cp -rs --no-preserve=mode ${components.rustc}/libexec $out/
-      cp -rs --no-preserve=mode ${components.rust-src}/lib $out/
-      rm -f $out/lib/rustlib/src/rust/library/Cargo.lock
-    '';
-  };
-
-  rustcWrapped = writeShellScriptBin "rustc" ''
-    if [ "$1" = "--print" ] && [ "$2" = "sysroot" ]; then
-      echo ${rustSysroot}
-      exit 0
-    fi
-    exec "${rustToolchain}/bin/rustc" "$@"
-  '';
 in
 # Arguments
 {
-  cargo ? components.cargo,
   isFree,
+  cargo ? components.cargo,
+  rustc ? components.rustc,
+  rust-std ? components.rust-std,
+  rust-src ? components.rust-src,
   rust-analyzer ? null,
 }:
 
 let
   why3Framework = creusot.mkWhy3Framework { inherit isFree; };
+
+  rustSysroot = stdenv.mkDerivation {
+    name = "rust-sysroot";
+    buildCommand = ''
+      mkdir -p $out
+      cp -rs --no-preserve=mode ${rustc}/libexec $out/
+      cp -rs --no-preserve=mode ${rust-src}/lib $out/
+      cp -rs --no-preserve=mode ${rust-std}/lib $out/
+      rm -f $out/lib/rustlib/src/rust/library/Cargo.lock
+    '';
+  };
+
+  creusotWrapped = writeShellScriptBin "creusot-rustc" ''
+    for arg in "$@"; do
+      case "$arg" in
+        --sysroot | --sysroot=*)
+          exec "${creusot.creusot}/bin/creusot-rustc" "$@"
+          ;;
+      esac
+    done
+    exec "${creusot.creusot}/bin/creusot-rustc" --sysroot "${rustSysroot}" "$@"
+  '';
+
+  cargoWrapped = writeShellScriptBin "cargo" ''
+    for arg in "$@"; do
+      if [[ "$arg" == "clippy" ]]; then
+        exec "${cargo}/bin/cargo" "$@" "--config" "patch.crates-io.creusot-std.path=\"${creusot.creusot}/share/creusot-std\""
+      fi
+    done
+    exec "${cargo}/bin/cargo" "--config" "patch.crates-io.creusot-std.path=\"${creusot.creusot}/share/creusot-std\"" "$@"
+  '';
 in
 buildEnv {
   name = "creusot-wrapped";
   paths = [
-    (lib.hiPrio cargo)
+    (lib.hiPrio cargoWrapped)
+    (lib.hiPrio creusotWrapped)
     creusot.prelude
     creusot.creusot
     why3Framework
@@ -60,25 +77,20 @@ buildEnv {
     wrapProgram $out/bin/cargo \
       ${lib.optionalString stdenv.isDarwin ''--prefix LIBRARY_PATH : "${libiconv}/lib"''}
 
-    mv $out/bin/cargo $out/bin/.cargo-wrapped-nopatch
-    cat > $out/bin/cargo <<EOF
-    #!${bash}/bin/bash
-    for arg in "\$@"; do
-      if [[ "\$arg" == "clippy" ]]; then
-        exec "$out/bin/.cargo-wrapped-nopatch" "\$@" "--config" "patch.crates-io.creusot-std.path=\"$out/share/creusot-std\""
-      fi
-    done
-    exec "$out/bin/.cargo-wrapped-nopatch" "--config" "patch.crates-io.creusot-std.path=\"$out/share/creusot-std\"" "\$@"
-    EOF
-    chmod +x $out/bin/cargo
-
     wrapProgram $out/bin/cargo-creusot \
-      --set CARGO "$out/bin/cargo" \
-      --set CREUSOT_DATA_HOME "$out"
+      --set CARGO $out/bin/cargo \
+      --set CREUSOT_DATA_HOME $out \
+      --set CREUSOT_PATH $out/share/ \
+      --set CREUSOT_RUSTC $out/bin/creusot-rustc
+
+    wrapProgram $out/bin/creusot-rustc \
+      --set LD_LIBRARY_PATH "${lib.makeLibraryPath [ rustToolchain ]}" \
+      --set DYLD_FALLBACK_LIBRARY_PATH "${lib.makeLibraryPath [ rustToolchain ]}"
   ''
   + lib.optionalString (rust-analyzer != null) ''
     wrapProgram $out/bin/rust-analyzer \
-      --prefix PATH : "${rustcWrapped}/bin"
+      --set RUST_SRC_PATH "${rustSysroot}/lib/rustlib/src/rust/library" \
+      --set RUSTUP_AUTO_INSTALL 0
   '';
 
   passthru = { inherit why3Framework; };
