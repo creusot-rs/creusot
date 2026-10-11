@@ -113,7 +113,27 @@ jobs:
       run: nix build --impure . --print-build-logs
 
     - name: Run tests
-      run: nix shell --impure --command bash -c "cd .. && cargo creusot new test-project && cd test-project && cargo creusot"
+      run: |
+        nix shell --impure --command bash -c '
+          cd .. &&
+          cargo creusot new test-project &&
+          cd test-project &&
+          cargo creusot
+        '
+
+    - name: Run tests (guide)
+      run: |
+        export CREUSOT_PATH=$(pwd)
+        mkdir ../test-project-guide &&
+        sed -n '59,120p' guide/src/installation.md > ../test-project-guide/flake.nix
+        cd ../test-project-guide &&
+        nix develop --override-input creusot ${CREUSOT_PATH} --command bash -c '
+          cargo creusot init &&
+          cargo creusot &&
+          cargo fmt &&
+          cargo clippy &&
+          rust-analyzer diagnostics .
+        '
 
   erasure-check:
     runs-on: ubuntu-latest
