@@ -1,5 +1,6 @@
 {
   # Dependencies
+  bash,
   creusot,
   libiconv,
   rustToolchain,
@@ -57,9 +58,19 @@ buildEnv {
   nativeBuildInputs = [ makeWrapper ];
   postBuild = ''
     wrapProgram $out/bin/cargo \
-      --add-flag "--config" \
-      --add-flag "patch.crates-io.creusot-std.path=\"$out/share/creusot-std\"" \
       ${lib.optionalString stdenv.isDarwin ''--prefix LIBRARY_PATH : "${libiconv}/lib"''}
+
+    mv $out/bin/cargo $out/bin/.cargo-wrapped-nopatch
+    cat > $out/bin/cargo <<EOF
+    #!${bash}/bin/bash
+    for arg in "\$@"; do
+      if [[ "\$arg" == "clippy" ]]; then
+        exec "$out/bin/.cargo-wrapped-nopatch" "\$@" "--config" "patch.crates-io.creusot-std.path=\"$out/share/creusot-std\""
+      fi
+    done
+    exec "$out/bin/.cargo-wrapped-nopatch" "--config" "patch.crates-io.creusot-std.path=\"$out/share/creusot-std\"" "\$@"
+    EOF
+    chmod +x $out/bin/cargo
 
     wrapProgram $out/bin/cargo-creusot \
       --set CARGO "$out/bin/cargo" \
