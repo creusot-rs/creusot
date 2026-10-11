@@ -99,12 +99,12 @@ Here is a sample `flake.nix` that provides a shell with Creusot as a dependency,
             packages = [
               # `mkCreusotWrapped` produces a wrapped version of Creusot, along with all its dependencies (similar to `clang`).
               (pkgs.creusot.mkCreusotWrapped { 
-                # `cargo` to be wrapped. By default, `cargo` needed to build Creusot is used.
-                cargo = pkgs.cargo;
-                
                 # Switch between free and non-free version of the prover `alt-ergo`.
                 isFree = true;
-                
+
+                # `cargo` to be wrapped. By default, `cargo` needed to build Creusot is used.
+                cargo = pkgs.cargo;
+
                 # `rust-analyzer` to be wrapped. By default, `null` and no `rust-analyzer` is provided.
                 rust-analyzer = pkgs.rust-analyzer-unwrapped;
               })

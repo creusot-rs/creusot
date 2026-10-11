@@ -20,10 +20,10 @@ in
 {
   isFree,
   cargo ? components.cargo,
-  rustc ? components.rustc,
   rust-std ? components.rust-std,
   rust-src ? components.rust-src,
   rust-analyzer ? null,
+  rust-analyzer-proc-macro-srv ? components.rustc,
 }:
 
 let
@@ -33,9 +33,9 @@ let
     name = "rust-sysroot";
     buildCommand = ''
       mkdir -p $out
-      cp -rs --no-preserve=mode ${rustc}/libexec $out/
       cp -rs --no-preserve=mode ${rust-src}/lib $out/
       cp -rs --no-preserve=mode ${rust-std}/lib $out/
+      cp -rs --no-preserve=mode ${rust-analyzer-proc-macro-srv}/libexec $out/
       rm -f $out/lib/rustlib/src/rust/library/Cargo.lock
     '';
   };
@@ -44,11 +44,11 @@ let
     for arg in "$@"; do
       case "$arg" in
         --sysroot | --sysroot=*)
-          exec "${rustToolchain}/bin/rustc" "$@"
+          exec "${components.rustc}/bin/rustc" "$@"
           ;;
       esac
     done
-    exec "${rustToolchain}/bin/rustc" --sysroot "${rustSysroot}" "$@"
+    exec "${components.rustc}/bin/rustc" --sysroot "${rustSysroot}" "$@"
   '';
 
   creusotWrapped = writeShellScriptBin "creusot-rustc" ''
@@ -75,7 +75,6 @@ buildEnv {
   name = "creusot-wrapped";
   paths = [
     (lib.hiPrio cargoWrapped)
-    (lib.hiPrio rustcWrapped)
     (lib.hiPrio creusotWrapped)
     creusot.prelude
     creusot.creusot
