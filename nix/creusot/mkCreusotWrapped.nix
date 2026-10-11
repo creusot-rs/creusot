@@ -40,6 +40,17 @@ let
     '';
   };
 
+  rustcWrapped = writeShellScriptBin "rustc" ''
+    for arg in "$@"; do
+      case "$arg" in
+        --sysroot | --sysroot=*)
+          exec "${rustToolchain}/bin/rustc" "$@"
+          ;;
+      esac
+    done
+    exec "${rustToolchain}/bin/rustc" --sysroot "${rustSysroot}" "$@"
+  '';
+
   creusotWrapped = writeShellScriptBin "creusot-rustc" ''
     for arg in "$@"; do
       case "$arg" in
@@ -64,6 +75,7 @@ buildEnv {
   name = "creusot-wrapped";
   paths = [
     (lib.hiPrio cargoWrapped)
+    (lib.hiPrio rustcWrapped)
     (lib.hiPrio creusotWrapped)
     creusot.prelude
     creusot.creusot
@@ -89,6 +101,7 @@ buildEnv {
   ''
   + lib.optionalString (rust-analyzer != null) ''
     wrapProgram $out/bin/rust-analyzer \
+      --prefix PATH : "${rustcWrapped}/bin" \
       --set RUST_SRC_PATH "${rustSysroot}/lib/rustlib/src/rust/library" \
       --set RUSTUP_AUTO_INSTALL 0
   '';
