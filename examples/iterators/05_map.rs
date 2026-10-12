@@ -20,11 +20,13 @@ impl<I: Iterator, B, F: FnMut(I::Item) -> B> Iterator for Map<I, F> {
         pearlite! { self.iter.completed() && (*self).func == (^self).func }
     }
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[ensures(self.produces(Seq::empty(), self))]
-    fn produces_refl(self) {}
+    fn produces_refl(self) {
+        proof_assert!(Seq::<&mut F>::empty().len() == Seq::<Self::Item>::empty().len())
+    }
 
-    #[logic(open, law)]
+    #[logic(law)]
     #[requires(a.produces(ab, b))]
     #[requires(b.produces(bc, c))]
     #[ensures(a.produces(ab.concat(bc), c))]

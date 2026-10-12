@@ -22,6 +22,7 @@
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [
         "aarch64-darwin"
+        "aarch64-linux"
         "x86_64-linux"
       ];
 
@@ -49,8 +50,8 @@
             };
 
             alt-ergo = {
-              version = "2.6.2";
-              sha256 = "sha256-OeLJEop9HonzMuMaJxbzWfO54akl/oHxH6SnSbXSTYI=";
+              version = "2.6.4";
+              sha256 = "sha256-w1tbSewoFqJMkyWwg+7+I3g566zrgzMa7vBBvtcgsTc=";
             };
 
             alt-ergo-free = {
@@ -64,13 +65,13 @@
             };
 
             cvc5 = {
-              version = "1.3.1";
-              sha256 = "sha256-nxJjrpWZfYPuuKN4CWxOHEuou4r+MdK0AjdEPZHZbHI=";
+              version = "1.4.1";
+              sha256 = "sha256-LVPNGt1DKkqQ9uesKBXMtQ3t58yvtYtvyfuZnhXbIgs=";
             };
 
             z3 = {
-              version = "4.15.3";
-              sha256 = "sha256-Lw037Z0t0ySxkgMXkbjNW5CB4QQLRrrSEBsLJqiomZ4=";
+              version = "5.1.0";
+              sha256 = "sha256-F46bADHVe6ssQrj6oXPSi3KRGBaX//pXO3+4bMFi8Ag=";
             };
           };
         in

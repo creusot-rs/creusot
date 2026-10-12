@@ -432,8 +432,26 @@ impl<T> QueueInv<T> {
     fn mod_len_inj(self, i: Int, j: Int) {}
 
     #[logic(opaque)]
-    #[ensures(self.mod_len(i + self.len()) == self.mod_len(i))]
+    #[ensures(#[trigger(self.mod_len(i + self.len()))] self.mod_len(i + self.len()) == self.mod_len(i))]
     fn mod_len_wrap(self, i: Int) {}
+
+    #[logic(inline)]
+    fn three_statuses_inv(self, k: Int) -> bool {
+        pearlite! {
+            let status = self.statuses_mono_auth[self.mod_len(k)].val();
+            match self.tokens_auth.val(k) {
+                tokens::State::R => status == 2 * (k - self.len()) + 1 && self.head() <= k,
+                tokens::State::W(value) => status == 2 * k && k < self.head() && value == self.seq()[k - self.tail()],
+                tokens::State::None =>
+                    match self.cells_own[self.mod_len(k)] {
+                        Some(cell) =>
+                            if self.head() <= k { status == 2 * k }
+                            else { status == 2 * k + 1 && cell.val()@ == Some(self.seq()[k - self.tail()]) },
+                        _ => false
+                    }
+            }
+        }
+    }
 }
 
 impl<T> Protocol for QueueInv<T> {
@@ -493,20 +511,12 @@ impl<T> Protocol for QueueInv<T> {
             // • [(v_t, V_t), ..., (v_h-1, V_h-1)]
             self.seq().len() == self.head() - self.tail() &&
 
-            (forall<k: Int> #[trigger(self.tokens_auth.val(k))] self.tail() <= k && k < self.tail() + self.len() ==> {
-                let status = self.statuses_mono_auth[self.mod_len(k)].val();
-                match self.tokens_auth.val(k) {
-                    tokens::State::R => status == 2 * (k - self.len()) + 1 && self.head() <= k,
-                    tokens::State::W(value) => status == 2 * k && k < self.head() && value == self.seq()[k - self.tail()],
-                    tokens::State::None =>
-                        match self.cells_own[self.mod_len(k)] {
-                            Some(cell) =>
-                                if self.head() <= k { status == 2 * k }
-                                else { status == 2 * k + 1 && cell.val()@ == Some(self.seq()[k - self.tail()]) },
-                            _ => false
-                        }
-                }
-            }) &&
+            (forall<k: Int>
+                #[trigger(self.tokens_auth.val(k))]
+                #[trigger(self.mod_len(k))]
+                self.tail() <= k && k < self.tail() + self.len() ==>
+                self.three_statuses_inv(k)
+            ) &&
 
             // *{0 < k < h - len && h <= k} None
             (forall<k: Int> k < self.tail() || self.tail() + self.len() <= k ==> self.tokens_auth.val(k) == tokens::State::None)
@@ -717,6 +727,7 @@ impl<T> Queue<T> {
     {
         ghost! {
             let inv = &mut **inv;
+            let old_inv = snapshot!(*inv);
             let head = snapshot!(inv.head());
             let head_mod = *snapshot!(inv.mod_len(*head)).into_ghost();
 
@@ -749,6 +760,15 @@ impl<T> Queue<T> {
                 *head.into_ghost(),
                 item,
             );
+
+            proof_assert!(inv.head() == old_inv.head() + 1);
+            proof_assert!(inv.tail() == old_inv.tail());
+            proof_assert!(inv.len() == old_inv.len());
+            proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
+            proof_assert!(inv.statuses_mono_auth == old_inv.statuses_mono_auth);
+            proof_assert!(forall<k> inv.tail() <= k && k < old_inv.head() ==> (^inv).three_statuses_inv(k));
+            proof_assert!(inv.three_statuses_inv(old_inv.head()));
+            proof_assert!(forall<k> old_inv.head() < k && k < inv.tail() + inv.len() ==> (^inv).three_statuses_inv(k));
 
             (token.into_inner(), cell_own)
         }
@@ -820,11 +840,16 @@ impl<T> Queue<T> {
         let cell = &self.cells[head_mod];
         let status = cell.status.load(ghost! { |c: &Committer<_, _, SeqCst, _>| {
             self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                let old_inv = snapshot!(*inv);
                 let head_mod_ghost: Ghost<Int> = snapshot!(head_mod@).into_ghost();
                 c.shoot_load(&inv.statuses_own[*head_mod_ghost]);
 
                 let status = snapshot!(c.val_load()@);
                 *witness = Some(inv.statuses_mono_auth[*head_mod_ghost].get_fragment(status));
+                proof_assert!(inv.head() == old_inv.head());
+                proof_assert!(inv.tail() == old_inv.tail());
+                proof_assert!(inv.len() == old_inv.len());
+                proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
             });
         } });
 
@@ -922,11 +947,11 @@ impl<T> Queue<T> {
     {
         ghost! {
             let inv = &mut **inv;
+            let old_inv = snapshot!(*inv);
             let tail = snapshot!(inv.tail());
             let tail_plus_len = snapshot!(*tail + inv.len());
             let tail_mod = *snapshot!(inv.mod_len(*tail)).into_ghost();
-            let _ = snapshot!(QueueInv::<T>::mod_len_wrap);
-            proof_assert!(tail_mod == inv.mod_len(*tail_plus_len));
+            snapshot!(inv.mod_len_wrap(*tail));
 
             c.shoot_load(&inv.tail_own);
             c.shoot_store(&mut inv.tail_own);
@@ -955,6 +980,14 @@ impl<T> Queue<T> {
                 Ghost::new(&mut inv.tokens_auth),
                 *tail_plus_len.into_ghost(),
             );
+
+            proof_assert!(inv.tail() == old_inv.tail() + 1);
+            proof_assert!(inv.head() == old_inv.head());
+            proof_assert!(inv.len() == old_inv.len());
+            proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
+            proof_assert!(inv.statuses_mono_auth == old_inv.statuses_mono_auth);
+            proof_assert!(forall<k> *tail < k && k < *tail_plus_len ==> (^inv).three_statuses_inv(k));
+            proof_assert!(inv.three_statuses_inv(*tail_plus_len));
 
             (token.into_inner(), cell_own)
         }
@@ -1028,11 +1061,16 @@ impl<T> Queue<T> {
         let cell = &self.cells[tail_mod];
         let status = cell.status.load(ghost! { |c: &Committer<_, _, SeqCst, _>| {
             self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                let old_inv = snapshot!(*inv);
                 let tail_mod_ghost: Ghost<Int> = snapshot!(tail_mod@).into_ghost();
                 c.shoot_load(&inv.statuses_own[*tail_mod_ghost]);
 
                 let status = snapshot!(c.val_load()@);
                 *witness = Some(inv.statuses_mono_auth[*tail_mod_ghost].get_fragment(status));
+                proof_assert!(inv.head() == old_inv.head());
+                proof_assert!(inv.tail() == old_inv.tail());
+                proof_assert!(inv.len() == old_inv.len());
+                proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
             });
         } });
 

@@ -1,5 +1,4 @@
-// TIME 4 DEPTH 10
-
+// DEPTH 10
 //! This implementation is an adaption from:
 //! https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
 
@@ -475,8 +474,27 @@ impl<T> QueueInv<T> {
     fn mod_len_inj(self, i: Int, j: Int) {}
 
     #[logic(opaque)]
-    #[ensures(self.mod_len(i + self.len()) == self.mod_len(i))]
+    #[ensures(#[trigger(self.mod_len(i + self.len()))] self.mod_len(i + self.len()) == self.mod_len(i))]
     fn mod_len_wrap(self, i: Int) {}
+
+    #[logic(inline)]
+    fn three_statuses_inv(self, k: Int) -> bool {
+        pearlite! {
+            let status_view = self.statuses_mono_auth[self.mod_len(k)].val();
+            match self.tokens_auth.val(k) {
+                tokens::State::R => status_view.status == 2 * (k - self.len()) + 1 && self.head() <= k,
+                tokens::State::W(value) => status_view.status == 2 * k && k < self.head() && value == self.seq()[k - self.tail()],
+                tokens::State::None =>
+                    match self.cells_own[self.mod_len(k)] {
+                        Some(at_view) =>
+                            status_view.view >= at_view.view() &&
+                            if self.head() <= k { status_view.status == 2 * k }
+                            else { status_view.status == 2 * k + 1 && at_view.val().val()@ == Some(self.seq()[k - self.tail()]) },
+                        _ => false
+                    }
+            }
+        }
+    }
 }
 
 impl<T> Protocol for QueueInv<T> {
@@ -555,21 +573,12 @@ impl<T> Protocol for QueueInv<T> {
             // • [(v_t, V_t), ..., (v_h-1, V_h-1)]
             self.seq().len() == self.head() - self.tail() &&
 
-            (forall<k: Int> #[trigger(self.tokens_auth.val(k))] self.tail() <= k && k < self.tail() + self.len() ==> {
-                let status_view = self.statuses_mono_auth[self.mod_len(k)].val();
-                match self.tokens_auth.val(k) {
-                    tokens::State::R => status_view.status == 2 * (k - self.len()) + 1 && self.head() <= k,
-                    tokens::State::W(value) => status_view.status == 2 * k && k < self.head() && value == self.seq()[k - self.tail()],
-                    tokens::State::None =>
-                        match self.cells_own[self.mod_len(k)] {
-                            Some(at_view) =>
-                                status_view.view >= at_view.view() &&
-                                if self.head() <= k { status_view.status == 2 * k }
-                                else { status_view.status == 2 * k + 1 && at_view.val().val()@ == Some(self.seq()[k - self.tail()]) },
-                            _ => false
-                        }
-                }
-            }) &&
+            (forall<k: Int>
+                #[trigger(self.tokens_auth.val(k))]
+                #[trigger(self.mod_len(k))]
+                self.tail() <= k && k < self.tail() + self.len() ==>
+                self.three_statuses_inv(k)
+            ) &&
 
             // *{0 < k < h - len && h <= k} None
             (forall<k: Int> k < self.tail() || self.tail() + self.len() <= k ==> self.tokens_auth.val(k) == tokens::State::None)
@@ -800,6 +809,7 @@ impl<T> Queue<T> {
     {
         ghost! {
             let inv = &mut **inv;
+            let old_inv = snapshot!(*inv);
             let head = snapshot!(inv.head());
             let head_mod = *snapshot!(inv.mod_len(*head)).into_ghost();
 
@@ -833,10 +843,19 @@ impl<T> Queue<T> {
             let cell_own = inv.cells_own[head_mod].take().unwrap().sync(*view);
 
             let token = tokens::TokenW::alloc(
-                Ghost::new(&mut inv.tokens_auth),
+                ghost!(&mut inv.tokens_auth),
                 *head.into_ghost(),
                 item,
             );
+
+            proof_assert!(inv.head() == old_inv.head() + 1);
+            proof_assert!(inv.tail() == old_inv.tail());
+            proof_assert!(inv.len() == old_inv.len());
+            proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
+            proof_assert!(inv.statuses_mono_auth == old_inv.statuses_mono_auth);
+            proof_assert!(forall<k> inv.tail() <= k && k < old_inv.head() ==> (^inv).three_statuses_inv(k));
+            proof_assert!(inv.three_statuses_inv(old_inv.head()));
+            proof_assert!(forall<k> old_inv.head() < k && k < inv.tail() + inv.len() ==> (^inv).three_statuses_inv(k));
 
             (token.into_inner(), cell_own)
         }
@@ -864,12 +883,13 @@ impl<T> Queue<T> {
     ) {
         ghost! {
             let inv = &mut **inv;
+            let old_inv = snapshot!(*inv);
             let index_mod = *snapshot!(inv.mod_len(token.index())).into_ghost();
 
             let (mut view, at_view) = AtView::new(cell_own).into_inner();
             c.shoot_store(&mut inv.statuses_own[index_mod], &mut view);
 
-            tokens::TokenW::discard(token, Ghost::new(&mut inv.tokens_auth));
+            tokens::TokenW::discard(token, ghost!(&mut inv.tokens_auth));
 
             let status_view = snapshot!(StatusWithView { status: c.val_store()@, view });
             inv.statuses_mono_auth[index_mod].increase(status_view);
@@ -877,6 +897,11 @@ impl<T> Queue<T> {
             inv.cells_own[index_mod] = Some(at_view);
 
             let _ = snapshot!(QueueInv::<T>::mod_len_inj);
+
+            proof_assert!(inv.tail() == old_inv.tail());
+            proof_assert!(inv.head() == old_inv.head());
+            proof_assert!(inv.len() == old_inv.len());
+            proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
         };
     }
 
@@ -910,11 +935,16 @@ impl<T> Queue<T> {
         let cell = &self.cells[head_mod];
         let status = cell.status.load(ghost! { |c: &Committer<_, _, Acquire, _>| {
             self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                let old_inv = snapshot!(*inv);
                 let head_mod_ghost: Ghost<Int> = snapshot!(head_mod@).into_ghost();
                 c.shoot_load(&inv.statuses_own[*head_mod_ghost], &mut view.borrow_mut());
 
                 let status_view = snapshot!(StatusWithView { status: c.val_load()@, view: *view });
                 *witness = Some(inv.statuses_mono_auth[*head_mod_ghost].get_fragment(status_view));
+                proof_assert!(inv.head() == old_inv.head());
+                proof_assert!(inv.tail() == old_inv.tail());
+                proof_assert!(inv.len() == old_inv.len());
+                proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
             });
         } });
 
@@ -933,8 +963,8 @@ impl<T> Queue<T> {
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                     let item_snap = snapshot!(item);
                     let (t, co) = self.try_enqueue_cas_inv(
-                        Ghost::new(inv),
-                        Ghost::new(c),
+                        ghost!(inv),
+                        ghost!(c),
                         item_snap,
                         f,
                         witness.take().unwrap(),
@@ -958,10 +988,10 @@ impl<T> Queue<T> {
             ghost! { |c: &mut Committer<_, _, _, Release>| {
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                     Self::try_enqueue_store_inv(
-                        Ghost::new(inv),
-                        Ghost::new(c),
-                        Ghost::new(token.take().unwrap()),
-                        Ghost::new(cell_own.take().unwrap()),
+                        ghost!(inv),
+                        ghost!(c),
+                        ghost!(token.take().unwrap()),
+                        ghost!(cell_own.take().unwrap()),
                     )
                 });
             }},
@@ -1014,11 +1044,11 @@ impl<T> Queue<T> {
     {
         ghost! {
             let inv = &mut **inv;
+            let old_inv = snapshot!(*inv);
             let tail = snapshot!(inv.tail());
             let tail_plus_len = snapshot!(*tail + inv.len());
             let tail_mod = *snapshot!(inv.mod_len(*tail)).into_ghost();
-            let _ = snapshot!(QueueInv::<T>::mod_len_wrap);
-            proof_assert!(tail_mod == inv.mod_len(*tail_plus_len));
+            snapshot!(inv.mod_len_wrap(*tail));
 
             c.shoot_load(&inv.tail_own, &mut view);
             c.shoot_store(
@@ -1049,9 +1079,17 @@ impl<T> Queue<T> {
             let cell_own = inv.cells_own[tail_mod].take().unwrap().sync(*view);
 
             let token = tokens::TokenR::alloc(
-                Ghost::new(&mut inv.tokens_auth),
+                ghost!(&mut inv.tokens_auth),
                 *tail_plus_len.into_ghost(),
             );
+
+            proof_assert!(inv.tail() == old_inv.tail() + 1);
+            proof_assert!(inv.head() == old_inv.head());
+            proof_assert!(inv.len() == old_inv.len());
+            proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
+            proof_assert!(inv.statuses_mono_auth == old_inv.statuses_mono_auth);
+            proof_assert!(forall<k> *tail < k && k < *tail_plus_len ==> (^inv).three_statuses_inv(k));
+            proof_assert!(inv.three_statuses_inv(*tail_plus_len));
 
             (token.into_inner(), cell_own)
         }
@@ -1078,12 +1116,13 @@ impl<T> Queue<T> {
     ) {
         ghost! {
             let inv = &mut **inv;
+            let old_inv = snapshot!(*inv);
             let index_mod = *snapshot!(inv.mod_len(token.index())).into_ghost();
 
             let (mut view, at_view) = AtView::new(cell_own).into_inner();
             c.shoot_store(&mut inv.statuses_own[index_mod], &mut view);
 
-            tokens::TokenR::discard(token, Ghost::new(&mut inv.tokens_auth));
+            tokens::TokenR::discard(token, ghost!(&mut inv.tokens_auth));
 
             let status_view = snapshot!(StatusWithView { status: c.val_store()@, view });
             inv.statuses_mono_auth[index_mod].increase(status_view);
@@ -1091,6 +1130,11 @@ impl<T> Queue<T> {
             inv.cells_own[index_mod] = Some(at_view);
 
             let _ = snapshot!(QueueInv::<T>::mod_len_inj);
+
+            proof_assert!(inv.tail() == old_inv.tail());
+            proof_assert!(inv.head() == old_inv.head());
+            proof_assert!(inv.len() == old_inv.len());
+            proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
         };
     }
 
@@ -1127,11 +1171,16 @@ impl<T> Queue<T> {
         let cell = &self.cells[tail_mod];
         let status = cell.status.load(ghost! { |c: &Committer<_, _, Acquire, _>| {
             self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                let old_inv = snapshot!(*inv);
                 let tail_mod_ghost: Ghost<Int> = snapshot!(tail_mod@).into_ghost();
                 c.shoot_load(&inv.statuses_own[*tail_mod_ghost], &mut view.borrow_mut());
 
                 let status_view = snapshot!(StatusWithView { status: c.val_load()@, view: *view });
                 *witness = Some(inv.statuses_mono_auth[*tail_mod_ghost].get_fragment(status_view));
+                proof_assert!(inv.head() == old_inv.head());
+                proof_assert!(inv.tail() == old_inv.tail());
+                proof_assert!(inv.len() == old_inv.len());
+                proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
             });
         } });
 
@@ -1149,8 +1198,8 @@ impl<T> Queue<T> {
 
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                    let (t, co) = self.try_dequeue_cas_inv(
-                        Ghost::new(inv),
-                        Ghost::new(c),
+                        ghost!(inv),
+                        ghost!(c),
                         f,
                         witness.take().unwrap(),
                         view
@@ -1177,10 +1226,10 @@ impl<T> Queue<T> {
             ghost! { |c: &mut Committer<_, _, _, Release>| {
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                     Self::try_dequeue_store_inv(
-                        Ghost::new(inv),
-                        Ghost::new(c),
-                        Ghost::new(token.take().unwrap()),
-                        Ghost::new(cell_own.take().unwrap()),
+                        ghost!(inv),
+                        ghost!(c),
+                        ghost!(token.take().unwrap()),
+                        ghost!(cell_own.take().unwrap()),
                     )
                 });
             }},

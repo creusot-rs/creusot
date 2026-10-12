@@ -1012,10 +1012,11 @@ impl Print for Pattern {
                         scope.bind_value(*v);
                         seen.insert(*v);
                     }
-                    pretty_rec(pat, alloc, scope, seen)
-                        .append(alloc.space())
-                        .append("as ")
-                        .append(v.pretty_value_name(alloc, scope))
+                    let mut p = pretty_rec(pat, alloc, scope, seen);
+                    if let Pattern::OrP(_) = **pat {
+                        p = p.parens()
+                    }
+                    p.append(alloc.space()).append("as ").append(v.pretty_value_name(alloc, scope))
                 }
             }
         }

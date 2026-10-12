@@ -24,7 +24,10 @@ impl<T: RA> RA for Option<T> {
         match (self, other) {
             (None, _) => true,
             (_, None) => false,
-            (Some(x), Some(y)) => x.incl_eq(y),
+            (Some(x), Some(y)) => {
+                proof_assert!(forall<f> x.op(f) == Some(y) ==> self.op(Some(f)) == Some(other));
+                x.incl_eq(y)
+            }
         }
     }
 
@@ -88,18 +91,17 @@ impl<T: RA> RA for Option<T> {
         match self {
             None => true,
             Some(this) => {
+                let _ = T::core_is_maximal_idemp;
+                let _ = T::core_idemp;
                 proof_assert! {
-                    let _ = T::core_is_maximal_idemp;
-                    let _ = T::core_idemp;
-                    ((forall<x, y> self.op(x) != None ==> self.op(x) == self.op(y) ==> x == y) ==>
-                        self.op(this.core()) == self.op(None)) &&
-                    this.cancelable() ==> this.core() == None ==>
-                        forall<x, y> self.op(x) != None ==> self.op(x) == self.op(y) ==>
-                        match (x, y) {
-                            (Some(x), Some(y)) => this.op(x) != None && this.op(x) == this.op(y),
-                            (Some(x), None) | (None, Some(x)) => this.op(x) == Some(this),
-                            (None, None) => true,
-                        }
+                    this.cancelable() ==>
+                    forall<x> this.op(x) == Some(this) ==> x.op(x) == Some(x)
+                };
+                proof_assert! {
+                    match this.core() {
+                        None => true,
+                        Some(c) => self.op(None) == self.op(Some(c))
+                    }
                 };
                 this.cancelable() && this.core() == None
             }

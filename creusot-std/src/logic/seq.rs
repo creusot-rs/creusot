@@ -1028,7 +1028,18 @@ impl<T: OrdLogic> Seq<T> {
     #[requires(self.len() > 0 && other.len() > 0)]
     #[requires(self[0] == other[0])]
     #[ensures((self < other) == (self[1..] < other[1..]))]
-    fn lt_log_tail(self, other: Self) {}
+    fn lt_log_tail(self, other: Self) {
+        pearlite! {
+            let _ = |i| {
+                if 0 <= i && i < self.len() && i < other.len() &&
+                        (forall<j: Int> 0 <= j && j < i ==> self[j] == other[j]) &&
+                        self[i] < other[i] {
+                    proof_assert!(forall<j: Int> 0 <= j && j < i-1 ==> self[1..][j] == other[1..][j]);
+                    proof_assert!(self[1..][i-1] < other[1..][i-1]);
+                }
+            };
+        }
+    }
 }
 
 impl<T: OrdLogic> OrdLogic for Seq<T> {

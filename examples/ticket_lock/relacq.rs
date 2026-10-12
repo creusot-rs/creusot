@@ -216,6 +216,7 @@ impl<T> TicketLock<T> {
                 inv.auth_tickets.update(ticket_own.as_mut().unwrap(), CancelLocalUpdateUnit);
                 proof_assert!(exists<m> inv.auth_tickets@.op(m) == Some(auth_tickets_snap@));
                 proof_assert!(forall<k> inv.auth_tickets@.contains(k) ==> auth_tickets_snap@.contains(k) && k != ticket@);
+                proof_assert!(auth_tickets_snap@.contains(ticket@));
                 inv.ts_now_serving = None;
                 *perm = Some(inv.perm.take().unwrap().sync(*view));
                 std::mem::swap(&mut inv.token, &mut *token);

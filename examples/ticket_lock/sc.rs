@@ -9,7 +9,7 @@ use creusot_std::{
     invariant::Guarded,
     logic::{
         FMap, Id, Mapping,
-        ra::{auth::CancelLocalUpdateUnit, excl::Excl},
+        ra::{RA, auth::CancelLocalUpdateUnit, excl::Excl},
         real::PositiveReal,
     },
     prelude::*,
@@ -171,7 +171,11 @@ impl<T> TicketLock<T> {
                     return;
                 }
                 c.shoot_load(&inv.perm_now_serving);
+                let auth_tickets_snap = snapshot!(inv.auth_tickets);
                 inv.auth_tickets.update(ticket_own.as_mut().unwrap(), CancelLocalUpdateUnit);
+                proof_assert!(exists<m> inv.auth_tickets@.op(m) == Some(auth_tickets_snap@));
+                proof_assert!(forall<k> inv.auth_tickets@.contains(k) ==> auth_tickets_snap@.contains(k) && k != ticket@);
+                proof_assert!(auth_tickets_snap@.contains(ticket@));
                 *perm = inv.perm.take();
             })
         })) != ticket
