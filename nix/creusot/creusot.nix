@@ -2,7 +2,6 @@
   # Dependencies
   libiconv,
   libzip,
-  makeWrapper,
 
   # Librairies
   lib,
@@ -29,10 +28,7 @@ rustBuilder.buildPackage rec {
   inherit meta pname version;
   inherit cargoArtifacts cargoExtraArgs src;
 
-  nativeBuildInputs = [
-    makeWrapper
-  ]
-  ++ lib.optionals stdenv.isDarwin [
+  nativeBuildInputs = lib.optionals stdenv.isDarwin [
     libiconv
     libzip
   ];
@@ -43,13 +39,5 @@ rustBuilder.buildPackage rec {
     mkdir $out/share
     cp {Cargo.toml,Cargo.lock} $out/share/.
     cp -r {creusot-std,creusot-std-proc,pearlite-syn} $out/share/.
-
-    wrapProgram $out/bin/cargo-creusot \
-      --set CREUSOT_PATH $out/share/ \
-      --set CREUSOT_RUSTC $out/bin/creusot-rustc \
-
-    wrapProgram $out/bin/creusot-rustc \
-      --set LD_LIBRARY_PATH "${lib.makeLibraryPath [ rustToolchain ]}" \
-      --set DYLD_FALLBACK_LIBRARY_PATH "${lib.makeLibraryPath [ rustToolchain ]}"
   '';
 }

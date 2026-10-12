@@ -76,6 +76,7 @@ jobs:
 
   build-nix:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
 
@@ -97,6 +98,11 @@ jobs:
         gc-max-store-size: 10G
         purge: true
 
+    - name: Remove rustup
+      run: |
+        rm -rf ~/.cargo ~/.rustup
+        sudo rm -f $(which rustup rustc cargo 2>/dev/null) || true
+
     - name: Check framework versions
       run: |
         cargo_version () { grep "$1_VERSION" creusot-setup/src/tools_versions_urls.rs | cut -d '"' -f2; }
@@ -113,7 +119,27 @@ jobs:
       run: nix build --impure . --print-build-logs
 
     - name: Run tests
-      run: nix shell --impure --command bash -c "cd .. && cargo creusot new test-project && cd test-project && cargo creusot"
+      run: |
+        nix shell --impure --command bash -c '
+          cd .. &&
+          cargo creusot new test-project &&
+          cd test-project &&
+          cargo creusot
+        '
+
+    - name: Run tests (guide)
+      run: |
+        export CREUSOT_PATH=$(pwd)
+        mkdir ../test-project-guide &&
+        cp guide/src/example-flake.nix ../test-project-guide/flake.nix
+        cd ../test-project-guide &&
+        nix develop --override-input creusot ${CREUSOT_PATH} --command bash -c '
+          cargo creusot init &&
+          cargo creusot &&
+          cargo fmt &&
+          cargo clippy &&
+          rust-analyzer diagnostics .
+        '
 
   erasure-check:
     runs-on: ubuntu-latest
@@ -222,6 +248,7 @@ jobs:
 
   install:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}

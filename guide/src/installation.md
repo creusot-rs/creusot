@@ -56,65 +56,13 @@ nix --extra-experimental-features 'nix-command flakes' shell "github:creusot-rs/
 
 Here is a sample `flake.nix` that provides a shell with Creusot as a dependency, using `flake-parts`:
 ```
-{
-  inputs = {
-    # Both `nixpkgs` and `flake-parts` are pinned to the same version as Creusot's
-    nixpkgs.follows = "creusot/nixpkgs";
-    flake-parts.follows = "creusot/flake-parts";
-
-    creusot.url = "github:creusot-rs/creusot";
-  };
-
-  outputs =
-    inputs@{
-      creusot,
-      flake-parts,
-      nixpkgs,
-      self,
-    }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = [
-        "aarch64-darwin"
-        "x86_64-linux"
-      ];
-
-      perSystem =
-        {
-          pkgs,
-          system,
-          ...
-        }:
-        {
-          # `pkgs` will also contain the `creusot` set, thanks to Creusot's overlay
-          _module.args.pkgs = import nixpkgs {
-            inherit system;
-            overlays = [ creusot.overlays.default ];
-          };
-
-          # `nix fmt`
-          formatter = pkgs.nixfmt-tree;
-
-          # `nix develop`
-          devShells.default = pkgs.mkShell {
-            packages = [
-              # `mkCreusotWrapped` produces a wrapped version of Creusot, along with all its dependencies (similar to `clang`).
-              # The `isFree` argument allows switching between the free and non-free version of the prover `alt-ergo`.
-              (pkgs.creusot.mkCreusotWrapped { 
-                cargo = pkgs.cargo;  # Otherwise, the cargo needed to build Creusot will be used
-                isFree = true;
-              })
-
-              # Further packages could be added
-              pkgs.clippy
-              pkgs.rust-analyzer
-              pkgs.rustfmt
-              # ...
-            ];
-          };
-        };
-    };
-}
+{{#include example-flake.nix}}
 ```
+
+> [!WARNING]
+>
+> `rustup` might conflict with `mkCreusotWrapped`: make sure to not have `rustc` in your path if you encounter weird issues.
+
 
 ## Manual installation
 
