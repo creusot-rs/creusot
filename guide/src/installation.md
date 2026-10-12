@@ -120,6 +120,11 @@ Here is a sample `flake.nix` that provides a shell with Creusot as a dependency,
 }
 ```
 
+> [!WARNING]
+>
+> `rustup` might conflict with `mkCreusotWrapped`: make sure to not have `rustc` in your path if you encounter weird issues.
+
+
 ## Manual installation
 
 1. You can install the core files from the Creusot repository with Cargo alone:
