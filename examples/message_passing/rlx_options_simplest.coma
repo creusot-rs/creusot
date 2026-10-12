@@ -140,61 +140,54 @@ module M_message_passing
   let deref_Ghost_Int (self: int) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
-  type t_MessagePassingAtomicInv = { atomic_own: t_Perm_AtomicBool; t_initial: int }
+  type t_MPInv = { flag_perm: t_Perm_AtomicBool; t_initial: int }
   
-  let new_MessagePassingAtomicInv (x: t_MessagePassingAtomicInv) (return (x'0: t_MessagePassingAtomicInv)) = any
-    [ return (result: t_MessagePassingAtomicInv) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  let new_MPInv (x: t_MPInv) (return (x'0: t_MPInv)) = any
+    [ return (result: t_MPInv) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  type t_AtomicInvariant_MessagePassingAtomicInv
+  type t_AtomicInvariant_MPInv
   
-  predicate protocol_MessagePassingAtomicInv [@inline:trivial] (self: t_MessagePassingAtomicInv) =
-    forall t: int. match lookup_Int (val_AtomicBool self.atomic_own) t with
+  predicate protocol_MPInv [@inline:trivial] (self: t_MPInv) =
+    forall t: int. match lookup_Int (val_AtomicBool self.flag_perm) t with
         | Some {f0'0 = False} -> self.t_initial = t
         | Some {f0'0 = True} -> self.t_initial < t
         | _ -> true
         end
   
-  meta "rewrite_def" predicate protocol_MessagePassingAtomicInv
+  meta "rewrite_def" predicate protocol_MPInv
   
   type tup2_AtomicBool_Int = { f0'1: t_AtomicBool; f1'1: int }
   
-  function public_MessagePassingAtomicInv (self: t_AtomicInvariant_MessagePassingAtomicInv) : tup2_AtomicBool_Int
+  function public_MPInv (self: t_AtomicInvariant_MPInv) : tup2_AtomicBool_Int
   
-  function public_MessagePassingAtomicInv'0 [@inline:trivial] (self: t_MessagePassingAtomicInv) : tup2_AtomicBool_Int =
-    { f0'1 = ward_AtomicBool self.atomic_own; f1'1 = self.t_initial }
+  function public_MPInv'0 [@inline:trivial] (self: t_MPInv) : tup2_AtomicBool_Int =
+    { f0'1 = ward_AtomicBool self.flag_perm; f1'1 = self.t_initial }
   
-  meta "rewrite_def" function public_MessagePassingAtomicInv'0
+  meta "rewrite_def" function public_MPInv'0
   
-  function namespace_MessagePassingAtomicInv (self: t_AtomicInvariant_MessagePassingAtomicInv) : t_Namespace
+  function namespace_MPInv (self: t_AtomicInvariant_MPInv) : t_Namespace
   
-  let new_MessagePassingAtomicInv'0 (value: t_MessagePassingAtomicInv) (namespace: t_Namespace)
-    (return (x: t_AtomicInvariant_MessagePassingAtomicInv)) =
-  {[@stop_split] [@expl:new requires] protocol_MessagePassingAtomicInv value}
+  let new_MPInv'0 (value: t_MPInv) (namespace: t_Namespace) (return (x: t_AtomicInvariant_MPInv)) =
+  {[@stop_split] [@expl:new requires] protocol_MPInv value}
     any
-    [ return (result: t_AtomicInvariant_MessagePassingAtomicInv) ->
-    {[@stop_split] [@expl:new_MessagePassingAtomicInv ensures] ([@stop_split] [@expl:new ensures #0] public_MessagePassingAtomicInv result
-        = public_MessagePassingAtomicInv'0 value)
-      /\ ([@stop_split] [@expl:new ensures #1] namespace_MessagePassingAtomicInv result = namespace)}
+    [ return (result: t_AtomicInvariant_MPInv) ->
+    {[@stop_split] [@expl:new_MPInv ensures] ([@stop_split] [@expl:new ensures #0] public_MPInv result
+        = public_MPInv'0 value)
+      /\ ([@stop_split] [@expl:new ensures #1] namespace_MPInv result = namespace)}
       (! return {result}) ]
   
   predicate resolve_AtomicBool (_1: t_AtomicBool)
   
-  type closure0 = { c0: t_AtomicInvariant_MessagePassingAtomicInv; c1: t_AtomicBool; c2: t_SyncView }
+  type closure0 = { c0: t_AtomicBool; c1: t_AtomicInvariant_MPInv; c2: t_SyncView; c3: int }
   
-  let borrow_AtomicInvariant_MessagePassingAtomicInv (self: t_AtomicInvariant_MessagePassingAtomicInv)
-    (return (x: t_AtomicInvariant_MessagePassingAtomicInv)) = any
-    [ return (result: t_AtomicInvariant_MessagePassingAtomicInv) -> {[@stop_split] [@expl:borrow ensures] result = self}
-      (! return {result}) ]
-  
-  type closure0'0 = { c0'0: t_AtomicBool; c1'0: t_AtomicInvariant_MessagePassingAtomicInv; c2'0: t_SyncView }
+  type closure0'0 = { c0'0: t_AtomicBool; c1'0: t_AtomicInvariant_MPInv; c2'0: t_SyncView }
   
   type t_Tokens
   
-  type closure0'1 = { c0'1: t_AtomicInvariant_MessagePassingAtomicInv; c1'1: t_Tokens; c2'1: MutBorrow.t t_SyncView }
+  type closure0'1 = { c0'1: t_AtomicInvariant_MPInv; c1'1: t_Tokens; c2'1: MutBorrow.t t_SyncView }
   
-  let deref_Ghost_ref_AtomicInvariant_MessagePassingAtomicInv (self: t_AtomicInvariant_MessagePassingAtomicInv)
-    (return (x: t_AtomicInvariant_MessagePassingAtomicInv)) = any
-    [ return (result: t_AtomicInvariant_MessagePassingAtomicInv) -> {[@stop_split] [@expl:deref ensures] result = self}
+  let deref_Ghost_AtomicInvariant_MPInv (self: t_AtomicInvariant_MPInv) (return (x: t_AtomicInvariant_MPInv)) = any
+    [ return (result: t_AtomicInvariant_MPInv) -> {[@stop_split] [@expl:deref ensures] result = self}
       (! return {result}) ]
   
   let into_inner_Tokens (self: t_Tokens) (return (x: t_Tokens)) = any
@@ -265,10 +258,9 @@ module M_message_passing
   
   meta "rewrite_def" predicate resolve_refmut_Perm_AtomicBool
   
-  predicate resolve_refmut_MessagePassingAtomicInv [@inline:trivial] (_1: MutBorrow.t t_MessagePassingAtomicInv) =
-    _1.final = _1.current
+  predicate resolve_refmut_MPInv [@inline:trivial] (_1: MutBorrow.t t_MPInv) = _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_refmut_MessagePassingAtomicInv
+  meta "rewrite_def" predicate resolve_refmut_MPInv
   
   predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0'2) = _1.final = _1.current
   
@@ -277,13 +269,12 @@ module M_message_passing
   predicate hist_inv_closure0 (self: closure0'2) (result_state: closure0'2) =
     result_state.c0'2.final = self.c0'2.final /\ result_state.c1'2.final = self.c1'2.final
   
-  let closure0 [@coma:extspec] (self: MutBorrow.t closure0'2) (inv: MutBorrow.t t_MessagePassingAtomicInv)
-    (return (x: ())) = bb0
+  let closure0 [@coma:extspec] (self: MutBorrow.t closure0'2) (inv: MutBorrow.t t_MPInv) (return (x: ())) = bb0
     [ bb0 = s0
-      [ s0 = MutBorrow.borrow_final <t_Perm_AtomicBool> {inv.current.atomic_own}
+      [ s0 = MutBorrow.borrow_final <t_Perm_AtomicBool> {inv.current.flag_perm}
           {MutBorrow.inherit_id (MutBorrow.get_id inv) 0}
           (fun (_bor: MutBorrow.t t_Perm_AtomicBool) ->
-            [ &_6 <- _bor ] [ &inv <- { inv with current = { inv.current with atomic_own = _bor.final } } ] s1)
+            [ &_6 <- _bor ] [ &inv <- { inv with current = { inv.current with flag_perm = _bor.final } } ] s1)
       | s1 = MutBorrow.borrow_mut <t_SyncView> {self.current.c1'2.current}
           (fun (_bor: MutBorrow.t t_SyncView) ->
             [ &_10 <- _bor ]
@@ -307,12 +298,12 @@ module M_message_passing
       | s10 = -{resolve_refmut_SyncView _9}- s11
       | s11 = -{resolve_refmut_SyncView _8}- s12
       | s12 = -{resolve_refmut_Perm_AtomicBool _6}- s13
-      | s13 = -{resolve_refmut_MessagePassingAtomicInv inv}- s14
+      | s13 = -{resolve_refmut_MPInv inv}- s14
       | s14 = -{resolve_refmut_closure0 self}- s15
       | s15 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t closure0'2 = self
-    | & inv: MutBorrow.t t_MessagePassingAtomicInv = inv
+    | & inv: MutBorrow.t t_MPInv = inv
     | & _3: () = Any.any_l ()
     | & _4: MutBorrow.t t_Committer_AtomicBool_bool_None_Relaxed = Any.any_l ()
     | & _5: MutBorrow.t t_Perm_AtomicBool = Any.any_l ()
@@ -344,16 +335,16 @@ module M_message_passing
   
   predicate contains (self: t_Tokens) (namespace: t_Namespace) = contains_Namespace (namespaces self) namespace
   
-  predicate inv_refmut_MessagePassingAtomicInv [@inline:trivial] (_1: MutBorrow.t t_MessagePassingAtomicInv) = true
+  predicate inv_refmut_MPInv [@inline:trivial] (_1: MutBorrow.t t_MPInv) = true
   
-  meta "rewrite_def" predicate inv_refmut_MessagePassingAtomicInv
+  meta "rewrite_def" predicate inv_refmut_MPInv
   
-  predicate precondition_closure0 (self: closure0'2) (args: MutBorrow.t t_MessagePassingAtomicInv) =
+  predicate precondition_closure0 (self: closure0'2) (args: MutBorrow.t t_MPInv) =
     let inv = args in forall bor_self: MutBorrow.t closure0'2. bor_self.current = self -> closure0'pre bor_self inv
   
   meta "rewrite_def" predicate precondition_closure0
   
-  predicate precondition_FnGhostWrapper_closure0 (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_MessagePassingAtomicInv) =
+  predicate precondition_FnGhostWrapper_closure0 (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_MPInv) =
     precondition_closure0 self.f0'2 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0
@@ -372,41 +363,36 @@ module M_message_passing
   
   meta "rewrite_def" predicate resolve_closure0
   
-  predicate postcondition_once_closure0 (self: closure0'2) (args: MutBorrow.t t_MessagePassingAtomicInv) (result: ()) =
+  predicate postcondition_once_closure0 (self: closure0'2) (args: MutBorrow.t t_MPInv) (result: ()) =
     let inv = args in exists e: closure0'2. (exists bor_self: MutBorrow.t closure0'2. bor_self.current = self
           /\ bor_self.final = e /\ closure0'post'return bor_self inv result /\ hist_inv_closure0 self e)
       /\ resolve_closure0 e
   
   meta "rewrite_def" predicate postcondition_once_closure0
   
-  predicate postcondition_once_FnGhostWrapper_closure0 (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_MessagePassingAtomicInv) (result: ()) =
+  predicate postcondition_once_FnGhostWrapper_closure0 (self: t_FnGhostWrapper_closure0) (args: MutBorrow.t t_MPInv) (result: ()) =
     postcondition_once_closure0 self.f0'2 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0
   
-  let open_MessagePassingAtomicInv (self: t_AtomicInvariant_MessagePassingAtomicInv) (tokens: t_Tokens)
-    (f: t_FnGhostWrapper_closure0) (return (x: ())) =
-  {[@stop_split] [@expl:open_MessagePassingAtomicInv requires] ([@stop_split] [@expl:open requires #0] contains tokens (namespace_MessagePassingAtomicInv self))
-    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_MessagePassingAtomicInv. public_MessagePassingAtomicInv'0 t.current
-          = public_MessagePassingAtomicInv self
-        /\ protocol_MessagePassingAtomicInv t.current /\ inv_refmut_MessagePassingAtomicInv t
+  let open_MPInv (self: t_AtomicInvariant_MPInv) (tokens: t_Tokens) (f: t_FnGhostWrapper_closure0) (return (x: ())) =
+  {[@stop_split] [@expl:open_MPInv requires] ([@stop_split] [@expl:open requires #0] contains tokens (namespace_MPInv self))
+    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_MPInv. public_MPInv'0 t.current
+          = public_MPInv self
+        /\ protocol_MPInv t.current /\ inv_refmut_MPInv t
       -> precondition_FnGhostWrapper_closure0 f t
       /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0 f t res
-        -> public_MessagePassingAtomicInv'0 t.final = public_MessagePassingAtomicInv self
-        /\ protocol_MessagePassingAtomicInv t.final))}
+        -> public_MPInv'0 t.final = public_MPInv self /\ protocol_MPInv t.final))}
     any
-    [ return (result: ()) ->
-    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_MessagePassingAtomicInv. public_MessagePassingAtomicInv'0 t.current
-          = public_MessagePassingAtomicInv self
-        /\ protocol_MessagePassingAtomicInv t.current
-        /\ inv_refmut_MessagePassingAtomicInv t /\ postcondition_once_FnGhostWrapper_closure0 f t result}
+    [ return (result: ()) -> {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_MPInv. public_MPInv'0 t.current
+          = public_MPInv self
+        /\ protocol_MPInv t.current /\ inv_refmut_MPInv t /\ postcondition_once_FnGhostWrapper_closure0 f t result}
       (! return {result}) ]
   
   let closure0'0 [@coma:extspec] (self: closure0'1) (c: MutBorrow.t t_Committer_AtomicBool_bool_None_Relaxed)
     (return (x: ())) = bb0
     [ bb0 = s0
-      [ s0 = deref_Ghost_ref_AtomicInvariant_MessagePassingAtomicInv {self.c0'1}
-          (fun (_x: t_AtomicInvariant_MessagePassingAtomicInv) -> [ &_4 <- _x ] s1)
+      [ s0 = deref_Ghost_AtomicInvariant_MPInv {self.c0'1} (fun (_x: t_AtomicInvariant_MPInv) -> [ &_4 <- _x ] s1)
       | s1 = into_inner_Tokens {self.c1'1} (fun (_x: t_Tokens) -> [ &_6 <- _x ] s2)
       | s2 = MutBorrow.borrow_final <t_Committer_AtomicBool_bool_None_Relaxed> {c.current} {MutBorrow.get_id c}
           (fun (_bor: MutBorrow.t t_Committer_AtomicBool_bool_None_Relaxed) ->
@@ -416,7 +402,7 @@ module M_message_passing
             [ &_11 <- _bor ] [ &self <- { self with c2'1 = { self.c2'1 with current = _bor.final } } ] s4)
       | s4 = [ &_9 <- { c0'2 = _10; c1'2 = _11 } ] s5
       | s5 = __new_closure0 {_9} (fun (_x: t_FnGhostWrapper_closure0) -> [ &_8 <- _x ] s6)
-      | s6 = open_MessagePassingAtomicInv {_4} {_6} {_8} (fun (_x: ()) -> [ &_ret <- _x ] s7)
+      | s6 = open_MPInv {_4} {_6} {_8} (fun (_x: ()) -> [ &_ret <- _x ] s7)
       | s7 = -{resolve_refmut_Committer_AtomicBool_bool_None_Relaxed c}- s8
       | s8 = -{match self with
           | {c2'1 = x} -> resolve_refmut_Ghost_SyncView x
@@ -427,7 +413,7 @@ module M_message_passing
     [ & _ret: () = Any.any_l ()
     | & self: closure0'1 = self
     | & c: MutBorrow.t t_Committer_AtomicBool_bool_None_Relaxed = c
-    | & _4: t_AtomicInvariant_MessagePassingAtomicInv = Any.any_l ()
+    | & _4: t_AtomicInvariant_MPInv = Any.any_l ()
     | & _6: t_Tokens = Any.any_l ()
     | & _8: t_FnGhostWrapper_closure0 = Any.any_l ()
     | & _9: closure0'2 = Any.any_l ()
@@ -517,7 +503,7 @@ module M_message_passing
     | & _5: t_FnGhostWrapper_closure0'0 = Any.any_l ()
     | & _6: t_FnGhostWrapper_closure0'0 = Any.any_l ()
     | & _7: closure0'1 = Any.any_l ()
-    | & _8: t_AtomicInvariant_MessagePassingAtomicInv = Any.any_l ()
+    | & _8: t_AtomicInvariant_MPInv = Any.any_l ()
     | & _9: MutBorrow.t t_SyncView = Any.any_l () ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'1'pre
@@ -565,12 +551,11 @@ module M_message_passing
         /\ (forall r: (). valid_result_ScopedJoinHandle_unit result r -> postcondition_once_closure0'1 f t r))}
       (! return {result}) ]
   
-  type closure1 = { c0'3: t_AtomicBool; c1'3: t_SyncView; c2'3: t_AtomicInvariant_MessagePassingAtomicInv }
+  predicate resolve_ScopedJoinHandle_unit (_1: t_ScopedJoinHandle_unit)
   
-  type closure3 = {
-    c0'4: t_AtomicInvariant_MessagePassingAtomicInv;
-    c1'4: MutBorrow.t t_Tokens;
-    c2'4: MutBorrow.t t_SyncView }
+  type closure1 = { c0'3: int; c1'3: t_AtomicBool; c2'3: t_SyncView; c3'3: t_AtomicInvariant_MPInv }
+  
+  type closure3 = { c0'4: t_AtomicInvariant_MPInv; c1'4: MutBorrow.t t_Tokens; c2'4: MutBorrow.t t_SyncView }
   
   let deref_mut_Ghost_Tokens (self: MutBorrow.t t_Tokens) (return (x: MutBorrow.t t_Tokens)) = any
     [ return (result: MutBorrow.t t_Tokens) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
@@ -629,8 +614,7 @@ module M_message_passing
   predicate hist_inv_closure0'0 (self: closure0'3) (result_state: closure0'3) =
     result_state.c0'5 = self.c0'5 /\ result_state.c1'5.final = self.c1'5.final
   
-  let closure0'2 [@coma:extspec] (self: MutBorrow.t closure0'3) (inv: MutBorrow.t t_MessagePassingAtomicInv)
-    (return (x: ())) = bb0
+  let closure0'2 [@coma:extspec] (self: MutBorrow.t closure0'3) (inv: MutBorrow.t t_MPInv) (return (x: ())) = bb0
     [ bb0 = s0
       [ s0 = [ &_8 <- val_load_AtomicBool'0 self.current.c0'5 ] s1
       | s1 = into_ghost_bool {_8} (fun (_x: bool) -> [ &_7 <- _x ] s2)
@@ -638,8 +622,8 @@ module M_message_passing
       | s3 = any [ br0 -> {_5 = false} (! bb5) | br1 -> {_5} (! bb4) ] ]
     | bb4 = s0
       [ s0 = [ &_13 <- self.current.c0'5 ] s1
-      | s1 = -{resolve_refmut_MessagePassingAtomicInv inv}- s2
-      | s2 = [ &_15 <- inv.current.atomic_own ] s3
+      | s1 = -{resolve_refmut_MPInv inv}- s2
+      | s2 = [ &_15 <- inv.current.flag_perm ] s3
       | s3 = MutBorrow.borrow_mut <t_SyncView> {self.current.c1'5.current}
           (fun (_bor: MutBorrow.t t_SyncView) ->
             [ &_19 <- _bor ]
@@ -656,12 +640,10 @@ module M_message_passing
       | s10 = -{resolve_refmut_closure0'0 self}- s11
       | s11 = return {_ret} ]
     | bb5 = s0
-      [ s0 = -{resolve_refmut_MessagePassingAtomicInv inv}- s1
-      | s1 = -{resolve_refmut_closure0'0 self}- s2
-      | s2 = return {_ret} ] ]
+      [ s0 = -{resolve_refmut_MPInv inv}- s1 | s1 = -{resolve_refmut_closure0'0 self}- s2 | s2 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t closure0'3 = self
-    | & inv: MutBorrow.t t_MessagePassingAtomicInv = inv
+    | & inv: MutBorrow.t t_MPInv = inv
     | & _5: bool = Any.any_l ()
     | & _7: bool = Any.any_l ()
     | & _8: bool = Any.any_l ()
@@ -685,12 +667,12 @@ module M_message_passing
     [ return (result: t_FnGhostWrapper_closure0'1) -> {[@stop_split] [@expl:__new ensures] result.f0'4 = f}
       (! return {result}) ]
   
-  predicate precondition_closure0'2 (self: closure0'3) (args: MutBorrow.t t_MessagePassingAtomicInv) =
+  predicate precondition_closure0'2 (self: closure0'3) (args: MutBorrow.t t_MPInv) =
     let inv = args in forall bor_self: MutBorrow.t closure0'3. bor_self.current = self -> closure0'2'pre bor_self inv
   
   meta "rewrite_def" predicate precondition_closure0'2
   
-  predicate precondition_FnGhostWrapper_closure0'1 (self: t_FnGhostWrapper_closure0'1) (args: MutBorrow.t t_MessagePassingAtomicInv) =
+  predicate precondition_FnGhostWrapper_closure0'1 (self: t_FnGhostWrapper_closure0'1) (args: MutBorrow.t t_MPInv) =
     precondition_closure0'2 self.f0'4 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'1
@@ -699,34 +681,31 @@ module M_message_passing
   
   meta "rewrite_def" predicate resolve_closure0'0
   
-  predicate postcondition_once_closure0'2 (self: closure0'3) (args: MutBorrow.t t_MessagePassingAtomicInv) (result: ()) =
+  predicate postcondition_once_closure0'2 (self: closure0'3) (args: MutBorrow.t t_MPInv) (result: ()) =
     let inv = args in exists e: closure0'3. (exists bor_self: MutBorrow.t closure0'3. bor_self.current = self
           /\ bor_self.final = e /\ closure0'2'post'return bor_self inv result /\ hist_inv_closure0'0 self e)
       /\ resolve_closure0'0 e
   
   meta "rewrite_def" predicate postcondition_once_closure0'2
   
-  predicate postcondition_once_FnGhostWrapper_closure0'1 (self: t_FnGhostWrapper_closure0'1) (args: MutBorrow.t t_MessagePassingAtomicInv) (result: ()) =
+  predicate postcondition_once_FnGhostWrapper_closure0'1 (self: t_FnGhostWrapper_closure0'1) (args: MutBorrow.t t_MPInv) (result: ()) =
     postcondition_once_closure0'2 self.f0'4 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'1
   
-  let open_MessagePassingAtomicInv'0 (self: t_AtomicInvariant_MessagePassingAtomicInv) (tokens: t_Tokens)
-    (f: t_FnGhostWrapper_closure0'1) (return (x: ())) =
-  {[@stop_split] [@expl:open_MessagePassingAtomicInv requires] ([@stop_split] [@expl:open requires #0] contains tokens (namespace_MessagePassingAtomicInv self))
-    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_MessagePassingAtomicInv. public_MessagePassingAtomicInv'0 t.current
-          = public_MessagePassingAtomicInv self
-        /\ protocol_MessagePassingAtomicInv t.current /\ inv_refmut_MessagePassingAtomicInv t
+  let open_MPInv'0 (self: t_AtomicInvariant_MPInv) (tokens: t_Tokens) (f: t_FnGhostWrapper_closure0'1)
+    (return (x: ())) =
+  {[@stop_split] [@expl:open_MPInv requires] ([@stop_split] [@expl:open requires #0] contains tokens (namespace_MPInv self))
+    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_MPInv. public_MPInv'0 t.current
+          = public_MPInv self
+        /\ protocol_MPInv t.current /\ inv_refmut_MPInv t
       -> precondition_FnGhostWrapper_closure0'1 f t
       /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0'1 f t res
-        -> public_MessagePassingAtomicInv'0 t.final = public_MessagePassingAtomicInv self
-        /\ protocol_MessagePassingAtomicInv t.final))}
+        -> public_MPInv'0 t.final = public_MPInv self /\ protocol_MPInv t.final))}
     any
-    [ return (result: ()) ->
-    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_MessagePassingAtomicInv. public_MessagePassingAtomicInv'0 t.current
-          = public_MessagePassingAtomicInv self
-        /\ protocol_MessagePassingAtomicInv t.current
-        /\ inv_refmut_MessagePassingAtomicInv t /\ postcondition_once_FnGhostWrapper_closure0'1 f t result}
+    [ return (result: ()) -> {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_MPInv. public_MPInv'0 t.current
+          = public_MPInv self
+        /\ protocol_MPInv t.current /\ inv_refmut_MPInv t /\ postcondition_once_FnGhostWrapper_closure0'1 f t result}
       (! return {result}) ]
   
   predicate resolve_refmut_Tokens [@inline:trivial] (_1: MutBorrow.t t_Tokens) = _1.final = _1.current
@@ -744,8 +723,8 @@ module M_message_passing
   let closure3 [@coma:extspec] (self: MutBorrow.t closure3) (c: t_Committer_AtomicBool_bool_Relaxed_None)
     (return (x: ())) = bb0
     [ bb0 = s0
-      [ s0 = deref_Ghost_ref_AtomicInvariant_MessagePassingAtomicInv {self.current.c0'4}
-          (fun (_x: t_AtomicInvariant_MessagePassingAtomicInv) -> [ &_4 <- _x ] s1)
+      [ s0 = deref_Ghost_AtomicInvariant_MPInv {self.current.c0'4}
+          (fun (_x: t_AtomicInvariant_MPInv) -> [ &_4 <- _x ] s1)
       | s1 = MutBorrow.borrow_mut <t_Tokens> {self.current.c1'4.current}
           (fun (_bor: MutBorrow.t t_Tokens) ->
             [ &_9 <- _bor ]
@@ -762,14 +741,14 @@ module M_message_passing
             s6)
       | s6 = [ &_11 <- { c0'5 = c; c1'5 = _13 } ] s7
       | s7 = __new_closure0'1 {_11} (fun (_x: t_FnGhostWrapper_closure0'1) -> [ &_10 <- _x ] s8)
-      | s8 = open_MessagePassingAtomicInv'0 {_4} {_6} {_10} (fun (_x: ()) -> [ &_ret <- _x ] s9)
+      | s8 = open_MPInv'0 {_4} {_6} {_10} (fun (_x: ()) -> [ &_ret <- _x ] s9)
       | s9 = -{resolve_refmut_Tokens _8}- s10
       | s10 = -{resolve_refmut_closure3 self}- s11
       | s11 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t closure3 = self
     | & c: t_Committer_AtomicBool_bool_Relaxed_None = c
-    | & _4: t_AtomicInvariant_MessagePassingAtomicInv = Any.any_l ()
+    | & _4: t_AtomicInvariant_MPInv = Any.any_l ()
     | & _6: t_Tokens = Any.any_l ()
     | & _7: MutBorrow.t t_Tokens = Any.any_l ()
     | & _8: MutBorrow.t t_Tokens = Any.any_l ()
@@ -836,14 +815,11 @@ module M_message_passing
       (! return {result}) ]
   
   predicate inv_closure1 [@inline:trivial] (_1: closure1) =
-    let {c0'3 = x0; c1'3 = x1; c2'3 = x2} = _1 in inv_ref_AtomicBool x0
+    let {c0'3 = x0; c1'3 = x1; c2'3 = x2; c3'3 = x3} = _1 in inv_ref_AtomicBool x1
   
   meta "rewrite_def" predicate inv_closure1
   
-  type closure4 = {
-    c0'6: t_AtomicInvariant_MessagePassingAtomicInv;
-    c1'6: MutBorrow.t t_Tokens;
-    c2'6: MutBorrow.t t_SyncView }
+  type closure4 = { c0'6: t_AtomicInvariant_MPInv; c1'6: MutBorrow.t t_Tokens; c2'6: MutBorrow.t t_SyncView }
   
   type closure0'4 = { c0'7: t_Committer_AtomicBool_bool_Relaxed_None; c1'7: MutBorrow.t t_SyncView }
   
@@ -854,12 +830,11 @@ module M_message_passing
   predicate hist_inv_closure0'1 (self: closure0'4) (result_state: closure0'4) =
     result_state.c0'7 = self.c0'7 /\ result_state.c1'7.final = self.c1'7.final
   
-  let closure0'3 [@coma:extspec] (self: MutBorrow.t closure0'4) (inv: MutBorrow.t t_MessagePassingAtomicInv)
-    (return (x: ())) = bb0
+  let closure0'3 [@coma:extspec] (self: MutBorrow.t closure0'4) (inv: MutBorrow.t t_MPInv) (return (x: ())) = bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- self.current.c0'7 ] s1
-      | s1 = -{resolve_refmut_MessagePassingAtomicInv inv}- s2
-      | s2 = [ &_6 <- inv.current.atomic_own ] s3
+      | s1 = -{resolve_refmut_MPInv inv}- s2
+      | s2 = [ &_6 <- inv.current.flag_perm ] s3
       | s3 = MutBorrow.borrow_mut <t_SyncView> {self.current.c1'7.current}
           (fun (_bor: MutBorrow.t t_SyncView) ->
             [ &_10 <- _bor ]
@@ -877,7 +852,7 @@ module M_message_passing
       | s11 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t closure0'4 = self
-    | & inv: MutBorrow.t t_MessagePassingAtomicInv = inv
+    | & inv: MutBorrow.t t_MPInv = inv
     | & _3: t_AcquireSyncView = Any.any_l ()
     | & _4: t_Committer_AtomicBool_bool_Relaxed_None = Any.any_l ()
     | & _6: t_Perm_AtomicBool = Any.any_l ()
@@ -898,12 +873,12 @@ module M_message_passing
     [ return (result: t_FnGhostWrapper_closure0'2) -> {[@stop_split] [@expl:__new ensures] result.f0'6 = f}
       (! return {result}) ]
   
-  predicate precondition_closure0'3 (self: closure0'4) (args: MutBorrow.t t_MessagePassingAtomicInv) =
+  predicate precondition_closure0'3 (self: closure0'4) (args: MutBorrow.t t_MPInv) =
     let inv = args in forall bor_self: MutBorrow.t closure0'4. bor_self.current = self -> closure0'3'pre bor_self inv
   
   meta "rewrite_def" predicate precondition_closure0'3
   
-  predicate precondition_FnGhostWrapper_closure0'2 (self: t_FnGhostWrapper_closure0'2) (args: MutBorrow.t t_MessagePassingAtomicInv) =
+  predicate precondition_FnGhostWrapper_closure0'2 (self: t_FnGhostWrapper_closure0'2) (args: MutBorrow.t t_MPInv) =
     precondition_closure0'3 self.f0'6 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure0'2
@@ -912,34 +887,31 @@ module M_message_passing
   
   meta "rewrite_def" predicate resolve_closure0'1
   
-  predicate postcondition_once_closure0'3 (self: closure0'4) (args: MutBorrow.t t_MessagePassingAtomicInv) (result: ()) =
+  predicate postcondition_once_closure0'3 (self: closure0'4) (args: MutBorrow.t t_MPInv) (result: ()) =
     let inv = args in exists e: closure0'4. (exists bor_self: MutBorrow.t closure0'4. bor_self.current = self
           /\ bor_self.final = e /\ closure0'3'post'return bor_self inv result /\ hist_inv_closure0'1 self e)
       /\ resolve_closure0'1 e
   
   meta "rewrite_def" predicate postcondition_once_closure0'3
   
-  predicate postcondition_once_FnGhostWrapper_closure0'2 (self: t_FnGhostWrapper_closure0'2) (args: MutBorrow.t t_MessagePassingAtomicInv) (result: ()) =
+  predicate postcondition_once_FnGhostWrapper_closure0'2 (self: t_FnGhostWrapper_closure0'2) (args: MutBorrow.t t_MPInv) (result: ()) =
     postcondition_once_closure0'3 self.f0'6 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure0'2
   
-  let open_MessagePassingAtomicInv'1 (self: t_AtomicInvariant_MessagePassingAtomicInv) (tokens: t_Tokens)
-    (f: t_FnGhostWrapper_closure0'2) (return (x: ())) =
-  {[@stop_split] [@expl:open_MessagePassingAtomicInv requires] ([@stop_split] [@expl:open requires #0] contains tokens (namespace_MessagePassingAtomicInv self))
-    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_MessagePassingAtomicInv. public_MessagePassingAtomicInv'0 t.current
-          = public_MessagePassingAtomicInv self
-        /\ protocol_MessagePassingAtomicInv t.current /\ inv_refmut_MessagePassingAtomicInv t
+  let open_MPInv'1 (self: t_AtomicInvariant_MPInv) (tokens: t_Tokens) (f: t_FnGhostWrapper_closure0'2)
+    (return (x: ())) =
+  {[@stop_split] [@expl:open_MPInv requires] ([@stop_split] [@expl:open requires #0] contains tokens (namespace_MPInv self))
+    /\ ([@stop_split] [@expl:open requires #1] forall t: MutBorrow.t t_MPInv. public_MPInv'0 t.current
+          = public_MPInv self
+        /\ protocol_MPInv t.current /\ inv_refmut_MPInv t
       -> precondition_FnGhostWrapper_closure0'2 f t
       /\ (forall res: (). postcondition_once_FnGhostWrapper_closure0'2 f t res
-        -> public_MessagePassingAtomicInv'0 t.final = public_MessagePassingAtomicInv self
-        /\ protocol_MessagePassingAtomicInv t.final))}
+        -> public_MPInv'0 t.final = public_MPInv self /\ protocol_MPInv t.final))}
     any
-    [ return (result: ()) ->
-    {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_MessagePassingAtomicInv. public_MessagePassingAtomicInv'0 t.current
-          = public_MessagePassingAtomicInv self
-        /\ protocol_MessagePassingAtomicInv t.current
-        /\ inv_refmut_MessagePassingAtomicInv t /\ postcondition_once_FnGhostWrapper_closure0'2 f t result}
+    [ return (result: ()) -> {[@stop_split] [@expl:open ensures] exists t: MutBorrow.t t_MPInv. public_MPInv'0 t.current
+          = public_MPInv self
+        /\ protocol_MPInv t.current /\ inv_refmut_MPInv t /\ postcondition_once_FnGhostWrapper_closure0'2 f t result}
       (! return {result}) ]
   
   predicate resolve_refmut_closure4 [@inline:trivial] (_1: MutBorrow.t closure4) = _1.final = _1.current
@@ -953,8 +925,8 @@ module M_message_passing
   let closure4 [@coma:extspec] (self: MutBorrow.t closure4) (c: t_Committer_AtomicBool_bool_Relaxed_None)
     (return (x: ())) = bb0
     [ bb0 = s0
-      [ s0 = deref_Ghost_ref_AtomicInvariant_MessagePassingAtomicInv {self.current.c0'6}
-          (fun (_x: t_AtomicInvariant_MessagePassingAtomicInv) -> [ &_4 <- _x ] s1)
+      [ s0 = deref_Ghost_AtomicInvariant_MPInv {self.current.c0'6}
+          (fun (_x: t_AtomicInvariant_MPInv) -> [ &_4 <- _x ] s1)
       | s1 = MutBorrow.borrow_mut <t_Tokens> {self.current.c1'6.current}
           (fun (_bor: MutBorrow.t t_Tokens) ->
             [ &_9 <- _bor ]
@@ -971,14 +943,14 @@ module M_message_passing
             s6)
       | s6 = [ &_11 <- { c0'7 = c; c1'7 = _13 } ] s7
       | s7 = __new_closure0'2 {_11} (fun (_x: t_FnGhostWrapper_closure0'2) -> [ &_10 <- _x ] s8)
-      | s8 = open_MessagePassingAtomicInv'1 {_4} {_6} {_10} (fun (_x: ()) -> [ &_ret <- _x ] s9)
+      | s8 = open_MPInv'1 {_4} {_6} {_10} (fun (_x: ()) -> [ &_ret <- _x ] s9)
       | s9 = -{resolve_refmut_Tokens _8}- s10
       | s10 = -{resolve_refmut_closure4 self}- s11
       | s11 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t closure4 = self
     | & c: t_Committer_AtomicBool_bool_Relaxed_None = c
-    | & _4: t_AtomicInvariant_MessagePassingAtomicInv = Any.any_l ()
+    | & _4: t_AtomicInvariant_MPInv = Any.any_l ()
     | & _6: t_Tokens = Any.any_l ()
     | & _7: MutBorrow.t t_Tokens = Any.any_l ()
     | & _8: MutBorrow.t t_Tokens = Any.any_l ()
@@ -1043,32 +1015,37 @@ module M_message_passing
   let closure1 [@coma:extspec] (self: closure1) (tokens: t_Tokens) (return (x: ())) =
   {[@stop_split] [@expl:closure 'self' type invariant] inv_closure1 self}
     bb0
-    [ bb0 = s0 [ s0 = [ &_old <- self.c0'3 ] s1 | s1 = [ &_old'0 <- self.c2'3 ] s2 | s2 = bb1 ]
+    [ bb0 = s0
+      [ s0 = [ &_old <- self.c0'3 ] s1
+      | s1 = [ &_old'0 <- self.c1'3 ] s2
+      | s2 = [ &_old'1 <- self.c3'3 ] s3
+      | s3 = bb1 ]
     | bb1 = bb1
       [ bb1 = {[@expl:inferred invariant: type invariant] inv_closure1 self}
-        {[@expl:inferred invariant: unchanged value] _old'0 = self.c2'3}
+        {[@expl:inferred invariant: unchanged value] _old'1 = self.c3'3}
+        {[@expl:inferred invariant: unchanged value] _old'0 = self.c1'3}
         {[@expl:inferred invariant: unchanged value] _old = self.c0'3}
         {[@expl:loop invariant #0] contains tokens (Namespace_MESSAGE_PASSING 0)}
-        {[@expl:loop invariant #1] ge_log_Int (get_timestamp_AtomicBool self.c0'3 self.c1'3) (public_MessagePassingAtomicInv self.c2'3).f1'1}
+        {[@expl:loop invariant #1] self.c0'3 <= get_timestamp_AtomicBool self.c1'3 self.c2'3}
         (! s0)
-        [ s0 = [ &_13 <- self.c0'3 ] s1
-        | s1 = [ &_17 <- self.c2'3 ] s2
+        [ s0 = [ &_13 <- self.c1'3 ] s1
+        | s1 = [ &_17 <- self.c3'3 ] s2
         | s2 = MutBorrow.borrow_mut <t_Tokens> {tokens}
             (fun (_bor: MutBorrow.t t_Tokens) -> [ &_18 <- _bor ] [ &tokens <- _bor.final ] s3)
-        | s3 = MutBorrow.borrow_mut <t_SyncView> {self.c1'3}
-            (fun (_bor: MutBorrow.t t_SyncView) -> [ &_19 <- _bor ] [ &self <- { self with c1'3 = _bor.final } ] s4)
+        | s3 = MutBorrow.borrow_mut <t_SyncView> {self.c2'3}
+            (fun (_bor: MutBorrow.t t_SyncView) -> [ &_19 <- _bor ] [ &self <- { self with c2'3 = _bor.final } ] s4)
         | s4 = [ &_16 <- { c0'4 = _17; c1'4 = _18; c2'4 = _19 } ] s5
         | s5 = __new_closure3 {_16} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_15 <- _x ] s6)
         | s6 = new_FnGhostWrapper_closure3 {_15} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_14 <- _x ] s7)
         | s7 = load_FnGhostWrapper_closure3 {_13} {_14} (fun (_x: bool) -> [ &_12 <- _x ] s8)
         | s8 = any [ br0 -> {_12 = false} (! bb1) | br1 -> {_12} (! bb6) ] ] ]
     | bb6 = s0
-      [ s0 = [ &_22 <- self.c0'3 ] s1
-      | s1 = [ &_26 <- self.c2'3 ] s2
+      [ s0 = [ &_22 <- self.c1'3 ] s1
+      | s1 = [ &_26 <- self.c3'3 ] s2
       | s2 = MutBorrow.borrow_mut <t_Tokens> {tokens}
           (fun (_bor: MutBorrow.t t_Tokens) -> [ &_27 <- _bor ] [ &tokens <- _bor.final ] s3)
-      | s3 = MutBorrow.borrow_mut <t_SyncView> {self.c1'3}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_28 <- _bor ] [ &self <- { self with c1'3 = _bor.final } ] s4)
+      | s3 = MutBorrow.borrow_mut <t_SyncView> {self.c2'3}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_28 <- _bor ] [ &self <- { self with c2'3 = _bor.final } ] s4)
       | s4 = [ &_25 <- { c0'6 = _26; c1'6 = _27; c2'6 = _28 } ] s5
       | s5 = __new_closure4 {_25} (fun (_x: t_FnGhostWrapper_closure4) -> [ &_24 <- _x ] s6)
       | s6 = new_FnGhostWrapper_closure4 {_24} (fun (_x: t_FnGhostWrapper_closure4) -> [ &_23 <- _x ] s7)
@@ -1083,7 +1060,7 @@ module M_message_passing
     | & _14: t_FnGhostWrapper_closure3 = Any.any_l ()
     | & _15: t_FnGhostWrapper_closure3 = Any.any_l ()
     | & _16: closure3 = Any.any_l ()
-    | & _17: t_AtomicInvariant_MessagePassingAtomicInv = Any.any_l ()
+    | & _17: t_AtomicInvariant_MPInv = Any.any_l ()
     | & _18: MutBorrow.t t_Tokens = Any.any_l ()
     | & _19: MutBorrow.t t_SyncView = Any.any_l ()
     | & res: bool = Any.any_l ()
@@ -1091,11 +1068,12 @@ module M_message_passing
     | & _23: t_FnGhostWrapper_closure4 = Any.any_l ()
     | & _24: t_FnGhostWrapper_closure4 = Any.any_l ()
     | & _25: closure4 = Any.any_l ()
-    | & _26: t_AtomicInvariant_MessagePassingAtomicInv = Any.any_l ()
+    | & _26: t_AtomicInvariant_MPInv = Any.any_l ()
     | & _27: MutBorrow.t t_Tokens = Any.any_l ()
     | & _28: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _old: t_AtomicBool = Any.any_l ()
-    | & _old'0: t_AtomicInvariant_MessagePassingAtomicInv = Any.any_l () ] [ return (result: ()) -> return {result} ]
+    | & _old: int = Any.any_l ()
+    | & _old'0: t_AtomicBool = Any.any_l ()
+    | & _old'1: t_AtomicInvariant_MPInv = Any.any_l () ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure1'pre
   
@@ -1126,14 +1104,8 @@ module M_message_passing
   
   meta "rewrite_def" predicate resolve_refmut_Scope
   
-  let join_unwrap_ScopedJoinHandle_unit (self: t_ScopedJoinHandle_unit) (return (x: ())) =
-  {[@stop_split] [@expl:join_unwrap 'self' type invariant] inv_ScopedJoinHandle_unit self}
-    any
-    [ return (result: ()) -> {[@stop_split] [@expl:join_unwrap ensures] valid_result_ScopedJoinHandle_unit self result}
-      (! return {result}) ]
-  
   predicate inv_closure0'0 [@inline:trivial] (_1: closure0) =
-    let {c0 = x0; c1 = x1; c2 = x2} = _1 in inv_ref_AtomicBool x1
+    let {c0 = x0; c1 = x1; c2 = x2; c3 = x3} = _1 in inv_ref_AtomicBool x0
   
   meta "rewrite_def" predicate inv_closure0'0
   
@@ -1142,41 +1114,40 @@ module M_message_passing
     /\ ([@stop_split] [@expl:closure 's' type invariant] inv_refmut_Scope s)}
     bb0
     [ bb0 = s0
-      [ s0 = borrow_AtomicInvariant_MessagePassingAtomicInv {self.c0}
-          (fun (_x: t_AtomicInvariant_MessagePassingAtomicInv) -> [ &inv <- _x ] s1)
-      | s1 = [ &atomic <- self.c1 ] s2
-      | s2 = [ &_8 <- { c0'0 = atomic; c1'0 = inv; c2'0 = self.c2 } ] s3
+      [ s0 = [ &flag <- self.c0 ] s1
+      | s1 = [ &inv <- self.c1 ] s2
+      | s2 = [ &_7 <- { c0'0 = flag; c1'0 = inv; c2'0 = self.c2 } ] s3
       | s3 = MutBorrow.borrow_mut <t_Scope> {s.current}
           (fun (_bor: MutBorrow.t t_Scope) ->
-            [ &_7 <- _bor ] -{inv_Scope _bor.final}-
+            [ &_6 <- _bor ] -{inv_Scope _bor.final}-
             [ &s <- { s with current = _bor.final } ] s4)
         [ _ck -> (! {[@expl:type invariant] inv_Scope s.current} any) ]
-      | s4 = spawn_closure0 {_7} {_8} (fun (_x: t_ScopedJoinHandle_unit) -> [ &t1 <- _x ] s5)
-      | s5 = [ &_11 <- { c0'3 = atomic; c1'3 = self.c2; c2'3 = inv } ] s6
-      | s6 = MutBorrow.borrow_final <t_Scope> {s.current} {MutBorrow.get_id s}
+      | s4 = spawn_closure0 {_6} {_7} (fun (_x: t_ScopedJoinHandle_unit) -> [ &_5 <- _x ] s5)
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_ScopedJoinHandle_unit _5} any) ]
+      | s6 = -{resolve_ScopedJoinHandle_unit _5}- s7
+      | s7 = [ &_10 <- { c0'3 = self.c3; c1'3 = flag; c2'3 = self.c2; c3'3 = inv } ] s8
+      | s8 = MutBorrow.borrow_final <t_Scope> {s.current} {MutBorrow.get_id s}
           (fun (_bor: MutBorrow.t t_Scope) ->
-            [ &_10 <- _bor ] -{inv_Scope _bor.final}-
-            [ &s <- { s with current = _bor.final } ] s7)
+            [ &_9 <- _bor ] -{inv_Scope _bor.final}-
+            [ &s <- { s with current = _bor.final } ] s9)
         [ _ck -> (! {[@expl:type invariant] inv_Scope s.current} any) ]
-      | s7 = spawn_closure1 {_10} {_11} (fun (_x: t_ScopedJoinHandle_unit) -> [ &t2 <- _x ] s8)
-      | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_Scope s} any) ]
-      | s9 = -{resolve_refmut_Scope s}- s10
-      | s10 = join_unwrap_ScopedJoinHandle_unit {t1} (fun (_x: ()) -> [ &_12 <- _x ] s11)
-      | s11 = join_unwrap_ScopedJoinHandle_unit {t2} (fun (_x: ()) -> [ &_14 <- _x ] s12)
-      | s12 = return {_ret} ] ]
+      | s9 = spawn_closure1 {_9} {_10} (fun (_x: t_ScopedJoinHandle_unit) -> [ &_8 <- _x ] s10)
+      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_ScopedJoinHandle_unit _8} any) ]
+      | s11 = -{resolve_ScopedJoinHandle_unit _8}- s12
+      | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_Scope s} any) ]
+      | s13 = -{resolve_refmut_Scope s}- s14
+      | s14 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: closure0 = self
     | & s: MutBorrow.t t_Scope = s
-    | & inv: t_AtomicInvariant_MessagePassingAtomicInv = Any.any_l ()
-    | & atomic: t_AtomicBool = Any.any_l ()
-    | & t1: t_ScopedJoinHandle_unit = Any.any_l ()
-    | & _7: MutBorrow.t t_Scope = Any.any_l ()
-    | & _8: closure0'0 = Any.any_l ()
-    | & t2: t_ScopedJoinHandle_unit = Any.any_l ()
-    | & _10: MutBorrow.t t_Scope = Any.any_l ()
-    | & _11: closure1 = Any.any_l ()
-    | & _12: () = Any.any_l ()
-    | & _14: () = Any.any_l () ] [ return (result: ()) -> return {result} ]
+    | & flag: t_AtomicBool = Any.any_l ()
+    | & inv: t_AtomicInvariant_MPInv = Any.any_l ()
+    | & _5: t_ScopedJoinHandle_unit = Any.any_l ()
+    | & _6: MutBorrow.t t_Scope = Any.any_l ()
+    | & _7: closure0'0 = Any.any_l ()
+    | & _8: t_ScopedJoinHandle_unit = Any.any_l ()
+    | & _9: MutBorrow.t t_Scope = Any.any_l ()
+    | & _10: closure1 = Any.any_l () ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'4'pre
   
@@ -1211,37 +1182,36 @@ module M_message_passing
           (fun (_bor: MutBorrow.t t_SyncView) -> [ &_6 <- _bor ] [ &sync_view <- _bor.final ] s2)
       | s2 = borrow_mut_SyncView {_6} (fun (_x: MutBorrow.t t_SyncView) -> [ &_5 <- _x ] s3)
       | s3 = new'0 {false} {_5} (fun (_x: tup2_AtomicBool_Ghost_Perm_AtomicBool) -> [ &_4 <- _x ] s4)
-      | s4 = [ &atomic <- _4.f0 ] s5
-      | s5 = [ &atomic_own'0 <- _4.f1 ] s6
-      | s6 = into_inner_Perm_AtomicBool {atomic_own'0} (fun (_x: t_Perm_AtomicBool) -> [ &_10 <- _x ] s7)
-      | s7 = [ &_16 <- get_timestamp_AtomicBool atomic sync_view ] s8
-      | s8 = into_ghost_Int {_16} (fun (_x: int) -> [ &_15 <- _x ] s9)
-      | s9 = deref_Ghost_Int {_15} (fun (_x: int) -> [ &_13 <- _x ] s10)
-      | s10 = [ &_9 <- { atomic_own = _10; t_initial = _13 } ] s11
-      | s11 = new_MessagePassingAtomicInv {_9} (fun (_x: t_MessagePassingAtomicInv) -> [ &_8 <- _x ] s12)
-      | s12 = [ &_20 <- Namespace_MESSAGE_PASSING 0 ] s13
-      | s13 = new_MessagePassingAtomicInv'0 {_8} {_20}
-          (fun (_x: t_AtomicInvariant_MessagePassingAtomicInv) -> [ &inv <- _x ] s14)
-      | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_AtomicBool atomic} any) ]
-      | s15 = -{resolve_AtomicBool atomic}- s16
-      | s16 = [ &_23 <- { c0 = inv; c1 = atomic; c2 = sync_view } ] s17
-      | s17 = scope_closure0 {_23} (fun (_x: ()) -> [ &_22 <- _x ] s18)
+      | s4 = [ &flag <- _4.f0 ] s5
+      | s5 = [ &flag_perm'0 <- _4.f1 ] s6
+      | s6 = [ &t_initial'0 <- get_timestamp_AtomicBool flag sync_view ] s7
+      | s7 = into_inner_Perm_AtomicBool {flag_perm'0} (fun (_x: t_Perm_AtomicBool) -> [ &_14 <- _x ] s8)
+      | s8 = into_ghost_Int {t_initial'0} (fun (_x: int) -> [ &_19 <- _x ] s9)
+      | s9 = deref_Ghost_Int {_19} (fun (_x: int) -> [ &_17 <- _x ] s10)
+      | s10 = [ &_13 <- { flag_perm = _14; t_initial = _17 } ] s11
+      | s11 = new_MPInv {_13} (fun (_x: t_MPInv) -> [ &_12 <- _x ] s12)
+      | s12 = [ &_21 <- Namespace_MESSAGE_PASSING 0 ] s13
+      | s13 = new_MPInv'0 {_12} {_21} (fun (_x: t_AtomicInvariant_MPInv) -> [ &inv <- _x ] s14)
+      | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_AtomicBool flag} any) ]
+      | s15 = -{resolve_AtomicBool flag}- s16
+      | s16 = [ &_24 <- { c0 = flag; c1 = inv; c2 = sync_view; c3 = t_initial'0 } ] s17
+      | s17 = scope_closure0 {_24} (fun (_x: ()) -> [ &_23 <- _x ] s18)
       | s18 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & sync_view: t_SyncView = Any.any_l ()
-    | & atomic: t_AtomicBool = Any.any_l ()
-    | & atomic_own'0: t_Perm_AtomicBool = Any.any_l ()
+    | & flag: t_AtomicBool = Any.any_l ()
+    | & flag_perm'0: t_Perm_AtomicBool = Any.any_l ()
     | & _4: tup2_AtomicBool_Ghost_Perm_AtomicBool = Any.any_l ()
     | & _5: MutBorrow.t t_SyncView = Any.any_l ()
     | & _6: MutBorrow.t t_SyncView = Any.any_l ()
-    | & inv: t_AtomicInvariant_MessagePassingAtomicInv = Any.any_l ()
-    | & _8: t_MessagePassingAtomicInv = Any.any_l ()
-    | & _9: t_MessagePassingAtomicInv = Any.any_l ()
-    | & _10: t_Perm_AtomicBool = Any.any_l ()
-    | & _13: int = Any.any_l ()
-    | & _15: int = Any.any_l ()
-    | & _16: int = Any.any_l ()
-    | & _20: t_Namespace = Any.any_l ()
-    | & _22: () = Any.any_l ()
-    | & _23: closure0 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & t_initial'0: int = Any.any_l ()
+    | & inv: t_AtomicInvariant_MPInv = Any.any_l ()
+    | & _12: t_MPInv = Any.any_l ()
+    | & _13: t_MPInv = Any.any_l ()
+    | & _14: t_Perm_AtomicBool = Any.any_l ()
+    | & _17: int = Any.any_l ()
+    | & _19: int = Any.any_l ()
+    | & _21: t_Namespace = Any.any_l ()
+    | & _23: () = Any.any_l ()
+    | & _24: closure0 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

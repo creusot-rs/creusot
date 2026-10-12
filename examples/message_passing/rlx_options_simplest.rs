@@ -8,33 +8,39 @@ use creusot_std::{
     prelude::*,
     std::{
         sync::{
-            atomic::{AtomicBool, ordering::Relaxed},
+            atomic::{
+                AtomicBool,
+                ordering::{self, Relaxed},
+            },
             committer::Committer,
             view::{HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
         },
-        thread::{self, JoinHandleExt},
+        thread,
     },
 };
 
 declare_namespace! { MESSAGE_PASSING }
 
-struct MessagePassingAtomicInv {
-    atomic_own: Perm<AtomicBool>,
+type LoadCommitter = Committer<AtomicBool, bool, Relaxed, ordering::None>;
+type StoreCommitter = Committer<AtomicBool, bool, ordering::None, Relaxed>;
+
+struct MPInv {
+    flag_perm: Perm<AtomicBool>,
     t_initial: Timestamp,
 }
 
-impl Protocol for MessagePassingAtomicInv {
+impl Protocol for MPInv {
     type Public = (AtomicBool, Timestamp);
 
     #[logic(inline)]
     fn public(self) -> Self::Public {
-        (*self.atomic_own.ward(), self.t_initial)
+        (*self.flag_perm.ward(), self.t_initial)
     }
 
     #[logic(inline)]
     fn protocol(self) -> bool {
         pearlite! {
-            forall<t> match self.atomic_own.val().lookup(t) {
+            forall<t> match self.flag_perm.val().lookup(t) {
                 Some((false, _)) => self.t_initial == t,
                 Some((true, _)) => self.t_initial < t,
                 _ => true,
@@ -45,53 +51,48 @@ impl Protocol for MessagePassingAtomicInv {
 
 pub fn message_passing() {
     let mut sync_view = SyncView::new();
-    let (atomic, atomic_own) = AtomicBool::new(false, sync_view.borrow_mut());
+    let (flag, flag_perm) = AtomicBool::new(false, sync_view.borrow_mut());
+    let t_initial = snapshot!(flag.get_timestamp(*sync_view));
 
     let inv = AtomicInvariant::new(
-        ghost!(MessagePassingAtomicInv {
-            atomic_own: atomic_own.into_inner(),
-            t_initial: *snapshot!(atomic.get_timestamp(*sync_view)).into_ghost(),
-        }),
+        ghost!(MPInv { flag_perm: flag_perm.into_inner(), t_initial: *t_initial.into_ghost() }),
         snapshot!(MESSAGE_PASSING()),
     );
 
     thread::scope(|s| {
-        let inv: Ghost<&_> = inv.borrow();
-        let atomic = &atomic;
+        let flag = &flag;
+        let inv = &inv;
 
-        let t1 = s.spawn(move |tokens: Ghost<Tokens>| {
-            atomic.store(
+        s.spawn(move |tokens: Ghost<Tokens>| {
+            flag.store(
                 true,
-                ghost! { |c: &mut Committer<_, _, _, Relaxed>| {
-                    inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
-                        c.shoot_store(&mut inv.atomic_own, &mut *sync_view, *ReleaseSyncView::new());
+                ghost! { |c: &mut StoreCommitter| {
+                    inv.open(tokens.into_inner(), |inv: &mut MPInv| {
+                        c.shoot_store(&mut inv.flag_perm, &mut *sync_view, *ReleaseSyncView::new());
                     })
                 }},
             );
         });
 
-        let t2 = s.spawn(move |mut tokens: Ghost<Tokens>| {
+        s.spawn(move |mut tokens: Ghost<Tokens>| {
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            #[invariant(atomic.get_timestamp(*sync_view) >= inv.public().1)]
-            while !atomic.load(ghost! { |c: &Committer<_, bool, Relaxed, _>| {
-            inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
+            #[invariant(*t_initial <= flag.get_timestamp(*sync_view))]
+            while !flag.load(ghost! { |c: &LoadCommitter| {
+            inv.open(tokens.reborrow(), |inv: &mut MPInv| {
                 if !*snapshot!(c.val_load()).into_ghost() {
                     return
                 }
 
-                c.shoot_load(&inv.atomic_own, &mut *sync_view);
+                c.shoot_load(&inv.flag_perm, &mut *sync_view);
             })}}) {}
 
-            let res = atomic.load(ghost! { |c: &Committer<_, bool, Relaxed, _>| {
-                inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                    c.shoot_load(&inv.atomic_own, &mut *sync_view);
+            let res = flag.load(ghost! { |c: &LoadCommitter| {
+                inv.open(tokens.reborrow(), |inv: &mut MPInv| {
+                    c.shoot_load(&inv.flag_perm, &mut *sync_view);
                 })
             }});
 
             proof_assert!(res == true)
         });
-
-        let _ = t1.join_unwrap();
-        let _ = t2.join_unwrap();
     });
 }
