@@ -83,6 +83,17 @@ module M_change_capacity
   
   meta "rewrite_def" predicate resolve_refmut_Vec_T_Global
   
+  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_T
+  
+  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_T
+  
+  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   function index_Vec_T_Global [@inline:trivial] (self: t_Vec_T_Global) (ix: int) : t_T =
     Seq.get (view_Vec_T_Global self) ix
   
@@ -134,11 +145,10 @@ module M_change_capacity
     | & _12: () = Any.any_l ()
     | & _13: MutBorrow.t t_Vec_T_Global = Any.any_l () ])
     [ return (result: ()) ->
-    {[@stop_split] [@expl:change_capacity_T ensures] ([@stop_split] [@expl:change_capacity ensures #0] Seq.length (view_Vec_T_Global v.final)
-        = Seq.length (view_Vec_T_Global v.current))
+    {[@stop_split] [@expl:change_capacity_T ensures] ([@stop_split] [@expl:change_capacity ensures #0] len_T (view_Vec_T_Global v.final)
+        = len_T (view_Vec_T_Global v.current))
       /\ ([@stop_split] [@expl:change_capacity ensures #1] forall i: int. 0 <= i
-          /\ i < Seq.length (view_Vec_T_Global v.current)
-        -> index_Vec_T_Global v.final i = index_Vec_T_Global v.current i)}
+          /\ i < len_T (view_Vec_T_Global v.current) -> index_Vec_T_Global v.final i = index_Vec_T_Global v.current i)}
       (! return {result}) ]
 end
 module M_clear_vec
@@ -194,10 +204,21 @@ module M_clear_vec
   
   meta "rewrite_def" predicate inv_refmut_Vec_T_Global
   
+  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_T
+  
+  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_T
+  
+  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   let clear_T (self: MutBorrow.t t_Vec_T_Global) (return (x: ())) =
   {[@stop_split] [@expl:clear 'self' type invariant] inv_refmut_Vec_T_Global self}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:clear ensures] Seq.length (view_Vec_T_Global self.final) = 0}
+    [ return (result: ()) -> {[@stop_split] [@expl:clear ensures] len_T (view_Vec_T_Global self.final) = 0}
       (! return {result}) ]
   
   predicate resolve_refmut_Vec_T_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_T_Global) = _1.final = _1.current
@@ -225,6 +246,6 @@ module M_clear_vec
     | & v: MutBorrow.t t_Vec_T_Global = v
     | & _4: () = Any.any_l ()
     | & _5: MutBorrow.t t_Vec_T_Global = Any.any_l () ])
-    [ return (result: ()) -> {[@stop_split] [@expl:clear_vec ensures] Seq.length (view_Vec_T_Global v.final) = 0}
+    [ return (result: ()) -> {[@stop_split] [@expl:clear_vec ensures] len_T (view_Vec_T_Global v.final) = 0}
       (! return {result}) ]
 end

@@ -73,6 +73,17 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
   
   meta "rewrite_def" predicate inv_refmut_Vec_K_Global
   
+  predicate invariant_ref_Seq_K [@inline:trivial] (self: Seq.seq t_K) = inv_Seq_K self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_K
+  
+  predicate inv_ref_Seq_K [@inline:trivial] (_1: Seq.seq t_K) = invariant_ref_Seq_K _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_K
+  
+  let len_K (self: Seq.seq t_K) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_K self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   function index_Vec_K_Global [@inline:trivial] (self: t_Vec_K_Global) (ix: int) : t_K =
     Seq.get (view_Vec_K_Global self) ix
   
@@ -83,13 +94,13 @@ module M_impl_VacantEntry_K__insert (* VacantEntry<'_, K> *)
     /\ ([@stop_split] [@expl:insert 'element' type invariant] inv_K element)}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:insert_K ensures] ([@stop_split] [@expl:insert ensures #0] Seq.length (view_Vec_K_Global self.final)
-        = Seq.length (view_Vec_K_Global self.current) + 1)
+    {[@stop_split] [@expl:insert_K ensures] ([@stop_split] [@expl:insert ensures #0] len_K (view_Vec_K_Global self.final)
+        = len_K (view_Vec_K_Global self.current) + 1)
       /\ ([@stop_split] [@expl:insert ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int index'0
           -> index_Vec_K_Global self.final i = index_Vec_K_Global self.current i)
       /\ ([@stop_split] [@expl:insert ensures #2] index_Vec_K_Global self.final (UInt64.t'int index'0) = element)
       /\ ([@stop_split] [@expl:insert ensures #3] forall i: int. UInt64.t'int index'0 < i
-          /\ i < Seq.length (view_Vec_K_Global self.final)
+          /\ i < len_K (view_Vec_K_Global self.final)
         -> index_Vec_K_Global self.final i = index_Vec_K_Global self.current (i - 1))}
       (! return {result}) ]
   
@@ -146,6 +157,9 @@ module M_test
   
   type t_Vec_usize_Global
   
+  let len_usize (self: Seq.seq UInt64.t) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
@@ -154,9 +168,9 @@ module M_test
     forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
       <= UInt64.t'int const_MAX
   
-  let len_usize (self: t_Vec_usize_Global) (return (x: UInt64.t)) = any
+  let len_usize'0 (self: t_Vec_usize_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = Seq.length (view_Vec_usize_Global self)}
+      = len_usize (view_Vec_usize_Global self)}
       (! return {result}) ]
   
   let push_usize (self: MutBorrow.t t_Vec_usize_Global) (value: UInt64.t) (return (x: ())) = any
@@ -180,7 +194,7 @@ module M_test
   
   let test (v: MutBorrow.t t_Vec_usize_Global) (return (x: ())) = (! bb0
     [ bb0 = s0
-      [ s0 = len_usize {v.current} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s1)
+      [ s0 = len_usize'0 {v.current} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s1)
       | s1 = MutBorrow.borrow_final <t_Vec_usize_Global> {v.current} {MutBorrow.get_id v}
           (fun (_bor: MutBorrow.t t_Vec_usize_Global) -> [ &_5 <- _bor ] [ &v <- { v with current = _bor.final } ] s2)
       | s2 = push_usize {_5} {_6} (fun (_x: ()) -> [ &_4 <- _x ] s3)
@@ -192,7 +206,7 @@ module M_test
     | & _5: MutBorrow.t t_Vec_usize_Global = Any.any_l ()
     | & _6: UInt64.t = Any.any_l () ])
     [ return (result: ()) ->
-    {[@stop_split] [@expl:test ensures] UInt64.t'int (index_Vec_usize_Global v.final (Seq.length (view_Vec_usize_Global v.current)))
-      = Seq.length (view_Vec_usize_Global v.current)}
+    {[@stop_split] [@expl:test ensures] UInt64.t'int (index_Vec_usize_Global v.final (len_usize (view_Vec_usize_Global v.current)))
+      = len_usize (view_Vec_usize_Global v.current)}
       (! return {result}) ]
 end

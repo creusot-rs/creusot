@@ -85,13 +85,27 @@ module M_vec
   
   meta "rewrite_def" predicate gt_log_Int
   
+  predicate invariant_ref_Seq_refmut_SumTo10 [@inline:trivial] (self: Seq.seq (MutBorrow.t t_SumTo10)) =
+    inv_Seq_refmut_SumTo10 self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_refmut_SumTo10
+  
+  predicate inv_ref_Seq_refmut_SumTo10 [@inline:trivial] (_1: Seq.seq (MutBorrow.t t_SumTo10)) =
+    invariant_ref_Seq_refmut_SumTo10 _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_refmut_SumTo10
+  
+  let len_refmut_SumTo10 (self: Seq.seq (MutBorrow.t t_SumTo10)) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_refmut_SumTo10 self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
   
   let vec (x: t_Vec_refmut_SumTo10_Global) (return (x'0: ())) =
   {[@stop_split] [@expl:vec requires] ([@stop_split] [@expl:vec 'x' type invariant] inv_Vec_refmut_SumTo10_Global x)
-    /\ ([@stop_split] [@expl:vec requires] gt_log_Int (Seq.length (view_Vec_refmut_SumTo10_Global x)) 0)}
+    /\ ([@stop_split] [@expl:vec requires] gt_log_Int (len_refmut_SumTo10 (view_Vec_refmut_SumTo10_Global x)) 0)}
     (! bb0
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Vec_refmut_SumTo10_Global x} any) ]

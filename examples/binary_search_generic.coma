@@ -48,11 +48,22 @@ module M_binary_search
   
   meta "rewrite_def" predicate inv_ref_Vec_T_Global
   
-  let len_T (self: t_Vec_T_Global) (return (x: UInt64.t)) =
+  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_T
+  
+  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_T
+  
+  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_T'0 (self: t_Vec_T_Global) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Vec_T_Global self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = Seq.length (view_Vec_T_Global self)}
+      = len_T (view_Vec_T_Global self)}
       (! return {result}) ]
   
   predicate resolve_T (_1: t_T)
@@ -195,7 +206,38 @@ module M_binary_search
   predicate sorted_range_DeepModelTy (s: Seq.seq t_DeepModelTy) (l: int) (u: int) =
     forall i: int, j: int. l <= i /\ i <= j /\ j < u -> le_log_DeepModelTy (Seq.get s i) (Seq.get s j)
   
-  predicate sorted_DeepModelTy (s: Seq.seq t_DeepModelTy) = sorted_range_DeepModelTy s 0 (Seq.length s)
+  predicate inv_DeepModelTy (_1: t_DeepModelTy)
+  
+  predicate invariant_ref_DeepModelTy [@inline:trivial] (self: t_DeepModelTy) = inv_DeepModelTy self
+  
+  meta "rewrite_def" predicate invariant_ref_DeepModelTy
+  
+  predicate inv_ref_DeepModelTy [@inline:trivial] (_1: t_DeepModelTy) = invariant_ref_DeepModelTy _1
+  
+  meta "rewrite_def" predicate inv_ref_DeepModelTy
+  
+  predicate invariant_Seq_DeepModelTy [@inline:trivial] (self: Seq.seq t_DeepModelTy) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_DeepModelTy (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_DeepModelTy
+  
+  predicate inv_Seq_DeepModelTy [@inline:trivial] (_1: Seq.seq t_DeepModelTy) = invariant_Seq_DeepModelTy _1
+  
+  meta "rewrite_def" predicate inv_Seq_DeepModelTy
+  
+  predicate invariant_ref_Seq_DeepModelTy [@inline:trivial] (self: Seq.seq t_DeepModelTy) = inv_Seq_DeepModelTy self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_DeepModelTy
+  
+  predicate inv_ref_Seq_DeepModelTy [@inline:trivial] (_1: Seq.seq t_DeepModelTy) = invariant_ref_Seq_DeepModelTy _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_DeepModelTy
+  
+  let len_DeepModelTy (self: Seq.seq t_DeepModelTy) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_DeepModelTy self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate sorted_DeepModelTy (s: Seq.seq t_DeepModelTy) = sorted_range_DeepModelTy s 0 (len_DeepModelTy s)
   
   meta "compute_max_steps" 1000000
   
@@ -204,11 +246,11 @@ module M_binary_search
   let binary_search_T (arr: t_Vec_T_Global) (elem: t_T) (return (x: t_Result_usize_usize)) =
   {[@stop_split] [@expl:binary_search_T requires] ([@stop_split] [@expl:binary_search 'arr' type invariant] inv_ref_Vec_T_Global arr)
     /\ ([@stop_split] [@expl:binary_search 'elem' type invariant] inv_T elem)
-    /\ ([@stop_split] [@expl:binary_search requires #0] Seq.length (view_Vec_T_Global arr) <= UInt64.t'int const_MAX)
+    /\ ([@stop_split] [@expl:binary_search requires #0] len_T (view_Vec_T_Global arr) <= UInt64.t'int const_MAX)
     /\ ([@stop_split] [@expl:binary_search requires #1] sorted_DeepModelTy (deep_model_ref_Vec_T_Global arr))}
     (! bb0
     [ bb0 = s0
-      [ s0 = len_T {arr} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s1)
+      [ s0 = len_T'0 {arr} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s1)
       | s1 = [ &_17 <- _18 = (0: UInt64.t) ] s2
       | s2 = any [ br0 -> {_17 = false} (! bb3) | br1 -> {_17} (! bb2) ] ]
     | bb2 = s0
@@ -217,14 +259,14 @@ module M_binary_search
       | s2 = [ &_ret <- Err (0: UInt64.t) ] s3
       | s3 = return {_ret} ]
     | bb3 = s0
-      [ s0 = len_T {arr} (fun (_x: UInt64.t) -> [ &size <- _x ] s1) | s1 = [ &base <- (0: UInt64.t) ] s2 | s2 = bb5 ]
+      [ s0 = len_T'0 {arr} (fun (_x: UInt64.t) -> [ &size <- _x ] s1) | s1 = [ &base <- (0: UInt64.t) ] s2 | s2 = bb5 ]
     | bb5 = bb5
       [ bb5 = {[@expl:loop invariant #0] 0 < UInt64.t'int size
-        /\ UInt64.t'int size + UInt64.t'int base <= Seq.length (view_Vec_T_Global arr)}
+        /\ UInt64.t'int size + UInt64.t'int base <= len_T (view_Vec_T_Global arr)}
         {[@expl:loop invariant #1] forall i: UInt64.t. UInt64.lt i base
           -> le_log_DeepModelTy (Seq.get (deep_model_ref_Vec_T_Global arr) (UInt64.t'int i)) (deep_model_T elem)}
         {[@expl:loop invariant #2] forall i: UInt64.t. UInt64.t'int base + UInt64.t'int size <= UInt64.t'int i
-            /\ UInt64.t'int i < Seq.length (view_Vec_T_Global arr)
+            /\ UInt64.t'int i < len_T (view_Vec_T_Global arr)
           -> lt_log_DeepModelTy (deep_model_T elem) (Seq.get (deep_model_ref_Vec_T_Global arr) (UInt64.t'int i))}
         (! s0)
         [ s0 = [ &_40 <- UInt64.gt size (1: UInt64.t) ] s1
@@ -283,7 +325,7 @@ module M_binary_search
           -> (forall i: UInt64.t. UInt64.lt i x
             -> le_log_DeepModelTy (Seq.get (deep_model_ref_Vec_T_Global arr) (UInt64.t'int i)) (deep_model_T elem)))
       /\ ([@stop_split] [@expl:binary_search ensures #2] forall x: UInt64.t. result = Err x
-        -> (forall i: UInt64.t. UInt64.le x i /\ UInt64.t'int i < Seq.length (view_Vec_T_Global arr)
+        -> (forall i: UInt64.t. UInt64.le x i /\ UInt64.t'int i < len_T (view_Vec_T_Global arr)
           -> lt_log_DeepModelTy (deep_model_T elem) (Seq.get (deep_model_ref_Vec_T_Global arr) (UInt64.t'int i))))}
       (! return {result}) ]
 end

@@ -92,18 +92,32 @@ module M_impl_List_T__new (* List<T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
+  predicate invariant_ref_Seq_Perm_ptr_Link_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Link_T) =
+    inv_Seq_Perm_ptr_Link_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Link_T
+  
+  predicate inv_ref_Seq_Perm_ptr_Link_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Link_T) =
+    invariant_ref_Seq_Perm_ptr_Link_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Link_T
+  
+  let len_Perm_ptr_Link_T (self: Seq.seq t_Perm_ptr_Link_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Link_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   function val_ptr_Link_T [@inline:trivial] (self: t_Perm_ptr_Link_T) : t_Link_T = val_unsized_ptr_Link_T self
   
   meta "rewrite_def" function val_ptr_Link_T
   
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
     self.seq = (Seq.empty: Seq.seq t_Perm_ptr_Link_T) /\ is_null_ptr_Link_T self.first /\ is_null_ptr_Link_T self.last
-    \/ gt_log_Int (Seq.length self.seq) 0
+    \/ gt_log_Int (len_Perm_ptr_Link_T self.seq) 0
     /\ self.first = ward_ptr_Link_T (Seq.get self.seq 0)
-    /\ self.last = ward_ptr_Link_T (Seq.get self.seq (Seq.length self.seq - 1))
-    /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1
+    /\ self.last = ward_ptr_Link_T (Seq.get self.seq (len_Perm_ptr_Link_T self.seq - 1))
+    /\ (forall i: int. 0 <= i /\ i < len_Perm_ptr_Link_T self.seq - 1
         -> (val_ptr_Link_T (Seq.get self.seq i)).next = ward_ptr_Link_T (Seq.get self.seq (i + 1)))
-    /\ is_null_ptr_Link_T (val_ptr_Link_T (Seq.get self.seq (Seq.length self.seq - 1))).next
+    /\ is_null_ptr_Link_T (val_ptr_Link_T (Seq.get self.seq (len_Perm_ptr_Link_T self.seq - 1))).next
   
   meta "rewrite_def" predicate invariant_List_T
   
@@ -182,26 +196,11 @@ module M_impl_List_T__pop_front (* List<T> *)
   
   type t_Link_T = { value: t_T; next: Opaque.ptr }
   
-  function val_unsized_ptr_Link_T (self: t_Perm_ptr_Link_T) : t_Link_T
-  
-  function val_ptr_Link_T [@inline:trivial] (self: t_Perm_ptr_Link_T) : t_Link_T = val_unsized_ptr_Link_T self
-  
-  meta "rewrite_def" function val_ptr_Link_T
-  
-  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    self.seq = (Seq.empty: Seq.seq t_Perm_ptr_Link_T) /\ is_null_ptr_Link_T self.first /\ is_null_ptr_Link_T self.last
-    \/ gt_log_Int (Seq.length self.seq) 0
-    /\ self.first = ward_ptr_Link_T (Seq.get self.seq 0)
-    /\ self.last = ward_ptr_Link_T (Seq.get self.seq (Seq.length self.seq - 1))
-    /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1
-        -> (val_ptr_Link_T (Seq.get self.seq i)).next = ward_ptr_Link_T (Seq.get self.seq (i + 1)))
-    /\ is_null_ptr_Link_T (val_ptr_Link_T (Seq.get self.seq (Seq.length self.seq - 1))).next
-  
-  meta "rewrite_def" predicate invariant_List_T
-  
   predicate metadata_matches_Link_T [@inline:trivial] (_value: t_Link_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Link_T
+  
+  function val_unsized_ptr_Link_T (self: t_Perm_ptr_Link_T) : t_Link_T
   
   function metadata_Link_T (_1: Opaque.ptr) : ()
   
@@ -245,6 +244,35 @@ module M_impl_List_T__pop_front (* List<T> *)
   predicate inv_Seq_Perm_ptr_Link_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Link_T) = invariant_Seq_Perm_ptr_Link_T _1
   
   meta "rewrite_def" predicate inv_Seq_Perm_ptr_Link_T
+  
+  predicate invariant_ref_Seq_Perm_ptr_Link_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Link_T) =
+    inv_Seq_Perm_ptr_Link_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Link_T
+  
+  predicate inv_ref_Seq_Perm_ptr_Link_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Link_T) =
+    invariant_ref_Seq_Perm_ptr_Link_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Link_T
+  
+  let len_Perm_ptr_Link_T (self: Seq.seq t_Perm_ptr_Link_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Link_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  function val_ptr_Link_T [@inline:trivial] (self: t_Perm_ptr_Link_T) : t_Link_T = val_unsized_ptr_Link_T self
+  
+  meta "rewrite_def" function val_ptr_Link_T
+  
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
+    self.seq = (Seq.empty: Seq.seq t_Perm_ptr_Link_T) /\ is_null_ptr_Link_T self.first /\ is_null_ptr_Link_T self.last
+    \/ gt_log_Int (len_Perm_ptr_Link_T self.seq) 0
+    /\ self.first = ward_ptr_Link_T (Seq.get self.seq 0)
+    /\ self.last = ward_ptr_Link_T (Seq.get self.seq (len_Perm_ptr_Link_T self.seq - 1))
+    /\ (forall i: int. 0 <= i /\ i < len_Perm_ptr_Link_T self.seq - 1
+        -> (val_ptr_Link_T (Seq.get self.seq i)).next = ward_ptr_Link_T (Seq.get self.seq (i + 1)))
+    /\ is_null_ptr_Link_T (val_ptr_Link_T (Seq.get self.seq (len_Perm_ptr_Link_T self.seq - 1))).next
+  
+  meta "rewrite_def" predicate invariant_List_T
   
   predicate invariant_Ghost_Seq_Perm_ptr_Link_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Link_T) =
     inv_Seq_Perm_ptr_Link_T self
@@ -410,6 +438,34 @@ module M_impl_List_T__pop_front (* List<T> *)
   function view_List_T (self: t_List_T) : Seq.seq t_T =
     map_Perm_ptr_Link_T self.seq (fun (ptr_perm: t_Perm_ptr_Link_T) -> (val_ptr_Link_T ptr_perm).value)
   
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_T
+  
+  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_T
+  
+  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
   
   meta "compute_max_steps" 1000000
@@ -482,7 +538,7 @@ module M_impl_List_T__pop_front (* List<T> *)
       /\ ([@stop_split] [@expl:pop_front ensures] match result with
         | None -> view_List_T self.current = (Seq.empty: Seq.seq t_T)
         /\ view_List_T self.final = (Seq.empty: Seq.seq t_T)
-        | Some x -> gt_log_Int (Seq.length (view_List_T self.current)) 0
+        | Some x -> gt_log_Int (len_T (view_List_T self.current)) 0
         /\ x = Seq.get (view_List_T self.current) 0 /\ view_List_T self.final = tail_T (view_List_T self.current)
         end)}
       (! return {result}) ]
@@ -822,12 +878,12 @@ module M_impl_List_T__push_back (* List<T> *)
   
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
     self.seq = (Seq.empty: Seq.seq t_Perm_ptr_Link_T) /\ is_null_ptr_Link_T self.first /\ is_null_ptr_Link_T self.last
-    \/ gt_log_Int (Seq.length self.seq) 0
+    \/ gt_log_Int (len_Perm_ptr_Link_T self.seq) 0
     /\ self.first = ward_ptr_Link_T (Seq.get self.seq 0)
-    /\ self.last = ward_ptr_Link_T (Seq.get self.seq (Seq.length self.seq - 1))
-    /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1
+    /\ self.last = ward_ptr_Link_T (Seq.get self.seq (len_Perm_ptr_Link_T self.seq - 1))
+    /\ (forall i: int. 0 <= i /\ i < len_Perm_ptr_Link_T self.seq - 1
         -> (val_ptr_Link_T (Seq.get self.seq i)).next = ward_ptr_Link_T (Seq.get self.seq (i + 1)))
-    /\ is_null_ptr_Link_T (val_ptr_Link_T (Seq.get self.seq (Seq.length self.seq - 1))).next
+    /\ is_null_ptr_Link_T (val_ptr_Link_T (Seq.get self.seq (len_Perm_ptr_Link_T self.seq - 1))).next
   
   meta "rewrite_def" predicate invariant_List_T
   
@@ -1182,14 +1238,28 @@ module M_impl_List_T__push_front (* List<T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
+  predicate invariant_ref_Seq_Perm_ptr_Link_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Link_T) =
+    inv_Seq_Perm_ptr_Link_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Link_T
+  
+  predicate inv_ref_Seq_Perm_ptr_Link_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Link_T) =
+    invariant_ref_Seq_Perm_ptr_Link_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Link_T
+  
+  let len_Perm_ptr_Link_T (self: Seq.seq t_Perm_ptr_Link_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Link_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
     self.seq = (Seq.empty: Seq.seq t_Perm_ptr_Link_T) /\ is_null_ptr_Link_T self.first /\ is_null_ptr_Link_T self.last
-    \/ gt_log_Int (Seq.length self.seq) 0
+    \/ gt_log_Int (len_Perm_ptr_Link_T self.seq) 0
     /\ self.first = ward_ptr_Link_T (Seq.get self.seq 0)
-    /\ self.last = ward_ptr_Link_T (Seq.get self.seq (Seq.length self.seq - 1))
-    /\ (forall i: int. 0 <= i /\ i < Seq.length self.seq - 1
+    /\ self.last = ward_ptr_Link_T (Seq.get self.seq (len_Perm_ptr_Link_T self.seq - 1))
+    /\ (forall i: int. 0 <= i /\ i < len_Perm_ptr_Link_T self.seq - 1
         -> (val_ptr_Link_T (Seq.get self.seq i)).next = ward_ptr_Link_T (Seq.get self.seq (i + 1)))
-    /\ is_null_ptr_Link_T (val_ptr_Link_T (Seq.get self.seq (Seq.length self.seq - 1))).next
+    /\ is_null_ptr_Link_T (val_ptr_Link_T (Seq.get self.seq (len_Perm_ptr_Link_T self.seq - 1))).next
   
   meta "rewrite_def" predicate invariant_List_T
   

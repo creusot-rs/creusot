@@ -2,9 +2,16 @@ module M_set_max
   use set.Fset
   use int.Int
   
+  let len_Int (self: Fset.fset int) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Fset.cardinal self} (! return {result}) ]
+  
   predicate contains_Int [@inline:trivial] (self: Fset.fset int) (e: int) = Fset.mem e self
   
   meta "rewrite_def" predicate contains_Int
+  
+  let contains_Int'0 (self: Fset.fset int) (value: int) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Int self value}
+      (! return {result}) ]
   
   function remove_Int [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = Fset.remove e self
   
@@ -33,19 +40,19 @@ module M_set_max
   
   goal vc_set_max: not Fset.is_empty s
     -> (let x = Fset.pick s in let s'0 = remove_Int s x in if Fset.is_empty s'0 then
-      let result = x in [@stop_split] [@expl:set_max ensures] ([@stop_split] [@expl:set_max ensures #0] contains_Int s result)
-      /\ ([@stop_split] [@expl:set_max ensures #1] forall o: int. contains_Int s o -> o <= result)
+      let result = x in [@stop_split] [@expl:set_max ensures] ([@stop_split] [@expl:set_max ensures #0] contains_Int'0 s result)
+      /\ ([@stop_split] [@expl:set_max ensures #1] forall o: int. contains_Int'0 s o -> o <= result)
     else
       (([@stop_split] [@expl:set_max requires] not Fset.is_empty s'0)
-        /\ ([@expl:variant decreases] well_founded_relation_Int (Fset.cardinal s) (Fset.cardinal s'0)))
-      /\ (([@stop_split] [@expl:set_max ensures] ([@stop_split] [@expl:set_max ensures #0] contains_Int s'0 (set_max s'0))
-        /\ ([@stop_split] [@expl:set_max ensures #1] forall o: int. contains_Int s'0 o -> o <= set_max s'0))
+        /\ ([@expl:variant decreases] well_founded_relation_Int (len_Int s) (len_Int s'0)))
+      /\ (([@stop_split] [@expl:set_max ensures] ([@stop_split] [@expl:set_max ensures #0] contains_Int'0 s'0 (set_max s'0))
+        /\ ([@stop_split] [@expl:set_max ensures #1] forall o: int. contains_Int'0 s'0 o -> o <= set_max s'0))
       -> (let rec' = set_max s'0 in if ge_log_Int x rec' then
-        let result = x in [@stop_split] [@expl:set_max ensures] ([@stop_split] [@expl:set_max ensures #0] contains_Int s result)
-        /\ ([@stop_split] [@expl:set_max ensures #1] forall o: int. contains_Int s o -> o <= result)
+        let result = x in [@stop_split] [@expl:set_max ensures] ([@stop_split] [@expl:set_max ensures #0] contains_Int'0 s result)
+        /\ ([@stop_split] [@expl:set_max ensures #1] forall o: int. contains_Int'0 s o -> o <= result)
       else
-        let result = rec' in [@stop_split] [@expl:set_max ensures] ([@stop_split] [@expl:set_max ensures #0] contains_Int s result)
-        /\ ([@stop_split] [@expl:set_max ensures #1] forall o: int. contains_Int s o -> o <= result)
+        let result = rec' in [@stop_split] [@expl:set_max ensures] ([@stop_split] [@expl:set_max ensures #0] contains_Int'0 s result)
+        /\ ([@stop_split] [@expl:set_max ensures #1] forall o: int. contains_Int'0 s o -> o <= result)
       ))
     )
 end

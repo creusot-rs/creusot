@@ -1142,7 +1142,23 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
     f0'2: tup5_PCell_T_AtomicU32_AtomicU32_Lifetime_Mapping_T_bool;
     f1'2: t_Id }
   
+  predicate invariant_ref_Authority_FMap_Int_Excl_unit [@inline:trivial] (self: t_Authority_FMap_Int_Excl_unit) =
+    inv_Authority_FMap_Int_Excl_unit self
+  
+  meta "rewrite_def" predicate invariant_ref_Authority_FMap_Int_Excl_unit
+  
+  predicate inv_ref_Authority_FMap_Int_Excl_unit [@inline:trivial] (_1: t_Authority_FMap_Int_Excl_unit) =
+    invariant_ref_Authority_FMap_Int_Excl_unit _1
+  
+  meta "rewrite_def" predicate inv_ref_Authority_FMap_Int_Excl_unit
+  
   function id_FMap_Int_Excl_unit (self: t_Authority_FMap_Int_Excl_unit) : t_Id
+  
+  let id_FMap_Int_Excl_unit'0 (self: t_Authority_FMap_Int_Excl_unit) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Authority_FMap_Int_Excl_unit self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_FMap_Int_Excl_unit self}
+      (! return {result}) ]
   
   function public_TicketLockInv_T (self: t_TicketLockInv_T) : tup2_tup5_PCell_T_AtomicU32_AtomicU32_Lifetime_Mapping_T_bool_Id
    = { f0'2 = { f0'1 = self.cell'1;
@@ -1150,7 +1166,7 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
                 f2'1 = ward_AtomicU32'1 self.perm_now_serving'1;
                 f3'1 = self.lft'1;
                 f4'1 = self.inv'1 };
-       f1'2 = id_FMap_Int_Excl_unit self.auth_tickets'1 }
+       f1'2 = id_FMap_Int_Excl_unit'0 self.auth_tickets'1 }
   
   function public_TicketLockInv_T'0 (self: t_AtomicInvariantSC_TicketLockInv_T) : tup2_tup5_PCell_T_AtomicU32_AtomicU32_Lifetime_Mapping_T_bool_Id
   
@@ -1171,6 +1187,10 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   meta "rewrite_def" predicate contains_Int
   
+  let contains_Int'0 (self: t_FMap_Int_Excl_unit) (key: int) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Int self key}
+      (! return {result}) ]
+  
   function view_Authority_FMap_Int_Excl_unit (self: t_Authority_FMap_Int_Excl_unit) : t_FMap_Int_Excl_unit
   
   function lft_Perm_PCell_T (self: t_FullBorrow_Perm_PCell_T) : t_Lifetime
@@ -1187,13 +1207,13 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   meta "rewrite_def" function val_PCell_T
   
   predicate protocol_TicketLockInv_T [@inline:trivial] (self: t_TicketLockInv_T) =
-    (forall k: int. contains_Int (view_Authority_FMap_Int_Excl_unit self.auth_tickets'1) k
+    (forall k: int. contains_Int'0 (view_Authority_FMap_Int_Excl_unit self.auth_tickets'1) k
         -> k < UInt32.t'int (val_AtomicU32 self.perm_next_ticket'1))
     /\ match self.perm'1 with
       | Some bor -> lft_Perm_PCell_T bor.inner = self.lft'1
       /\ guard_FullBorrow_Perm_PCell_T bor = self.cell'1
       /\ Map.get self.inv'1 (val_PCell_T (cur_Perm_PCell_T bor.inner))
-      | None -> let n = val_AtomicU32 self.perm_now_serving'1 in not contains_Int (view_Authority_FMap_Int_Excl_unit self.auth_tickets'1) (UInt32.t'int n)
+      | None -> let n = val_AtomicU32 self.perm_now_serving'1 in not contains_Int'0 (view_Authority_FMap_Int_Excl_unit self.auth_tickets'1) (UInt32.t'int n)
       /\ UInt32.lt n (val_AtomicU32 self.perm_next_ticket'1)
       end
   
@@ -2196,15 +2216,35 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     f0'3: tup5_PCell_T_AtomicU32_AtomicU32_Lifetime_Mapping_T_bool;
     f1'3: t_Id }
   
+  predicate invariant_ref_Authority_FMap_Int_Excl_unit [@inline:trivial] (self: t_Authority_FMap_Int_Excl_unit) =
+    inv_Authority_FMap_Int_Excl_unit self
+  
+  meta "rewrite_def" predicate invariant_ref_Authority_FMap_Int_Excl_unit
+  
+  predicate inv_ref_Authority_FMap_Int_Excl_unit [@inline:trivial] (_1: t_Authority_FMap_Int_Excl_unit) =
+    invariant_ref_Authority_FMap_Int_Excl_unit _1
+  
+  meta "rewrite_def" predicate inv_ref_Authority_FMap_Int_Excl_unit
+  
+  let id_FMap_Int_Excl_unit'1 (self: t_Authority_FMap_Int_Excl_unit) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Authority_FMap_Int_Excl_unit self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_FMap_Int_Excl_unit'0 self}
+      (! return {result}) ]
+  
   function public_TicketLockInv_T (self: t_TicketLockInv_T) : tup2_tup5_PCell_T_AtomicU32_AtomicU32_Lifetime_Mapping_T_bool_Id
    = { f0'3 = { f0'2 = self.cell'0;
                 f1'2 = ward_AtomicU32'0 self.perm_next_ticket'0;
                 f2'2 = ward_AtomicU32'0 self.perm_now_serving'0;
                 f3'2 = self.lft'0;
                 f4'2 = self.inv'0 };
-       f1'3 = id_FMap_Int_Excl_unit'0 self.auth_tickets'0 }
+       f1'3 = id_FMap_Int_Excl_unit'1 self.auth_tickets'0 }
   
   function public_TicketLockInv_T'0 (self: t_AtomicInvariantSC_TicketLockInv_T) : tup2_tup5_PCell_T_AtomicU32_AtomicU32_Lifetime_Mapping_T_bool_Id
+  
+  let contains_Int'0 (self: t_FMap_Int_Excl_unit) (key: int) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Int self key}
+      (! return {result}) ]
   
   function lft_Perm_PCell_T (self: t_FullBorrow_Perm_PCell_T) : t_Lifetime
   
@@ -2220,13 +2260,13 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   meta "rewrite_def" function val_PCell_T
   
   predicate protocol_TicketLockInv_T [@inline:trivial] (self: t_TicketLockInv_T) =
-    (forall k: int. contains_Int (view_Authority_FMap_Int_Excl_unit self.auth_tickets'0) k
+    (forall k: int. contains_Int'0 (view_Authority_FMap_Int_Excl_unit self.auth_tickets'0) k
         -> k < UInt32.t'int (val_AtomicU32 self.perm_next_ticket'0))
     /\ match self.perm'0 with
       | Some'0 bor -> lft_Perm_PCell_T bor.inner = self.lft'0
       /\ guard_FullBorrow_Perm_PCell_T bor = self.cell'0
       /\ Map.get self.inv'0 (val_PCell_T (cur_Perm_PCell_T bor.inner))
-      | None'0 -> let n = val_AtomicU32 self.perm_now_serving'0 in not contains_Int (view_Authority_FMap_Int_Excl_unit self.auth_tickets'0) (UInt32.t'int n)
+      | None'0 -> let n = val_AtomicU32 self.perm_now_serving'0 in not contains_Int'0 (view_Authority_FMap_Int_Excl_unit self.auth_tickets'0) (UInt32.t'int n)
       /\ UInt32.lt n (val_AtomicU32 self.perm_next_ticket'0)
       end
   
@@ -2911,12 +2951,12 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
           = Some'2 (view_Authority_FMap_Int_Excl_unit auth_tickets_snap)}
         s17
       | s17 =
-        {[@expl:assertion] forall k: int. contains_Int (view_Authority_FMap_Int_Excl_unit inv'1.current.auth_tickets'0) k
-          -> contains_Int (view_Authority_FMap_Int_Excl_unit auth_tickets_snap) k
+        {[@expl:assertion] forall k: int. contains_Int'0 (view_Authority_FMap_Int_Excl_unit inv'1.current.auth_tickets'0) k
+          -> contains_Int'0 (view_Authority_FMap_Int_Excl_unit auth_tickets_snap) k
           /\ k <> UInt32.t'int self.current.c1'2}
         s18
       | s18 =
-        {[@expl:assertion] contains_Int (view_Authority_FMap_Int_Excl_unit auth_tickets_snap) (UInt32.t'int self.current.c1'2)}
+        {[@expl:assertion] contains_Int'0 (view_Authority_FMap_Int_Excl_unit auth_tickets_snap) (UInt32.t'int self.current.c1'2)}
         s19
       | s19 = MutBorrow.borrow_final <t_Option_Guarded_FullBorrow_Perm_PCell_T_PCell_T> {inv'1.current.perm'0}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'1) 2}
@@ -3213,6 +3253,22 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
       | None -> any_Fragment_FMap_Int_Excl_unit
       end
   
+  predicate invariant_ref_Fragment_FMap_Int_Excl_unit [@inline:trivial] (self: t_Fragment_FMap_Int_Excl_unit) =
+    inv_Fragment_FMap_Int_Excl_unit self
+  
+  meta "rewrite_def" predicate invariant_ref_Fragment_FMap_Int_Excl_unit
+  
+  predicate inv_ref_Fragment_FMap_Int_Excl_unit [@inline:trivial] (_1: t_Fragment_FMap_Int_Excl_unit) =
+    invariant_ref_Fragment_FMap_Int_Excl_unit _1
+  
+  meta "rewrite_def" predicate inv_ref_Fragment_FMap_Int_Excl_unit
+  
+  let id_FMap_Int_Excl_unit'2 (self: t_Fragment_FMap_Int_Excl_unit) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Fragment_FMap_Int_Excl_unit self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_FMap_Int_Excl_unit self}
+      (! return {result}) ]
+  
   predicate resolve_Ghost_Option_Fragment_FMap_Int_Excl_unit [@inline:trivial] (self: t_Option_Fragment_FMap_Int_Excl_unit) =
     resolve_Option_Fragment_FMap_Int_Excl_unit self
   
@@ -3313,7 +3369,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
         {[@expl:inferred invariant: type invariant] inv_Ghost_Option_Fragment_FMap_Int_Excl_unit ticket_own}
         {[@expl:loop invariant #0] contains tokens (Namespace_TICKET_LOCK 0)}
         {[@expl:loop invariant #1] ticket_own <> None}
-        {[@expl:loop invariant #2] id_FMap_Int_Excl_unit (unwrap_Option_Fragment_FMap_Int_Excl_unit ticket_own)
+        {[@expl:loop invariant #2] id_FMap_Int_Excl_unit'2 (unwrap_Option_Fragment_FMap_Int_Excl_unit ticket_own)
         = (public_TicketLockInv_T'0 self.inner_inv).f1'3}
         {[@expl:loop invariant #3] lookup_Int (view_Fragment_FMap_Int_Excl_unit (unwrap_Option_Fragment_FMap_Int_Excl_unit ticket_own)) (UInt32.t'int ticket)
         = Some'1 { f0 = () }}
@@ -3751,14 +3807,18 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   
   meta "rewrite_def" predicate contains_Int
   
+  let contains_Int'0 (self: t_FMap_Int_Excl_unit) (key: int) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Int self key}
+      (! return {result}) ]
+  
   predicate protocol_TicketLockInv_T [@inline:trivial] (self: t_TicketLockInv_T) =
-    (forall k: int. contains_Int (view_Authority_FMap_Int_Excl_unit self.auth_tickets'0) k
+    (forall k: int. contains_Int'0 (view_Authority_FMap_Int_Excl_unit self.auth_tickets'0) k
         -> k < UInt32.t'int (val_AtomicU32 self.perm_next_ticket'0))
     /\ match self.perm'0 with
       | Some bor -> lft_Perm_PCell_T bor.inner = self.lft'0
       /\ guard_FullBorrow_Perm_PCell_T bor = self.cell'0
       /\ Map.get self.inv'0 (val_PCell_T (cur_Perm_PCell_T bor.inner))
-      | None -> let n = val_AtomicU32 self.perm_now_serving'0 in not contains_Int (view_Authority_FMap_Int_Excl_unit self.auth_tickets'0) (UInt32.t'int n)
+      | None -> let n = val_AtomicU32 self.perm_now_serving'0 in not contains_Int'0 (view_Authority_FMap_Int_Excl_unit self.auth_tickets'0) (UInt32.t'int n)
       /\ UInt32.lt n (val_AtomicU32 self.perm_next_ticket'0)
       end
   
@@ -3779,7 +3839,23 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   
   function public_TicketLockInv_T (self: t_AtomicInvariantSC_TicketLockInv_T) : tup2_tup5_PCell_T_AtomicU32_AtomicU32_Lifetime_Mapping_T_bool_Id
   
+  predicate invariant_ref_Authority_FMap_Int_Excl_unit [@inline:trivial] (self: t_Authority_FMap_Int_Excl_unit) =
+    inv_Authority_FMap_Int_Excl_unit self
+  
+  meta "rewrite_def" predicate invariant_ref_Authority_FMap_Int_Excl_unit
+  
+  predicate inv_ref_Authority_FMap_Int_Excl_unit [@inline:trivial] (_1: t_Authority_FMap_Int_Excl_unit) =
+    invariant_ref_Authority_FMap_Int_Excl_unit _1
+  
+  meta "rewrite_def" predicate inv_ref_Authority_FMap_Int_Excl_unit
+  
   function id_FMap_Int_Excl_unit (self: t_Authority_FMap_Int_Excl_unit) : t_Id
+  
+  let id_FMap_Int_Excl_unit'0 (self: t_Authority_FMap_Int_Excl_unit) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Authority_FMap_Int_Excl_unit self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_FMap_Int_Excl_unit self}
+      (! return {result}) ]
   
   function public_TicketLockInv_T'0 (self: t_TicketLockInv_T) : tup2_tup5_PCell_T_AtomicU32_AtomicU32_Lifetime_Mapping_T_bool_Id
    = { f0'5 = { f0'4 = self.cell'0;
@@ -3787,7 +3863,7 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
                 f2'4 = ward_AtomicU32 self.perm_now_serving'0;
                 f3'4 = self.lft'0;
                 f4'4 = self.inv'0 };
-       f1'5 = id_FMap_Int_Excl_unit self.auth_tickets'0 }
+       f1'5 = id_FMap_Int_Excl_unit'0 self.auth_tickets'0 }
   
   function namespace_TicketLockInv_T (self: t_AtomicInvariantSC_TicketLockInv_T) : t_Namespace
   

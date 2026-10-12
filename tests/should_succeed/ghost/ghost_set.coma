@@ -12,6 +12,10 @@ module M_ghost_map
   
   meta "rewrite_def" predicate contains_i32
   
+  let contains_i32'0 (self: Fset.fset Int32.t) (value: Int32.t) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_i32 self value}
+      (! return {result}) ]
+  
   let deref_mut_Ghost_FSet_i32 (self: MutBorrow.t (Fset.fset Int32.t)) (return (x: MutBorrow.t (Fset.fset Int32.t))) =
   any
     [ return (result: MutBorrow.t (Fset.fset Int32.t)) -> {[@stop_split] [@expl:deref_mut ensures] result = self}
@@ -51,10 +55,6 @@ module M_ghost_map
       /\ ([@stop_split] [@expl:delete ensures #1] result = contains_i32 self.current value)}
       (! return {result}) ]
   
-  let contains_i32'0 (self: Fset.fset Int32.t) (value: Int32.t) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_i32 self value}
-      (! return {result}) ]
-  
   let new_unit (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
@@ -65,7 +65,7 @@ module M_ghost_map
   let ghost_map (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = new_i32 (fun (_x: Fset.fset Int32.t) -> [ &set <- _x ] s1)
-      | s1 = {[@expl:assertion] forall k: Int32.t. not contains_i32 set k} s2
+      | s1 = {[@expl:assertion] forall k: Int32.t. not contains_i32'0 set k} s2
       | s2 = MutBorrow.borrow_mut <Fset.fset Int32.t> {set}
           (fun (_bor: MutBorrow.t (Fset.fset Int32.t)) -> [ &_10 <- _bor ] [ &set <- _bor.final ] s3)
       | s3 = deref_mut_Ghost_FSet_i32 {_10} (fun (_x: MutBorrow.t (Fset.fset Int32.t)) -> [ &_9 <- _x ] s4)
@@ -132,7 +132,7 @@ module M_ghost_map
       | s47 = -{resolve_refmut_FSet_i32 _61}- s48
       | s48 = {[@expl:assertion] not delete_false1 /\ delete_true /\ not delete_false2} s49
       | s49 = {[@expl:assertion] not contains_i32 set (2: Int32.t)} s50
-      | s50 = {[@expl:assertion] Fset.cardinal set = 1} s51
+      | s50 = {[@expl:assertion] len_i32 set = 1} s51
       | s51 = deref_Ghost_FSet_i32 {set} (fun (_x: Fset.fset Int32.t) -> [ &_78 <- _x ] s52)
       | s52 = [ &_81 <- x1 ] s53
       | s53 = contains_i32'0 {_78} {_81} (fun (_x: bool) -> [ &contains1 <- _x ] s54)

@@ -41,6 +41,9 @@ module M_zst_pointers_may_be_equal
   
   meta "rewrite_def" predicate resolve_elswhere_usize
   
+  let len_unit (self: Seq.seq ()) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   let index_mut_Vec_unit_Global (self: MutBorrow.t t_Vec_unit_Global) (index: UInt64.t) (return (x: MutBorrow.t ())) =
   {[@stop_split] [@expl:index_mut requires] in_bounds_usize index (view_Vec_unit_Global self.current)}
     any
@@ -48,8 +51,8 @@ module M_zst_pointers_may_be_equal
     {[@stop_split] [@expl:index_mut_Vec_unit_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_usize index (view_Vec_unit_Global self.current) result.current)
       /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_usize index (view_Vec_unit_Global self.final) result.final)
       /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_usize index (view_Vec_unit_Global self.current) (view_Vec_unit_Global self.final))
-      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_unit_Global self.final)
-      = Seq.length (view_Vec_unit_Global self.current))}
+      /\ ([@stop_split] [@expl:index_mut ensures #3] len_unit (view_Vec_unit_Global self.final)
+      = len_unit (view_Vec_unit_Global self.current))}
       (! return {result}) ]
   
   type t_Perm_ptr_unit

@@ -195,9 +195,11 @@ module M_array
       | s1 = return {_ret} ] ] [ & _ret: Slice64.array Int32.t = Any.any_l () ]
     [ return (_const: Slice64.array Int32.t) -> -{const_X = _const}- return ]
   
-  let len_i32 (self: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
-      = UInt64.t'int result}
+  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_i32'0 (self: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] len_i32 (Slice64.view self) = UInt64.t'int result}
       (! return {result}) ]
   
   predicate invariant_array_i32_43 (self: Slice64.array Int32.t) =
@@ -230,12 +232,12 @@ module M_array
             [ bb0'0 = s0'0 [ s0'0 = [ &_ret'0 <- const_X ] s1'0 | s1'0 = _const_ret {_ret'0} ] ]
             [ & _ret'0: Slice64.array Int32.t = Any.any_l () ]
             [ _const_ret (_const: Slice64.array Int32.t) -> [ &_11 <- _const ] s1 ]
-          | s1 = len_i32 {_11} (fun (_x: UInt64.t) -> [ &_2 <- _x ] s2)
+          | s1 = len_i32'0 {_11} (fun (_x: UInt64.t) -> [ &_2 <- _x ] s2)
           | s2 = bb0'0
             [ bb0'0 = s0'0 [ s0'0 = [ &_ret'0 <- const_Y ] s1'0 | s1'0 = _const_ret {_ret'0} ] ]
             [ & _ret'0: Slice64.array Int32.t = Any.any_l () ]
             [ _const_ret (_const: Slice64.array Int32.t) -> [ &_10 <- _const ] s3 ]
-          | s3 = len_i32 {_10} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s4)
+          | s3 = len_i32'0 {_10} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s4)
           | s4 = UInt64.add {_2} {_6} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s5)
           | s5 = return {_ret} ] ]
         [ & _ret: UInt64.t = Any.any_l ()
@@ -324,9 +326,11 @@ module M_array_param
   
   constant const_N : UInt64.t
   
-  let len_u32 (self: Slice64.slice UInt32.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
-      = UInt64.t'int result}
+  let len_u32 (self: Seq.seq UInt32.t) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_u32'0 (self: Slice64.slice UInt32.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] len_u32 (Slice64.view self) = UInt64.t'int result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -341,7 +345,7 @@ module M_array_param
               (fun (_res: Slice64.array UInt32.t) -> [ &_ret'0 <- _res ] s1'0)
           | s1'0 = _const_ret {_ret'0} ] ] [ & _ret'0: Slice64.array UInt32.t = Any.any_l () ]
         [ _const_ret (_const: Slice64.array UInt32.t) -> [ &x <- _const ] s1 ]
-      | s1 = len_u32 {x} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s2)
+      | s1 = len_u32'0 {x} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () | & x: Slice64.array UInt32.t = Any.any_l () ])
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:array_param ensures] result = const_N} (! return {result}) ]
 end

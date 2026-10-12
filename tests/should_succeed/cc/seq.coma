@@ -135,6 +135,9 @@ module M_g
   
   meta "rewrite_def" predicate ge_log_Int
   
+  let len_Int (self: Seq.seq int) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   type t_Range_Int = { start: int; end': int }
   
   function index_Seq_Int [@inline:trivial] (self: Seq.seq int) (range: t_Range_Int) : Seq.seq int =
@@ -206,17 +209,17 @@ module M_g
   
   meta "select_lsinst" "all"
   
-  let g (s: Seq.seq int) (return (x: ())) = {[@stop_split] [@expl:g requires] ge_log_Int (Seq.length s) 1}
+  let g (s: Seq.seq int) (return (x: ())) = {[@stop_split] [@expl:g requires] ge_log_Int (len_Int s) 1}
     (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
     [ return (result: ()) ->
-    {[@stop_split] [@expl:g ensures] ([@stop_split] [@expl:g ensures #0] Seq.length (index_Seq_Int s { start = 0;
-                                                                                                       end' = 1 })
+    {[@stop_split] [@expl:g ensures] ([@stop_split] [@expl:g ensures #0] len_Int (index_Seq_Int s { start = 0;
+                                                                                                    end' = 1 })
         = 1)
-      /\ ([@stop_split] [@expl:g ensures #1] Seq.length (index_Seq_Int'0 s (new_log_RangeInclusive_Int 0 0)) = 1)
+      /\ ([@stop_split] [@expl:g ensures #1] len_Int (index_Seq_Int'0 s (new_log_RangeInclusive_Int 0 0)) = 1)
       /\ ([@stop_split] [@expl:g ensures #2] index_Seq_Int'1 s { start'0 = 0 } = s)
-      /\ ([@stop_split] [@expl:g ensures #3] Seq.length (index_Seq_Int'2 s { end''0 = 0 }) = 0)
-      /\ ([@stop_split] [@expl:g ensures #4] Seq.length (index_Seq_Int'3 s { end''1 = 0 }) = 1)
+      /\ ([@stop_split] [@expl:g ensures #3] len_Int (index_Seq_Int'2 s { end''0 = 0 }) = 0)
+      /\ ([@stop_split] [@expl:g ensures #4] len_Int (index_Seq_Int'3 s { end''1 = 0 }) = 1)
       /\ ([@stop_split] [@expl:g ensures #5] index_Seq_Int'4 s () = s)}
       (! return {result}) ]
 end

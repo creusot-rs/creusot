@@ -51,11 +51,22 @@ module M_gnome_sort
   
   meta "rewrite_def" predicate inv_ref_Vec_T_Global
   
-  let len_T (self: t_Vec_T_Global) (return (x: UInt64.t)) =
+  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_T
+  
+  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_T
+  
+  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_T'0 (self: t_Vec_T_Global) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Vec_T_Global self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = Seq.length (view_Vec_T_Global self)}
+      = len_T (view_Vec_T_Global self)}
       (! return {result}) ]
   
   predicate permutation_of_T (self: Seq.seq t_T) (other: Seq.seq t_T) = Permut.permut self other 0 (Seq.length self)
@@ -185,15 +196,15 @@ module M_gnome_sort
     [ return (result: MutBorrow.t (Slice64.slice t_T)) ->
     {[@stop_split] [@expl:deref_mut_Vec_T_Global ensures] ([@stop_split] [@expl:deref_mut result type invariant] inv_refmut_slice_T result)
       /\ ([@stop_split] [@expl:deref_mut ensures #0] Slice64.view result.current = view_Vec_T_Global self.current)
-      /\ ([@stop_split] [@expl:deref_mut ensures #1] Seq.length (view_Vec_T_Global self.final)
-        = Seq.length (view_Vec_T_Global self.current))
+      /\ ([@stop_split] [@expl:deref_mut ensures #1] len_T (view_Vec_T_Global self.final)
+        = len_T (view_Vec_T_Global self.current))
       /\ ([@stop_split] [@expl:deref_mut ensures #2] Slice64.view result.final = view_Vec_T_Global self.final)}
       (! return {result}) ]
   
   let swap_T (self: MutBorrow.t (Slice64.slice t_T)) (a: UInt64.t) (b: UInt64.t) (return (x: ())) =
   {[@stop_split] [@expl:swap_T requires] ([@stop_split] [@expl:swap 'self' type invariant] inv_refmut_slice_T self)
-    /\ ([@stop_split] [@expl:swap requires #0] UInt64.t'int a < Seq.length (Slice64.view self.current))
-    /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < Seq.length (Slice64.view self.current))}
+    /\ ([@stop_split] [@expl:swap requires #0] UInt64.t'int a < len_T (Slice64.view self.current))
+    /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < len_T (Slice64.view self.current))}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:swap ensures] Permut.exchange (Slice64.view self.final) (Slice64.view self.current) (UInt64.t'int a) (UInt64.t'int b)}
@@ -207,7 +218,38 @@ module M_gnome_sort
   
   meta "rewrite_def" predicate resolve_refmut_Vec_T_Global
   
-  predicate sorted_DeepModelTy (s: Seq.seq t_DeepModelTy) = sorted_range_DeepModelTy s 0 (Seq.length s)
+  predicate inv_DeepModelTy (_1: t_DeepModelTy)
+  
+  predicate invariant_ref_DeepModelTy [@inline:trivial] (self: t_DeepModelTy) = inv_DeepModelTy self
+  
+  meta "rewrite_def" predicate invariant_ref_DeepModelTy
+  
+  predicate inv_ref_DeepModelTy [@inline:trivial] (_1: t_DeepModelTy) = invariant_ref_DeepModelTy _1
+  
+  meta "rewrite_def" predicate inv_ref_DeepModelTy
+  
+  predicate invariant_Seq_DeepModelTy [@inline:trivial] (self: Seq.seq t_DeepModelTy) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_DeepModelTy (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_DeepModelTy
+  
+  predicate inv_Seq_DeepModelTy [@inline:trivial] (_1: Seq.seq t_DeepModelTy) = invariant_Seq_DeepModelTy _1
+  
+  meta "rewrite_def" predicate inv_Seq_DeepModelTy
+  
+  predicate invariant_ref_Seq_DeepModelTy [@inline:trivial] (self: Seq.seq t_DeepModelTy) = inv_Seq_DeepModelTy self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_DeepModelTy
+  
+  predicate inv_ref_Seq_DeepModelTy [@inline:trivial] (_1: Seq.seq t_DeepModelTy) = invariant_ref_Seq_DeepModelTy _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_DeepModelTy
+  
+  let len_DeepModelTy (self: Seq.seq t_DeepModelTy) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_DeepModelTy self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate sorted_DeepModelTy (s: Seq.seq t_DeepModelTy) = sorted_range_DeepModelTy s 0 (len_DeepModelTy s)
   
   meta "compute_max_steps" 1000000
   
@@ -223,7 +265,7 @@ module M_gnome_sort
         {[@expl:loop invariant #0] sorted_range_DeepModelTy (deep_model_refmut_Vec_T_Global v) 0 (UInt64.t'int i)}
         {[@expl:loop invariant #1] permutation_of_T (view_Vec_T_Global v.current) (view_Vec_T_Global old_v.current)}
         (! s0)
-        [ s0 = len_T {v.current} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s1)
+        [ s0 = len_T'0 {v.current} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s1)
         | s1 = [ &_18 <- UInt64.lt i _20 ] s2
         | s2 = any [ br0 -> {_18 = false} (! bb17) | br1 -> {_18} (! bb5) ] ]
         [ bb5 = s0

@@ -43,10 +43,22 @@ module M_collect
   axiom inv_axiom: forall _1: t_Vec_Item_Global [inv_Vec_Item_Global _1]. inv_Vec_Item_Global _1
       -> invariant_Vec_Item_Global _1
   
+  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item
+  
+  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item
+  
+  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   let new_Item (return (x: t_Vec_Item_Global)) = any
     [ return (result: t_Vec_Item_Global) ->
     {[@stop_split] [@expl:new_Item ensures] ([@stop_split] [@expl:new result type invariant] inv_Vec_Item_Global result)
-      /\ ([@stop_split] [@expl:new ensures] Seq.length (view_Vec_Item_Global result) = 0)}
+      /\ ([@stop_split] [@expl:new ensures] len_Item (view_Vec_Item_Global result) = 0)}
       (! return {result}) ]
   
   type t_I
@@ -266,6 +278,9 @@ module M_collect_example
         /\ completed_I done' /\ produces_I iter prod done'.current /\ view_Vec_u32_Global result = prod}
       (! return {result}) ]
   
+  let len_u32 (self: Seq.seq UInt32.t) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   function index_Vec_u32_Global [@inline:trivial] (self: t_Vec_u32_Global) (ix: int) : UInt32.t =
     Seq.get (view_Vec_u32_Global self) ix
   
@@ -278,11 +293,11 @@ module M_collect_example
   let collect_example_I (iter: t_I) (return (x: ())) =
   {[@stop_split] [@expl:collect_example_I requires] ([@stop_split] [@expl:collect_example 'iter' type invariant] inv_I iter)
     /\ ([@stop_split] [@expl:collect_example requires] forall prod: Seq.seq UInt32.t, fin: t_I. produces_I iter prod fin
-      -> (forall i: int. 0 <= i /\ i < Seq.length prod -> UInt32.t'int (Seq.get prod i) = i))}
+      -> (forall i: int. 0 <= i /\ i < len_u32 prod -> UInt32.t'int (Seq.get prod i) = i))}
     (! bb0
     [ bb0 = s0
       [ s0 = collect_I {iter} (fun (_x: t_Vec_u32_Global) -> [ &v <- _x ] s1)
-      | s1 = {[@expl:assertion] forall i: int. 0 <= i /\ i < Seq.length (view_Vec_u32_Global v)
+      | s1 = {[@expl:assertion] forall i: int. 0 <= i /\ i < len_u32 (view_Vec_u32_Global v)
           -> UInt32.t'int (index_Vec_u32_Global v i) = i}
         s2
       | s2 = return {_ret} ] ]

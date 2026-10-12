@@ -51,11 +51,22 @@ module M_knuth_shuffle
   
   meta "rewrite_def" predicate inv_ref_Vec_T_Global
   
-  let len_T (self: t_Vec_T_Global) (return (x: UInt64.t)) =
+  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_T
+  
+  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_T
+  
+  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_T'0 (self: t_Vec_T_Global) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Vec_T_Global self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = Seq.length (view_Vec_T_Global self)}
+      = len_T (view_Vec_T_Global self)}
       (! return {result}) ]
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
@@ -163,15 +174,15 @@ module M_knuth_shuffle
     [ return (result: MutBorrow.t (Slice64.slice t_T)) ->
     {[@stop_split] [@expl:deref_mut_Vec_T_Global ensures] ([@stop_split] [@expl:deref_mut result type invariant] inv_refmut_slice_T result)
       /\ ([@stop_split] [@expl:deref_mut ensures #0] Slice64.view result.current = view_Vec_T_Global self.current)
-      /\ ([@stop_split] [@expl:deref_mut ensures #1] Seq.length (view_Vec_T_Global self.final)
-        = Seq.length (view_Vec_T_Global self.current))
+      /\ ([@stop_split] [@expl:deref_mut ensures #1] len_T (view_Vec_T_Global self.final)
+        = len_T (view_Vec_T_Global self.current))
       /\ ([@stop_split] [@expl:deref_mut ensures #2] Slice64.view result.final = view_Vec_T_Global self.final)}
       (! return {result}) ]
   
   let swap_T (self: MutBorrow.t (Slice64.slice t_T)) (a: UInt64.t) (b: UInt64.t) (return (x: ())) =
   {[@stop_split] [@expl:swap_T requires] ([@stop_split] [@expl:swap 'self' type invariant] inv_refmut_slice_T self)
-    /\ ([@stop_split] [@expl:swap requires #0] UInt64.t'int a < Seq.length (Slice64.view self.current))
-    /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < Seq.length (Slice64.view self.current))}
+    /\ ([@stop_split] [@expl:swap requires #0] UInt64.t'int a < len_T (Slice64.view self.current))
+    /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < len_T (Slice64.view self.current))}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:swap ensures] Permut.exchange (Slice64.view self.final) (Slice64.view self.current) (UInt64.t'int a) (UInt64.t'int b)}
@@ -194,7 +205,7 @@ module M_knuth_shuffle
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_v <- v ] s1
-      | s1 = len_T {v.current} (fun (_x: UInt64.t) -> [ &_9 <- _x ] s2)
+      | s1 = len_T'0 {v.current} (fun (_x: UInt64.t) -> [ &_9 <- _x ] s2)
       | s2 = [ &_8 <- { start = (0: UInt64.t); end' = _9 } ] s3
       | s3 = into_iter_Range_usize {_8} (fun (_x: t_Range_usize) -> [ &iter <- _x ] s4)
       | s4 = [ &iter_old <- iter ] s5
@@ -221,7 +232,7 @@ module M_knuth_shuffle
           | s1 = [ &_35 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
           | s2 = [ &produced <- _35 ] s3
           | s3 = [ &n <- __creusot_proc_iter_elem ] s4
-          | s4 = len_T {v.current} (fun (_x: UInt64.t) -> [ &_41 <- _x ] s5)
+          | s4 = len_T'0 {v.current} (fun (_x: UInt64.t) -> [ &_41 <- _x ] s5)
           | s5 = UInt64.sub {_41} {n} (fun (_x: UInt64.t) -> [ &upper <- _x ] s6)
           | s6 = rand_in_range {(0: UInt64.t)} {upper} (fun (_x: UInt64.t) -> [ &i <- _x ] s7)
           | s7 = MutBorrow.borrow_mut <t_Vec_T_Global> {v.current}

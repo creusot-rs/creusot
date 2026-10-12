@@ -278,7 +278,43 @@ module M_impl_QueueInv_T__mod_len_inj (* QueueInv<T> *)
     cells: Seq.seq t_QueueCell_T;
     statuses_mono_auth_wards: Seq.seq t_Id }
   
-  function len_T (self: t_QueueInv_T) : int = Seq.length self.cells
+  predicate inv_AtomicUsize (_1: t_AtomicUsize)
+  
+  predicate inv_QueueCell_T (_1: t_QueueCell_T)
+  
+  axiom inv_axiom [@rewrite]: forall _1: t_QueueCell_T [inv_QueueCell_T _1]. inv_QueueCell_T _1
+      = inv_AtomicUsize _1.status
+  
+  predicate invariant_ref_QueueCell_T [@inline:trivial] (self: t_QueueCell_T) = inv_QueueCell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_QueueCell_T
+  
+  predicate inv_ref_QueueCell_T [@inline:trivial] (_1: t_QueueCell_T) = invariant_ref_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_QueueCell_T
+  
+  predicate invariant_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_QueueCell_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_QueueCell_T
+  
+  predicate inv_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_Seq_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_QueueCell_T
+  
+  predicate invariant_ref_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) = inv_Seq_QueueCell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_QueueCell_T
+  
+  predicate inv_ref_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_ref_Seq_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_QueueCell_T
+  
+  let len_QueueCell_T (self: Seq.seq t_QueueCell_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_QueueCell_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  function len_T (self: t_QueueInv_T) : int = len_QueueCell_T self.cells
   
   function mod_len_T (self: t_QueueInv_T) (i: int) : int = EuclideanDivision.mod i (len_T self)
   
@@ -333,7 +369,43 @@ module M_impl_QueueInv_T__mod_len_wrap (* QueueInv<T> *)
     cells: Seq.seq t_QueueCell_T;
     statuses_mono_auth_wards: Seq.seq t_Id }
   
-  function len_T (self: t_QueueInv_T) : int = Seq.length self.cells
+  predicate inv_AtomicUsize (_1: t_AtomicUsize)
+  
+  predicate inv_QueueCell_T (_1: t_QueueCell_T)
+  
+  axiom inv_axiom [@rewrite]: forall _1: t_QueueCell_T [inv_QueueCell_T _1]. inv_QueueCell_T _1
+      = inv_AtomicUsize _1.status
+  
+  predicate invariant_ref_QueueCell_T [@inline:trivial] (self: t_QueueCell_T) = inv_QueueCell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_QueueCell_T
+  
+  predicate inv_ref_QueueCell_T [@inline:trivial] (_1: t_QueueCell_T) = invariant_ref_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_QueueCell_T
+  
+  predicate invariant_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_QueueCell_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_QueueCell_T
+  
+  predicate inv_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_Seq_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_QueueCell_T
+  
+  predicate invariant_ref_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) = inv_Seq_QueueCell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_QueueCell_T
+  
+  predicate inv_ref_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_ref_Seq_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_QueueCell_T
+  
+  let len_QueueCell_T (self: Seq.seq t_QueueCell_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_QueueCell_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  function len_T (self: t_QueueInv_T) : int = len_QueueCell_T self.cells
   
   function mod_len_T (self: t_QueueInv_T) (i: int) : int = EuclideanDivision.mod i (len_T self)
   
@@ -489,10 +561,22 @@ module M_impl_Queue_T__new (* Queue<T> *)
   axiom inv_axiom'1: forall _1: t_Vec_QueueCell_T_Global [inv_Vec_QueueCell_T_Global _1]. inv_Vec_QueueCell_T_Global _1
       -> invariant_Vec_QueueCell_T_Global _1
   
+  predicate invariant_ref_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) = inv_Seq_QueueCell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_QueueCell_T
+  
+  predicate inv_ref_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_ref_Seq_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_QueueCell_T
+  
+  let len_QueueCell_T (self: Seq.seq t_QueueCell_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_QueueCell_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   let new_QueueCell_T (return (x: t_Vec_QueueCell_T_Global)) = any
     [ return (result: t_Vec_QueueCell_T_Global) ->
     {[@stop_split] [@expl:new_QueueCell_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Vec_QueueCell_T_Global result)
-      /\ ([@stop_split] [@expl:new ensures] Seq.length (view_Vec_QueueCell_T_Global result) = 0)}
+      /\ ([@stop_split] [@expl:new ensures] len_QueueCell_T (view_Vec_QueueCell_T_Global result) = 0)}
       (! return {result}) ]
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
@@ -548,6 +632,9 @@ module M_impl_Queue_T__new (* Queue<T> *)
         end}
       (! return {result}) ]
   
+  let len_usize (self: Seq.seq UInt64.t) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   function val' (self: t_Authority) : int
   
   function val_unsized_AtomicUsize (self: t_Perm_AtomicUsize) : UInt64.t
@@ -560,7 +647,43 @@ module M_impl_Queue_T__new (* Queue<T> *)
   
   type t_Option_ref_Authority = None'2 | Some'2 t_Authority
   
+  predicate invariant_ref_Seq_Authority [@inline:trivial] (self: Seq.seq t_Authority) = inv_Seq_Authority self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Authority
+  
+  predicate inv_ref_Seq_Authority [@inline:trivial] (_1: Seq.seq t_Authority) = invariant_ref_Seq_Authority _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Authority
+  
+  predicate inv_Option_ref_Authority (_1: t_Option_ref_Authority)
+  
+  axiom inv_axiom'2 [@rewrite]:
+    forall _1: t_Option_ref_Authority [inv_Option_ref_Authority _1]. inv_Option_ref_Authority _1
+      = match _1 with
+        | None'2 -> true
+        | Some'2 f0 -> inv_ref_Authority f0
+        end
+  
+  let get_Authority (self: Seq.seq t_Authority) (index: int) (return (x: t_Option_ref_Authority)) =
+  {[@stop_split] [@expl:get 'self' type invariant] inv_ref_Seq_Authority self}
+    any
+    [ return (result: t_Option_ref_Authority) ->
+    {[@stop_split] [@expl:get_Authority ensures] ([@stop_split] [@expl:get result type invariant] inv_Option_ref_Authority result)
+      /\ ([@stop_split] [@expl:get ensures] result
+      = (if 0 <= index /\ index < Seq.length self then Some'2 (Seq.get self index) else None'2))}
+      (! return {result}) ]
+  
   function ward_PCell_MaybeUninit_T (self: t_Perm_PCell_MaybeUninit_T) : t_PCell_MaybeUninit_T
+  
+  let len_Perm_AtomicUsize (self: Seq.seq t_Perm_AtomicUsize) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_Authority (self: Seq.seq t_Authority) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Authority self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_Option_Perm_PCell_MaybeUninit_T (self: Seq.seq t_Option_Perm_PCell_MaybeUninit_T) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   predicate inv_Seq_usize [@inline:trivial] (_1: Seq.seq UInt64.t) = true
   
@@ -782,13 +905,13 @@ module M_impl_Queue_T__new (* Queue<T> *)
   
   predicate inv_Authority_T'0 (_1: t_Authority_T'0)
   
-  axiom inv_axiom'2: forall _1: t_Authority_T'0 [inv_Authority_T'0 _1]. inv_Authority_T'0 _1 -> invariant_Authority_T _1
+  axiom inv_axiom'3: forall _1: t_Authority_T'0 [inv_Authority_T'0 _1]. inv_Authority_T'0 _1 -> invariant_Authority_T _1
   
   predicate invariant_Fragment_T (self: t_Fragment_T)
   
   predicate inv_Fragment_T (_1: t_Fragment_T)
   
-  axiom inv_axiom'3: forall _1: t_Fragment_T [inv_Fragment_T _1]. inv_Fragment_T _1 -> invariant_Fragment_T _1
+  axiom inv_axiom'4: forall _1: t_Fragment_T [inv_Fragment_T _1]. inv_Fragment_T _1 -> invariant_Fragment_T _1
   
   predicate inv_tup2_Authority_T_Fragment_T [@inline:trivial] (_1: tup2_Authority_T_Fragment_T) =
     inv_Authority_T'0 _1.f0'1 /\ inv_Fragment_T _1.f1'1
@@ -921,7 +1044,7 @@ module M_impl_Queue_T__new (* Queue<T> *)
   
   predicate inv_QueueInv_T (_1: t_QueueInv_T)
   
-  axiom inv_axiom'4 [@rewrite]: forall _1: t_QueueInv_T [inv_QueueInv_T _1]. inv_QueueInv_T _1
+  axiom inv_axiom'5 [@rewrite]: forall _1: t_QueueInv_T [inv_QueueInv_T _1]. inv_QueueInv_T _1
       = (inv_Authority_T'0 _1.values_auth /\ inv_Seq_Authority _1.statuses_mono_auth /\ inv_Authority_T _1.tokens_auth)
   
   predicate invariant_Ghost_QueueInv_T [@inline:trivial] (self: t_QueueInv_T) = inv_QueueInv_T self
@@ -942,11 +1065,45 @@ module M_impl_Queue_T__new (* Queue<T> *)
   
   type t_AtomicInvariant_QueueInv_T
   
-  function len_T (self: t_QueueInv_T) : int = Seq.length self.cells
+  function len_T (self: t_QueueInv_T) : int = len_QueueCell_T self.cells
   
   function head_T (self: t_QueueInv_T) : int = UInt64.t'int (val_AtomicUsize self.head_own)
   
   function tail_T (self: t_QueueInv_T) : int = UInt64.t'int (val_AtomicUsize self.tail_own)
+  
+  let len_Id (self: Seq.seq t_Id) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_T
+  
+  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_T
+  
+  let len_T'0 (self: Seq.seq t_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   function seq_T'1 (self: t_QueueInv_T) : Seq.seq t_T = seq_T self.values_auth
   
@@ -971,9 +1128,9 @@ module M_impl_Queue_T__new (* Queue<T> *)
   
   predicate protocol_QueueInv_T [@inline:trivial] (self: t_QueueInv_T) =
     gt_log_Int (len_T self) 0
-    /\ len_T self = Seq.length self.cells_own
-    /\ len_T self = Seq.length self.statuses_own
-    /\ len_T self = Seq.length self.statuses_mono_auth
+    /\ len_T self = len_Option_Perm_PCell_MaybeUninit_T self.cells_own
+    /\ len_T self = len_Perm_AtomicUsize self.statuses_own
+    /\ len_T self = len_Authority self.statuses_mono_auth
     /\ budget_T self.values_auth = UInt64.t'int const_MAX - 2 * len_T self + 1 - head_T self - tail_T self
     /\ ge_log_Int (budget_T self.values_auth) 0
     /\ (forall i: int. 0 <= i /\ i < len_T self
@@ -983,7 +1140,7 @@ module M_impl_Queue_T__new (* Queue<T> *)
           end)
     /\ (forall i: int. 0 <= i /\ i < len_T self
         -> ward_AtomicUsize (Seq.get self.statuses_own i) = (Seq.get self.cells i).status)
-    /\ len_T self = Seq.length self.statuses_mono_auth_wards
+    /\ len_T self = len_Id self.statuses_mono_auth_wards
     /\ (forall i: int. 0 <= i /\ i < len_T self
         -> id (Seq.get self.statuses_mono_auth i) = Seq.get self.statuses_mono_auth_wards i)
     /\ 0 <= tail_T self
@@ -993,7 +1150,7 @@ module M_impl_Queue_T__new (* Queue<T> *)
     /\ UInt64.t'int (val_AtomicUsize self.tail_own) = tail_T self
     /\ (forall i: int [val_AtomicUsize (Seq.get self.statuses_own i)]. 0 <= i /\ i < len_T self
         -> UInt64.t'int (val_AtomicUsize (Seq.get self.statuses_own i)) <= val' (Seq.get self.statuses_mono_auth i))
-    /\ Seq.length (seq_T'1 self) = head_T self - tail_T self
+    /\ len_T'0 (seq_T'1 self) = head_T self - tail_T self
     /\ (forall k: int [val_T self.tokens_auth k | mod_len_T self k]. tail_T self <= k /\ k < tail_T self + len_T self
         -> three_statuses_inv_T self k)
     /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth k = None)
@@ -1055,7 +1212,7 @@ module M_impl_Queue_T__new (* Queue<T> *)
   
   predicate inv_PermQueue_T (_1: t_PermQueue_T)
   
-  axiom inv_axiom'5 [@rewrite]: forall _1: t_PermQueue_T [inv_PermQueue_T _1]. inv_PermQueue_T _1
+  axiom inv_axiom'6 [@rewrite]: forall _1: t_PermQueue_T [inv_PermQueue_T _1]. inv_PermQueue_T _1
       = (invariant_PermQueue_T _1 /\ inv_Fragment_T _1.fragment)
   
   predicate invariant_Ghost_PermQueue_T [@inline:trivial] (self: t_PermQueue_T) = inv_PermQueue_T self
@@ -1086,7 +1243,7 @@ module M_impl_Queue_T__new (* Queue<T> *)
   
   predicate inv_Queue_T (_1: t_Queue_T)
   
-  axiom inv_axiom'6 [@rewrite]: forall _1: t_Queue_T [inv_Queue_T _1]. inv_Queue_T _1
+  axiom inv_axiom'7 [@rewrite]: forall _1: t_Queue_T [inv_Queue_T _1]. inv_Queue_T _1
       = (invariant_Queue_T _1
       /\ inv_Vec_QueueCell_T_Global _1.cells'0 /\ inv_AtomicUsize _1.head'0 /\ inv_AtomicUsize _1.tail'0)
   
@@ -1127,29 +1284,24 @@ module M_impl_Queue_T__new (* Queue<T> *)
         {[@expl:inferred invariant: type invariant] inv_Ghost_Seq_Authority statuses_mono_auth'0}
         {[@expl:for invariant] inv_Seq_usize produced}
         {[@expl:for invariant] produces_Range_usize iter_old produced iter}
-        {[@expl:loop invariant #0] Seq.length (view_Vec_QueueCell_T_Global cells'1) = Seq.length produced}
-        {[@expl:loop invariant #1] Seq.length cells_own'0 = Seq.length produced}
-        {[@expl:loop invariant #2] Seq.length statuses_mono_auth'0 = Seq.length produced}
-        {[@expl:loop invariant #3] Seq.length statuses_own'0 = Seq.length produced}
-        {[@expl:loop invariant #4] forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length produced
+        {[@expl:loop invariant #0] len_QueueCell_T (view_Vec_QueueCell_T_Global cells'1) = len_usize produced}
+        {[@expl:loop invariant #1] len_Option_Perm_PCell_MaybeUninit_T cells_own'0 = len_usize produced}
+        {[@expl:loop invariant #2] len_Authority statuses_mono_auth'0 = len_usize produced}
+        {[@expl:loop invariant #3] len_Perm_AtomicUsize statuses_own'0 = len_usize produced}
+        {[@expl:loop invariant #4] forall i'0: int. 0 <= i'0 /\ i'0 < len_usize produced
           -> match Seq.get cells_own'0 i'0 with
             | Some'0 cell -> ward_PCell_MaybeUninit_T cell = (Seq.get (view_Vec_QueueCell_T_Global cells'1) i'0).item
             | None'0 -> false
             end}
-        {[@expl:loop invariant #5] forall i'0: int. Seq.length produced <= i'0
-          -> (if 0 <= i'0 /\ i'0 < Seq.length statuses_mono_auth'0 then
-              Some'2 (Seq.get statuses_mono_auth'0 i'0)
-            else
-              None'2
-            )
-          = None'2}
-        {[@expl:loop invariant #6] forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length produced
+        {[@expl:loop invariant #5] forall i'0: int. len_usize produced <= i'0
+          -> get_Authority statuses_mono_auth'0 i'0 = None'2}
+        {[@expl:loop invariant #6] forall i'0: int. 0 <= i'0 /\ i'0 < len_usize produced
           -> ward_AtomicUsize (Seq.get statuses_own'0 i'0) = (Seq.get (view_Vec_QueueCell_T_Global cells'1) i'0).status}
-        {[@expl:loop invariant #7] forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length produced
+        {[@expl:loop invariant #7] forall i'0: int. 0 <= i'0 /\ i'0 < len_usize produced
           -> UInt64.t'int (val_AtomicUsize (Seq.get statuses_own'0 i'0)) <= val' (Seq.get statuses_mono_auth'0 i'0)}
         {[@expl:loop invariant #8] forall i'0: int [val' (Seq.get statuses_mono_auth'0 (EuclideanDivision.mod i'0 (UInt64.t'int length)))]. 0
               <= i'0
-            /\ i'0 < Seq.length produced
+            /\ i'0 < len_usize produced
           -> val' (Seq.get statuses_mono_auth'0 (EuclideanDivision.mod i'0 (UInt64.t'int length))) = 2 * i'0}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range_usize> {iter}
@@ -1620,7 +1772,61 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
-  function len_T (self: t_QueueInv_T) : int = Seq.length self.cells'0
+  predicate inv_AtomicUsize (_1: t_AtomicUsize)
+  
+  predicate inv_QueueCell_T (_1: t_QueueCell_T)
+  
+  axiom inv_axiom'4 [@rewrite]: forall _1: t_QueueCell_T [inv_QueueCell_T _1]. inv_QueueCell_T _1
+      = inv_AtomicUsize _1.status
+  
+  predicate invariant_ref_QueueCell_T [@inline:trivial] (self: t_QueueCell_T) = inv_QueueCell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_QueueCell_T
+  
+  predicate inv_ref_QueueCell_T [@inline:trivial] (_1: t_QueueCell_T) = invariant_ref_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_QueueCell_T
+  
+  predicate invariant_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_QueueCell_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_QueueCell_T
+  
+  predicate inv_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_Seq_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_QueueCell_T
+  
+  predicate invariant_ref_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) = inv_Seq_QueueCell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_QueueCell_T
+  
+  predicate inv_ref_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_ref_Seq_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_QueueCell_T
+  
+  let len_QueueCell_T (self: Seq.seq t_QueueCell_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_QueueCell_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  function len_T (self: t_QueueInv_T) : int = len_QueueCell_T self.cells'0
+  
+  let len_Option_Perm_PCell_MaybeUninit_T (self: Seq.seq t_Option_Perm_PCell_MaybeUninit_T) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_Perm_AtomicUsize (self: Seq.seq t_Perm_AtomicUsize) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate invariant_ref_Seq_Authority [@inline:trivial] (self: Seq.seq t_Authority) = inv_Seq_Authority self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Authority
+  
+  predicate inv_ref_Seq_Authority [@inline:trivial] (_1: Seq.seq t_Authority) = invariant_ref_Seq_Authority _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Authority
+  
+  let len_Authority (self: Seq.seq t_Authority) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Authority self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   function budget_T (self: t_Authority_T) : int
   
@@ -1636,11 +1842,45 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   function ward_PCell_MaybeUninit_T (self: t_Perm_PCell_MaybeUninit_T) : t_PCell_MaybeUninit_T
   
+  let len_Id (self: Seq.seq t_Id) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   function id (self: t_Authority) : t_Id
   
   function val' (self: t_Authority) : int
   
   type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_T
+  
+  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_T
+  
+  let len_T'0 (self: Seq.seq t_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   function seq_T (self: t_Authority_T) : Seq.seq t_T
   
@@ -1684,9 +1924,9 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   predicate protocol_QueueInv_T [@inline:trivial] (self: t_QueueInv_T) =
     gt_log_Int (len_T self) 0
-    /\ len_T self = Seq.length self.cells_own'0
-    /\ len_T self = Seq.length self.statuses_own'0
-    /\ len_T self = Seq.length self.statuses_mono_auth'0
+    /\ len_T self = len_Option_Perm_PCell_MaybeUninit_T self.cells_own'0
+    /\ len_T self = len_Perm_AtomicUsize self.statuses_own'0
+    /\ len_T self = len_Authority self.statuses_mono_auth'0
     /\ budget_T self.values_auth'0 = UInt64.t'int const_MAX - 2 * len_T self + 1 - head_T self - tail_T self
     /\ ge_log_Int (budget_T self.values_auth'0) 0
     /\ (forall i: int. 0 <= i /\ i < len_T self
@@ -1696,7 +1936,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
           end)
     /\ (forall i: int. 0 <= i /\ i < len_T self
         -> ward_AtomicUsize'0 (Seq.get self.statuses_own'0 i) = (Seq.get self.cells'0 i).status)
-    /\ len_T self = Seq.length self.statuses_mono_auth_wards'0
+    /\ len_T self = len_Id self.statuses_mono_auth_wards'0
     /\ (forall i: int. 0 <= i /\ i < len_T self
         -> id (Seq.get self.statuses_mono_auth'0 i) = Seq.get self.statuses_mono_auth_wards'0 i)
     /\ 0 <= tail_T self
@@ -1706,7 +1946,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     /\ UInt64.t'int (val_AtomicUsize self.tail_own'0) = tail_T self
     /\ (forall i: int [val_AtomicUsize (Seq.get self.statuses_own'0 i)]. 0 <= i /\ i < len_T self
         -> UInt64.t'int (val_AtomicUsize (Seq.get self.statuses_own'0 i)) <= val' (Seq.get self.statuses_mono_auth'0 i))
-    /\ Seq.length (seq_T'0 self) = head_T self - tail_T self
+    /\ len_T'0 (seq_T'0 self) = head_T self - tail_T self
     /\ (forall k: int [val_T self.tokens_auth'0 k | mod_len_T self k]. tail_T self <= k /\ k < tail_T self + len_T self
         -> three_statuses_inv_T self k)
     /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth'0 k = None'1)
@@ -1767,30 +2007,6 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     /\ namespace_QueueInv_T self.inv = Namespace_BOUNDED_MPMC_QUEUE 0
   
   meta "rewrite_def" predicate invariant_Queue_T
-  
-  predicate inv_AtomicUsize (_1: t_AtomicUsize)
-  
-  predicate inv_QueueCell_T (_1: t_QueueCell_T)
-  
-  axiom inv_axiom'4 [@rewrite]: forall _1: t_QueueCell_T [inv_QueueCell_T _1]. inv_QueueCell_T _1
-      = inv_AtomicUsize _1.status
-  
-  predicate invariant_ref_QueueCell_T [@inline:trivial] (self: t_QueueCell_T) = inv_QueueCell_T self
-  
-  meta "rewrite_def" predicate invariant_ref_QueueCell_T
-  
-  predicate inv_ref_QueueCell_T [@inline:trivial] (_1: t_QueueCell_T) = invariant_ref_QueueCell_T _1
-  
-  meta "rewrite_def" predicate inv_ref_QueueCell_T
-  
-  predicate invariant_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_QueueCell_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_QueueCell_T
-  
-  predicate inv_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_Seq_QueueCell_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_QueueCell_T
   
   predicate invariant_Vec_QueueCell_T_Global (self: t_Vec_QueueCell_T_Global) =
     inv_Seq_QueueCell_T (view_Vec_QueueCell_T_Global self)
@@ -1969,11 +2185,11 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   meta "rewrite_def" predicate inv_ref_Vec_QueueCell_T_Global
   
-  let len_QueueCell_T (self: t_Vec_QueueCell_T_Global) (return (x: UInt64.t)) =
+  let len_QueueCell_T'0 (self: t_Vec_QueueCell_T_Global) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Vec_QueueCell_T_Global self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = Seq.length (view_Vec_QueueCell_T_Global self)}
+      = len_QueueCell_T (view_Vec_QueueCell_T_Global self)}
       (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_QueueCell_T) =
@@ -2683,7 +2899,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       <= val''0 witness)
     /\ ([@stop_split] [@expl:try_dequeue_cas_inv requires #7] forall c'0: MutBorrow.t t_QueueCommitter_T. not c'0.current.shot
       -> c'0.current.ward = self
-      -> gt_log_Int (Seq.length c'0.current.old_seq) 0 /\ c'0.current.new_seq = tail_T'0 c'0.current.old_seq
+      -> gt_log_Int (len_T'0 c'0.current.old_seq) 0 /\ c'0.current.new_seq = tail_T'0 c'0.current.old_seq
       -> precondition_F f c'0 /\ (postcondition_once_F f c'0 () -> c'0.final.shot /\ hist_inv_T c'0.current c'0.final))}
     any
     [ return (result: tup2_TokenR_T_Perm_PCell_MaybeUninit_T) ->
@@ -2701,7 +2917,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
         = mod_len_T inv'0.current (UInt64.t'int (val_load_AtomicUsize'0 c.current)))
       /\ ([@stop_split] [@expl:try_dequeue_cas_inv ensures #7] exists c'0: MutBorrow.t t_QueueCommitter_T. not c'0.current.shot
           /\ c'0.current.ward = self
-          /\ gt_log_Int (Seq.length c'0.current.old_seq) 0
+          /\ gt_log_Int (len_T'0 c'0.current.old_seq) 0
           /\ c'0.current.new_seq = tail_T'0 c'0.current.old_seq
           /\ postcondition_once_F f c'0 ()
           /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T result.f1'4) = Some'2 (Seq.get c'0.current.old_seq 0))
@@ -3201,8 +3417,6 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       = ward_PCell_MaybeUninit_T (fin_Ghost_refmut_Perm_PCell_MaybeUninit_T perm))}
       (! return {result}) ]
   
-  predicate inv_T (_1: t_T)
-  
   let assume_init_T (self: t_MaybeUninit_T) (return (x: t_T)) =
   {[@stop_split] [@expl:assume_init requires] view_MaybeUninit_T self <> None'2}
     any
@@ -3659,7 +3873,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     /\ ([@stop_split] [@expl:try_dequeue requires #0] contains tokens (Namespace_BOUNDED_MPMC_QUEUE 0))
     /\ ([@stop_split] [@expl:try_dequeue requires #1] forall c: MutBorrow.t t_QueueCommitter_T. not c.current.shot
       -> c.current.ward = self
-      -> gt_log_Int (Seq.length c.current.old_seq) 0 /\ c.current.new_seq = tail_T'0 c.current.old_seq
+      -> gt_log_Int (len_T'0 c.current.old_seq) 0 /\ c.current.new_seq = tail_T'0 c.current.old_seq
       -> precondition_F f c /\ (postcondition_once_F f c () -> c.final.shot /\ hist_inv_T c.current c.final))}
     (! bb0
     [ bb0 = s0
@@ -3671,12 +3885,12 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       | s4 = __new_closure3 {_18} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_17 <- _x ] s5)
       | s5 = new_FnGhostWrapper_closure3 {_17} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_16 <- _x ] s6)
       | s6 = load_FnGhostWrapper_closure3 {self.tail} {_16} (fun (_x: UInt64.t) -> [ &tail'0 <- _x ] s7)
-      | s7 = len_QueueCell_T {self.cells} (fun (_x: UInt64.t) -> [ &_23 <- _x ] s8)
+      | s7 = len_QueueCell_T'0 {self.cells} (fun (_x: UInt64.t) -> [ &_23 <- _x ] s8)
       | s8 = [ &_25 <- _23 = (0: UInt64.t) ] s9
       | s9 = {[@expl:remainder by zero] not _25} s10
       | s10 = UInt64.rem {tail'0} {_23} (fun (_x: UInt64.t) -> [ &tail_mod <- _x ] s11)
       | s11 = {[@expl:assertion] UInt64.t'int tail_mod
-        = EuclideanDivision.mod (UInt64.t'int tail'0) (Seq.length (view_Vec_QueueCell_T_Global self.cells))}
+        = EuclideanDivision.mod (UInt64.t'int tail'0) (len_QueueCell_T (view_Vec_QueueCell_T_Global self.cells))}
         s12
       | s12 = index_Vec_QueueCell_T_Global {self.cells} {tail_mod} (fun (_x: t_QueueCell_T) -> [ &_32 <- _x ] s13)
       | s13 = [ &cell <- _32 ] s14
@@ -3765,7 +3979,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       | s13 = uninit_T (fun (_x: t_MaybeUninit_T) -> [ &_84 <- _x ] s14)
       | s14 = replace_MaybeUninit_T {cell.item} {_75} {_84} (fun (_x: t_MaybeUninit_T) -> [ &_73 <- _x ] s15)
       | s15 = assume_init_T {_73} (fun (_x: t_T) -> [ &item'0 <- _x ] s16)
-      | s16 = len_QueueCell_T {self.cells} (fun (_x: UInt64.t) -> [ &_90 <- _x ] s17)
+      | s16 = len_QueueCell_T'0 {self.cells} (fun (_x: UInt64.t) -> [ &_90 <- _x ] s17)
       | s17 = UInt64.add {tail'0} {_90} (fun (_x: UInt64.t) -> [ &_88 <- _x ] s18)
       | s18 = UInt64.mul {(2: UInt64.t)} {_88} (fun (_x: UInt64.t) -> [ &_87 <- _x ] s19)
       | s19 = MutBorrow.borrow_mut <t_Tokens> {tokens}
@@ -3851,7 +4065,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       /\ ([@stop_split] [@expl:try_dequeue ensures] match result with
         | Some'2 result'0 -> exists c: MutBorrow.t t_QueueCommitter_T. not c.current.shot
           /\ c.current.ward = self
-          /\ gt_log_Int (Seq.length c.current.old_seq) 0
+          /\ gt_log_Int (len_T'0 c.current.old_seq) 0
           /\ c.current.new_seq = tail_T'0 c.current.old_seq
           /\ postcondition_once_F f c () /\ result'0 = Seq.get c.current.old_seq 0
         | None'2 -> resolve_Ghost_F'0 f
@@ -3993,7 +4207,43 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   
   function tail_T (self: t_QueueInv_T) : int = UInt64.t'int (val_AtomicUsize self.tail_own)
   
-  function len_T (self: t_QueueInv_T) : int = Seq.length self.cells
+  predicate inv_AtomicUsize (_1: t_AtomicUsize)
+  
+  predicate inv_QueueCell_T (_1: t_QueueCell_T)
+  
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_QueueCell_T [inv_QueueCell_T _1]. inv_QueueCell_T _1
+      = inv_AtomicUsize _1.status
+  
+  predicate invariant_ref_QueueCell_T [@inline:trivial] (self: t_QueueCell_T) = inv_QueueCell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_QueueCell_T
+  
+  predicate inv_ref_QueueCell_T [@inline:trivial] (_1: t_QueueCell_T) = invariant_ref_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_QueueCell_T
+  
+  predicate invariant_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_QueueCell_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_QueueCell_T
+  
+  predicate inv_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_Seq_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_QueueCell_T
+  
+  predicate invariant_ref_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) = inv_Seq_QueueCell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_QueueCell_T
+  
+  predicate inv_ref_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_ref_Seq_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_QueueCell_T
+  
+  let len_QueueCell_T (self: Seq.seq t_QueueCell_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_QueueCell_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  function len_T (self: t_QueueInv_T) : int = len_QueueCell_T self.cells
   
   function mod_len_T (self: t_QueueInv_T) (i: int) : int = EuclideanDivision.mod i (len_T self)
   
@@ -4117,7 +4367,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   
   predicate inv_Fragment (_1: t_Fragment)
   
-  axiom inv_axiom'2: forall _1: t_Fragment [inv_Fragment _1]. inv_Fragment _1 -> invariant_Fragment _1
+  axiom inv_axiom'3: forall _1: t_Fragment [inv_Fragment _1]. inv_Fragment _1 -> invariant_Fragment _1
   
   predicate resolve_Fragment (_1: t_Fragment)
   
@@ -4236,7 +4486,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   
   predicate inv_QueueCommitter_T (_1: t_QueueCommitter_T)
   
-  axiom inv_axiom'3 [@rewrite]: forall _1: t_QueueCommitter_T [inv_QueueCommitter_T _1]. inv_QueueCommitter_T _1
+  axiom inv_axiom'4 [@rewrite]: forall _1: t_QueueCommitter_T [inv_QueueCommitter_T _1]. inv_QueueCommitter_T _1
       = (invariant_QueueCommitter_T _1 /\ inv_refmut_Authority_T _1.auth)
   
   predicate invariant_refmut_QueueCommitter_T [@inline:trivial] (self: MutBorrow.t t_QueueCommitter_T) =
@@ -4345,7 +4595,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   
   predicate inv_TokenR_T (_1: t_TokenR_T)
   
-  axiom inv_axiom'4: forall _1: t_TokenR_T [inv_TokenR_T _1]. inv_TokenR_T _1 -> invariant_TokenR_T _1
+  axiom inv_axiom'5: forall _1: t_TokenR_T [inv_TokenR_T _1]. inv_TokenR_T _1 -> invariant_TokenR_T _1
   
   predicate invariant_Ghost_TokenR_T [@inline:trivial] (self: t_TokenR_T) = inv_TokenR_T self
   
@@ -4485,30 +4735,6 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   
   meta "rewrite_def" predicate invariant_Queue_T
   
-  predicate inv_AtomicUsize (_1: t_AtomicUsize)
-  
-  predicate inv_QueueCell_T (_1: t_QueueCell_T)
-  
-  axiom inv_axiom'5 [@rewrite]: forall _1: t_QueueCell_T [inv_QueueCell_T _1]. inv_QueueCell_T _1
-      = inv_AtomicUsize _1.status
-  
-  predicate invariant_ref_QueueCell_T [@inline:trivial] (self: t_QueueCell_T) = inv_QueueCell_T self
-  
-  meta "rewrite_def" predicate invariant_ref_QueueCell_T
-  
-  predicate inv_ref_QueueCell_T [@inline:trivial] (_1: t_QueueCell_T) = invariant_ref_QueueCell_T _1
-  
-  meta "rewrite_def" predicate inv_ref_QueueCell_T
-  
-  predicate invariant_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_QueueCell_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_QueueCell_T
-  
-  predicate inv_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_Seq_QueueCell_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_QueueCell_T
-  
   predicate invariant_Vec_QueueCell_T_Global (self: t_Vec_QueueCell_T_Global) =
     inv_Seq_QueueCell_T (view_Vec_QueueCell_T_Global self)
   
@@ -4535,13 +4761,57 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
+  let len_Option_Perm_PCell_MaybeUninit_T (self: Seq.seq t_Option_Perm_PCell_MaybeUninit_T) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_Perm_AtomicUsize (self: Seq.seq t_Perm_AtomicUsize) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_Authority (self: Seq.seq t_Authority) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Authority self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   function ward_PCell_MaybeUninit_T (self: t_Perm_PCell_MaybeUninit_T) : t_PCell_MaybeUninit_T
+  
+  let len_Id (self: Seq.seq t_Id) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_T
+  
+  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_T
+  
+  let len_T'0 (self: Seq.seq t_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   predicate protocol_QueueInv_T [@inline:trivial] (self: t_QueueInv_T) =
     gt_log_Int (len_T self) 0
-    /\ len_T self = Seq.length self.cells_own
-    /\ len_T self = Seq.length self.statuses_own
-    /\ len_T self = Seq.length self.statuses_mono_auth
+    /\ len_T self = len_Option_Perm_PCell_MaybeUninit_T self.cells_own
+    /\ len_T self = len_Perm_AtomicUsize self.statuses_own
+    /\ len_T self = len_Authority self.statuses_mono_auth
     /\ budget_T self.values_auth = UInt64.t'int const_MAX - 2 * len_T self + 1 - head_T self - tail_T self
     /\ ge_log_Int (budget_T self.values_auth) 0
     /\ (forall i: int. 0 <= i /\ i < len_T self
@@ -4551,7 +4821,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
           end)
     /\ (forall i: int. 0 <= i /\ i < len_T self
         -> ward_AtomicUsize'0 (Seq.get self.statuses_own i) = (Seq.get self.cells i).status)
-    /\ len_T self = Seq.length self.statuses_mono_auth_wards
+    /\ len_T self = len_Id self.statuses_mono_auth_wards
     /\ (forall i: int. 0 <= i /\ i < len_T self
         -> id (Seq.get self.statuses_mono_auth i) = Seq.get self.statuses_mono_auth_wards i)
     /\ 0 <= tail_T self
@@ -4561,7 +4831,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
     /\ UInt64.t'int (val_AtomicUsize self.tail_own) = tail_T self
     /\ (forall i: int [val_AtomicUsize (Seq.get self.statuses_own i)]. 0 <= i /\ i < len_T self
         -> UInt64.t'int (val_AtomicUsize (Seq.get self.statuses_own i)) <= val''0 (Seq.get self.statuses_mono_auth i))
-    /\ Seq.length (seq_T'0 self) = head_T self - tail_T self
+    /\ len_T'0 (seq_T'0 self) = head_T self - tail_T self
     /\ (forall k: int [val_T self.tokens_auth k | mod_len_T self k]. tail_T self <= k /\ k < tail_T self + len_T self
         -> three_statuses_inv_T self k)
     /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth k = None'0)
@@ -4617,7 +4887,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
       <= val' witness)
     /\ ([@stop_split] [@expl:try_dequeue_cas_inv requires #7] forall c'0: MutBorrow.t t_QueueCommitter_T. not c'0.current.shot
       -> c'0.current.ward = self
-      -> gt_log_Int (Seq.length c'0.current.old_seq) 0 /\ c'0.current.new_seq = tail_T'0 c'0.current.old_seq
+      -> gt_log_Int (len_T'0 c'0.current.old_seq) 0 /\ c'0.current.new_seq = tail_T'0 c'0.current.old_seq
       -> precondition_F f c'0 /\ (postcondition_once_F f c'0 () -> c'0.final.shot /\ hist_inv_T c'0.current c'0.final))}
     (! bb0
     [ bb0 = s0
@@ -4838,7 +5108,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
         = mod_len_T inv.current (UInt64.t'int (val_load_AtomicUsize c.current)))
       /\ ([@stop_split] [@expl:try_dequeue_cas_inv ensures #7] exists c'0: MutBorrow.t t_QueueCommitter_T. not c'0.current.shot
           /\ c'0.current.ward = self
-          /\ gt_log_Int (Seq.length c'0.current.old_seq) 0
+          /\ gt_log_Int (len_T'0 c'0.current.old_seq) 0
           /\ c'0.current.new_seq = tail_T'0 c'0.current.old_seq
           /\ postcondition_once_F f c'0 ()
           /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T result.f1'0) = Some'1 (Seq.get c'0.current.old_seq 0))
@@ -4974,7 +5244,43 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
   
   function index_T (self: t_TokenR_T) : int
   
-  function len_T (self: t_QueueInv_T) : int = Seq.length self.cells
+  predicate inv_AtomicUsize (_1: t_AtomicUsize)
+  
+  predicate inv_QueueCell_T (_1: t_QueueCell_T)
+  
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_QueueCell_T [inv_QueueCell_T _1]. inv_QueueCell_T _1
+      = inv_AtomicUsize _1.status
+  
+  predicate invariant_ref_QueueCell_T [@inline:trivial] (self: t_QueueCell_T) = inv_QueueCell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_QueueCell_T
+  
+  predicate inv_ref_QueueCell_T [@inline:trivial] (_1: t_QueueCell_T) = invariant_ref_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_QueueCell_T
+  
+  predicate invariant_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_QueueCell_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_QueueCell_T
+  
+  predicate inv_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_Seq_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_QueueCell_T
+  
+  predicate invariant_ref_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) = inv_Seq_QueueCell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_QueueCell_T
+  
+  predicate inv_ref_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_ref_Seq_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_QueueCell_T
+  
+  let len_QueueCell_T (self: Seq.seq t_QueueCell_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_QueueCell_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  function len_T (self: t_QueueInv_T) : int = len_QueueCell_T self.cells
   
   function mod_len_T (self: t_QueueInv_T) (i: int) : int = EuclideanDivision.mod i (len_T self)
   
@@ -5104,7 +5410,7 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
   
   predicate inv_TokenR_T (_1: t_TokenR_T)
   
-  axiom inv_axiom'2: forall _1: t_TokenR_T [inv_TokenR_T _1]. inv_TokenR_T _1 -> invariant_TokenR_T _1
+  axiom inv_axiom'3: forall _1: t_TokenR_T [inv_TokenR_T _1]. inv_TokenR_T _1 -> invariant_TokenR_T _1
   
   predicate invariant_Ghost_TokenR_T [@inline:trivial] (self: t_TokenR_T) = inv_TokenR_T self
   
@@ -5251,6 +5557,24 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
+  let len_Option_Perm_PCell_MaybeUninit_T (self: Seq.seq t_Option_Perm_PCell_MaybeUninit_T) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_Perm_AtomicUsize (self: Seq.seq t_Perm_AtomicUsize) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate invariant_ref_Seq_Authority [@inline:trivial] (self: Seq.seq t_Authority) = inv_Seq_Authority self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Authority
+  
+  predicate inv_ref_Seq_Authority [@inline:trivial] (_1: Seq.seq t_Authority) = invariant_ref_Seq_Authority _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Authority
+  
+  let len_Authority (self: Seq.seq t_Authority) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Authority self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   function budget_T (self: t_Authority_T) : int
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
@@ -5264,6 +5588,40 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
   meta "rewrite_def" predicate ge_log_Int
   
   function ward_PCell_MaybeUninit_T (self: t_Perm_PCell_MaybeUninit_T) : t_PCell_MaybeUninit_T
+  
+  let len_Id (self: Seq.seq t_Id) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_T
+  
+  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_T
+  
+  let len_T'0 (self: Seq.seq t_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   function seq_T (self: t_Authority_T) : Seq.seq t_T
   
@@ -5301,9 +5659,9 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
   
   predicate protocol_QueueInv_T [@inline:trivial] (self: t_QueueInv_T) =
     gt_log_Int (len_T self) 0
-    /\ len_T self = Seq.length self.cells_own
-    /\ len_T self = Seq.length self.statuses_own
-    /\ len_T self = Seq.length self.statuses_mono_auth
+    /\ len_T self = len_Option_Perm_PCell_MaybeUninit_T self.cells_own
+    /\ len_T self = len_Perm_AtomicUsize self.statuses_own
+    /\ len_T self = len_Authority self.statuses_mono_auth
     /\ budget_T self.values_auth = UInt64.t'int const_MAX - 2 * len_T self + 1 - head_T self - tail_T self
     /\ ge_log_Int (budget_T self.values_auth) 0
     /\ (forall i: int. 0 <= i /\ i < len_T self
@@ -5313,7 +5671,7 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
           end)
     /\ (forall i: int. 0 <= i /\ i < len_T self
         -> ward_AtomicUsize'0 (Seq.get self.statuses_own i) = (Seq.get self.cells i).status)
-    /\ len_T self = Seq.length self.statuses_mono_auth_wards
+    /\ len_T self = len_Id self.statuses_mono_auth_wards
     /\ (forall i: int. 0 <= i /\ i < len_T self
         -> id (Seq.get self.statuses_mono_auth i) = Seq.get self.statuses_mono_auth_wards i)
     /\ 0 <= tail_T self
@@ -5323,7 +5681,7 @@ module M_impl_Queue_T__try_dequeue_store_inv (* Queue<T> *)
     /\ UInt64.t'int (val_AtomicUsize self.tail_own) = tail_T self
     /\ (forall i: int [val_AtomicUsize (Seq.get self.statuses_own i)]. 0 <= i /\ i < len_T self
         -> UInt64.t'int (val_AtomicUsize (Seq.get self.statuses_own i)) <= val' (Seq.get self.statuses_mono_auth i))
-    /\ Seq.length (seq_T'0 self) = head_T self - tail_T self
+    /\ len_T'0 (seq_T'0 self) = head_T self - tail_T self
     /\ (forall k: int [val_T self.tokens_auth k | mod_len_T self k]. tail_T self <= k /\ k < tail_T self + len_T self
         -> three_statuses_inv_T self k)
     /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth k = None'0)
@@ -5754,7 +6112,61 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
-  function len_T (self: t_QueueInv_T) : int = Seq.length self.cells'0
+  predicate inv_AtomicUsize (_1: t_AtomicUsize)
+  
+  predicate inv_QueueCell_T (_1: t_QueueCell_T)
+  
+  axiom inv_axiom'4 [@rewrite]: forall _1: t_QueueCell_T [inv_QueueCell_T _1]. inv_QueueCell_T _1
+      = inv_AtomicUsize _1.status
+  
+  predicate invariant_ref_QueueCell_T [@inline:trivial] (self: t_QueueCell_T) = inv_QueueCell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_QueueCell_T
+  
+  predicate inv_ref_QueueCell_T [@inline:trivial] (_1: t_QueueCell_T) = invariant_ref_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_QueueCell_T
+  
+  predicate invariant_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_QueueCell_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_QueueCell_T
+  
+  predicate inv_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_Seq_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_QueueCell_T
+  
+  predicate invariant_ref_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) = inv_Seq_QueueCell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_QueueCell_T
+  
+  predicate inv_ref_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_ref_Seq_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_QueueCell_T
+  
+  let len_QueueCell_T (self: Seq.seq t_QueueCell_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_QueueCell_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  function len_T (self: t_QueueInv_T) : int = len_QueueCell_T self.cells'0
+  
+  let len_Option_Perm_PCell_MaybeUninit_T (self: Seq.seq t_Option_Perm_PCell_MaybeUninit_T) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_Perm_AtomicUsize (self: Seq.seq t_Perm_AtomicUsize) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate invariant_ref_Seq_Authority [@inline:trivial] (self: Seq.seq t_Authority) = inv_Seq_Authority self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Authority
+  
+  predicate inv_ref_Seq_Authority [@inline:trivial] (_1: Seq.seq t_Authority) = invariant_ref_Seq_Authority _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Authority
+  
+  let len_Authority (self: Seq.seq t_Authority) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Authority self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   function budget_T (self: t_Authority_T) : int
   
@@ -5770,11 +6182,45 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   function ward_PCell_MaybeUninit_T (self: t_Perm_PCell_MaybeUninit_T) : t_PCell_MaybeUninit_T
   
+  let len_Id (self: Seq.seq t_Id) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   function id (self: t_Authority) : t_Id
   
   function val' (self: t_Authority) : int
   
   type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_T
+  
+  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_T
+  
+  let len_T'0 (self: Seq.seq t_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   function seq_T (self: t_Authority_T) : Seq.seq t_T
   
@@ -5818,9 +6264,9 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   predicate protocol_QueueInv_T [@inline:trivial] (self: t_QueueInv_T) =
     gt_log_Int (len_T self) 0
-    /\ len_T self = Seq.length self.cells_own'0
-    /\ len_T self = Seq.length self.statuses_own'0
-    /\ len_T self = Seq.length self.statuses_mono_auth'0
+    /\ len_T self = len_Option_Perm_PCell_MaybeUninit_T self.cells_own'0
+    /\ len_T self = len_Perm_AtomicUsize self.statuses_own'0
+    /\ len_T self = len_Authority self.statuses_mono_auth'0
     /\ budget_T self.values_auth'0 = UInt64.t'int const_MAX - 2 * len_T self + 1 - head_T self - tail_T self
     /\ ge_log_Int (budget_T self.values_auth'0) 0
     /\ (forall i: int. 0 <= i /\ i < len_T self
@@ -5830,7 +6276,7 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
           end)
     /\ (forall i: int. 0 <= i /\ i < len_T self
         -> ward_AtomicUsize'0 (Seq.get self.statuses_own'0 i) = (Seq.get self.cells'0 i).status)
-    /\ len_T self = Seq.length self.statuses_mono_auth_wards'0
+    /\ len_T self = len_Id self.statuses_mono_auth_wards'0
     /\ (forall i: int. 0 <= i /\ i < len_T self
         -> id (Seq.get self.statuses_mono_auth'0 i) = Seq.get self.statuses_mono_auth_wards'0 i)
     /\ 0 <= tail_T self
@@ -5840,7 +6286,7 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
     /\ UInt64.t'int (val_AtomicUsize self.tail_own'0) = tail_T self
     /\ (forall i: int [val_AtomicUsize (Seq.get self.statuses_own'0 i)]. 0 <= i /\ i < len_T self
         -> UInt64.t'int (val_AtomicUsize (Seq.get self.statuses_own'0 i)) <= val' (Seq.get self.statuses_mono_auth'0 i))
-    /\ Seq.length (seq_T'0 self) = head_T self - tail_T self
+    /\ len_T'0 (seq_T'0 self) = head_T self - tail_T self
     /\ (forall k: int [val_T self.tokens_auth'0 k | mod_len_T self k]. tail_T self <= k /\ k < tail_T self + len_T self
         -> three_statuses_inv_T self k)
     /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth'0 k = None'1)
@@ -5901,30 +6347,6 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
     /\ namespace_QueueInv_T self.inv = Namespace_BOUNDED_MPMC_QUEUE 0
   
   meta "rewrite_def" predicate invariant_Queue_T
-  
-  predicate inv_AtomicUsize (_1: t_AtomicUsize)
-  
-  predicate inv_QueueCell_T (_1: t_QueueCell_T)
-  
-  axiom inv_axiom'4 [@rewrite]: forall _1: t_QueueCell_T [inv_QueueCell_T _1]. inv_QueueCell_T _1
-      = inv_AtomicUsize _1.status
-  
-  predicate invariant_ref_QueueCell_T [@inline:trivial] (self: t_QueueCell_T) = inv_QueueCell_T self
-  
-  meta "rewrite_def" predicate invariant_ref_QueueCell_T
-  
-  predicate inv_ref_QueueCell_T [@inline:trivial] (_1: t_QueueCell_T) = invariant_ref_QueueCell_T _1
-  
-  meta "rewrite_def" predicate inv_ref_QueueCell_T
-  
-  predicate invariant_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_QueueCell_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_QueueCell_T
-  
-  predicate inv_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_Seq_QueueCell_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_QueueCell_T
   
   predicate invariant_Vec_QueueCell_T_Global (self: t_Vec_QueueCell_T_Global) =
     inv_Seq_QueueCell_T (view_Vec_QueueCell_T_Global self)
@@ -6103,11 +6525,11 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   meta "rewrite_def" predicate inv_ref_Vec_QueueCell_T_Global
   
-  let len_QueueCell_T (self: t_Vec_QueueCell_T_Global) (return (x: UInt64.t)) =
+  let len_QueueCell_T'0 (self: t_Vec_QueueCell_T_Global) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Vec_QueueCell_T_Global self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = Seq.length (view_Vec_QueueCell_T_Global self)}
+      = len_QueueCell_T (view_Vec_QueueCell_T_Global self)}
       (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_QueueCell_T) =
@@ -6587,8 +7009,6 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   meta "rewrite_def" predicate resolve_Ghost_F'0
   
-  predicate inv_T (_1: t_T)
-  
   predicate resolve_T (_1: t_T)
   
   type t_TokenW_T
@@ -6649,14 +7069,6 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
     c4'3: MutBorrow.t t_Option_Fragment;
     c5'3: MutBorrow.t t_Option_TokenW_T;
     c6'3: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T }
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
   
   predicate invariant_refmut_Ghost_Option_TokenW_T [@inline:trivial] (self: MutBorrow.t t_Option_TokenW_T) =
     inv_Ghost_Option_TokenW_T self.current /\ inv_Ghost_Option_TokenW_T self.final
@@ -7808,12 +8220,12 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
       | s4 = __new_closure4 {_23} (fun (_x: t_FnGhostWrapper_closure4) -> [ &_22 <- _x ] s5)
       | s5 = new_FnGhostWrapper_closure4 {_22} (fun (_x: t_FnGhostWrapper_closure4) -> [ &_21 <- _x ] s6)
       | s6 = load_FnGhostWrapper_closure4 {self.head} {_21} (fun (_x: UInt64.t) -> [ &head'0 <- _x ] s7)
-      | s7 = len_QueueCell_T {self.cells} (fun (_x: UInt64.t) -> [ &_28 <- _x ] s8)
+      | s7 = len_QueueCell_T'0 {self.cells} (fun (_x: UInt64.t) -> [ &_28 <- _x ] s8)
       | s8 = [ &_30 <- _28 = (0: UInt64.t) ] s9
       | s9 = {[@expl:remainder by zero] not _30} s10
       | s10 = UInt64.rem {head'0} {_28} (fun (_x: UInt64.t) -> [ &head_mod <- _x ] s11)
       | s11 = {[@expl:assertion] UInt64.t'int head_mod
-        = EuclideanDivision.mod (UInt64.t'int head'0) (Seq.length (view_Vec_QueueCell_T_Global self.cells))}
+        = EuclideanDivision.mod (UInt64.t'int head'0) (len_QueueCell_T (view_Vec_QueueCell_T_Global self.cells))}
         s12
       | s12 = index_Vec_QueueCell_T_Global {self.cells} {head_mod} (fun (_x: t_QueueCell_T) -> [ &_37 <- _x ] s13)
       | s13 = [ &cell <- _37 ] s14
@@ -8125,7 +8537,43 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
   
   function head_T (self: t_QueueInv_T) : int = UInt64.t'int (val_AtomicUsize self.head_own)
   
-  function len_T (self: t_QueueInv_T) : int = Seq.length self.cells
+  predicate inv_AtomicUsize (_1: t_AtomicUsize)
+  
+  predicate inv_QueueCell_T (_1: t_QueueCell_T)
+  
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_QueueCell_T [inv_QueueCell_T _1]. inv_QueueCell_T _1
+      = inv_AtomicUsize _1.status
+  
+  predicate invariant_ref_QueueCell_T [@inline:trivial] (self: t_QueueCell_T) = inv_QueueCell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_QueueCell_T
+  
+  predicate inv_ref_QueueCell_T [@inline:trivial] (_1: t_QueueCell_T) = invariant_ref_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_QueueCell_T
+  
+  predicate invariant_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_QueueCell_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_QueueCell_T
+  
+  predicate inv_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_Seq_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_QueueCell_T
+  
+  predicate invariant_ref_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) = inv_Seq_QueueCell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_QueueCell_T
+  
+  predicate inv_ref_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_ref_Seq_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_QueueCell_T
+  
+  let len_QueueCell_T (self: Seq.seq t_QueueCell_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_QueueCell_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  function len_T (self: t_QueueInv_T) : int = len_QueueCell_T self.cells
   
   function mod_len_T (self: t_QueueInv_T) (i: int) : int = EuclideanDivision.mod i (len_T self)
   
@@ -8243,7 +8691,7 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
   
   predicate inv_Fragment (_1: t_Fragment)
   
-  axiom inv_axiom'2: forall _1: t_Fragment [inv_Fragment _1]. inv_Fragment _1 -> invariant_Fragment _1
+  axiom inv_axiom'3: forall _1: t_Fragment [inv_Fragment _1]. inv_Fragment _1 -> invariant_Fragment _1
   
   predicate resolve_Fragment (_1: t_Fragment)
   
@@ -8360,7 +8808,7 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
   
   predicate inv_QueueCommitter_T (_1: t_QueueCommitter_T)
   
-  axiom inv_axiom'3 [@rewrite]: forall _1: t_QueueCommitter_T [inv_QueueCommitter_T _1]. inv_QueueCommitter_T _1
+  axiom inv_axiom'4 [@rewrite]: forall _1: t_QueueCommitter_T [inv_QueueCommitter_T _1]. inv_QueueCommitter_T _1
       = (invariant_QueueCommitter_T _1 /\ inv_refmut_Authority_T _1.auth)
   
   predicate invariant_refmut_QueueCommitter_T [@inline:trivial] (self: MutBorrow.t t_QueueCommitter_T) =
@@ -8469,7 +8917,7 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
   
   predicate inv_TokenW_T (_1: t_TokenW_T)
   
-  axiom inv_axiom'4: forall _1: t_TokenW_T [inv_TokenW_T _1]. inv_TokenW_T _1 -> invariant_TokenW_T _1
+  axiom inv_axiom'5: forall _1: t_TokenW_T [inv_TokenW_T _1]. inv_TokenW_T _1 -> invariant_TokenW_T _1
   
   predicate invariant_Ghost_TokenW_T [@inline:trivial] (self: t_TokenW_T) = inv_TokenW_T self
   
@@ -8612,30 +9060,6 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
   
   meta "rewrite_def" predicate invariant_Queue_T
   
-  predicate inv_AtomicUsize (_1: t_AtomicUsize)
-  
-  predicate inv_QueueCell_T (_1: t_QueueCell_T)
-  
-  axiom inv_axiom'5 [@rewrite]: forall _1: t_QueueCell_T [inv_QueueCell_T _1]. inv_QueueCell_T _1
-      = inv_AtomicUsize _1.status
-  
-  predicate invariant_ref_QueueCell_T [@inline:trivial] (self: t_QueueCell_T) = inv_QueueCell_T self
-  
-  meta "rewrite_def" predicate invariant_ref_QueueCell_T
-  
-  predicate inv_ref_QueueCell_T [@inline:trivial] (_1: t_QueueCell_T) = invariant_ref_QueueCell_T _1
-  
-  meta "rewrite_def" predicate inv_ref_QueueCell_T
-  
-  predicate invariant_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_QueueCell_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_QueueCell_T
-  
-  predicate inv_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_Seq_QueueCell_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_QueueCell_T
-  
   predicate invariant_Vec_QueueCell_T_Global (self: t_Vec_QueueCell_T_Global) =
     inv_Seq_QueueCell_T (view_Vec_QueueCell_T_Global self)
   
@@ -8662,13 +9086,57 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
+  let len_Option_Perm_PCell_MaybeUninit_T (self: Seq.seq t_Option_Perm_PCell_MaybeUninit_T) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_Perm_AtomicUsize (self: Seq.seq t_Perm_AtomicUsize) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_Authority (self: Seq.seq t_Authority) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Authority self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   function ward_PCell_MaybeUninit_T (self: t_Perm_PCell_MaybeUninit_T) : t_PCell_MaybeUninit_T
+  
+  let len_Id (self: Seq.seq t_Id) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_T
+  
+  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_T
+  
+  let len_T'0 (self: Seq.seq t_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   predicate protocol_QueueInv_T [@inline:trivial] (self: t_QueueInv_T) =
     gt_log_Int (len_T self) 0
-    /\ len_T self = Seq.length self.cells_own
-    /\ len_T self = Seq.length self.statuses_own
-    /\ len_T self = Seq.length self.statuses_mono_auth
+    /\ len_T self = len_Option_Perm_PCell_MaybeUninit_T self.cells_own
+    /\ len_T self = len_Perm_AtomicUsize self.statuses_own
+    /\ len_T self = len_Authority self.statuses_mono_auth
     /\ budget_T self.values_auth = UInt64.t'int const_MAX - 2 * len_T self + 1 - head_T self - tail_T self
     /\ ge_log_Int (budget_T self.values_auth) 0
     /\ (forall i: int. 0 <= i /\ i < len_T self
@@ -8678,7 +9146,7 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
           end)
     /\ (forall i: int. 0 <= i /\ i < len_T self
         -> ward_AtomicUsize'0 (Seq.get self.statuses_own i) = (Seq.get self.cells i).status)
-    /\ len_T self = Seq.length self.statuses_mono_auth_wards
+    /\ len_T self = len_Id self.statuses_mono_auth_wards
     /\ (forall i: int. 0 <= i /\ i < len_T self
         -> id (Seq.get self.statuses_mono_auth i) = Seq.get self.statuses_mono_auth_wards i)
     /\ 0 <= tail_T self
@@ -8688,7 +9156,7 @@ module M_impl_Queue_T__try_enqueue_cas_inv (* Queue<T> *)
     /\ UInt64.t'int (val_AtomicUsize self.tail_own) = tail_T self
     /\ (forall i: int [val_AtomicUsize (Seq.get self.statuses_own i)]. 0 <= i /\ i < len_T self
         -> UInt64.t'int (val_AtomicUsize (Seq.get self.statuses_own i)) <= val''0 (Seq.get self.statuses_mono_auth i))
-    /\ Seq.length (seq_T'0 self) = head_T self - tail_T self
+    /\ len_T'0 (seq_T'0 self) = head_T self - tail_T self
     /\ (forall k: int [val_T self.tokens_auth k | mod_len_T self k]. tail_T self <= k /\ k < tail_T self + len_T self
         -> three_statuses_inv_T self k)
     /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth k = None'0)
@@ -9092,7 +9560,43 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
   
   function index_T (self: t_TokenW_T) : int
   
-  function len_T (self: t_QueueInv_T) : int = Seq.length self.cells
+  predicate inv_AtomicUsize (_1: t_AtomicUsize)
+  
+  predicate inv_QueueCell_T (_1: t_QueueCell_T)
+  
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_QueueCell_T [inv_QueueCell_T _1]. inv_QueueCell_T _1
+      = inv_AtomicUsize _1.status
+  
+  predicate invariant_ref_QueueCell_T [@inline:trivial] (self: t_QueueCell_T) = inv_QueueCell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_QueueCell_T
+  
+  predicate inv_ref_QueueCell_T [@inline:trivial] (_1: t_QueueCell_T) = invariant_ref_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_QueueCell_T
+  
+  predicate invariant_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_QueueCell_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_QueueCell_T
+  
+  predicate inv_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_Seq_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_QueueCell_T
+  
+  predicate invariant_ref_Seq_QueueCell_T [@inline:trivial] (self: Seq.seq t_QueueCell_T) = inv_Seq_QueueCell_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_QueueCell_T
+  
+  predicate inv_ref_Seq_QueueCell_T [@inline:trivial] (_1: Seq.seq t_QueueCell_T) = invariant_ref_Seq_QueueCell_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_QueueCell_T
+  
+  let len_QueueCell_T (self: Seq.seq t_QueueCell_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_QueueCell_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  function len_T (self: t_QueueInv_T) : int = len_QueueCell_T self.cells
   
   function mod_len_T (self: t_QueueInv_T) (i: int) : int = EuclideanDivision.mod i (len_T self)
   
@@ -9222,7 +9726,7 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
   
   predicate inv_TokenW_T (_1: t_TokenW_T)
   
-  axiom inv_axiom'2: forall _1: t_TokenW_T [inv_TokenW_T _1]. inv_TokenW_T _1 -> invariant_TokenW_T _1
+  axiom inv_axiom'3: forall _1: t_TokenW_T [inv_TokenW_T _1]. inv_TokenW_T _1 -> invariant_TokenW_T _1
   
   predicate invariant_Ghost_TokenW_T [@inline:trivial] (self: t_TokenW_T) = inv_TokenW_T self
   
@@ -9371,6 +9875,24 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
+  let len_Option_Perm_PCell_MaybeUninit_T (self: Seq.seq t_Option_Perm_PCell_MaybeUninit_T) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_Perm_AtomicUsize (self: Seq.seq t_Perm_AtomicUsize) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate invariant_ref_Seq_Authority [@inline:trivial] (self: Seq.seq t_Authority) = inv_Seq_Authority self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Authority
+  
+  predicate inv_ref_Seq_Authority [@inline:trivial] (_1: Seq.seq t_Authority) = invariant_ref_Seq_Authority _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Authority
+  
+  let len_Authority (self: Seq.seq t_Authority) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Authority self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   function budget_T (self: t_Authority_T) : int
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
@@ -9384,6 +9906,40 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
   meta "rewrite_def" predicate ge_log_Int
   
   function ward_PCell_MaybeUninit_T (self: t_Perm_PCell_MaybeUninit_T) : t_PCell_MaybeUninit_T
+  
+  let len_Id (self: Seq.seq t_Id) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_T
+  
+  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_T
+  
+  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_T
+  
+  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_T
+  
+  let len_T'0 (self: Seq.seq t_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   function seq_T (self: t_Authority_T) : Seq.seq t_T
   
@@ -9421,9 +9977,9 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
   
   predicate protocol_QueueInv_T [@inline:trivial] (self: t_QueueInv_T) =
     gt_log_Int (len_T self) 0
-    /\ len_T self = Seq.length self.cells_own
-    /\ len_T self = Seq.length self.statuses_own
-    /\ len_T self = Seq.length self.statuses_mono_auth
+    /\ len_T self = len_Option_Perm_PCell_MaybeUninit_T self.cells_own
+    /\ len_T self = len_Perm_AtomicUsize self.statuses_own
+    /\ len_T self = len_Authority self.statuses_mono_auth
     /\ budget_T self.values_auth = UInt64.t'int const_MAX - 2 * len_T self + 1 - head_T self - tail_T self
     /\ ge_log_Int (budget_T self.values_auth) 0
     /\ (forall i: int. 0 <= i /\ i < len_T self
@@ -9433,7 +9989,7 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
           end)
     /\ (forall i: int. 0 <= i /\ i < len_T self
         -> ward_AtomicUsize'0 (Seq.get self.statuses_own i) = (Seq.get self.cells i).status)
-    /\ len_T self = Seq.length self.statuses_mono_auth_wards
+    /\ len_T self = len_Id self.statuses_mono_auth_wards
     /\ (forall i: int. 0 <= i /\ i < len_T self
         -> id (Seq.get self.statuses_mono_auth i) = Seq.get self.statuses_mono_auth_wards i)
     /\ 0 <= tail_T self
@@ -9443,7 +9999,7 @@ module M_impl_Queue_T__try_enqueue_store_inv (* Queue<T> *)
     /\ UInt64.t'int (val_AtomicUsize self.tail_own) = tail_T self
     /\ (forall i: int [val_AtomicUsize (Seq.get self.statuses_own i)]. 0 <= i /\ i < len_T self
         -> UInt64.t'int (val_AtomicUsize (Seq.get self.statuses_own i)) <= val' (Seq.get self.statuses_mono_auth i))
-    /\ Seq.length (seq_T'0 self) = head_T self - tail_T self
+    /\ len_T'0 (seq_T'0 self) = head_T self - tail_T self
     /\ (forall k: int [val_T self.tokens_auth k | mod_len_T self k]. tail_T self <= k /\ k < tail_T self + len_T self
         -> three_statuses_inv_T self k)
     /\ (forall k: int. k < tail_T self \/ tail_T self + len_T self <= k -> val_T self.tokens_auth k = None'0)
@@ -9819,9 +10375,41 @@ module M_state__impl_Authority_T__alloc (* state::Authority<T> *)
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  function id_T (self: t_Authority_T) : t_Id = id_Option_Excl_tup2_Seq_T_Int'0 self.f0'2
+  predicate invariant_ref_Authority_Option_Excl_tup2_Seq_T_Int [@inline:trivial] (self: t_Authority_Option_Excl_tup2_Seq_T_Int) =
+    inv_Authority_Option_Excl_tup2_Seq_T_Int self
   
-  function id_T'0 (self: t_Fragment_T) : t_Id = id_Option_Excl_tup2_Seq_T_Int self.f0'3
+  meta "rewrite_def" predicate invariant_ref_Authority_Option_Excl_tup2_Seq_T_Int
+  
+  predicate inv_ref_Authority_Option_Excl_tup2_Seq_T_Int [@inline:trivial] (_1: t_Authority_Option_Excl_tup2_Seq_T_Int) =
+    invariant_ref_Authority_Option_Excl_tup2_Seq_T_Int _1
+  
+  meta "rewrite_def" predicate inv_ref_Authority_Option_Excl_tup2_Seq_T_Int
+  
+  let id_Option_Excl_tup2_Seq_T_Int'1 (self: t_Authority_Option_Excl_tup2_Seq_T_Int) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Authority_Option_Excl_tup2_Seq_T_Int self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_Option_Excl_tup2_Seq_T_Int'0 self}
+      (! return {result}) ]
+  
+  function id_T (self: t_Authority_T) : t_Id = id_Option_Excl_tup2_Seq_T_Int'1 self.f0'2
+  
+  predicate invariant_ref_Fragment_Option_Excl_tup2_Seq_T_Int [@inline:trivial] (self: t_Fragment_Option_Excl_tup2_Seq_T_Int) =
+    inv_Fragment_Option_Excl_tup2_Seq_T_Int self
+  
+  meta "rewrite_def" predicate invariant_ref_Fragment_Option_Excl_tup2_Seq_T_Int
+  
+  predicate inv_ref_Fragment_Option_Excl_tup2_Seq_T_Int [@inline:trivial] (_1: t_Fragment_Option_Excl_tup2_Seq_T_Int) =
+    invariant_ref_Fragment_Option_Excl_tup2_Seq_T_Int _1
+  
+  meta "rewrite_def" predicate inv_ref_Fragment_Option_Excl_tup2_Seq_T_Int
+  
+  let id_Option_Excl_tup2_Seq_T_Int'2 (self: t_Fragment_Option_Excl_tup2_Seq_T_Int) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Fragment_Option_Excl_tup2_Seq_T_Int self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_Option_Excl_tup2_Seq_T_Int self}
+      (! return {result}) ]
+  
+  function id_T'0 (self: t_Fragment_T) : t_Id = id_Option_Excl_tup2_Seq_T_Int'2 self.f0'3
   
   constant any_Excl_tup2_Seq_T_Int : t_Excl_tup2_Seq_T_Int
   
@@ -10140,9 +10728,41 @@ module M_state__impl_Authority_T__update (* state::Authority<T> *)
   
   meta "rewrite_def" predicate resolve_refmut_Authority_T
   
-  function id_T (self: t_Authority_T) : t_Id = id_Option_Excl_tup2_Seq_T_Int self.f0'3
+  predicate invariant_ref_Authority_Option_Excl_tup2_Seq_T_Int [@inline:trivial] (self: t_Authority_Option_Excl_tup2_Seq_T_Int) =
+    inv_Authority_Option_Excl_tup2_Seq_T_Int self
   
-  function id_T'0 (self: t_Fragment_T) : t_Id = id_Option_Excl_tup2_Seq_T_Int'0 self.f0'1
+  meta "rewrite_def" predicate invariant_ref_Authority_Option_Excl_tup2_Seq_T_Int
+  
+  predicate inv_ref_Authority_Option_Excl_tup2_Seq_T_Int [@inline:trivial] (_1: t_Authority_Option_Excl_tup2_Seq_T_Int) =
+    invariant_ref_Authority_Option_Excl_tup2_Seq_T_Int _1
+  
+  meta "rewrite_def" predicate inv_ref_Authority_Option_Excl_tup2_Seq_T_Int
+  
+  let id_Option_Excl_tup2_Seq_T_Int'1 (self: t_Authority_Option_Excl_tup2_Seq_T_Int) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Authority_Option_Excl_tup2_Seq_T_Int self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_Option_Excl_tup2_Seq_T_Int self}
+      (! return {result}) ]
+  
+  function id_T (self: t_Authority_T) : t_Id = id_Option_Excl_tup2_Seq_T_Int'1 self.f0'3
+  
+  predicate invariant_ref_Fragment_Option_Excl_tup2_Seq_T_Int [@inline:trivial] (self: t_Fragment_Option_Excl_tup2_Seq_T_Int) =
+    inv_Fragment_Option_Excl_tup2_Seq_T_Int self
+  
+  meta "rewrite_def" predicate invariant_ref_Fragment_Option_Excl_tup2_Seq_T_Int
+  
+  predicate inv_ref_Fragment_Option_Excl_tup2_Seq_T_Int [@inline:trivial] (_1: t_Fragment_Option_Excl_tup2_Seq_T_Int) =
+    invariant_ref_Fragment_Option_Excl_tup2_Seq_T_Int _1
+  
+  meta "rewrite_def" predicate inv_ref_Fragment_Option_Excl_tup2_Seq_T_Int
+  
+  let id_Option_Excl_tup2_Seq_T_Int'2 (self: t_Fragment_Option_Excl_tup2_Seq_T_Int) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Fragment_Option_Excl_tup2_Seq_T_Int self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_Option_Excl_tup2_Seq_T_Int'0 self}
+      (! return {result}) ]
+  
+  function id_T'0 (self: t_Fragment_T) : t_Id = id_Option_Excl_tup2_Seq_T_Int'2 self.f0'1
   
   constant any_Excl_tup2_Seq_T_Int : t_Excl_tup2_Seq_T_Int
   
@@ -10736,9 +11356,21 @@ module M_statuses__impl_Authority__frag_lemma (* statuses::Authority *)
   
   meta "rewrite_def" predicate inv_ref_Fragment
   
-  function id (self: t_Authority) : t_Id = id_Option_SemiLattice_Int self.f0'0
+  let id_Option_SemiLattice_Int'1 (self: t_Authority_Option_SemiLattice_Int) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Authority_Option_SemiLattice_Int self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_Option_SemiLattice_Int self}
+      (! return {result}) ]
   
-  function id'0 (self: t_Fragment) : t_Id = id_Option_SemiLattice_Int'0 self.f0
+  function id (self: t_Authority) : t_Id = id_Option_SemiLattice_Int'1 self.f0'0
+  
+  let id_Option_SemiLattice_Int'2 (self: t_Fragment_Option_SemiLattice_Int) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Fragment_Option_SemiLattice_Int self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_Option_SemiLattice_Int'0 self}
+      (! return {result}) ]
+  
+  function id'0 (self: t_Fragment) : t_Id = id_Option_SemiLattice_Int'2 self.f0
   
   constant any_SemiLattice_Int : t_SemiLattice_Int
   
@@ -10932,9 +11564,41 @@ module M_statuses__impl_Authority__get_fragment (* statuses::Authority *)
   axiom inv_axiom'1 [@rewrite]: forall _1: t_Fragment [inv_Fragment _1]. inv_Fragment _1
       = (invariant_Fragment _1 /\ inv_Fragment_Option_SemiLattice_Int _1.f0'2)
   
-  function id (self: t_Authority) : t_Id = id_Option_SemiLattice_Int'0 self.f0'0
+  predicate invariant_ref_Authority_Option_SemiLattice_Int [@inline:trivial] (self: t_Authority_Option_SemiLattice_Int) =
+    inv_Authority_Option_SemiLattice_Int self
   
-  function id'0 (self: t_Fragment) : t_Id = id_Option_SemiLattice_Int self.f0'2
+  meta "rewrite_def" predicate invariant_ref_Authority_Option_SemiLattice_Int
+  
+  predicate inv_ref_Authority_Option_SemiLattice_Int [@inline:trivial] (_1: t_Authority_Option_SemiLattice_Int) =
+    invariant_ref_Authority_Option_SemiLattice_Int _1
+  
+  meta "rewrite_def" predicate inv_ref_Authority_Option_SemiLattice_Int
+  
+  let id_Option_SemiLattice_Int'1 (self: t_Authority_Option_SemiLattice_Int) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Authority_Option_SemiLattice_Int self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_Option_SemiLattice_Int'0 self}
+      (! return {result}) ]
+  
+  function id (self: t_Authority) : t_Id = id_Option_SemiLattice_Int'1 self.f0'0
+  
+  predicate invariant_ref_Fragment_Option_SemiLattice_Int [@inline:trivial] (self: t_Fragment_Option_SemiLattice_Int) =
+    inv_Fragment_Option_SemiLattice_Int self
+  
+  meta "rewrite_def" predicate invariant_ref_Fragment_Option_SemiLattice_Int
+  
+  predicate inv_ref_Fragment_Option_SemiLattice_Int [@inline:trivial] (_1: t_Fragment_Option_SemiLattice_Int) =
+    invariant_ref_Fragment_Option_SemiLattice_Int _1
+  
+  meta "rewrite_def" predicate inv_ref_Fragment_Option_SemiLattice_Int
+  
+  let id_Option_SemiLattice_Int'2 (self: t_Fragment_Option_SemiLattice_Int) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Fragment_Option_SemiLattice_Int self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_Option_SemiLattice_Int self}
+      (! return {result}) ]
+  
+  function id'0 (self: t_Fragment) : t_Id = id_Option_SemiLattice_Int'2 self.f0'2
   
   function val''0 (self: t_Fragment) : int =
     (unwrap_Option_SemiLattice_Int (view_Fragment_Option_SemiLattice_Int self.f0'2)).f0
@@ -11124,7 +11788,23 @@ module M_statuses__impl_Authority__increase (* statuses::Authority *)
   function val' (self: t_Authority) : int =
     (unwrap_Option_SemiLattice_Int (view_Authority_Option_SemiLattice_Int self.f0'0)).f0
   
-  function id (self: t_Authority) : t_Id = id_Option_SemiLattice_Int'0 self.f0'0
+  predicate invariant_ref_Authority_Option_SemiLattice_Int [@inline:trivial] (self: t_Authority_Option_SemiLattice_Int) =
+    inv_Authority_Option_SemiLattice_Int self
+  
+  meta "rewrite_def" predicate invariant_ref_Authority_Option_SemiLattice_Int
+  
+  predicate inv_ref_Authority_Option_SemiLattice_Int [@inline:trivial] (_1: t_Authority_Option_SemiLattice_Int) =
+    invariant_ref_Authority_Option_SemiLattice_Int _1
+  
+  meta "rewrite_def" predicate inv_ref_Authority_Option_SemiLattice_Int
+  
+  let id_Option_SemiLattice_Int'1 (self: t_Authority_Option_SemiLattice_Int) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Authority_Option_SemiLattice_Int self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_Option_SemiLattice_Int'0 self}
+      (! return {result}) ]
+  
+  function id (self: t_Authority) : t_Id = id_Option_SemiLattice_Int'1 self.f0'0
   
   meta "compute_max_steps" 1000000
   
@@ -11786,7 +12466,23 @@ module M_tokens__impl_TokenR_T__alloc (* tokens::TokenR<T> *)
       | Some'0 {f0'0 = Some data} -> W'3 data
       end
   
-  function id_T (self: t_Authority_T) : t_Id = id_FMap_Int_Excl_Option_T'0 self.f0
+  predicate invariant_ref_Authority_FMap_Int_Excl_Option_T [@inline:trivial] (self: t_Authority_FMap_Int_Excl_Option_T) =
+    inv_Authority_FMap_Int_Excl_Option_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Authority_FMap_Int_Excl_Option_T
+  
+  predicate inv_ref_Authority_FMap_Int_Excl_Option_T [@inline:trivial] (_1: t_Authority_FMap_Int_Excl_Option_T) =
+    invariant_ref_Authority_FMap_Int_Excl_Option_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Authority_FMap_Int_Excl_Option_T
+  
+  let id_FMap_Int_Excl_Option_T'1 (self: t_Authority_FMap_Int_Excl_Option_T) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Authority_FMap_Int_Excl_Option_T self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_FMap_Int_Excl_Option_T'0 self}
+      (! return {result}) ]
+  
+  function id_T (self: t_Authority_T) : t_Id = id_FMap_Int_Excl_Option_T'1 self.f0
   
   function fin_Ghost_refmut_Authority_T [@inline:trivial] (self: MutBorrow.t t_Authority_T) : t_Authority_T = self.final
   
@@ -11794,7 +12490,23 @@ module M_tokens__impl_TokenR_T__alloc (* tokens::TokenR<T> *)
   
   function index_T (self: t_TokenR_T) : int = self.f1'2
   
-  function id_T'0 (self: t_TokenR_T) : t_Id = id_FMap_Int_Excl_Option_T self.f0'2
+  predicate invariant_ref_Fragment_FMap_Int_Excl_Option_T [@inline:trivial] (self: t_Fragment_FMap_Int_Excl_Option_T) =
+    inv_Fragment_FMap_Int_Excl_Option_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Fragment_FMap_Int_Excl_Option_T
+  
+  predicate inv_ref_Fragment_FMap_Int_Excl_Option_T [@inline:trivial] (_1: t_Fragment_FMap_Int_Excl_Option_T) =
+    invariant_ref_Fragment_FMap_Int_Excl_Option_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Fragment_FMap_Int_Excl_Option_T
+  
+  let id_FMap_Int_Excl_Option_T'2 (self: t_Fragment_FMap_Int_Excl_Option_T) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Fragment_FMap_Int_Excl_Option_T self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_FMap_Int_Excl_Option_T self}
+      (! return {result}) ]
+  
+  function id_T'0 (self: t_TokenR_T) : t_Id = id_FMap_Int_Excl_Option_T'2 self.f0'2
   
   meta "compute_max_steps" 1000000
   
@@ -12239,9 +12951,41 @@ module M_tokens__impl_TokenR_T__discard (* tokens::TokenR<T> *)
   let new_unit (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  function id_T (self: t_TokenR_T) : t_Id = id_FMap_Int_Excl_Option_T'0 self.f0
+  predicate invariant_ref_Fragment_FMap_Int_Excl_Option_T [@inline:trivial] (self: t_Fragment_FMap_Int_Excl_Option_T) =
+    inv_Fragment_FMap_Int_Excl_Option_T self
   
-  function id_T'0 (self: t_Authority_T) : t_Id = id_FMap_Int_Excl_Option_T self.f0'1
+  meta "rewrite_def" predicate invariant_ref_Fragment_FMap_Int_Excl_Option_T
+  
+  predicate inv_ref_Fragment_FMap_Int_Excl_Option_T [@inline:trivial] (_1: t_Fragment_FMap_Int_Excl_Option_T) =
+    invariant_ref_Fragment_FMap_Int_Excl_Option_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Fragment_FMap_Int_Excl_Option_T
+  
+  let id_FMap_Int_Excl_Option_T'1 (self: t_Fragment_FMap_Int_Excl_Option_T) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Fragment_FMap_Int_Excl_Option_T self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_FMap_Int_Excl_Option_T'0 self}
+      (! return {result}) ]
+  
+  function id_T (self: t_TokenR_T) : t_Id = id_FMap_Int_Excl_Option_T'1 self.f0
+  
+  predicate invariant_ref_Authority_FMap_Int_Excl_Option_T [@inline:trivial] (self: t_Authority_FMap_Int_Excl_Option_T) =
+    inv_Authority_FMap_Int_Excl_Option_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Authority_FMap_Int_Excl_Option_T
+  
+  predicate inv_ref_Authority_FMap_Int_Excl_Option_T [@inline:trivial] (_1: t_Authority_FMap_Int_Excl_Option_T) =
+    invariant_ref_Authority_FMap_Int_Excl_Option_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Authority_FMap_Int_Excl_Option_T
+  
+  let id_FMap_Int_Excl_Option_T'2 (self: t_Authority_FMap_Int_Excl_Option_T) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Authority_FMap_Int_Excl_Option_T self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_FMap_Int_Excl_Option_T self}
+      (! return {result}) ]
+  
+  function id_T'0 (self: t_Authority_T) : t_Id = id_FMap_Int_Excl_Option_T'2 self.f0'1
   
   function fin_Ghost_refmut_Authority_T [@inline:trivial] (self: MutBorrow.t t_Authority_T) : t_Authority_T = self.final
   
@@ -12602,7 +13346,23 @@ module M_tokens__impl_TokenW_T__alloc (* tokens::TokenW<T> *)
       | Some'0 {f0'0 = Some data} -> W'3 data
       end
   
-  function id_T (self: t_Authority_T) : t_Id = id_FMap_Int_Excl_Option_T'0 self.f0
+  predicate invariant_ref_Authority_FMap_Int_Excl_Option_T [@inline:trivial] (self: t_Authority_FMap_Int_Excl_Option_T) =
+    inv_Authority_FMap_Int_Excl_Option_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Authority_FMap_Int_Excl_Option_T
+  
+  predicate inv_ref_Authority_FMap_Int_Excl_Option_T [@inline:trivial] (_1: t_Authority_FMap_Int_Excl_Option_T) =
+    invariant_ref_Authority_FMap_Int_Excl_Option_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Authority_FMap_Int_Excl_Option_T
+  
+  let id_FMap_Int_Excl_Option_T'1 (self: t_Authority_FMap_Int_Excl_Option_T) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Authority_FMap_Int_Excl_Option_T self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_FMap_Int_Excl_Option_T'0 self}
+      (! return {result}) ]
+  
+  function id_T (self: t_Authority_T) : t_Id = id_FMap_Int_Excl_Option_T'1 self.f0
   
   function fin_Ghost_refmut_Authority_T [@inline:trivial] (self: MutBorrow.t t_Authority_T) : t_Authority_T = self.final
   
@@ -12610,7 +13370,23 @@ module M_tokens__impl_TokenW_T__alloc (* tokens::TokenW<T> *)
   
   function index_T (self: t_TokenW_T) : int = self.f1'2
   
-  function id_T'0 (self: t_TokenW_T) : t_Id = id_FMap_Int_Excl_Option_T self.f0'2
+  predicate invariant_ref_Fragment_FMap_Int_Excl_Option_T [@inline:trivial] (self: t_Fragment_FMap_Int_Excl_Option_T) =
+    inv_Fragment_FMap_Int_Excl_Option_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Fragment_FMap_Int_Excl_Option_T
+  
+  predicate inv_ref_Fragment_FMap_Int_Excl_Option_T [@inline:trivial] (_1: t_Fragment_FMap_Int_Excl_Option_T) =
+    invariant_ref_Fragment_FMap_Int_Excl_Option_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Fragment_FMap_Int_Excl_Option_T
+  
+  let id_FMap_Int_Excl_Option_T'2 (self: t_Fragment_FMap_Int_Excl_Option_T) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Fragment_FMap_Int_Excl_Option_T self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_FMap_Int_Excl_Option_T self}
+      (! return {result}) ]
+  
+  function id_T'0 (self: t_TokenW_T) : t_Id = id_FMap_Int_Excl_Option_T'2 self.f0'2
   
   constant any_T : t_T
   
@@ -13079,9 +13855,41 @@ module M_tokens__impl_TokenW_T__discard (* tokens::TokenW<T> *)
   let new_unit (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  function id_T (self: t_TokenW_T) : t_Id = id_FMap_Int_Excl_Option_T'0 self.f0
+  predicate invariant_ref_Fragment_FMap_Int_Excl_Option_T [@inline:trivial] (self: t_Fragment_FMap_Int_Excl_Option_T) =
+    inv_Fragment_FMap_Int_Excl_Option_T self
   
-  function id_T'0 (self: t_Authority_T) : t_Id = id_FMap_Int_Excl_Option_T self.f0'1
+  meta "rewrite_def" predicate invariant_ref_Fragment_FMap_Int_Excl_Option_T
+  
+  predicate inv_ref_Fragment_FMap_Int_Excl_Option_T [@inline:trivial] (_1: t_Fragment_FMap_Int_Excl_Option_T) =
+    invariant_ref_Fragment_FMap_Int_Excl_Option_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Fragment_FMap_Int_Excl_Option_T
+  
+  let id_FMap_Int_Excl_Option_T'1 (self: t_Fragment_FMap_Int_Excl_Option_T) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Fragment_FMap_Int_Excl_Option_T self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_FMap_Int_Excl_Option_T'0 self}
+      (! return {result}) ]
+  
+  function id_T (self: t_TokenW_T) : t_Id = id_FMap_Int_Excl_Option_T'1 self.f0
+  
+  predicate invariant_ref_Authority_FMap_Int_Excl_Option_T [@inline:trivial] (self: t_Authority_FMap_Int_Excl_Option_T) =
+    inv_Authority_FMap_Int_Excl_Option_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Authority_FMap_Int_Excl_Option_T
+  
+  predicate inv_ref_Authority_FMap_Int_Excl_Option_T [@inline:trivial] (_1: t_Authority_FMap_Int_Excl_Option_T) =
+    invariant_ref_Authority_FMap_Int_Excl_Option_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Authority_FMap_Int_Excl_Option_T
+  
+  let id_FMap_Int_Excl_Option_T'2 (self: t_Authority_FMap_Int_Excl_Option_T) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Authority_FMap_Int_Excl_Option_T self}
+    any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_FMap_Int_Excl_Option_T self}
+      (! return {result}) ]
+  
+  function id_T'0 (self: t_Authority_T) : t_Id = id_FMap_Int_Excl_Option_T'2 self.f0'1
   
   function fin_Ghost_refmut_Authority_T [@inline:trivial] (self: MutBorrow.t t_Authority_T) : t_Authority_T = self.final
   

@@ -42,14 +42,45 @@ module M_common__trait_ExactSizeIterator__is_empty
   
   predicate completed_Self (self: MutBorrow.t t_Self)
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
+  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item
+  
+  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item
+  
+  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate postcondition_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_Self, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
-            /\ completed_Self i -> UInt64.t'int result.f0 <= Seq.length s)
+            /\ completed_Self i -> UInt64.t'int result.f0 <= len_Item s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> Seq.length s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> len_Item s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -131,14 +162,45 @@ module M_common__trait_ExactSizeIterator__len
   
   predicate completed_Self (self: MutBorrow.t t_Self)
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
+  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item
+  
+  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item
+  
+  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate postcondition_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_Self, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
-            /\ completed_Self i -> UInt64.t'int result.f0 <= Seq.length s)
+            /\ completed_Self i -> UInt64.t'int result.f0 <= len_Item s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> Seq.length s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> len_Item s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -272,14 +334,45 @@ module M_impl_ExactSizeIterator_for_Zip_A_B__size_hint_exact (* <Zip<A, B> as co
   
   predicate completed_A (self: MutBorrow.t t_A)
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
+  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item
+  
+  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item
+  
+  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate postcondition_size_hint (self: ()) (args: t_A) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_A, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_A. produces_A self s i.current /\ completed_A i
-          -> UInt64.t'int result.f0 <= Seq.length s)
+          -> UInt64.t'int result.f0 <= len_Item s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_Item, i: t_A. produces_A self s i -> Seq.length s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_Item, i: t_A. produces_A self s i -> len_Item s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -299,14 +392,45 @@ module M_impl_ExactSizeIterator_for_Zip_A_B__size_hint_exact (* <Zip<A, B> as co
   
   predicate completed_B (self: MutBorrow.t t_B)
   
+  predicate inv_Item'0 (_1: t_Item'0)
+  
+  predicate invariant_ref_Item'0 [@inline:trivial] (self: t_Item'0) = inv_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Item'0
+  
+  predicate inv_ref_Item'0 [@inline:trivial] (_1: t_Item'0) = invariant_ref_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Item'0
+  
+  predicate invariant_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item'0
+  
+  predicate inv_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item'0
+  
+  predicate invariant_ref_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) = inv_Seq_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item'0
+  
+  predicate inv_ref_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_ref_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item'0
+  
+  let len_Item'0 (self: Seq.seq t_Item'0) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item'0 self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate postcondition_size_hint'0 (self: ()) (args: t_B) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef'0:
     forall args: t_B, result: tup2_usize_Option_usize [postcondition_size_hint'0 () args result]. postcondition_size_hint'0 () args result
       -> (let self = args in (forall s: Seq.seq t_Item'0, i: MutBorrow.t t_B. produces_B self s i.current
-            /\ completed_B i -> UInt64.t'int result.f0 <= Seq.length s)
+            /\ completed_B i -> UInt64.t'int result.f0 <= len_Item'0 s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_Item'0, i: t_B. produces_B self s i -> Seq.length s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_Item'0, i: t_B. produces_B self s i -> len_Item'0 s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -333,10 +457,45 @@ module M_impl_ExactSizeIterator_for_Zip_A_B__size_hint_exact (* <Zip<A, B> as co
   
   type tup2_Item_Item = { f0'1: t_Item; f1'1: t_Item'0 }
   
+  predicate inv_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = inv_Item _1.f0'1 /\ inv_Item'0 _1.f1'1
+  
+  meta "rewrite_def" predicate inv_tup2_Item_Item
+  
+  predicate invariant_ref_tup2_Item_Item [@inline:trivial] (self: tup2_Item_Item) = inv_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_tup2_Item_Item
+  
+  predicate inv_ref_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = invariant_ref_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_tup2_Item_Item
+  
+  predicate invariant_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_tup2_Item_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_tup2_Item_Item
+  
+  predicate inv_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) = invariant_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_tup2_Item_Item
+  
+  predicate invariant_ref_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    inv_Seq_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_tup2_Item_Item
+  
+  predicate inv_ref_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) =
+    invariant_ref_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_tup2_Item_Item
+  
+  let len_tup2_Item_Item (self: Seq.seq tup2_Item_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_tup2_Item_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate produces_Zip_A_B (self: t_Zip_A_B) (visited: Seq.seq tup2_Item_Item) (tl: t_Zip_A_B) =
-    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
-      /\ Seq.length p2 = Seq.length visited
-      /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. len_Item p1 = len_Item'0 p2
+      /\ len_Item'0 p2 = len_tup2_Item_Item visited
+      /\ (forall i: int. 0 <= i /\ i < len_tup2_Item_Item visited
           -> Seq.get visited i = { f0'1 = Seq.get p1 i; f1'1 = Seq.get p2 i })
       /\ produces_A self.a p1 tl.a /\ produces_B self.b p2 tl.b
   
@@ -490,14 +649,45 @@ module M_impl_ExactSizeIterator_for_Zip_A_B__size_hint_exact__refines (* <Zip<A,
   
   predicate completed_A (self: MutBorrow.t t_A)
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
+  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item
+  
+  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item
+  
+  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate postcondition_size_hint (self: ()) (args: t_A) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_A, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_A. produces_A self s i.current /\ completed_A i
-          -> UInt64.t'int result.f0 <= Seq.length s)
+          -> UInt64.t'int result.f0 <= len_Item s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_Item, i: t_A. produces_A self s i -> Seq.length s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_Item, i: t_A. produces_A self s i -> len_Item s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -517,14 +707,45 @@ module M_impl_ExactSizeIterator_for_Zip_A_B__size_hint_exact__refines (* <Zip<A,
   
   predicate completed_B (self: MutBorrow.t t_B)
   
+  predicate inv_Item'0 (_1: t_Item'0)
+  
+  predicate invariant_ref_Item'0 [@inline:trivial] (self: t_Item'0) = inv_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Item'0
+  
+  predicate inv_ref_Item'0 [@inline:trivial] (_1: t_Item'0) = invariant_ref_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Item'0
+  
+  predicate invariant_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item'0
+  
+  predicate inv_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item'0
+  
+  predicate invariant_ref_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) = inv_Seq_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item'0
+  
+  predicate inv_ref_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_ref_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item'0
+  
+  let len_Item'0 (self: Seq.seq t_Item'0) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item'0 self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate postcondition_size_hint'0 (self: ()) (args: t_B) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef'0:
     forall args: t_B, result: tup2_usize_Option_usize [postcondition_size_hint'0 () args result]. postcondition_size_hint'0 () args result
       -> (let self = args in (forall s: Seq.seq t_Item'0, i: MutBorrow.t t_B. produces_B self s i.current
-            /\ completed_B i -> UInt64.t'int result.f0 <= Seq.length s)
+            /\ completed_B i -> UInt64.t'int result.f0 <= len_Item'0 s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_Item'0, i: t_B. produces_B self s i -> Seq.length s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_Item'0, i: t_B. produces_B self s i -> len_Item'0 s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -551,10 +772,45 @@ module M_impl_ExactSizeIterator_for_Zip_A_B__size_hint_exact__refines (* <Zip<A,
   
   type tup2_Item_Item = { f0'1: t_Item; f1'1: t_Item'0 }
   
+  predicate inv_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = inv_Item _1.f0'1 /\ inv_Item'0 _1.f1'1
+  
+  meta "rewrite_def" predicate inv_tup2_Item_Item
+  
+  predicate invariant_ref_tup2_Item_Item [@inline:trivial] (self: tup2_Item_Item) = inv_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_tup2_Item_Item
+  
+  predicate inv_ref_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = invariant_ref_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_tup2_Item_Item
+  
+  predicate invariant_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_tup2_Item_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_tup2_Item_Item
+  
+  predicate inv_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) = invariant_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_tup2_Item_Item
+  
+  predicate invariant_ref_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    inv_Seq_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_tup2_Item_Item
+  
+  predicate inv_ref_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) =
+    invariant_ref_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_tup2_Item_Item
+  
+  let len_tup2_Item_Item (self: Seq.seq tup2_Item_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_tup2_Item_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate produces_Zip_A_B (self: t_Zip_A_B) (visited: Seq.seq tup2_Item_Item) (tl: t_Zip_A_B) =
-    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
-      /\ Seq.length p2 = Seq.length visited
-      /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. len_Item p1 = len_Item'0 p2
+      /\ len_Item'0 p2 = len_tup2_Item_Item visited
+      /\ (forall i: int. 0 <= i /\ i < len_tup2_Item_Item visited
           -> Seq.get visited i = { f0'1 = Seq.get p1 i; f1'1 = Seq.get p2 i })
       /\ produces_A self.a p1 tl.a /\ produces_B self.b p2 tl.b
   
@@ -861,10 +1117,99 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
       /\ resolve_Item x
       /\ completed_B (MutBorrow.borrow_logic self.current.b self.final.b (MutBorrow.inherit_id (MutBorrow.get_id self) 1)))
   
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
+  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item
+  
+  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item
+  
+  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate invariant_ref_Item'0 [@inline:trivial] (self: t_Item'0) = inv_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Item'0
+  
+  predicate inv_ref_Item'0 [@inline:trivial] (_1: t_Item'0) = invariant_ref_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Item'0
+  
+  predicate invariant_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item'0
+  
+  predicate inv_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item'0
+  
+  predicate invariant_ref_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) = inv_Seq_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item'0
+  
+  predicate inv_ref_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_ref_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item'0
+  
+  let len_Item'0 (self: Seq.seq t_Item'0) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item'0 self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate invariant_ref_tup2_Item_Item [@inline:trivial] (self: tup2_Item_Item) = inv_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_tup2_Item_Item
+  
+  predicate inv_ref_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = invariant_ref_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_tup2_Item_Item
+  
+  predicate invariant_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_tup2_Item_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_tup2_Item_Item
+  
+  predicate inv_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) = invariant_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_tup2_Item_Item
+  
+  predicate invariant_ref_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    inv_Seq_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_tup2_Item_Item
+  
+  predicate inv_ref_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) =
+    invariant_ref_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_tup2_Item_Item
+  
+  let len_tup2_Item_Item (self: Seq.seq tup2_Item_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_tup2_Item_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate produces_Zip_A_B (self: t_Zip_A_B) (visited: Seq.seq tup2_Item_Item) (tl: t_Zip_A_B) =
-    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
-      /\ Seq.length p2 = Seq.length visited
-      /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. len_Item p1 = len_Item'0 p2
+      /\ len_Item'0 p2 = len_tup2_Item_Item visited
+      /\ (forall i: int. 0 <= i /\ i < len_tup2_Item_Item visited
           -> Seq.get visited i = { f0 = Seq.get p1 i; f1 = Seq.get p2 i })
       /\ produces_A self.a p1 tl.a /\ produces_B self.b p2 tl.b
   
@@ -1020,10 +1365,99 @@ module M_impl_Iterator_for_Zip_A_B__next__refines (* <Zip<A, B> as common::Itera
       /\ resolve_Item x
       /\ completed_B (MutBorrow.borrow_logic self.current.b self.final.b (MutBorrow.inherit_id (MutBorrow.get_id self) 1)))
   
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
+  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item
+  
+  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item
+  
+  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate invariant_ref_Item'0 [@inline:trivial] (self: t_Item'0) = inv_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Item'0
+  
+  predicate inv_ref_Item'0 [@inline:trivial] (_1: t_Item'0) = invariant_ref_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Item'0
+  
+  predicate invariant_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item'0
+  
+  predicate inv_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item'0
+  
+  predicate invariant_ref_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) = inv_Seq_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item'0
+  
+  predicate inv_ref_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_ref_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item'0
+  
+  let len_Item'0 (self: Seq.seq t_Item'0) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item'0 self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate invariant_ref_tup2_Item_Item [@inline:trivial] (self: tup2_Item_Item) = inv_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_tup2_Item_Item
+  
+  predicate inv_ref_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = invariant_ref_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_tup2_Item_Item
+  
+  predicate invariant_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_tup2_Item_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_tup2_Item_Item
+  
+  predicate inv_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) = invariant_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_tup2_Item_Item
+  
+  predicate invariant_ref_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    inv_Seq_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_tup2_Item_Item
+  
+  predicate inv_ref_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) =
+    invariant_ref_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_tup2_Item_Item
+  
+  let len_tup2_Item_Item (self: Seq.seq tup2_Item_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_tup2_Item_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate produces_Zip_A_B (self: t_Zip_A_B) (visited: Seq.seq tup2_Item_Item) (tl: t_Zip_A_B) =
-    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
-      /\ Seq.length p2 = Seq.length visited
-      /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. len_Item p1 = len_Item'0 p2
+      /\ len_Item'0 p2 = len_tup2_Item_Item visited
+      /\ (forall i: int. 0 <= i /\ i < len_tup2_Item_Item visited
           -> Seq.get visited i = { f0 = Seq.get p1 i; f1 = Seq.get p2 i })
       /\ produces_A self.a p1 tl.a /\ produces_B self.b p2 tl.b
   
@@ -1084,10 +1518,107 @@ module M_impl_Iterator_for_Zip_A_B__produces_refl (* <Zip<A, B> as common::Itera
   
   type tup2_Item_Item = { f0: t_Item; f1: t_Item'0 }
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
+  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item
+  
+  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item
+  
+  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate inv_Item'0 (_1: t_Item'0)
+  
+  predicate invariant_ref_Item'0 [@inline:trivial] (self: t_Item'0) = inv_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Item'0
+  
+  predicate inv_ref_Item'0 [@inline:trivial] (_1: t_Item'0) = invariant_ref_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Item'0
+  
+  predicate invariant_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item'0
+  
+  predicate inv_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item'0
+  
+  predicate invariant_ref_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) = inv_Seq_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item'0
+  
+  predicate inv_ref_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_ref_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item'0
+  
+  let len_Item'0 (self: Seq.seq t_Item'0) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item'0 self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate inv_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = inv_Item _1.f0 /\ inv_Item'0 _1.f1
+  
+  meta "rewrite_def" predicate inv_tup2_Item_Item
+  
+  predicate invariant_ref_tup2_Item_Item [@inline:trivial] (self: tup2_Item_Item) = inv_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_tup2_Item_Item
+  
+  predicate inv_ref_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = invariant_ref_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_tup2_Item_Item
+  
+  predicate invariant_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_tup2_Item_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_tup2_Item_Item
+  
+  predicate inv_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) = invariant_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_tup2_Item_Item
+  
+  predicate invariant_ref_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    inv_Seq_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_tup2_Item_Item
+  
+  predicate inv_ref_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) =
+    invariant_ref_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_tup2_Item_Item
+  
+  let len_tup2_Item_Item (self: Seq.seq tup2_Item_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_tup2_Item_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate produces_Zip_A_B (self: t_Zip_A_B) (visited: Seq.seq tup2_Item_Item) (tl: t_Zip_A_B) =
-    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
-      /\ Seq.length p2 = Seq.length visited
-      /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. len_Item p1 = len_Item'0 p2
+      /\ len_Item'0 p2 = len_tup2_Item_Item visited
+      /\ (forall i: int. 0 <= i /\ i < len_tup2_Item_Item visited
           -> Seq.get visited i = { f0 = Seq.get p1 i; f1 = Seq.get p2 i })
       /\ produces_A self.a p1 tl.a /\ produces_B self.b p2 tl.b
   
@@ -1142,10 +1673,107 @@ module M_impl_Iterator_for_Zip_A_B__produces_refl__refines (* <Zip<A, B> as comm
   
   type tup2_Item_Item = { f0: t_Item; f1: t_Item'0 }
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
+  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item
+  
+  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item
+  
+  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate inv_Item'0 (_1: t_Item'0)
+  
+  predicate invariant_ref_Item'0 [@inline:trivial] (self: t_Item'0) = inv_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Item'0
+  
+  predicate inv_ref_Item'0 [@inline:trivial] (_1: t_Item'0) = invariant_ref_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Item'0
+  
+  predicate invariant_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item'0
+  
+  predicate inv_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item'0
+  
+  predicate invariant_ref_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) = inv_Seq_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item'0
+  
+  predicate inv_ref_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_ref_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item'0
+  
+  let len_Item'0 (self: Seq.seq t_Item'0) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item'0 self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate inv_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = inv_Item _1.f0 /\ inv_Item'0 _1.f1
+  
+  meta "rewrite_def" predicate inv_tup2_Item_Item
+  
+  predicate invariant_ref_tup2_Item_Item [@inline:trivial] (self: tup2_Item_Item) = inv_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_tup2_Item_Item
+  
+  predicate inv_ref_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = invariant_ref_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_tup2_Item_Item
+  
+  predicate invariant_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_tup2_Item_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_tup2_Item_Item
+  
+  predicate inv_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) = invariant_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_tup2_Item_Item
+  
+  predicate invariant_ref_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    inv_Seq_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_tup2_Item_Item
+  
+  predicate inv_ref_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) =
+    invariant_ref_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_tup2_Item_Item
+  
+  let len_tup2_Item_Item (self: Seq.seq tup2_Item_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_tup2_Item_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate produces_Zip_A_B (self: t_Zip_A_B) (visited: Seq.seq tup2_Item_Item) (tl: t_Zip_A_B) =
-    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
-      /\ Seq.length p2 = Seq.length visited
-      /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. len_Item p1 = len_Item'0 p2
+      /\ len_Item'0 p2 = len_tup2_Item_Item visited
+      /\ (forall i: int. 0 <= i /\ i < len_tup2_Item_Item visited
           -> Seq.get visited i = { f0 = Seq.get p1 i; f1 = Seq.get p2 i })
       /\ produces_A self.a p1 tl.a /\ produces_B self.b p2 tl.b
   
@@ -1197,10 +1825,107 @@ module M_impl_Iterator_for_Zip_A_B__produces_trans (* <Zip<A, B> as common::Iter
   
   type tup2_Item_Item = { f0: t_Item; f1: t_Item'0 }
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
+  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item
+  
+  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item
+  
+  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate inv_Item'0 (_1: t_Item'0)
+  
+  predicate invariant_ref_Item'0 [@inline:trivial] (self: t_Item'0) = inv_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Item'0
+  
+  predicate inv_ref_Item'0 [@inline:trivial] (_1: t_Item'0) = invariant_ref_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Item'0
+  
+  predicate invariant_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item'0
+  
+  predicate inv_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item'0
+  
+  predicate invariant_ref_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) = inv_Seq_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item'0
+  
+  predicate inv_ref_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_ref_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item'0
+  
+  let len_Item'0 (self: Seq.seq t_Item'0) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item'0 self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate inv_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = inv_Item _1.f0 /\ inv_Item'0 _1.f1
+  
+  meta "rewrite_def" predicate inv_tup2_Item_Item
+  
+  predicate invariant_ref_tup2_Item_Item [@inline:trivial] (self: tup2_Item_Item) = inv_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_tup2_Item_Item
+  
+  predicate inv_ref_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = invariant_ref_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_tup2_Item_Item
+  
+  predicate invariant_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_tup2_Item_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_tup2_Item_Item
+  
+  predicate inv_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) = invariant_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_tup2_Item_Item
+  
+  predicate invariant_ref_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    inv_Seq_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_tup2_Item_Item
+  
+  predicate inv_ref_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) =
+    invariant_ref_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_tup2_Item_Item
+  
+  let len_tup2_Item_Item (self: Seq.seq tup2_Item_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_tup2_Item_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate produces_Zip_A_B (self: t_Zip_A_B) (visited: Seq.seq tup2_Item_Item) (tl: t_Zip_A_B) =
-    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
-      /\ Seq.length p2 = Seq.length visited
-      /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. len_Item p1 = len_Item'0 p2
+      /\ len_Item'0 p2 = len_tup2_Item_Item visited
+      /\ (forall i: int. 0 <= i /\ i < len_tup2_Item_Item visited
           -> Seq.get visited i = { f0 = Seq.get p1 i; f1 = Seq.get p2 i })
       /\ produces_A self.a p1 tl.a /\ produces_B self.b p2 tl.b
   
@@ -1264,10 +1989,107 @@ module M_impl_Iterator_for_Zip_A_B__produces_trans__refines (* <Zip<A, B> as com
   
   type tup2_Item_Item = { f0: t_Item; f1: t_Item'0 }
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
+  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item
+  
+  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item
+  
+  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate inv_Item'0 (_1: t_Item'0)
+  
+  predicate invariant_ref_Item'0 [@inline:trivial] (self: t_Item'0) = inv_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Item'0
+  
+  predicate inv_ref_Item'0 [@inline:trivial] (_1: t_Item'0) = invariant_ref_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Item'0
+  
+  predicate invariant_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item'0
+  
+  predicate inv_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item'0
+  
+  predicate invariant_ref_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) = inv_Seq_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item'0
+  
+  predicate inv_ref_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_ref_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item'0
+  
+  let len_Item'0 (self: Seq.seq t_Item'0) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item'0 self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  predicate inv_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = inv_Item _1.f0 /\ inv_Item'0 _1.f1
+  
+  meta "rewrite_def" predicate inv_tup2_Item_Item
+  
+  predicate invariant_ref_tup2_Item_Item [@inline:trivial] (self: tup2_Item_Item) = inv_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_tup2_Item_Item
+  
+  predicate inv_ref_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = invariant_ref_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_tup2_Item_Item
+  
+  predicate invariant_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_tup2_Item_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_tup2_Item_Item
+  
+  predicate inv_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) = invariant_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_tup2_Item_Item
+  
+  predicate invariant_ref_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    inv_Seq_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_tup2_Item_Item
+  
+  predicate inv_ref_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) =
+    invariant_ref_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_tup2_Item_Item
+  
+  let len_tup2_Item_Item (self: Seq.seq tup2_Item_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_tup2_Item_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate produces_Zip_A_B (self: t_Zip_A_B) (visited: Seq.seq tup2_Item_Item) (tl: t_Zip_A_B) =
-    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
-      /\ Seq.length p2 = Seq.length visited
-      /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. len_Item p1 = len_Item'0 p2
+      /\ len_Item'0 p2 = len_tup2_Item_Item visited
+      /\ (forall i: int. 0 <= i /\ i < len_tup2_Item_Item visited
           -> Seq.get visited i = { f0 = Seq.get p1 i; f1 = Seq.get p2 i })
       /\ produces_A self.a p1 tl.a /\ produces_B self.b p2 tl.b
   
@@ -1330,14 +2152,45 @@ module M_impl_Iterator_for_Zip_A_B__size_hint (* <Zip<A, B> as common::Iterator>
   
   predicate completed_A (self: MutBorrow.t t_A)
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
+  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item
+  
+  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item
+  
+  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate postcondition_size_hint (self: ()) (args: t_A) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_A, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_A. produces_A self s i.current /\ completed_A i
-          -> UInt64.t'int result.f0 <= Seq.length s)
+          -> UInt64.t'int result.f0 <= len_Item s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_Item, i: t_A. produces_A self s i -> Seq.length s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_Item, i: t_A. produces_A self s i -> len_Item s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -1384,14 +2237,45 @@ module M_impl_Iterator_for_Zip_A_B__size_hint (* <Zip<A, B> as common::Iterator>
   
   predicate completed_B (self: MutBorrow.t t_B)
   
+  predicate inv_Item'0 (_1: t_Item'0)
+  
+  predicate invariant_ref_Item'0 [@inline:trivial] (self: t_Item'0) = inv_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Item'0
+  
+  predicate inv_ref_Item'0 [@inline:trivial] (_1: t_Item'0) = invariant_ref_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Item'0
+  
+  predicate invariant_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item'0
+  
+  predicate inv_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item'0
+  
+  predicate invariant_ref_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) = inv_Seq_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item'0
+  
+  predicate inv_ref_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_ref_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item'0
+  
+  let len_Item'0 (self: Seq.seq t_Item'0) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item'0 self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate postcondition_size_hint'0 (self: ()) (args: t_B) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef'0:
     forall args: t_B, result: tup2_usize_Option_usize [postcondition_size_hint'0 () args result]. postcondition_size_hint'0 () args result
       -> (let self = args in (forall s: Seq.seq t_Item'0, i: MutBorrow.t t_B. produces_B self s i.current
-            /\ completed_B i -> UInt64.t'int result.f0 <= Seq.length s)
+            /\ completed_B i -> UInt64.t'int result.f0 <= len_Item'0 s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_Item'0, i: t_B. produces_B self s i -> Seq.length s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_Item'0, i: t_B. produces_B self s i -> len_Item'0 s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -1560,14 +2444,45 @@ module M_impl_Iterator_for_Zip_A_B__size_hint__refines (* <Zip<A, B> as common::
   
   predicate completed_A (self: MutBorrow.t t_A)
   
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
+  
+  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item
+  
+  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item
+  
+  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item
+  
+  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item
+  
+  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate postcondition_size_hint (self: ()) (args: t_A) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_A, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_A. produces_A self s i.current /\ completed_A i
-          -> UInt64.t'int result.f0 <= Seq.length s)
+          -> UInt64.t'int result.f0 <= len_Item s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_Item, i: t_A. produces_A self s i -> Seq.length s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_Item, i: t_A. produces_A self s i -> len_Item s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -1612,14 +2527,45 @@ module M_impl_Iterator_for_Zip_A_B__size_hint__refines (* <Zip<A, B> as common::
   
   predicate completed_B (self: MutBorrow.t t_B)
   
+  predicate inv_Item'0 (_1: t_Item'0)
+  
+  predicate invariant_ref_Item'0 [@inline:trivial] (self: t_Item'0) = inv_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Item'0
+  
+  predicate inv_ref_Item'0 [@inline:trivial] (_1: t_Item'0) = invariant_ref_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Item'0
+  
+  predicate invariant_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item'0 (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_Item'0
+  
+  predicate inv_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_Seq_Item'0
+  
+  predicate invariant_ref_Seq_Item'0 [@inline:trivial] (self: Seq.seq t_Item'0) = inv_Seq_Item'0 self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Item'0
+  
+  predicate inv_ref_Seq_Item'0 [@inline:trivial] (_1: Seq.seq t_Item'0) = invariant_ref_Seq_Item'0 _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Item'0
+  
+  let len_Item'0 (self: Seq.seq t_Item'0) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item'0 self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate postcondition_size_hint'0 (self: ()) (args: t_B) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef'0:
     forall args: t_B, result: tup2_usize_Option_usize [postcondition_size_hint'0 () args result]. postcondition_size_hint'0 () args result
       -> (let self = args in (forall s: Seq.seq t_Item'0, i: MutBorrow.t t_B. produces_B self s i.current
-            /\ completed_B i -> UInt64.t'int result.f0 <= Seq.length s)
+            /\ completed_B i -> UInt64.t'int result.f0 <= len_Item'0 s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_Item'0, i: t_B. produces_B self s i -> Seq.length s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_Item'0, i: t_B. produces_B self s i -> len_Item'0 s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -1656,10 +2602,45 @@ module M_impl_Iterator_for_Zip_A_B__size_hint__refines (* <Zip<A, B> as common::
   
   type tup2_Item_Item = { f0'1: t_Item; f1'1: t_Item'0 }
   
+  predicate inv_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = inv_Item _1.f0'1 /\ inv_Item'0 _1.f1'1
+  
+  meta "rewrite_def" predicate inv_tup2_Item_Item
+  
+  predicate invariant_ref_tup2_Item_Item [@inline:trivial] (self: tup2_Item_Item) = inv_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_tup2_Item_Item
+  
+  predicate inv_ref_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = invariant_ref_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_tup2_Item_Item
+  
+  predicate invariant_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_tup2_Item_Item (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_tup2_Item_Item
+  
+  predicate inv_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) = invariant_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_Seq_tup2_Item_Item
+  
+  predicate invariant_ref_Seq_tup2_Item_Item [@inline:trivial] (self: Seq.seq tup2_Item_Item) =
+    inv_Seq_tup2_Item_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_tup2_Item_Item
+  
+  predicate inv_ref_Seq_tup2_Item_Item [@inline:trivial] (_1: Seq.seq tup2_Item_Item) =
+    invariant_ref_Seq_tup2_Item_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_tup2_Item_Item
+  
+  let len_tup2_Item_Item (self: Seq.seq tup2_Item_Item) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_tup2_Item_Item self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate produces_Zip_A_B (self: t_Zip_A_B) (visited: Seq.seq tup2_Item_Item) (tl: t_Zip_A_B) =
-    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. Seq.length p1 = Seq.length p2
-      /\ Seq.length p2 = Seq.length visited
-      /\ (forall i: int. 0 <= i /\ i < Seq.length visited
+    exists p1: Seq.seq t_Item, p2: Seq.seq t_Item'0. len_Item p1 = len_Item'0 p2
+      /\ len_Item'0 p2 = len_tup2_Item_Item visited
+      /\ (forall i: int. 0 <= i /\ i < len_tup2_Item_Item visited
           -> Seq.get visited i = { f0'1 = Seq.get p1 i; f1'1 = Seq.get p2 i })
       /\ produces_A self.a p1 tl.a /\ produces_B self.b p2 tl.b
   
@@ -1690,10 +2671,10 @@ module M_impl_Iterator_for_Zip_A_B__size_hint__refines (* <Zip<A, B> as common::
               | {f0'0 = None; f1'0 = None} -> result.f1 = None
               end)
         -> (forall s: Seq.seq tup2_Item_Item, i: MutBorrow.t t_Zip_A_B. produces_Zip_A_B self s i.current
-              /\ completed_Zip_A_B i -> UInt64.t'int result.f0 <= Seq.length s)
+              /\ completed_Zip_A_B i -> UInt64.t'int result.f0 <= len_tup2_Item_Item s)
         /\ match result.f1 with
           | Some r -> forall s: Seq.seq tup2_Item_Item, i: t_Zip_A_B. produces_Zip_A_B self s i
-            -> Seq.length s <= UInt64.t'int r
+            -> len_tup2_Item_Item s <= UInt64.t'int r
           | None -> true
           end)
 end

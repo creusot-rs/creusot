@@ -1,14 +1,17 @@
 module M_gnome_sort
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
-  use seq.Seq
   use creusot.int.Int32
+  use seq.Seq
   use seq.Permut
   use creusot.slice.Slice64
   use creusot.prelude.Any
   use int.Int
   
   type t_Vec_i32_Global
+  
+  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -18,9 +21,9 @@ module M_gnome_sort
     forall self: t_Vec_i32_Global [view_Vec_i32_Global self]. Seq.length (view_Vec_i32_Global self)
       <= UInt64.t'int const_MAX
   
-  let len_i32 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32'0 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = Seq.length (view_Vec_i32_Global self)}
+      = len_i32 (view_Vec_i32_Global self)}
       (! return {result}) ]
   
   predicate permutation_of_i32 (self: Seq.seq Int32.t) (other: Seq.seq Int32.t) =
@@ -52,15 +55,15 @@ module M_gnome_sort
     [ return (result: MutBorrow.t (Slice64.slice Int32.t)) ->
     {[@stop_split] [@expl:deref_mut_Vec_i32_Global ensures] ([@stop_split] [@expl:deref_mut ensures #0] Slice64.view result.current
         = view_Vec_i32_Global self.current)
-      /\ ([@stop_split] [@expl:deref_mut ensures #1] Seq.length (view_Vec_i32_Global self.final)
-        = Seq.length (view_Vec_i32_Global self.current))
+      /\ ([@stop_split] [@expl:deref_mut ensures #1] len_i32 (view_Vec_i32_Global self.final)
+        = len_i32 (view_Vec_i32_Global self.current))
       /\ ([@stop_split] [@expl:deref_mut ensures #2] Slice64.view result.final = view_Vec_i32_Global self.final)}
       (! return {result}) ]
   
   let swap_i32 (self: MutBorrow.t (Slice64.slice Int32.t)) (a: UInt64.t) (b: UInt64.t) (return (x: ())) =
   {[@stop_split] [@expl:swap_i32 requires] ([@stop_split] [@expl:swap requires #0] UInt64.t'int a
-      < Seq.length (Slice64.view self.current))
-    /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < Seq.length (Slice64.view self.current))}
+      < len_i32 (Slice64.view self.current))
+    /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < len_i32 (Slice64.view self.current))}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:swap ensures] Permut.exchange (Slice64.view self.final) (Slice64.view self.current) (UInt64.t'int a) (UInt64.t'int b)}
@@ -85,7 +88,7 @@ module M_gnome_sort
         {[@expl:loop invariant #0] is_sorted (view_Vec_i32_Global v.current) 0 (UInt64.t'int i)}
         {[@expl:loop invariant #1] permutation_of_i32 (view_Vec_i32_Global v.current) (view_Vec_i32_Global old_v.current)}
         (! s0)
-        [ s0 = len_i32 {v.current} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s1)
+        [ s0 = len_i32'0 {v.current} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s1)
         | s1 = [ &_18 <- UInt64.lt i _20 ] s2
         | s2 = any [ br0 -> {_18 = false} (! bb16) | br1 -> {_18} (! bb5) ] ]
         [ bb5 = s0
@@ -129,18 +132,21 @@ module M_gnome_sort
     | & _38: UInt64.t = Any.any_l ()
     | & _old: t_Vec_i32_Global = Any.any_l () ])
     [ return (result: ()) ->
-    {[@stop_split] [@expl:gnome_sort ensures] ([@stop_split] [@expl:gnome_sort ensures #0] is_sorted (view_Vec_i32_Global v.final) 0 (Seq.length (view_Vec_i32_Global v.final)))
+    {[@stop_split] [@expl:gnome_sort ensures] ([@stop_split] [@expl:gnome_sort ensures #0] is_sorted (view_Vec_i32_Global v.final) 0 (len_i32 (view_Vec_i32_Global v.final)))
       /\ ([@stop_split] [@expl:gnome_sort ensures #1] permutation_of_i32 (view_Vec_i32_Global v.final) (view_Vec_i32_Global v.current))}
       (! return {result}) ]
 end
 module M_is_sorted
   use creusot.int.UInt64
-  use seq.Seq
   use creusot.int.Int32
+  use seq.Seq
   use creusot.prelude.Any
   use int.Int
   
   type t_Vec_i32_Global
+  
+  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -150,9 +156,9 @@ module M_is_sorted
     forall self: t_Vec_i32_Global [view_Vec_i32_Global self]. Seq.length (view_Vec_i32_Global self)
       <= UInt64.t'int const_MAX
   
-  let len_i32 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32'0 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = Seq.length (view_Vec_i32_Global self)}
+      = len_i32 (view_Vec_i32_Global self)}
       (! return {result}) ]
   
   predicate is_sorted (elems: Seq.seq Int32.t) (start: int) (end': int) =
@@ -186,7 +192,7 @@ module M_is_sorted
   
   let is_sorted'0 (data: t_Vec_i32_Global) (return (x: bool)) = (! bb0
     [ bb0 = s0
-      [ s0 = len_i32 {data} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s1)
+      [ s0 = len_i32'0 {data} (fun (_x: UInt64.t) -> [ &_6 <- _x ] s1)
       | s1 = [ &_5 <- UInt64.lt _6 (2: UInt64.t) ] s2
       | s2 = any [ br0 -> {_5 = false} (! bb3) | br1 -> {_5} (! bb2) ] ]
     | bb2 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ]
@@ -195,7 +201,7 @@ module M_is_sorted
       [ bb4 = {[@expl:loop invariant] is_sorted (view_Vec_i32_Global data) 0 (UInt64.t'int i)
         /\ gt_log_Int (UInt64.t'int i) 0}
         (! s0)
-        [ s0 = len_i32 {data} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s1)
+        [ s0 = len_i32'0 {data} (fun (_x: UInt64.t) -> [ &_18 <- _x ] s1)
         | s1 = [ &_16 <- UInt64.lt i _18 ] s2
         | s2 = any [ br0 -> {_16 = false} (! bb12) | br1 -> {_16} (! bb7) ] ]
         [ bb7 = s0
@@ -219,6 +225,6 @@ module M_is_sorted
     | & _27: Int32.t = Any.any_l ()
     | & _29: UInt64.t = Any.any_l () ])
     [ return (result: bool) -> {[@stop_split] [@expl:is_sorted ensures] result
-      = is_sorted (view_Vec_i32_Global data) 0 (Seq.length (view_Vec_i32_Global data))}
+      = is_sorted (view_Vec_i32_Global data) 0 (len_i32 (view_Vec_i32_Global data))}
       (! return {result}) ]
 end

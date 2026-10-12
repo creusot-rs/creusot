@@ -9,6 +9,39 @@ module M_filter_spec
   
   meta "rewrite_def" predicate contains_T
   
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_FSet_T [@inline:trivial] (self: Fset.fset t_T) = forall x: t_T. contains_T self x -> inv_T x
+  
+  meta "rewrite_def" predicate invariant_FSet_T
+  
+  predicate inv_FSet_T [@inline:trivial] (_1: Fset.fset t_T) = invariant_FSet_T _1
+  
+  meta "rewrite_def" predicate inv_FSet_T
+  
+  predicate invariant_ref_FSet_T [@inline:trivial] (self: Fset.fset t_T) = inv_FSet_T self
+  
+  meta "rewrite_def" predicate invariant_ref_FSet_T
+  
+  predicate inv_ref_FSet_T [@inline:trivial] (_1: Fset.fset t_T) = invariant_ref_FSet_T _1
+  
+  meta "rewrite_def" predicate inv_ref_FSet_T
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  let contains_T'0 (self: Fset.fset t_T) (value: t_T) (return (x: bool)) =
+  {[@stop_split] [@expl:contains_T requires] ([@stop_split] [@expl:contains 'self' type invariant] inv_ref_FSet_T self)
+    /\ ([@stop_split] [@expl:contains 'value' type invariant] inv_ref_T value)}
+    any
+    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_T self value}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -16,8 +49,8 @@ module M_filter_spec
   let filter_spec_T (return (x: ())) = (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
     [ return (result: ()) ->
-    {[@stop_split] [@expl:filter_spec ensures] forall xs: Fset.fset t_T, f: Map.map t_T bool, x: t_T. contains_T (Fset.filter xs f) x
-        = (contains_T xs x /\ Map.get f x)}
+    {[@stop_split] [@expl:filter_spec ensures] forall xs: Fset.fset t_T, f: Map.map t_T bool, x: t_T. contains_T'0 (Fset.filter xs f) x
+        = (contains_T'0 xs x /\ Map.get f x)}
       (! return {result}) ]
 end
 module M_interval_spec
@@ -30,6 +63,10 @@ module M_interval_spec
   
   meta "rewrite_def" predicate contains_Int
   
+  let contains_Int'0 (self: Fset.fset int) (value: int) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Int self value}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -37,7 +74,7 @@ module M_interval_spec
   let interval_spec (return (x: ())) = (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
     [ return (result: ()) ->
-    {[@stop_split] [@expl:interval_spec ensures] forall i: int, j: int, k: int. contains_Int (FsetInt.interval i j) k
+    {[@stop_split] [@expl:interval_spec ensures] forall i: int, j: int, k: int. contains_Int'0 (FsetInt.interval i j) k
         = (i <= k /\ k < j)}
       (! return {result}) ]
 end
@@ -52,6 +89,39 @@ module M_map_spec
   
   meta "rewrite_def" predicate contains_U
   
+  predicate inv_U (_1: t_U)
+  
+  predicate invariant_FSet_U [@inline:trivial] (self: Fset.fset t_U) = forall x: t_U. contains_U self x -> inv_U x
+  
+  meta "rewrite_def" predicate invariant_FSet_U
+  
+  predicate inv_FSet_U [@inline:trivial] (_1: Fset.fset t_U) = invariant_FSet_U _1
+  
+  meta "rewrite_def" predicate inv_FSet_U
+  
+  predicate invariant_ref_FSet_U [@inline:trivial] (self: Fset.fset t_U) = inv_FSet_U self
+  
+  meta "rewrite_def" predicate invariant_ref_FSet_U
+  
+  predicate inv_ref_FSet_U [@inline:trivial] (_1: Fset.fset t_U) = invariant_ref_FSet_U _1
+  
+  meta "rewrite_def" predicate inv_ref_FSet_U
+  
+  predicate invariant_ref_U [@inline:trivial] (self: t_U) = inv_U self
+  
+  meta "rewrite_def" predicate invariant_ref_U
+  
+  predicate inv_ref_U [@inline:trivial] (_1: t_U) = invariant_ref_U _1
+  
+  meta "rewrite_def" predicate inv_ref_U
+  
+  let contains_U'0 (self: Fset.fset t_U) (value: t_U) (return (x: bool)) =
+  {[@stop_split] [@expl:contains_U requires] ([@stop_split] [@expl:contains 'self' type invariant] inv_ref_FSet_U self)
+    /\ ([@stop_split] [@expl:contains 'value' type invariant] inv_ref_U value)}
+    any
+    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_U self value}
+      (! return {result}) ]
+  
   type t_T
   
   function map_T (self: Fset.fset t_T) (f: Map.map t_T t_U) : Fset.fset t_U = Fset.map f self
@@ -60,6 +130,39 @@ module M_map_spec
   
   meta "rewrite_def" predicate contains_T
   
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_FSet_T [@inline:trivial] (self: Fset.fset t_T) = forall x: t_T. contains_T self x -> inv_T x
+  
+  meta "rewrite_def" predicate invariant_FSet_T
+  
+  predicate inv_FSet_T [@inline:trivial] (_1: Fset.fset t_T) = invariant_FSet_T _1
+  
+  meta "rewrite_def" predicate inv_FSet_T
+  
+  predicate invariant_ref_FSet_T [@inline:trivial] (self: Fset.fset t_T) = inv_FSet_T self
+  
+  meta "rewrite_def" predicate invariant_ref_FSet_T
+  
+  predicate inv_ref_FSet_T [@inline:trivial] (_1: Fset.fset t_T) = invariant_ref_FSet_T _1
+  
+  meta "rewrite_def" predicate inv_ref_FSet_T
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  let contains_T'0 (self: Fset.fset t_T) (value: t_T) (return (x: bool)) =
+  {[@stop_split] [@expl:contains_T requires] ([@stop_split] [@expl:contains 'self' type invariant] inv_ref_FSet_T self)
+    /\ ([@stop_split] [@expl:contains 'value' type invariant] inv_ref_T value)}
+    any
+    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_T self value}
+      (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -67,7 +170,7 @@ module M_map_spec
   let map_spec_T (return (x: ())) = (! bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ])
     [ return (result: ()) ->
-    {[@stop_split] [@expl:map_spec ensures] forall xs: Fset.fset t_T, f: Map.map t_T t_U, y: t_U. contains_U (map_T xs f) y
-        = (exists x: t_T. contains_T xs x /\ Map.get f x = y)}
+    {[@stop_split] [@expl:map_spec ensures] forall xs: Fset.fset t_T, f: Map.map t_T t_U, y: t_U. contains_U'0 (map_T xs f) y
+        = (exists x: t_T. contains_T'0 xs x /\ Map.get f x = y)}
       (! return {result}) ]
 end

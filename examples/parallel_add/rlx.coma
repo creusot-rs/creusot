@@ -445,6 +445,10 @@ module M_parallel_add
   let new_unit (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
+  let contains_Int'0 (self: t_FMap_Int_tup2_i32_SyncView) (key: int) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Int self key}
+      (! return {result}) ]
+  
   predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
   
   meta "rewrite_def" predicate index_Mapping_Int_bool
@@ -510,7 +514,7 @@ module M_parallel_add
   type t_AtomicInvariant_ParallelAddAtomicInv
   
   predicate protocol_ParallelAddAtomicInv [@inline:trivial] (self: t_ParallelAddAtomicInv) =
-    (forall t: int. contains_Int (val_AtomicI32 self.own) t
+    (forall t: int. contains_Int'0 (val_AtomicI32 self.own) t
         -> t = self.t_last \/ contains_Int (val_AtomicI32 self.own) (t + 1))
     /\ match lookup_Int (val_AtomicI32 self.own) self.t_last with
       | Some {f0'0 = v} -> Int32.to_int v
@@ -526,7 +530,7 @@ module M_parallel_add
   function public_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv) : tup3_AtomicI32_Id_Id
   
   function public_ParallelAddAtomicInv'0 (self: t_ParallelAddAtomicInv) : tup3_AtomicI32_Id_Id =
-    { f0'4 = ward_AtomicI32 self.own; f1'4 = id_Option_Excl_bool self.auth1; f2'4 = id_Option_Excl_bool self.auth2 }
+    { f0'4 = ward_AtomicI32 self.own; f1'4 = id_Option_Excl_bool'0 self.auth1; f2'4 = id_Option_Excl_bool'0 self.auth2 }
   
   function namespace_ParallelAddAtomicInv (self: t_AtomicInvariant_ParallelAddAtomicInv) : t_Namespace
   
@@ -1879,11 +1883,11 @@ module M_parallel_add
       | s46 = new_unit {_22} (fun (_x: ()) -> [ &_21 <- _x ] s47)
       | s47 = any
         [ any_ (_dest: int) ->
-        (! -{([@stop_split] [@expl:such_that ensures] index_Mapping_Int_bool (fun (t: int) -> contains_Int (val_AtomicI32 own'0) t) (such_that_Int (fun (t: int) -> contains_Int (val_AtomicI32 own'0) t)))
-          /\ _dest = such_that_Int (fun (t: int) -> contains_Int (val_AtomicI32 own'0) t)}-
+        (! -{([@stop_split] [@expl:such_that ensures] index_Mapping_Int_bool (fun (t: int) -> contains_Int'0 (val_AtomicI32 own'0) t) (such_that_Int (fun (t: int) -> contains_Int'0 (val_AtomicI32 own'0) t)))
+          /\ _dest = such_that_Int (fun (t: int) -> contains_Int'0 (val_AtomicI32 own'0) t)}-
           [ &timestamp <- _dest ] s48) ]
         [ _ck ->
-        (! {[@stop_split] [@expl:such_that requires] exists x: int. index_Mapping_Int_bool (fun (t: int) -> contains_Int (val_AtomicI32 own'0) t) x}
+        (! {[@stop_split] [@expl:such_that requires] exists x: int. index_Mapping_Int_bool (fun (t: int) -> contains_Int'0 (val_AtomicI32 own'0) t) x}
           any) ]
       | s48 = into_inner_Perm_AtomicI32 {own'0} (fun (_x: t_Perm_AtomicI32) -> [ &_49 <- _x ] s49)
       | s49 = into_inner_Authority_Option_Excl_bool {auth1'0}

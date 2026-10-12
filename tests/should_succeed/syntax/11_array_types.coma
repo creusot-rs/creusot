@@ -27,12 +27,15 @@ module M_call_omg
   
   meta "rewrite_def" predicate gt_log_Int
   
+  let len_i64 (self: Seq.seq Int64.t) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   let omg (x: t_UsesArray) (return (x'0: ())) =
   {[@stop_split] [@expl:omg requires] ([@stop_split] [@expl:omg 'x' type invariant] inv_UsesArray x)
-    /\ ([@stop_split] [@expl:omg requires] gt_log_Int (Seq.length (Slice64.view x.f0)) 0
-    /\ Seq.length (Slice64.view x.f0) < UInt64.t'int const_MAX)}
+    /\ ([@stop_split] [@expl:omg requires] gt_log_Int (len_i64 (Slice64.view x.f0)) 0
+    /\ len_i64 (Slice64.view x.f0) < UInt64.t'int const_MAX)}
     any [ return (result: ()) -> (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -83,6 +86,9 @@ module M_omg
   
   meta "rewrite_def" predicate gt_log_Int
   
+  let len_i64 (self: Seq.seq Int64.t) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   meta "compute_max_steps" 1000000
@@ -91,8 +97,8 @@ module M_omg
   
   let omg (x: t_UsesArray) (return (x'0: ())) =
   {[@stop_split] [@expl:omg requires] ([@stop_split] [@expl:omg 'x' type invariant] inv_UsesArray x)
-    /\ ([@stop_split] [@expl:omg requires] gt_log_Int (Seq.length (Slice64.view x.f0)) 0
-    /\ Seq.length (Slice64.view x.f0) < UInt64.t'int const_MAX)}
+    /\ ([@stop_split] [@expl:omg requires] gt_log_Int (len_i64 (Slice64.view x.f0)) 0
+    /\ len_i64 (Slice64.view x.f0) < UInt64.t'int const_MAX)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- (0: UInt64.t) ] s1

@@ -37,6 +37,45 @@ module M_resolve_seq
     forall _1: t_Vec_refmut_T_Global [resolve_Vec_refmut_T_Global'0 _1]. resolve_Vec_refmut_T_Global'0 _1
       -> resolve_Vec_refmut_T_Global _1
   
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_T
+  
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_T
+  
+  predicate invariant_ref_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_refmut_T self
+  
+  meta "rewrite_def" predicate invariant_ref_refmut_T
+  
+  predicate inv_ref_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_ref_refmut_T
+  
+  predicate invariant_Seq_refmut_T [@inline:trivial] (self: Seq.seq (MutBorrow.t t_T)) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_refmut_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_refmut_T
+  
+  predicate inv_Seq_refmut_T [@inline:trivial] (_1: Seq.seq (MutBorrow.t t_T)) = invariant_Seq_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_refmut_T
+  
+  predicate invariant_ref_Seq_refmut_T [@inline:trivial] (self: Seq.seq (MutBorrow.t t_T)) = inv_Seq_refmut_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_refmut_T
+  
+  predicate inv_ref_Seq_refmut_T [@inline:trivial] (_1: Seq.seq (MutBorrow.t t_T)) = invariant_ref_Seq_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_refmut_T
+  
+  let len_refmut_T (self: Seq.seq (MutBorrow.t t_T)) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_refmut_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -47,7 +86,7 @@ module M_resolve_seq
   
   goal vc_resolve_seq_T: [@stop_split] [@expl:resolve_seq ensures] resolve_Vec_refmut_T_Global'0 seq
     -> (forall i: int [Seq.get (view_Vec_refmut_T_Global seq) i]. 0 <= i
-        /\ i < Seq.length (view_Vec_refmut_T_Global seq)
+        /\ i < len_refmut_T (view_Vec_refmut_T_Global seq)
       -> (Seq.get (view_Vec_refmut_T_Global seq) i).current = (Seq.get (view_Vec_refmut_T_Global seq) i).final)
 end
 module M_resolve_seq2
@@ -89,8 +128,47 @@ module M_resolve_seq2
     forall _1: t_Vec_refmut_T_Global [resolve_Vec_refmut_T_Global'0 _1]. resolve_Vec_refmut_T_Global'0 _1
       -> resolve_Vec_refmut_T_Global _1
   
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_T
+  
+  predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_refmut_T
+  
+  predicate invariant_ref_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_refmut_T self
+  
+  meta "rewrite_def" predicate invariant_ref_refmut_T
+  
+  predicate inv_ref_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_ref_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_ref_refmut_T
+  
+  predicate invariant_Seq_refmut_T [@inline:trivial] (self: Seq.seq (MutBorrow.t t_T)) =
+    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_refmut_T (Seq.get self i)
+  
+  meta "rewrite_def" predicate invariant_Seq_refmut_T
+  
+  predicate inv_Seq_refmut_T [@inline:trivial] (_1: Seq.seq (MutBorrow.t t_T)) = invariant_Seq_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_Seq_refmut_T
+  
+  predicate invariant_ref_Seq_refmut_T [@inline:trivial] (self: Seq.seq (MutBorrow.t t_T)) = inv_Seq_refmut_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_refmut_T
+  
+  predicate inv_ref_Seq_refmut_T [@inline:trivial] (_1: Seq.seq (MutBorrow.t t_T)) = invariant_ref_Seq_refmut_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_refmut_T
+  
+  let len_refmut_T (self: Seq.seq (MutBorrow.t t_T)) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_refmut_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate resolve_seq_T (seq: t_Vec_refmut_T_Global) =
-    forall i: int [Seq.get (view_Vec_refmut_T_Global seq) i]. 0 <= i /\ i < Seq.length (view_Vec_refmut_T_Global seq)
+    forall i: int [Seq.get (view_Vec_refmut_T_Global seq) i]. 0 <= i /\ i < len_refmut_T (view_Vec_refmut_T_Global seq)
       -> (Seq.get (view_Vec_refmut_T_Global seq) i).current = (Seq.get (view_Vec_refmut_T_Global seq) i).final
   
   axiom resolve_seq_T_spec: forall seq: t_Vec_refmut_T_Global [resolve_seq_T seq]. resolve_Vec_refmut_T_Global'0 seq

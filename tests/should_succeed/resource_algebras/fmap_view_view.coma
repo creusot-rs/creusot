@@ -344,9 +344,13 @@ module M_impl_Authority_K_V__contains (* Authority<K, V> *)
   
   meta "rewrite_def" predicate inv_ref_Fragment_K_V
   
-  function id_K (self: t_Authority_K_V) : t_Id = id_View_MapRelation_K_V self.f0'0
+  let id_View_MapRelation_K_V'0 (self: t_Resource_View_MapRelation_K_V) (return (x: t_Id)) = any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_View_MapRelation_K_V self}
+      (! return {result}) ]
   
-  function id_K'0 (self: t_Fragment_K_V) : t_Id = id_View_MapRelation_K_V self.f0
+  function id_K (self: t_Authority_K_V) : t_Id = id_View_MapRelation_K_V'0 self.f0'0
+  
+  function id_K'0 (self: t_Fragment_K_V) : t_Id = id_View_MapRelation_K_V'0 self.f0
   
   constant any_FMap_K_V : t_FMap_K_V
   
@@ -790,21 +794,72 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   
   type t_Fragment_K_V = { f0'4: t_Resource_View_MapRelation_K_V; f1'4: t_K; f2'4: t_V }
   
+  predicate inv_K (_1: t_K)
+  
+  predicate inv_V (_1: t_V)
+  
+  constant any_V : t_V
+  
+  function unwrap_Option_V (self: t_Option_V) : t_V = match self with
+      | Some'0 x -> x
+      | None'0 -> any_V
+      end
+  
+  function index_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) (key: t_K) : t_V = unwrap_Option_V (lookup_K self key)
+  
+  meta "rewrite_def" function index_FMap_K_V
+  
+  predicate invariant_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) =
+    forall k: t_K. contains_K self k -> inv_K k /\ inv_V (index_FMap_K_V self k)
+  
+  meta "rewrite_def" predicate invariant_FMap_K_V
+  
+  predicate inv_FMap_K_V (_1: t_FMap_K_V)
+  
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_FMap_K_V [inv_FMap_K_V _1]. inv_FMap_K_V _1 = invariant_FMap_K_V _1
+  
+  predicate invariant_ref_FMap_K_V [@inline:trivial] (self: t_FMap_K_V) = inv_FMap_K_V self
+  
+  meta "rewrite_def" predicate invariant_ref_FMap_K_V
+  
+  predicate inv_ref_FMap_K_V [@inline:trivial] (_1: t_FMap_K_V) = invariant_ref_FMap_K_V _1
+  
+  meta "rewrite_def" predicate inv_ref_FMap_K_V
+  
+  predicate invariant_ref_K [@inline:trivial] (self: t_K) = inv_K self
+  
+  meta "rewrite_def" predicate invariant_ref_K
+  
+  predicate inv_ref_K [@inline:trivial] (_1: t_K) = invariant_ref_K _1
+  
+  meta "rewrite_def" predicate inv_ref_K
+  
+  let contains_K'1 (self: t_FMap_K_V) (key: t_K) (return (x: bool)) =
+  {[@stop_split] [@expl:contains_K requires] ([@stop_split] [@expl:contains 'self' type invariant] inv_ref_FMap_K_V self)
+    /\ ([@stop_split] [@expl:contains 'key' type invariant] inv_ref_K key)}
+    any
+    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_K self key}
+      (! return {result}) ]
+  
   predicate invariant_Fragment_K_V (self: t_Fragment_K_V) =
     incl_View_MapRelation_K_V (new_frag_MapRelation_K_V (singleton_K self.f1'4 { f0'0 = self.f2'4 })) (view_Resource_View_MapRelation_K_V self.f0'4)
   
   predicate inv_Fragment_K_V (_1: t_Fragment_K_V)
   
-  axiom inv_axiom'0 [@rewrite]: forall _1: t_Fragment_K_V [inv_Fragment_K_V _1]. inv_Fragment_K_V _1
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_Fragment_K_V [inv_Fragment_K_V _1]. inv_Fragment_K_V _1
       = invariant_Fragment_K_V _1
   
-  function id_K (self: t_Authority_K_V) : t_Id = id_View_MapRelation_K_V self.f0
+  let id_View_MapRelation_K_V'0 (self: t_Resource_View_MapRelation_K_V) (return (x: t_Id)) = any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_View_MapRelation_K_V self}
+      (! return {result}) ]
+  
+  function id_K (self: t_Authority_K_V) : t_Id = id_View_MapRelation_K_V'0 self.f0
   
   type tup2_K_V = { f0'5: t_K; f1'5: t_V }
   
   function view_Fragment_K_V (self: t_Fragment_K_V) : tup2_K_V = { f0'5 = self.f1'4; f1'5 = self.f2'4 }
   
-  function id_K'0 (self: t_Fragment_K_V) : t_Id = id_View_MapRelation_K_V self.f0'4
+  function id_K'0 (self: t_Fragment_K_V) : t_Id = id_View_MapRelation_K_V'0 self.f0'4
   
   meta "compute_max_steps" 1000000
   
@@ -812,7 +867,7 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   
   let insert_K (self: MutBorrow.t t_Authority_K_V) (k: t_K) (v: t_V) (return (x: t_Fragment_K_V)) =
   {[@stop_split] [@expl:insert_K requires] ([@stop_split] [@expl:insert 'self' type invariant] inv_refmut_Authority_K_V self)
-    /\ ([@stop_split] [@expl:insert requires] not contains_K (view_Authority_K_V self.current) k)}
+    /\ ([@stop_split] [@expl:insert requires] not contains_K'1 (view_Authority_K_V self.current) k)}
     (! bb0
     [ bb0 = s0
       [ s0 = any

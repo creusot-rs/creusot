@@ -178,6 +178,9 @@ module M_message_passing
   
   function id_Excl_unit (self: t_Resource_Excl_unit) : t_Id
   
+  let id_Excl_unit'0 (self: t_Resource_Excl_unit) (return (x: t_Id)) = any
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_Excl_unit self} (! return {result}) ]
+  
   type tup3_PCell_i32_Id_Id = { f0'3: t_PCell_i32; f1'3: t_Id; f2'3: t_Id }
   
   type t_MessagePassingAtomicInv = { atomic_own: t_Perm_AtomicBool; state: t_State; public_data: tup3_PCell_i32_Id_Id }
@@ -230,7 +233,7 @@ module M_message_passing
           | Some {f0'0 = b} -> not b
           | None -> true
           end
-      | Synchronisation data_own tok_write -> excl_write = id_Excl_unit tok_write
+      | Synchronisation data_own tok_write -> excl_write = id_Excl_unit'0 tok_write
       /\ (forall t: int. match lookup_Int (val_AtomicBool self.atomic_own) t with
           | Some {f0'0 = b; f1'0 = view} -> not b
           \/ b
@@ -239,7 +242,7 @@ module M_message_passing
           /\ le_log_SyncView (view_Perm_PCell_i32 data_own) view
           | None -> true
           end)
-      | Readable tok_write tok_read -> excl_write = id_Excl_unit tok_write /\ excl_read = id_Excl_unit tok_read
+      | Readable tok_write tok_read -> excl_write = id_Excl_unit'0 tok_write /\ excl_read = id_Excl_unit'0 tok_read
       | Invalid -> false
       end
   
@@ -1909,7 +1912,12 @@ module M_message_passing
       | s12 = alloc_Excl_unit {_14} (fun (_x: t_Resource_Excl_unit) -> [ &excl_read <- _x ] s13)
       | s13 = into_inner_Perm_AtomicBool {atomic_own'0} (fun (_x: t_Perm_AtomicBool) -> [ &_19 <- _x ] s14)
       | s14 = [ &_21 <- NotWrittenYet ] s15
-      | s15 = [ &_22 <- { f0'3 = data; f1'3 = id_Excl_unit excl_write; f2'3 = id_Excl_unit excl_read } ] s16
+      | s15 = any
+        [ any_ (_dest: tup3_PCell_i32_Id_Id) -> (! -{([@stop_split] [@expl:id ensures] id_Excl_unit'0 excl_write
+            = id_Excl_unit excl_write)
+          /\ ([@stop_split] [@expl:id ensures] id_Excl_unit'0 excl_read = id_Excl_unit excl_read)
+          /\ _dest = { f0'3 = data; f1'3 = id_Excl_unit'0 excl_write; f2'3 = id_Excl_unit'0 excl_read }}-
+          [ &_22 <- _dest ] s16) ] [ _ck -> (! any) ]
       | s16 = [ &_18 <- { atomic_own = _19; state = _21; public_data = _22 } ] s17
       | s17 = new_MessagePassingAtomicInv {_18} (fun (_x: t_MessagePassingAtomicInv) -> [ &_17 <- _x ] s18)
       | s18 = [ &_27 <- Namespace_MESSAGE_PASSING 0 ] s19

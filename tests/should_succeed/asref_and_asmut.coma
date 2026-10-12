@@ -15,9 +15,11 @@ module M_get_len_of_mut_slice
   
   meta "rewrite_def" predicate resolve_refmut_slice_u8
   
-  let len_u8 (self: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
-      = UInt64.t'int result}
+  let len_u8 (self: Seq.seq UInt8.t) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_u8'0 (self: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] len_u8 (Slice64.view self) = UInt64.t'int result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -31,7 +33,7 @@ module M_get_len_of_mut_slice
             [ &_6 <- _bor ] [ &bytes <- { bytes with current = _bor.final } ] s1)
       | s1 = as_mut_slice_u8 {_6} (fun (_x: MutBorrow.t (Slice64.slice UInt8.t)) -> [ &_5 <- _x ] s2)
       | s2 = -{resolve_refmut_slice_u8 _5}- s3
-      | s3 = len_u8 {_5.current} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s4)
+      | s3 = len_u8'0 {_5.current} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s4)
       | s4 = -{resolve_refmut_slice_u8 bytes}- s5
       | s5 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
@@ -39,7 +41,7 @@ module M_get_len_of_mut_slice
     | & _5: MutBorrow.t (Slice64.slice UInt8.t) = Any.any_l ()
     | & _6: MutBorrow.t (Slice64.slice UInt8.t) = Any.any_l () ])
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:get_len_of_mut_slice ensures] UInt64.t'int result
-      = Seq.length (Slice64.view bytes.current)}
+      = len_u8 (Slice64.view bytes.current)}
       (! return {result}) ]
 end
 module M_get_len_of_mut_slice_with_ref_mut
@@ -80,9 +82,11 @@ module M_get_len_of_mut_slice_with_ref_mut
   
   meta "rewrite_def" predicate resolve_refmut_slice_u8
   
-  let len_u8 (self: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
-      = UInt64.t'int result}
+  let len_u8 (self: Seq.seq UInt8.t) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_u8'0 (self: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] len_u8 (Slice64.view self) = UInt64.t'int result}
       (! return {result}) ]
   
   predicate resolve_refmut_refmut_slice_u8 [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t (Slice64.slice UInt8.t))) =
@@ -103,7 +107,7 @@ module M_get_len_of_mut_slice_with_ref_mut
             [ &_6 <- _bor ] [ &_7 <- { _7 with current = _bor.final } ] s2)
       | s2 = as_mut_refmut_slice_u8 {_6} (fun (_x: MutBorrow.t (Slice64.slice UInt8.t)) -> [ &_5 <- _x ] s3)
       | s3 = -{resolve_refmut_slice_u8 _5}- s4
-      | s4 = len_u8 {_5.current} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s5)
+      | s4 = len_u8'0 {_5.current} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s5)
       | s5 = -{resolve_refmut_refmut_slice_u8 _7}- s6
       | s6 = -{resolve_refmut_slice_u8 bytes}- s7
       | s7 = return {_ret} ] ]
@@ -113,7 +117,7 @@ module M_get_len_of_mut_slice_with_ref_mut
     | & _6: MutBorrow.t (MutBorrow.t (Slice64.slice UInt8.t)) = Any.any_l ()
     | & _7: MutBorrow.t (MutBorrow.t (Slice64.slice UInt8.t)) = Any.any_l () ])
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:get_len_of_mut_slice_with_ref_mut ensures] UInt64.t'int result
-      = Seq.length (Slice64.view bytes.current)}
+      = len_u8 (Slice64.view bytes.current)}
       (! return {result}) ]
 end
 module M_get_len_of_slice
@@ -153,12 +157,15 @@ module M_get_len_of_slice
   
   meta "rewrite_def" predicate postcondition_as_ref'0
   
+  let len_u8 (self: Seq.seq UInt8.t) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   let get_len_through_as_ref_ref_slice_u8 (bytes: Slice64.slice UInt8.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:get_len_through_as_ref requires] precondition_as_ref'0 () bytes}
     any
     [ return (result: UInt64.t) ->
     {[@stop_split] [@expl:get_len_through_as_ref ensures] exists s: Slice64.slice UInt8.t. postcondition_as_ref'0 () bytes s
-        /\ UInt64.t'int result = Seq.length (Slice64.view s)}
+        /\ UInt64.t'int result = len_u8 (Slice64.view s)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -170,7 +177,7 @@ module M_get_len_of_slice
       [ s0 = get_len_through_as_ref_ref_slice_u8 {bytes} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1)
       | s1 = return {_ret} ] ] [ & _ret: UInt64.t = Any.any_l () | & bytes: Slice64.slice UInt8.t = bytes ])
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:get_len_of_slice ensures] UInt64.t'int result
-      = Seq.length (Slice64.view bytes)}
+      = len_u8 (Slice64.view bytes)}
       (! return {result}) ]
 end
 module M_get_len_through_as_ref
@@ -217,9 +224,11 @@ module M_get_len_through_as_ref
     {[@stop_split] [@expl:as_ref ensures] postcondition_once_as_ref () self result}
       (! return {result}) ]
   
-  let len_u8 (self: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
-      = UInt64.t'int result}
+  let len_u8 (self: Seq.seq UInt8.t) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
+  let len_u8'0 (self: Slice64.slice UInt8.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] len_u8 (Slice64.view self) = UInt64.t'int result}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -234,11 +243,11 @@ module M_get_len_through_as_ref
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_T bytes} any) ]
       | s1 = -{resolve_T bytes}- s2
       | s2 = as_ref_T {bytes} (fun (_x: Slice64.slice UInt8.t) -> [ &_7 <- _x ] s3)
-      | s3 = len_u8 {_7} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s4)
+      | s3 = len_u8'0 {_7} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s4)
       | s4 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l () | & bytes: t_T = bytes | & _7: Slice64.slice UInt8.t = Any.any_l () ])
     [ return (result: UInt64.t) ->
     {[@stop_split] [@expl:get_len_through_as_ref ensures] exists s: Slice64.slice UInt8.t. postcondition_as_ref () bytes s
-        /\ UInt64.t'int result = Seq.length (Slice64.view s)}
+        /\ UInt64.t'int result = len_u8 (Slice64.view s)}
       (! return {result}) ]
 end

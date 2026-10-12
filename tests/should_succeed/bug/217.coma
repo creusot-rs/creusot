@@ -2,6 +2,9 @@ module M_ex
   use seq.Seq
   use int.Int
   
+  let len_Int (self: Seq.seq int) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   function tail_Int (self: Seq.seq int) : Seq.seq int = Seq.([..]) self 1 (Seq.length self)
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
@@ -27,9 +30,10 @@ module M_ex
   
   function ex (c: Seq.seq int) (a: int) : int
   
-  goal vc_ex: if Seq.length c = 0 then
+  goal vc_ex: ([@stop_split] [@expl:len ensures] len_Int c = Seq.length c)
+    -> (if len_Int c = 0 then
       true
     else
-      [@expl:variant decreases] well_founded_relation_Int (Seq.length c) (Seq.length (tail_Int c))
-
+      [@expl:variant decreases] well_founded_relation_Int (len_Int c) (len_Int (tail_Int c))
+    )
 end

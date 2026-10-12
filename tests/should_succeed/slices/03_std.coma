@@ -60,8 +60,11 @@ module M_check_iter
   
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
+  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   predicate postcondition_size_hint (self: ()) (args: t_Iter_i32) (result: tup2_usize_Option_usize) =
-    let self'0 = args in UInt64.t'int result.f0 = Seq.length (Slice64.view (view_Iter_i32 self'0))
+    let self'0 = args in UInt64.t'int result.f0 = len_i32 (Slice64.view (view_Iter_i32 self'0))
     /\ result.f1 = Some'0 (result.f0)
   
   meta "rewrite_def" predicate postcondition_size_hint
@@ -79,7 +82,7 @@ module M_check_iter
     any
     [ return (result: tup2_usize_Option_usize) ->
     {[@stop_split] [@expl:size_hint_Iter_i32 ensures] ([@stop_split] [@expl:size_hint ensures #0] UInt64.t'int result.f0
-        = Seq.length (Slice64.view (view_Iter_i32 self)))
+        = len_i32 (Slice64.view (view_Iter_i32 self)))
       /\ ([@stop_split] [@expl:size_hint ensures #1] result.f1 = Some'0 (result.f0))}
       (! return {result}) ]
   
@@ -429,13 +432,16 @@ module M_check_iter_mut
       = view_Box_slice_i32_Global self}
       (! return {result}) ]
   
+  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
+    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  
   let deref_mut_Vec_i32_Global (self: MutBorrow.t t_Vec_i32_Global) (return (x: MutBorrow.t (Slice64.slice Int32.t))) =
   any
     [ return (result: MutBorrow.t (Slice64.slice Int32.t)) ->
     {[@stop_split] [@expl:deref_mut_Vec_i32_Global ensures] ([@stop_split] [@expl:deref_mut ensures #0] Slice64.view result.current
         = view_Vec_i32_Global self.current)
-      /\ ([@stop_split] [@expl:deref_mut ensures #1] Seq.length (view_Vec_i32_Global self.final)
-        = Seq.length (view_Vec_i32_Global self.current))
+      /\ ([@stop_split] [@expl:deref_mut ensures #1] len_i32 (view_Vec_i32_Global self.final)
+        = len_i32 (view_Vec_i32_Global self.current))
       /\ ([@stop_split] [@expl:deref_mut ensures #2] Slice64.view result.final = view_Vec_i32_Global self.final)}
       (! return {result}) ]
   
@@ -475,7 +481,7 @@ module M_check_iter_mut
   type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
   
   predicate postcondition_size_hint (self: ()) (args: t_IterMut_i32) (result: tup2_usize_Option_usize) =
-    let self'0 = args in UInt64.t'int result.f0 = Seq.length (Slice64.view (view_IterMut_i32 self'0).current)
+    let self'0 = args in UInt64.t'int result.f0 = len_i32 (Slice64.view (view_IterMut_i32 self'0).current)
     /\ result.f1 = Some'0 (result.f0)
   
   meta "rewrite_def" predicate postcondition_size_hint
@@ -493,7 +499,7 @@ module M_check_iter_mut
     any
     [ return (result: tup2_usize_Option_usize) ->
     {[@stop_split] [@expl:size_hint_IterMut_i32 ensures] ([@stop_split] [@expl:size_hint ensures #0] UInt64.t'int result.f0
-        = Seq.length (Slice64.view (view_IterMut_i32 self).current))
+        = len_i32 (Slice64.view (view_IterMut_i32 self).current))
       /\ ([@stop_split] [@expl:size_hint ensures #1] result.f1 = Some'0 (result.f0))}
       (! return {result}) ]
   
