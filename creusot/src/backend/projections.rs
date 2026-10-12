@@ -88,10 +88,11 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
     proj: &'a [ProjectionElem<PIdent, Ty<'tcx>>],
     span: Span,
 ) -> (Focus<'a>, Constructor<'a>) {
+    use ProjectionElem::*;
     for (elem, place_ty) in iter_projections_ty(ctx, proj, place_ty) {
         // TODO: name hygiene
         match elem {
-            ProjectionElem::Deref => {
+            Deref => {
                 let mutable = place_ty.ty.is_mutable_ptr();
                 if mutable {
                     let focus1 = focus.clone();
@@ -109,7 +110,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
                     });
                 }
             }
-            &ProjectionElem::Field(ix, _) => match place_ty.ty.kind() {
+            &Field(ix, _) => match place_ty.ty.kind() {
                 TyKind::Adt(def, subst) if def.is_enum() || def.is_union() => {
                     let variant_id = place_ty.variant_index.unwrap_or_else(|| 0u32.into());
                     let variant = &def.variants()[variant_id];
@@ -200,7 +201,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
                     ctx.dcx().span_bug(span, format!("cannot access field of type {}", place_ty.ty))
                 }
             },
-            ProjectionElem::Index(ix) => {
+            Index(ix) => {
                 let ix = ix.0;
                 let elt_ty = projection_ty(place_ty, names.tcx(), elem);
                 let elt_ty = translate_ty(ctx, names, span, elt_ty.ty);
@@ -238,14 +239,13 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
                     constructor(is, Exp::var(out))
                 });
             }
-            ProjectionElem::Downcast(_, _) => {}
+            Downcast(_, _) => {}
             // UNSUPPORTED
-            ProjectionElem::ConstantIndex { .. }
-            | ProjectionElem::Subslice { .. }
-            | ProjectionElem::OpaqueCast(_)
-            | ProjectionElem::UnwrapUnsafeBinder(_) => {
-                ctx.dcx().span_bug(span, format!("Unsupported projection {elem:?}"))
-            }
+            ConstantIndex { .. }
+            | Subslice { .. }
+            | OpaqueCast(_)
+            | UnwrapUnsafeBinder(_)
+            | PhantomDeref => ctx.dcx().span_bug(span, format!("Unsupported projection {elem:?}")),
         }
     }
 
@@ -280,8 +280,9 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug>(
     };
 
     for (proj, ty) in iter_projections_ty(ctx, projections, place_ty) {
+        use ProjectionElem::*;
         match proj {
-            ProjectionElem::Deref => {
+            Deref => {
                 assert_eq!(ty.variant_index, None);
                 if ty.ty.is_ref() {
                     // Doing a reborrow under a mutable borrow is actually a projection
@@ -291,8 +292,8 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug>(
                     add_inherit_id(Exp::uint(0))
                 }
             }
-            ProjectionElem::Field(idx, _) => add_inherit_id(Exp::uint(idx.as_u32() as u128)),
-            ProjectionElem::Index(idx) => {
+            Field(idx, _) => add_inherit_id(Exp::uint(idx.as_u32() as u128)),
+            Index(idx) => {
                 let (mut idx, idxty) = translate_index(idx);
                 if idxty == ctx.types.usize {
                     let qname = names.in_pre(uty_to_prelude(ctx.tcx, UintTy::Usize), "t'int");
@@ -302,14 +303,13 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug>(
                 }
                 add_inherit_id(idx)
             }
-            ProjectionElem::ConstantIndex { .. }
-            | ProjectionElem::Subslice { .. }
-            | ProjectionElem::UnwrapUnsafeBinder(_) => {
+            ConstantIndex { .. } | Subslice { .. } | UnwrapUnsafeBinder(_) => {
                 // those should inherit a different id instead
                 ctx.dcx().span_bug(span, format!("Unsupported projection {proj:?} in reborrow"))
             }
+            PhantomDeref => todo!(),
             // Nothing to do
-            ProjectionElem::Downcast(..) | ProjectionElem::OpaqueCast(_) => {}
+            Downcast(..) | OpaqueCast(_) => {}
         }
     }
     borrow_id.unwrap()
@@ -336,28 +336,25 @@ pub(crate) fn projections_term<'tcx, 'a, V: Debug>(
     for (el, place_ty) in
         iter_projections_ty(ctx, proj, &mut place_ty).collect::<Vec<_>>().into_iter().rev()
     {
+        use ProjectionElem::*;
         match (el, state) {
-            (ProjectionElem::Deref, Pat(pat, t)) => state = Pat(pat.deref(place_ty.ty), t),
-            (ProjectionElem::Deref, Trm(trm)) => state = Trm(Box::new(|x| trm(x.deref()))),
-            (ProjectionElem::Field(fidx, _), Pat(pat, t))
-                if let TyKind::Tuple(tys) = place_ty.ty.kind() =>
-            {
+            (Deref, Pat(pat, t)) => state = Pat(pat.deref(place_ty.ty), t),
+            (Deref, Trm(trm)) => state = Trm(Box::new(|x| trm(x.deref()))),
+            (Field(fidx, _), Pat(pat, t)) if let TyKind::Tuple(tys) = place_ty.ty.kind() => {
                 let mut fields: Box<[_]> = tys.iter().map(Pattern::wildcard).collect();
                 fields[fidx.as_usize()] = pat;
                 state = Pat(Pattern::tuple(fields, place_ty.ty), t)
             }
-            (ProjectionElem::Field(fidx, _), Trm(trm))
-                if let TyKind::Tuple(tys) = place_ty.ty.kind() =>
-            {
+            (Field(fidx, _), Trm(trm)) if let TyKind::Tuple(tys) = place_ty.ty.kind() => {
                 state = Trm(Box::new(move |x| trm(x.proj(*fidx, tys[fidx.as_usize()]))))
             }
-            (ProjectionElem::Field(fidx, fty), Trm(trm))
+            (Field(fidx, fty), Trm(trm))
                 if let TyKind::Adt(def, _) = place_ty.ty.kind()
                     && def.is_struct() =>
             {
                 state = Trm(Box::new(move |x| trm(x.proj(*fidx, *fty))))
             }
-            (ProjectionElem::Field(fidx, fty), st) => {
+            (Field(fidx, fty), st) => {
                 let (pat, t) = match st {
                     Trm(trm) => {
                         let id = Ident::fresh_local("x");
@@ -368,8 +365,8 @@ pub(crate) fn projections_term<'tcx, 'a, V: Debug>(
                 let variant = place_ty.variant_index.unwrap_or(VariantIdx::ZERO);
                 state = Pat(Pattern::constructor(variant, [(*fidx, pat)], place_ty.ty), t)
             }
-            (ProjectionElem::Downcast(_, _), st) => state = st,
-            (ProjectionElem::Index(idx), st) => {
+            (Downcast(_, _), st) => state = st,
+            (Index(idx), st) => {
                 let trm = match st {
                     Pat(pat, t) => {
                         let def1 = default.clone().unwrap();
@@ -391,10 +388,10 @@ pub(crate) fn projections_term<'tcx, 'a, V: Debug>(
                     trm(Term::call(ctx.tcx, typing_env, did, substs, [x, idx]))
                 }))
             }
-            (ProjectionElem::ConstantIndex { .. } | ProjectionElem::Subslice { .. }, _) => {
+            (ConstantIndex { .. } | Subslice { .. }, _) => {
                 ctx.dcx().span_bug(span, "Array and slice patterns are currently not supported")
             }
-            (ProjectionElem::OpaqueCast(_) | ProjectionElem::UnwrapUnsafeBinder(_), _) => {
+            (OpaqueCast(_) | UnwrapUnsafeBinder(_) | PhantomDeref, _) => {
                 unreachable!("{el:?} unsupported projection.")
             }
         }

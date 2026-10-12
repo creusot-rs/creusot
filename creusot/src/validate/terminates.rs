@@ -244,7 +244,7 @@ struct BuildFunctionsGraph<'tcx> {
     /// the impl block.
     ///
     /// This is used to retrieve all the bounds when calling this function.
-    default_functions_bounds: IndexMap<graph::NodeIndex, Clauses<'tcx>>,
+    default_functions_bounds: IndexMap<graph::NodeIndex, Vec<ty::Clause<'tcx>>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -352,12 +352,11 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         }
 
         let called_node: Option<graph::NodeIndex>;
-        let mut bounds: Box<dyn Iterator<Item = ty::Clause<'tcx>>> = Box::new(
-            EarlyBinder::bind(ctx.tcx, ctx.param_env(fun_id).caller_bounds())
+        // TODO don't compute this if unneeded
+        let mut bounds: Vec<ty::Clause<'tcx>> =
+            EarlyBinder::bind(ctx.tcx, ctx.param_env(fun_id).caller_bounds().collect::<Vec<_>>())
                 .instantiate(ctx.tcx, subst)
-                .skip_normalization()
-                .iter(),
-        );
+                .skip_normalization();
         match res {
             TraitResolved::Instance { impl_: ImplSource_::Impl(impl_defid, impl_args), .. }
                 if ctx.impl_of_assoc(fun_id) != Some(impl_defid) && // The method is defined in an ancestor
@@ -370,15 +369,13 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                 // specialized default node
                 let (node, bnds) = self.visit_specialized_default_function(ctx, impl_ldid, fun_id);
                 called_node = Some(node);
-                bounds = Box::new(
-                    EarlyBinder::bind(ctx.tcx, bnds)
+                bounds =
+                    EarlyBinder::bind(ctx.tcx, bnds.clone())
                         .instantiate(
                             ctx.tcx,
                             subst.rebase_onto(ctx.tcx, ctx.parent(fun_id), impl_args),
                         )
-                        .skip_normalization()
-                        .iter(),
-                );
+                        .skip_normalization();
             }
             TraitResolved::Instance { .. } | TraitResolved::NotATraitItem => {
                 called_node = Some(self.insert_node(GraphNode::function(fun_id)))
@@ -394,7 +391,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                         TraitPredicate { trait_ref, polarity: PredicatePolarity::Positive },
                     ))))
                     .expect_clause();
-                bounds = Box::new(std::iter::once(clause));
+                bounds = vec![clause];
             }
             TraitResolved::NoInstance(_) => unreachable!(),
         }
@@ -449,7 +446,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         ctx: &TranslationCtx<'tcx>,
         impl_id: LocalDefId,
         item_id: DefId,
-    ) -> (graph::NodeIndex, Clauses<'tcx>) {
+    ) -> (graph::NodeIndex, &Vec<ty::Clause<'tcx>>) {
         let node = self.insert_node(GraphNode::impl_default(item_id, impl_id));
         if let Some(bounds) = self.default_functions_bounds.get(&node) {
             return (node, bounds);
@@ -476,13 +473,13 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         let func_impl_args = func_impl_args.rebase_onto(ctx.tcx, spec_node_def.def_id(), impl_args);
 
         let item_bounds = ctx.param_env(item_id).caller_bounds();
-        let defimpl_bounds = ctx.param_env(spec_node_def.def_id()).caller_bounds();
+        let defimpl_bounds = ctx.param_env(spec_node_def.def_id()).caller_bounds().collect::<HashSet<_>>();
         // Before instantiating the bounds, keep only those that are not inherited from the defining
         // impl. After instantiation, they will be implied by the bounds of the inheriting
         // impl.
         let typing_env_for_bounds = TypingEnv::new(impl_param_env, TypingMode::non_body_analysis());
         let bounds =
-            impl_param_env.caller_bounds().iter().chain(item_bounds.iter().filter_map(|b| {
+            impl_param_env.caller_bounds().chain(item_bounds.filter_map(|b| {
                 if defimpl_bounds.contains(&b) {
                     return None;
                 }
@@ -498,10 +495,10 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
             }));
 
         // data for when we call this function
-        let param_env = ParamEnv::new(ctx.mk_clauses_from_iter(bounds));
+        let param_env = ParamEnv::new(ctx.tcx, ctx.mk_clauses_from_iter(bounds));
         let typing_env = ctx.typing_env_with(item_id, param_env);
 
-        let bounds = param_env.caller_bounds();
+        let bounds = param_env.caller_bounds().collect();
         self.default_functions_bounds.insert(node, bounds);
 
         let mut visitor = TermCalls { results: IndexSet::new() };
@@ -514,7 +511,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                 .skip_normalization();
             self.function_dep(ctx, node, typing_env, called_id, actual_args, call_span, true);
         }
-        (node, bounds)
+        (node, &self.default_functions_bounds[&node])
     }
 }
 
@@ -936,8 +933,9 @@ pub(crate) fn proof_tree_nodes<'tcx>(
         match source {
             ImplSource::UserDefined(source) => {
                 nodes.push(source.impl_def_id);
+                let clauses = tcx.param_env(source.impl_def_id).caller_bounds().collect::<Vec<_>>();
                 let bounds =
-                    EarlyBinder::bind(tcx, tcx.param_env(source.impl_def_id).caller_bounds())
+                    EarlyBinder::bind(tcx, clauses)
                         .instantiate(tcx, source.args)
                         .skip_normalization();
                 predicates.extend(trait_refs_of_clauses(tcx, bounds));
@@ -986,7 +984,7 @@ fn param_env_for_termination(tcx: TyCtxt, trait_item_id: DefId, impl_item_id: De
             .map(|(p, _)| EarlyBinder::bind(tcx, *p).instantiate(tcx, args)),
     );
     let predicates: Vec<_> = predicates.map(|p| p.skip_normalization()).collect();
-    let unnormalized_env = ty::ParamEnv::new(tcx.mk_clauses(&predicates));
+    let unnormalized_env = ty::ParamEnv::new(tcx, predicates);
 
     // Code from `param_env` in `rustc_ty_utils/src/ty.rs`
     let local_did = impl_item_id.as_local();
