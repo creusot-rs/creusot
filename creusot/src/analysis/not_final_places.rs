@@ -57,20 +57,22 @@ impl HProjectionElem {
         p: ProjectionElem<Local, Ty<'tcx>>,
         place_ty: PlaceTy<'tcx>,
     ) -> Option<Self> {
+        use ProjectionElem::*;
         match p {
-            ProjectionElem::Deref => match place_ty.ty.kind() {
+            Deref => match place_ty.ty.kind() {
                 TyKind::Ref(_, _, Mutability::Mut) => Some(Self::DerefMutBor),
                 TyKind::Ref(_, _, Mutability::Not) => Some(Self::DerefShrBor),
                 TyKind::Adt(def, _) if def.is_box() => Some(Self::DerefBox),
                 _ => None,
             },
-            ProjectionElem::Field(field_idx, _) => Some(Self::Field(field_idx)),
-            ProjectionElem::Downcast(_, variant_idx) => Some(Self::Downcast(variant_idx)),
-            ProjectionElem::Index(_) => Some(Self::Index),
-            ProjectionElem::ConstantIndex { .. }
-            | ProjectionElem::Subslice { .. }
-            | ProjectionElem::OpaqueCast(_)
-            | ProjectionElem::UnwrapUnsafeBinder(_) => None,
+            Field(field_idx, _) => Some(Self::Field(field_idx)),
+            Downcast(_, variant_idx) => Some(Self::Downcast(variant_idx)),
+            Index(_) => Some(Self::Index),
+            ConstantIndex { .. }
+            | Subslice { .. }
+            | OpaqueCast(_)
+            | UnwrapUnsafeBinder(_)
+            | PhantomDeref => None,
         }
     }
 }

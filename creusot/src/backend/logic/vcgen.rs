@@ -467,28 +467,24 @@ impl<'tcx, N: Namer<'tcx>> VCGen<'_, 'tcx, N> {
                     k(projs)
                 })
             };
+            use rustc_middle::mir::ProjectionElem::*;
             match projs[0] {
-                ProjectionElem::Index(ref ix) => self.build_wp(ix, &|idx| {
+                Index(ref ix) => self.build_wp(ix, &|idx| {
                     self.build_wp_projections_inner(i + 1, &projs[1..], &|mut projs| {
-                        projs[i] = ProjectionElem::Index((idx.clone(), ix.ty));
+                        projs[i] = Index((idx.clone(), ix.ty));
                         k(projs)
                     })
                 }),
-                ProjectionElem::Deref => def(ProjectionElem::Deref),
-                ProjectionElem::Field(field_idx, ty) => def(ProjectionElem::Field(field_idx, ty)),
-                ProjectionElem::ConstantIndex { offset, min_length, from_end } => {
-                    def(ProjectionElem::ConstantIndex { offset, min_length, from_end })
+                Deref => def(Deref),
+                Field(field_idx, ty) => def(Field(field_idx, ty)),
+                ConstantIndex { offset, min_length, from_end } => {
+                    def(ConstantIndex { offset, min_length, from_end })
                 }
-                ProjectionElem::Subslice { from, to, from_end } => {
-                    def(ProjectionElem::Subslice { from, to, from_end })
-                }
-                ProjectionElem::Downcast(symbol, variant_idx) => {
-                    def(ProjectionElem::Downcast(symbol, variant_idx))
-                }
-                ProjectionElem::OpaqueCast(ty) => def(ProjectionElem::OpaqueCast(ty)),
-                ProjectionElem::UnwrapUnsafeBinder(ty) => {
-                    def(ProjectionElem::UnwrapUnsafeBinder(ty))
-                }
+                Subslice { from, to, from_end } => def(Subslice { from, to, from_end }),
+                Downcast(symbol, variant_idx) => def(Downcast(symbol, variant_idx)),
+                OpaqueCast(ty) => def(OpaqueCast(ty)),
+                UnwrapUnsafeBinder(ty) => def(UnwrapUnsafeBinder(ty)),
+                PhantomDeref => def(PhantomDeref),
             }
         }
     }

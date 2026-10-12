@@ -203,7 +203,7 @@ fn translate_creusot_std(args: &Args, paths: &mut CreusotPaths, test_creusot_std
             .flat_map(|array| array.iter())
             .filter_map(|name| {
                 name.as_str().and_then(|name| {
-                    if  name.ends_with(".rmeta") || name.ends_with(".so") || name.ends_with(".dylib")
+                    if name.ends_with(".rmeta") || name.ends_with(".so") || name.ends_with(".dylib")
                     {
                         Some(name)
                     } else {

@@ -445,30 +445,32 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
     ///
     /// Will error when trying to dereference a raw pointer.
     fn translate_place(&self, pl: Place<'tcx>, span: Span) -> fmir::Place<'tcx> {
+        use mir::ProjectionElem::*;
         let projections = pl
             .iter_projections()
             .map(|(p, elem)| match elem {
-                mir::ProjectionElem::Deref => {
+                Deref => {
                     if p.ty(self.body, self.tcx()).ty.is_raw_ptr() {
                         TranslationError::PtrDeref.crash(self.ctx, span);
                     }
                     mir::ProjectionElem::Deref
                 }
-                mir::ProjectionElem::Field(ix, ty) => mir::ProjectionElem::Field(ix, ty),
-                mir::ProjectionElem::Index(l) => {
-                    mir::ProjectionElem::Index(PIdent(self.locals[&l]))
+                Field(ix, ty) => Field(ix, ty),
+                Index(l) => {
+                    Index(PIdent(self.locals[&l]))
                 }
-                mir::ProjectionElem::ConstantIndex { offset, min_length, from_end } => {
-                    mir::ProjectionElem::ConstantIndex { offset, min_length, from_end }
+                ConstantIndex { offset, min_length, from_end } => {
+                    ConstantIndex { offset, min_length, from_end }
                 }
-                mir::ProjectionElem::Subslice { from, to, from_end } => {
-                    mir::ProjectionElem::Subslice { from, to, from_end }
+                Subslice { from, to, from_end } => {
+                    Subslice { from, to, from_end }
                 }
-                mir::ProjectionElem::Downcast(s, ix) => mir::ProjectionElem::Downcast(s, ix),
-                mir::ProjectionElem::OpaqueCast(ty) => mir::ProjectionElem::OpaqueCast(ty),
-                mir::ProjectionElem::UnwrapUnsafeBinder(ty) => {
-                    mir::ProjectionElem::UnwrapUnsafeBinder(ty)
+                Downcast(s, ix) => Downcast(s, ix),
+                OpaqueCast(ty) => OpaqueCast(ty),
+                UnwrapUnsafeBinder(ty) => {
+                    UnwrapUnsafeBinder(ty)
                 }
+                PhantomDeref => PhantomDeref,
             })
             .collect::<Box<[_]>>();
         fmir::Place { local: self.locals[&pl.local], projection: projections }
