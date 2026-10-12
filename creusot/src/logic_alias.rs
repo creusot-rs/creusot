@@ -78,7 +78,7 @@ where
 
     let pre_sig = ctx.sig(prog_id);
     let Some(alias) = &pre_sig.contract.alias else {
-        return None;
+        unreachable!("ctx::is_aliased and ctx::sig disagree on the logic alias");
     };
 
     let mut args_subst = HashMap::new();
