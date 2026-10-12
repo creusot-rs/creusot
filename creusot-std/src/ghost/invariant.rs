@@ -264,14 +264,19 @@ pub trait Protocol {
 ///
 /// If you do not need to share the invariant across threads, see
 /// [`NonAtomicInvariant`].
+#[cfg(feature = "sc-drf")]
 #[opaque]
 pub struct AtomicInvariantSC<T>(PhantomData<*mut T>);
 
+#[cfg(feature = "sc-drf")]
 #[trusted]
 unsafe impl<T: Send> Sync for AtomicInvariantSC<T> {}
+
+#[cfg(feature = "sc-drf")]
 #[trusted]
 unsafe impl<T: Send> Send for AtomicInvariantSC<T> {}
 
+#[cfg(feature = "sc-drf")]
 impl<T: Protocol> AtomicInvariantSC<T> {
     /// Construct a `AtomicInvariantSC`, aka a sequentially consistent atomic invariant.
     ///
