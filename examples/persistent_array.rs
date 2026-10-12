@@ -1,4 +1,3 @@
-// TIME 5
 extern crate creusot_std;
 
 pub mod implementation {

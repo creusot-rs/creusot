@@ -1,5 +1,3 @@
-// TIME 5
-
 #![feature(try_blocks)]
 extern crate creusot_std;
 use creusot_std::prelude::*;
