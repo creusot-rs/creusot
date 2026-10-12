@@ -9,7 +9,7 @@ use std::hash::{Hash, Hasher};
 #[cfg(feature = "parsing")]
 use std::mem;
 
-mod kw {
+pub mod kw {
     syn::custom_keyword!(forall);
     syn::custom_keyword!(exists);
     syn::custom_keyword!(dead);
@@ -23,6 +23,7 @@ ast_enum_of_structs! {
     /// A Pearlite term.
     ///
     /// For information about Syn enums, consult [syn::Expr]
+    #[derive(Clone)]
     pub enum Term {
         /// A slice literal term: `[a, b, c, d]`.
         Array(TermArray),
@@ -145,6 +146,7 @@ ast_enum_of_structs! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     pub struct EnsuresClosure {
         pub or1_token: Token![|],
         pub result: Pat,
@@ -154,6 +156,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     // A blocked scope: `{ ... }`.
     pub struct TermBlock {
         pub brace_token: token::Brace,
@@ -165,6 +168,7 @@ ast_struct! {
 ast_enum! {
     /// A statement, usually ending in a semicolon.
     #[derive(Debug)]
+    #[derive(Clone)]
     pub enum TermStmt {
         /// A local (let) binding.
         Local(TLocal),
@@ -184,6 +188,7 @@ ast_enum! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A local `let` binding: `let x: u64 = s.parse()?`.
     pub struct TLocal {
         pub let_token: Token![let],
@@ -194,6 +199,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A slice literal term: `[a, b, c, d]`.
     pub struct TermArray #full {
         pub bracket_token: token::Bracket,
@@ -202,6 +208,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A binary operation: `a + b`, `a * b`.
     pub struct TermBinary {
         pub left: Box<Term>,
@@ -211,15 +218,17 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A function call term: `invoke(a, b)`.
     pub struct TermCall {
         pub func: Box<Term>,
         pub paren_token: token::Paren,
-        pub args: Punctuated<Term, Token![,]>,
+        pub args: Punctuated<TermWithTriggers, Token![,]>,
     }
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A cast term: `foo as f64`.
     pub struct TermCast {
         pub expr: Box<Term>,
@@ -229,6 +238,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A closure expression: `|a, b| a + b`.
     pub struct TermClosure #full {
         pub attrs: Vec<Attribute>,
@@ -241,6 +251,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// Access of a named struct field (`obj.k`) or unnamed tuple struct
     /// field (`obj.0`).
     pub struct TermField {
@@ -251,6 +262,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// An term contained within invisible delimiters.
     ///
     /// This variant is important for faithfully representing the precedence
@@ -263,6 +275,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// An `if` term with an optional `else` block: `if expr { ... }
     /// else { ... }`.
     ///
@@ -277,6 +290,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A square bracketed indexing term: `vector[2]`.
     pub struct TermIndex {
         pub expr: Box<Term>,
@@ -286,6 +300,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A `let` guard: `let Some(x) = opt`.
     pub struct TermLet #full {
         pub let_token: Token![let],
@@ -296,6 +311,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A literal in place of an term: `1`, `"foo"`.
     pub struct TermLit {
         pub lit: Lit,
@@ -303,6 +319,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A `match` term: `match n { Some(n) => {}, None => {} }`.
     pub struct TermMatch #full {
         pub match_token: Token![match],
@@ -313,6 +330,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A method call term: `x.foo::<T>(a, b)`.
     pub struct TermMethodCall #full {
         pub receiver: Box<Term>,
@@ -325,6 +343,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A parenthesized term: `(a + b)`.
     pub struct TermParen {
         pub paren_token: token::Paren,
@@ -333,6 +352,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A path like `std::mem::replace` possibly containing generic
     /// parameters and a qualified self-type.
     ///
@@ -345,6 +365,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A range term: `1..2`, `1..`, `..2`, `1..=2`, `..=2`.
     pub struct TermRange #full {
         pub from: Option<Box<Term>>,
@@ -354,6 +375,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A referencing operation: `&a` or `&mut a`.
     pub struct TermReference #full {
         pub and_token: Token![&],
@@ -363,6 +385,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// An array literal constructed from one repeated element: `[0u8; N]`.
     pub struct TermRepeat #full {
         pub bracket_token: token::Bracket,
@@ -373,6 +396,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A struct literal term: `Point { x: 1, y: 1 }`.
     ///
     /// The `rest` provides the value of the remaining fields as in `S { a:
@@ -387,6 +411,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A tuple term: `(a, b, c, d)`.
     pub struct TermTuple #full {
         pub paren_token: token::Paren,
@@ -395,6 +420,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A type ascription term: `foo: f64`.
     pub struct TermType #full {
         pub expr: Box<Term>,
@@ -404,6 +430,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// A unary operation: `!x`, `*x`.
     pub struct TermUnary {
         pub op: UnOp,
@@ -412,6 +439,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     pub struct TermImpl {
         pub hyp: Box<Term>,
         pub eqeq_token: Token![==],
@@ -421,6 +449,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     pub struct TermFinal {
         pub final_token: Token![^],
         pub term: Box<Term>
@@ -428,6 +457,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     pub struct TermView {
         pub term: Box<Term>,
         pub at_token: Token![@],
@@ -435,16 +465,18 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     pub struct TermQuant {
         pub quant_token: QuantToken,
         pub lt_token: Token![<],
-        pub args: Punctuated<QuantArg, Token![,]>,
+        pub args: Punctuated<Pat, Token![,]>,
         pub gt_token: Token![>],
         pub term: TermWithTriggers
     }
 }
 
 ast_struct! {
+    #[derive(Clone)]
     pub struct TermWithTriggers {
         pub trigger: Vec<Trigger>,
         pub term: Box<Term>
@@ -453,6 +485,7 @@ ast_struct! {
 
 use kw::{exists, forall};
 ast_enum_of_structs! {
+    #[derive(Clone)]
     pub enum QuantToken {
         Forall(forall),
         Exists(exists),
@@ -460,13 +493,7 @@ ast_enum_of_structs! {
 }
 
 ast_struct! {
-    pub struct QuantArg {
-        pub ident: Ident,
-        pub ty: Option<(Token![:], Box<Type>)>,
-    }
-}
-
-ast_struct! {
+    #[derive(Clone)]
     pub struct Trigger {
         pub pound_token: Token![#],
         pub bracket_token: token::Bracket,
@@ -477,12 +504,14 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     pub struct TermDead {
         pub dead_token: kw::dead
     }
 }
 
 ast_struct! {
+    #[derive(Clone)]
     pub struct TermPearlite {
         pub pearlite_token: kw::pearlite,
         pub bang_token: Token![!],
@@ -491,6 +520,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     pub struct TermProofAssert {
         pub proof_assert_token: kw::proof_assert,
         pub bang_token: Token![!],
@@ -499,6 +529,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     pub struct TermSeq {
         pub seq_token: kw::seq,
         pub bang_token: Token![!],
@@ -508,6 +539,7 @@ ast_struct! {
 }
 
 ast_struct! {
+    #[derive(Clone)]
     /// The index of an unnamed tuple struct field.
     pub struct Index {
         pub index: u32,
@@ -551,6 +583,7 @@ impl IdentFragment for Index {
 ast_struct! {
     /// The `::<>` explicit type parameters passed to a method call:
     /// `parse::<u64>()`.
+    #[derive(Clone)]
     pub struct TermMethodTurbofish {
         pub colon2_token: Token![::],
         pub lt_token: Token![<],
@@ -564,6 +597,7 @@ ast_enum! {
     /// An individual generic argument to a method, like `T`.
     ///
     #[derive(Debug)]
+    #[derive(Clone)]
     pub enum TermGenericMethodArgument {
         /// A type argument.
         Type(Type),
@@ -578,6 +612,7 @@ ast_enum! {
 #[cfg(feature = "full")]
 ast_struct! {
     /// A field-value pair in a struct literal.
+    #[derive(Clone)]
     pub struct TermFieldValue {
         /// Name or index of the field.
         pub member: Member,
@@ -610,6 +645,7 @@ ast_struct! {
     /// #   false
     /// # }
     /// ```
+    #[derive(Clone)]
     pub struct TermArm {
         pub pat: Pat,
         pub guard: Option<(Token![if], Box<Term>)>,
@@ -1097,7 +1133,7 @@ pub(crate) mod parsing {
                 e = Term::Call(TermCall {
                     func: Box::new(e),
                     paren_token: parenthesized!(content in input),
-                    args: content.parse_terminated(Term::parse, Token![,])?,
+                    args: content.parse_terminated(TermWithTriggers::parse, Token![,])?,
                 });
             } else if input.peek(Token![.]) && !input.peek(Token![..]) {
                 let mut dot_token: Token![.] = input.parse()?;
@@ -1168,6 +1204,10 @@ pub(crate) mod parsing {
         Ok(e)
     }
 
+    fn peek_quant(input: ParseStream) -> bool {
+        (input.peek(kw::forall) || input.peek(kw::exists)) && input.peek2(Token![<])
+    }
+
     // Parse all atomic expressions which don't have to worry about precedence
     // interactions, as they are fully contained.
     fn atom_term(input: ParseStream, allow_struct: AllowStruct) -> Result<Term> {
@@ -1182,10 +1222,7 @@ pub(crate) mod parsing {
         } else if input.peek(Token![|]) {
             term_closure(input, allow_struct).map(Term::Closure)
         } else if (input.peek(Ident)
-            && !(input.peek(kw::forall)
-                || input.peek(kw::exists)
-                || input.peek(kw::dead)
-                || input.peek(kw::pearlite)))
+            && !(peek_quant(input) || input.peek(kw::dead) || input.peek(kw::pearlite)))
             || input.peek(Token![::])
             || input.peek(Token![<])
             || input.peek(Token![self])
@@ -1454,7 +1491,7 @@ pub(crate) mod parsing {
 
             let mut args = Punctuated::new();
             while !input.peek(Token![>]) {
-                let quantarg = input.parse()?;
+                let quantarg = closure_arg(input)?;
                 args.push_value(quantarg);
                 if input.peek(Token![>]) {
                     break;
@@ -1512,17 +1549,6 @@ pub(crate) mod parsing {
                 Ok(QuantToken::Forall(input.parse()?))
             } else {
                 Ok(QuantToken::Exists(input.parse()?))
-            }
-        }
-    }
-
-    impl Parse for QuantArg {
-        fn parse(input: ParseStream) -> Result<Self> {
-            let ident = input.parse()?;
-            if input.peek(Token![:]) {
-                Ok(QuantArg { ident, ty: Some((input.parse()?, input.parse()?)) })
-            } else {
-                Ok(QuantArg { ident, ty: None })
             }
         }
     }
@@ -2045,16 +2071,6 @@ pub(crate) mod printing {
             self.result.to_tokens(tokens);
             self.or2_token.to_tokens(tokens);
             self.body.to_tokens(tokens);
-        }
-    }
-
-    impl ToTokens for QuantArg {
-        fn to_tokens(&self, tokens: &mut TokenStream) {
-            self.ident.to_tokens(tokens);
-            if let Some((colon_token, ty)) = &self.ty {
-                colon_token.to_tokens(tokens);
-                ty.to_tokens(tokens);
-            }
         }
     }
 

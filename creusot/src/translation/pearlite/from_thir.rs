@@ -368,7 +368,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     Intrinsic::ClosureResult => Ok(Term::unit(self.ctx.tcx).span(span)),
                     Intrinsic::Dead => Err(self.ctx.dcx().span_err(
                         span,
-                        "The `dead` term can only be used for the body of `logic(opaque)` functions",
+                        "The `dead` term can only be used for the body of `logic(opaque)` functions. If the function has contracts, it should be trusted.",
                     )),
                     Intrinsic::Trigger => Err(self.ctx.dcx().span_err(
                         span,

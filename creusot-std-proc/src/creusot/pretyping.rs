@@ -291,12 +291,43 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
         }
         Term::Block(block) => Ok(encode_block_(block, locals).into()),
         Term::Call(TermCall { func, args, .. }) => {
-            let args: Vec<_> = args
-                .into_iter()
-                .map(|t| Ok(encode_term_(t, locals)?.toks()))
-                .collect::<Result<_, _>>()?;
             if let Term::Path(p) = &**func {
                 let path = &p.inner.path;
+
+                if path.is_ident("forall") || path.is_ident("exists") {
+                    let path = path.get_ident().unwrap();
+                    let quant = if path == "forall" {
+                        QuantToken::Forall(kw::forall { span: path.span() })
+                    } else {
+                        QuantToken::Exists(kw::exists { span: path.span() })
+                    };
+
+                    if args.len() == 1
+                        && let TermWithTriggers { term, trigger } = &args[0]
+                        && let Term::Closure(TermClosure {
+                            or1_token, inputs, or2_token, body, ..
+                        }) = &**term
+                    {
+                        let term = Term::Quant(TermQuant {
+                            quant_token: quant,
+                            lt_token: syn::token::Lt { spans: [or1_token.span] },
+                            args: inputs.clone(),
+                            gt_token: syn::token::Gt { spans: [or2_token.span] },
+                            term: TermWithTriggers { trigger: trigger.clone(), term: body.clone() },
+                        });
+                        return encode_term_(&term, locals);
+                    } else {
+                        return Err(EncodeError::Unsupported(
+                            sp,
+                            format!("{path} quantifiers take a single closure as input"),
+                        ));
+                    }
+                }
+
+                let args: Vec<_> = args
+                    .into_iter()
+                    .map(|t| Ok(encode_term_(&t.term, locals)?.toks()))
+                    .collect::<Result<_, _>>()?;
                 let stream = if path.is_ident("old") {
                     TokenStream::from_iter([
                         quote_spanned! { span_before(path.span()) => #deref ::creusot_std::__stubs:: },
@@ -593,14 +624,8 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
             locals.open();
             let args_ref = args
                 .iter()
-                .map(|qa @ QuantArg { ident, ty }| {
-                    locals.bind_ref(ident.clone());
-                    match ty {
-                        None => quote_spanned! { span_after(qa.span()) => #ident: &_ },
-                        Some((_, ty)) => quote_spanned! { span_after(qa.span()) => #ident: &#ty },
-                    }
-                })
-                .collect::<Vec<_>>();
+                .map(|qa| preprocess_pat(locals, qa, term.span()))
+                .collect::<Result<Vec<_>, _>>()?;
             let ts = encode_term_with_triggers_(term, locals)?;
             locals.close();
             let open_token = quote_spanned! { lt_token.span() => | };
@@ -673,72 +698,7 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                 ));
             }
             locals.open();
-            // We want to allow mappings of unsized types, like `|x: [usize]| ...`
-            // but we can't bind variables of unsized types.
-            // - in all cases, wrap the argument type in `&` (`&[usize]`),
-            //   because Rust closure arguments must be sized.
-            // - this changes the type of `x` (`|x: &[usize]|`),
-            //   and we compensate by replacing all occurrences of `x` with `*x`
-            //   (this is enabled by calling `locals.bind_ref`).
-            //
-            // Unfortunately, this idea does not quite work because
-            // (1) closure argument binders can be arbitrary patterns, and
-            // (2) proc macros can't distinguish variables from nullary enum constructors,
-            // so we can't know what variables `var` are bound by a pattern
-            // in order to substitute their occurrences in the closure body with `*var`.
-            // The danger is that if we naively treat a constructor `C` as a bound variable,
-            // adding it to `bind_ref`, its occurrences will become `*C` which is nonsense.
-            //
-            // We compromise:
-            // - we only do the `x` to `*x` substitution for a simple binder `|x|` or `|x: ty|`
-            //   (intentionally assuming that `x` is a variable and not a constructor);
-            // - for non-variable patterns `|pat|` or `|pat: [usize]|`,
-            //   we just don't support unsized variables.
-            //   The binder becomes `|&pat: &[usize]|` so the type of `pat` doesn't change
-            //   and no substitution is necessary (actually we will replace `x` with `*&x` instead,
-            //   which doesn't change the type and works even if `x` is a constructor).
-            //
-            // Another solution could be to forbid non-variable patterns in Pearlite closures,
-            // but I think at least pair patterns `|(x, y)|` could be handy...
-            let input = match &clos.inputs[0] {
-                // |x: ty|
-                Pat::Type(PatType {
-                    attrs,
-                    pat:
-                        box Pat::Ident(PatIdent {
-                            by_ref: None,
-                            mutability: None,
-                            ident,
-                            subpat: None,
-                            ..
-                        }),
-                    ty,
-                    colon_token,
-                }) => {
-                    locals.bind_ref(ident.clone());
-                    quote! { #(#attrs)* #ident #colon_token &#ty }
-                }
-                // |pat: ty|
-                Pat::Type(PatType { attrs, pat, ty, colon_token }) => {
-                    pattern_bind(pat, locals, term.span())?;
-                    quote! { #(#attrs)* &#pat #colon_token &#ty }
-                }
-                // |x|
-                Pat::Ident(PatIdent {
-                    by_ref: None,
-                    mutability: None,
-                    ident,
-                    subpat: None,
-                    ..
-                }) => {
-                    locals.bind_ref(ident.clone());
-                    quote_spanned! { span_after(ident.span()) => #ident : &_ }
-                }
-                pat => {
-                    pattern_bind(pat, locals, term.span())?;
-                    quote_spanned! { span_before(pat.span()) => &#pat }
-                }
-            };
+            let input = preprocess_pat(locals, &clos.inputs[0], term.span())?;
             let retty = &clos.output;
             let clos = encode_term_(&clos.body, locals)?.toks();
             locals.close();
@@ -750,6 +710,63 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
         }
         Term::__Nonexhaustive => todo!(),
     }
+}
+
+// We want to allow mappings of unsized types, like `|x: [usize]| ...`
+// but we can't bind variables of unsized types.
+// - in all cases, wrap the argument type in `&` (`&[usize]`),
+//   because Rust closure arguments must be sized.
+// - this changes the type of `x` (`|x: &[usize]|`),
+//   and we compensate by replacing all occurrences of `x` with `*x`
+//   (this is enabled by calling `locals.bind_ref`).
+//
+// Unfortunately, this idea does not quite work because
+// (1) closure argument binders can be arbitrary patterns, and
+// (2) proc macros can't distinguish variables from nullary enum constructors,
+// so we can't know what variables `var` are bound by a pattern
+// in order to substitute their occurrences in the closure body with `*var`.
+// The danger is that if we naively treat a constructor `C` as a bound variable,
+// adding it to `bind_ref`, its occurrences will become `*C` which is nonsense.
+//
+// We compromise:
+// - we only do the `x` to `*x` substitution for a simple binder `|x|` or `|x: ty|`
+//   (intentionally assuming that `x` is a variable and not a constructor);
+// - for non-variable patterns `|pat|` or `|pat: [usize]|`,
+//   we just don't support unsized variables.
+//   The binder becomes `|&pat: &[usize]|` so the type of `pat` doesn't change
+//   and no substitution is necessary (actually we will replace `x` with `*&x` instead,
+//   which doesn't change the type and works even if `x` is a constructor).
+//
+// Another solution could be to forbid non-variable patterns in Pearlite closures,
+// but I think at least pair patterns `|(x, y)|` could be handy...
+fn preprocess_pat(locals: &mut Locals, pat: &Pat, span: Span) -> Result<TokenStream, EncodeError> {
+    Ok(match pat {
+        // |x: ty|
+        Pat::Type(PatType {
+            attrs,
+            pat:
+                box Pat::Ident(PatIdent { by_ref: None, mutability: None, ident, subpat: None, .. }),
+            ty,
+            colon_token,
+        }) => {
+            locals.bind_ref(ident.clone());
+            quote! { #(#attrs)* #ident #colon_token &#ty }
+        }
+        // |pat: ty|
+        Pat::Type(PatType { attrs, pat, ty, colon_token }) => {
+            pattern_bind(pat, locals, span)?;
+            quote! { #(#attrs)* &#pat #colon_token &#ty }
+        }
+        // |x|
+        Pat::Ident(PatIdent { by_ref: None, mutability: None, ident, subpat: None, .. }) => {
+            locals.bind_ref(ident.clone());
+            quote_spanned! { span_after(ident.span()) => #ident : &_ }
+        }
+        pat => {
+            pattern_bind(pat, locals, span)?;
+            quote_spanned! { span_before(pat.span()) => &#pat }
+        }
+    })
 }
 
 fn encode_term_with_triggers_(
