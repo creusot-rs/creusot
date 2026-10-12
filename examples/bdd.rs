@@ -1,5 +1,3 @@
-// TIME 2
-
 extern crate creusot_std;
 
 use ::std::cmp::Ordering::*;
