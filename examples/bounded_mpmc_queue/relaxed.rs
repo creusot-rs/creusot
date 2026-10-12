@@ -1,4 +1,4 @@
-// DEPTH 10 TIME 3
+// DEPTH 10
 //! This implementation is an adaption from:
 //! https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
 
@@ -935,11 +935,16 @@ impl<T> Queue<T> {
         let cell = &self.cells[head_mod];
         let status = cell.status.load(ghost! { |c: &Committer<_, _, Acquire, _>| {
             self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                let old_inv = snapshot!(*inv);
                 let head_mod_ghost: Ghost<Int> = snapshot!(head_mod@).into_ghost();
                 c.shoot_load(&inv.statuses_own[*head_mod_ghost], &mut view.borrow_mut());
 
                 let status_view = snapshot!(StatusWithView { status: c.val_load()@, view: *view });
                 *witness = Some(inv.statuses_mono_auth[*head_mod_ghost].get_fragment(status_view));
+                proof_assert!(inv.head() == old_inv.head());
+                proof_assert!(inv.tail() == old_inv.tail());
+                proof_assert!(inv.len() == old_inv.len());
+                proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
             });
         } });
 
@@ -1166,11 +1171,16 @@ impl<T> Queue<T> {
         let cell = &self.cells[tail_mod];
         let status = cell.status.load(ghost! { |c: &Committer<_, _, Acquire, _>| {
             self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                let old_inv = snapshot!(*inv);
                 let tail_mod_ghost: Ghost<Int> = snapshot!(tail_mod@).into_ghost();
                 c.shoot_load(&inv.statuses_own[*tail_mod_ghost], &mut view.borrow_mut());
 
                 let status_view = snapshot!(StatusWithView { status: c.val_load()@, view: *view });
                 *witness = Some(inv.statuses_mono_auth[*tail_mod_ghost].get_fragment(status_view));
+                proof_assert!(inv.head() == old_inv.head());
+                proof_assert!(inv.tail() == old_inv.tail());
+                proof_assert!(inv.len() == old_inv.len());
+                proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
             });
         } });
 

@@ -156,8 +156,43 @@ goal vc_associative_View_R: ([@stop_split] [@expl:frag ensures] rel_R (auth_R a)
     -> match { f0'1 = op_Frag fab (frag_R c); f1'1 = op_Frag (frag_R a) fbc } with
       | {f0'1 = Some'0 fabc1; f1'1 = Some'0 fabc2} -> fabc1 = fabc2
       && match { f0'2 = auth_R a; f1'2 = auth_R b; f2'2 = auth_R c } with
-        | {f0'2 = Some'1 _; f1'2 = None'1; f2'2 = None'1} | {f0'2 = None'1; f1'2 = Some'1 _; f2'2 = None'1} | {f0'2 = None'1; f1'2 = None'1; f2'2 = Some'1 _} -> [@stop_split] [@expl:associative ensures] and_then_Option_View_R (op_View_R a b) (fun (ab: t_View_R) -> op_View_R ab c)
-        = and_then_Option_View_R (op_View_R b c) (fun (bc: t_View_R) -> op_View_R a bc)
+        | {f0'2 = Some'1 _ as x; f1'2 = None'1; f2'2 = None'1} | {f0'2 = None'1; f1'2 = Some'1 _ as x; f2'2 = None'1} | {f0'2 = None'1; f1'2 = None'1; f2'2 = (Some'1 _ | None'1) as x} -> if rel_R x fab then
+          if rel_R x fbc then
+            if rel_R x fabc1 then
+              [@stop_split] [@expl:associative ensures] and_then_Option_View_R (op_View_R a b) (fun (ab: t_View_R) -> op_View_R ab c)
+              = and_then_Option_View_R (op_View_R b c) (fun (bc: t_View_R) -> op_View_R a bc)
+            else
+              [@stop_split] [@expl:associative ensures] and_then_Option_View_R (op_View_R a b) (fun (ab: t_View_R) -> op_View_R ab c)
+              = and_then_Option_View_R (op_View_R b c) (fun (bc: t_View_R) -> op_View_R a bc)
+          
+          else
+            if rel_R x fabc1 then
+              [@stop_split] [@expl:associative ensures] and_then_Option_View_R (op_View_R a b) (fun (ab: t_View_R) -> op_View_R ab c)
+              = and_then_Option_View_R (op_View_R b c) (fun (bc: t_View_R) -> op_View_R a bc)
+            else
+              [@stop_split] [@expl:associative ensures] and_then_Option_View_R (op_View_R a b) (fun (ab: t_View_R) -> op_View_R ab c)
+              = and_then_Option_View_R (op_View_R b c) (fun (bc: t_View_R) -> op_View_R a bc)
+          
+        
+        else
+          if rel_R x fbc then
+            if rel_R x fabc1 then
+              [@stop_split] [@expl:associative ensures] and_then_Option_View_R (op_View_R a b) (fun (ab: t_View_R) -> op_View_R ab c)
+              = and_then_Option_View_R (op_View_R b c) (fun (bc: t_View_R) -> op_View_R a bc)
+            else
+              [@stop_split] [@expl:associative ensures] and_then_Option_View_R (op_View_R a b) (fun (ab: t_View_R) -> op_View_R ab c)
+              = and_then_Option_View_R (op_View_R b c) (fun (bc: t_View_R) -> op_View_R a bc)
+          
+          else
+            if rel_R x fabc1 then
+              [@stop_split] [@expl:associative ensures] and_then_Option_View_R (op_View_R a b) (fun (ab: t_View_R) -> op_View_R ab c)
+              = and_then_Option_View_R (op_View_R b c) (fun (bc: t_View_R) -> op_View_R a bc)
+            else
+              [@stop_split] [@expl:associative ensures] and_then_Option_View_R (op_View_R a b) (fun (ab: t_View_R) -> op_View_R ab c)
+              = and_then_Option_View_R (op_View_R b c) (fun (bc: t_View_R) -> op_View_R a bc)
+          
+        
+        
         | _ -> [@stop_split] [@expl:associative ensures] and_then_Option_View_R (op_View_R a b) (fun (ab: t_View_R) -> op_View_R ab c)
         = and_then_Option_View_R (op_View_R b c) (fun (bc: t_View_R) -> op_View_R a bc)
         end

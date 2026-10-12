@@ -102,72 +102,12 @@ goal vc_cancelable_Option_T: match self with
     | None -> [@stop_split] [@expl:cancelable ensures] true
     = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
       -> op_Option_T self x = op_Option_T self y -> x = y)
-    | Some this -> if forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
-      -> op_Option_T self x = op_Option_T self y -> x = y then
-      if op_Option_T self (core_T this) = op_Option_T self (None) then
-        ([@stop_split] [@expl:cancelable ensures] cancelable_T this
-          = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
-        -> (if cancelable_T this then
-          if core_T this = None then
-            (forall x: t_Option_T, y: t_Option_T. if op_Option_T self x <> None'0 then
-                  if op_Option_T self x = op_Option_T self y then
-                    match { f0 = x; f1 = y } with
-                      | {f0 = Some x'0; f1 = Some y'0} -> true
-                      | {f0 = Some x'0; f1 = None} | {f0 = None; f1 = Some x'0} -> true
-                      | {f0 = None; f1 = None} -> true
-                      end
-                  else
-                    true
-                
-                else
-                  true
-              )
-            /\ (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
-                -> op_Option_T self x = op_Option_T self y
-                -> match { f0 = x; f1 = y } with
-                  | {f0 = Some x'0; f1 = Some y'0} -> op_T this x'0 <> None /\ op_T this x'0 = op_T this y'0
-                  | {f0 = Some x'0; f1 = None} | {f0 = None; f1 = Some x'0} -> op_T this x'0 = Some this
-                  | {f0 = None; f1 = None} -> true
-                  end)
-            && (([@stop_split] [@expl:cancelable ensures] cancelable_T this
-              = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
-            -> (if cancelable_T this then
-              [@stop_split] [@expl:cancelable ensures] (core_T this = None)
-              = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
-                -> op_Option_T self x = op_Option_T self y -> x = y)
-            else
-              [@stop_split] [@expl:cancelable ensures] false
-              = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
-                -> op_Option_T self x = op_Option_T self y -> x = y)
-            ))
-          else
-            ([@stop_split] [@expl:cancelable ensures] cancelable_T this
-              = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
-            -> (if cancelable_T this then
-              [@stop_split] [@expl:cancelable ensures] (core_T this = None)
-              = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
-                -> op_Option_T self x = op_Option_T self y -> x = y)
-            else
-              [@stop_split] [@expl:cancelable ensures] false
-              = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
-                -> op_Option_T self x = op_Option_T self y -> x = y)
-            )
-        
-        else
-          ([@stop_split] [@expl:cancelable ensures] cancelable_T this
-            = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
-          -> (if cancelable_T this then
-            [@stop_split] [@expl:cancelable ensures] (core_T this = None)
-            = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
-              -> op_Option_T self x = op_Option_T self y -> x = y)
-          else
-            [@stop_split] [@expl:cancelable ensures] false
-            = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
-              -> op_Option_T self x = op_Option_T self y -> x = y)
-          )
-        )
-      else
-        ([@stop_split] [@expl:cancelable ensures] cancelable_T this
+    | Some this -> ([@stop_split] [@expl:cancelable ensures] cancelable_T this
+      = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
+    -> (if cancelable_T this then
+      (forall x: t_T. op_T this x = Some this -> op_T x x = Some x)
+      && match core_T this with
+        | None -> ([@stop_split] [@expl:cancelable ensures] cancelable_T this
           = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
         -> (if cancelable_T this then
           [@stop_split] [@expl:cancelable ensures] (core_T this = None)
@@ -178,58 +118,22 @@ goal vc_cancelable_Option_T: match self with
           = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
             -> op_Option_T self x = op_Option_T self y -> x = y)
         )
-    
+        | Some c -> op_Option_T self (None) = op_Option_T self (Some c)
+        && (([@stop_split] [@expl:cancelable ensures] cancelable_T this
+          = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
+        -> (if cancelable_T this then
+          [@stop_split] [@expl:cancelable ensures] (core_T this = None)
+          = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+            -> op_Option_T self x = op_Option_T self y -> x = y)
+        else
+          [@stop_split] [@expl:cancelable ensures] false
+          = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+            -> op_Option_T self x = op_Option_T self y -> x = y)
+        ))
+        end
     else
-      ([@stop_split] [@expl:cancelable ensures] cancelable_T this
-        = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
-      -> (if cancelable_T this then
-        if core_T this = None then
-          (forall x: t_Option_T, y: t_Option_T. if op_Option_T self x <> None'0 then
-                if op_Option_T self x = op_Option_T self y then
-                  match { f0 = x; f1 = y } with
-                    | {f0 = Some x'0; f1 = Some y'0} -> true
-                    | {f0 = Some x'0; f1 = None} | {f0 = None; f1 = Some x'0} -> true
-                    | {f0 = None; f1 = None} -> true
-                    end
-                else
-                  true
-              
-              else
-                true
-            )
-          /\ (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
-              -> op_Option_T self x = op_Option_T self y
-              -> match { f0 = x; f1 = y } with
-                | {f0 = Some x'0; f1 = Some y'0} -> op_T this x'0 <> None /\ op_T this x'0 = op_T this y'0
-                | {f0 = Some x'0; f1 = None} | {f0 = None; f1 = Some x'0} -> op_T this x'0 = Some this
-                | {f0 = None; f1 = None} -> true
-                end)
-          && (([@stop_split] [@expl:cancelable ensures] cancelable_T this
-            = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
-          -> (if cancelable_T this then
-            [@stop_split] [@expl:cancelable ensures] (core_T this = None)
-            = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
-              -> op_Option_T self x = op_Option_T self y -> x = y)
-          else
-            [@stop_split] [@expl:cancelable ensures] false
-            = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
-              -> op_Option_T self x = op_Option_T self y -> x = y)
-          ))
-        else
-          ([@stop_split] [@expl:cancelable ensures] cancelable_T this
-            = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
-          -> (if cancelable_T this then
-            [@stop_split] [@expl:cancelable ensures] (core_T this = None)
-            = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
-              -> op_Option_T self x = op_Option_T self y -> x = y)
-          else
-            [@stop_split] [@expl:cancelable ensures] false
-            = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
-              -> op_Option_T self x = op_Option_T self y -> x = y)
-          )
-      
-      else
-        ([@stop_split] [@expl:cancelable ensures] cancelable_T this
+      match core_T this with
+        | None -> ([@stop_split] [@expl:cancelable ensures] cancelable_T this
           = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
         -> (if cancelable_T this then
           [@stop_split] [@expl:cancelable ensures] (core_T this = None)
@@ -240,6 +144,18 @@ goal vc_cancelable_Option_T: match self with
           = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
             -> op_Option_T self x = op_Option_T self y -> x = y)
         )
-      )
-    
+        | Some c -> op_Option_T self (None) = op_Option_T self (Some c)
+        && (([@stop_split] [@expl:cancelable ensures] cancelable_T this
+          = (forall x: t_T, y: t_T. op_T this x <> None -> op_T this x = op_T this y -> x = y))
+        -> (if cancelable_T this then
+          [@stop_split] [@expl:cancelable ensures] (core_T this = None)
+          = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+            -> op_Option_T self x = op_Option_T self y -> x = y)
+        else
+          [@stop_split] [@expl:cancelable ensures] false
+          = (forall x: t_Option_T, y: t_Option_T. op_Option_T self x <> None'0
+            -> op_Option_T self x = op_Option_T self y -> x = y)
+        ))
+        end
+    )
     end

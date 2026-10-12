@@ -160,7 +160,19 @@ impl<R: ViewRel> RA for View<R> {
                 (Some(fabc1), Some(fabc2)) => {
                     proof_assert!(fabc1 == fabc2);
                     match (a.auth(), b.auth(), c.auth()) {
-                        (Some(_), None, None) | (None, Some(_), None) | (None, None, Some(_)) => {}
+                        (x @ Some(_), None, None)
+                        | (None, x @ Some(_), None)
+                        | (None, None, x @ (Some(_) | None)) => {
+                            if R::rel(x, fab) {
+                            } else {
+                            };
+                            if R::rel(x, fbc) {
+                            } else {
+                            };
+                            if R::rel(x, fabc1) {
+                            } else {
+                            };
+                        }
                         _ => (),
                     }
                 }
