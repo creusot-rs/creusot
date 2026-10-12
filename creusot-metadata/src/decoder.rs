@@ -3,10 +3,10 @@ use crate::{
     SourceFileIndex, TAG_FULL_SPAN, TAG_PARTIAL_SPAN,
 };
 use rustc_data_structures::fx::FxHashMap;
-use rustc_hir::def_id::{CrateNum, DefId, DefIndex, DefPathHash, StableCrateId};
-use rustc_middle::{
-    implement_ty_decoder,
-    ty::{InternerDecoder, Ty, TyCtxt, codec::TyDecoder},
+use rustc_hir::def_id::{CrateNum, DefId, DefIndex, DefPathHash, LocalDefId, StableCrateId};
+use rustc_middle::ty::{
+    InternerDecoder, Ty, TyCtxt,
+    codec::{TyDecoder, forward_all_decoder_methods_to},
 };
 use rustc_serialize::{
     Decodable, Decoder,
@@ -74,7 +74,9 @@ impl<'a, 'tcx> MetadataDecoder<'a, 'tcx> {
     }
 }
 
-implement_ty_decoder!(MetadataDecoder<'a, 'tcx>);
+impl<'a, 'tcx> Decoder for MetadataDecoder<'a, 'tcx> {
+    forward_all_decoder_methods_to!(|self| self.opaque);
+}
 
 use rustc_span::{AttrId, SpanDecoder};
 
@@ -95,6 +97,9 @@ impl BlobDecoder for MetadataDecoder<'_, '_> {
     }
     fn decode_def_index(&mut self) -> DefIndex {
         panic!("trying to decode `DefIndex` outside the context of a `DefId`")
+    }
+    fn decode_local_def_id(&mut self) -> LocalDefId {
+        LocalDefId { local_def_index: Decodable::decode(self) }
     }
 }
 

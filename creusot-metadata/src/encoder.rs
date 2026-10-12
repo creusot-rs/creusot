@@ -9,14 +9,13 @@ use rustc_serialize::{
     Encodable, Encoder,
     opaque::{FileEncoder, IntEncodedWithFixedSize},
 };
-use rustc_span::{
-    ExpnId, SourceFile, Span, Symbol, SyntaxContext,
-    hygiene::{HygieneEncodeContext, raw_encode_syntax_context},
-};
+use rustc_span::{ExpnId, SourceFile, Span, Symbol, SyntaxContext, hygiene::HygieneEncodeContext};
 use std::{
+    cell::RefCell,
     collections::hash_map::Entry,
     io::Error,
     path::{Path, PathBuf},
+    rc::Rc,
     sync::Arc,
 };
 
@@ -26,7 +25,7 @@ pub struct MetadataEncoder<'a, 'tcx> {
     type_shorthands: FxHashMap<Ty<'tcx>, usize>,
     predicate_shorthands: FxHashMap<PredicateKind<'tcx>, usize>,
     file_to_file_index: FxHashMap<*const SourceFile, SourceFileIndex>,
-    hygiene_context: &'a HygieneEncodeContext,
+    hygiene_context: Rc<RefCell<HygieneEncodeContext>>,
     symbol_index_table: FxHashMap<u32, usize>,
 }
 
@@ -132,12 +131,13 @@ impl SpanEncoder for MetadataEncoder<'_, '_> {
         });
     }
     fn encode_expn_id(&mut self, eid: ExpnId) {
-        self.hygiene_context.schedule_expn_data_for_encoding(eid);
+        self.hygiene_context.borrow_mut().schedule_expn_data_for_encoding(eid);
         eid.krate.encode(self);
         eid.local_id.as_u32().encode(self);
     }
     fn encode_syntax_context(&mut self, ctx: SyntaxContext) {
-        raw_encode_syntax_context(ctx, &self.hygiene_context, self);
+        let idx = self.hygiene_context.borrow_mut().get_syntax_ctxt_encoding_index(ctx);
+        idx.encode(self);
     }
     fn encode_crate_num(&mut self, cnum: CrateNum) {
         self.tcx.stable_crate_id(cnum).encode(self)
@@ -228,7 +228,7 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
         opaque: FileEncoder::new(path)?,
         type_shorthands: Default::default(),
         predicate_shorthands: Default::default(),
-        hygiene_context: &hygiene_context,
+        hygiene_context: Rc::new(RefCell::new(hygiene_context)),
         symbol_index_table: Default::default(),
         file_to_file_index,
     };
@@ -240,7 +240,8 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
     // Encode all hygiene data (`SyntaxContextData` and `ExpnData`) from the current
     // session.
 
-    encoder.hygiene_context.encode(
+    HygieneEncodeContext::encode(
+        &encoder.hygiene_context.clone(),
         &mut encoder,
         |encoder, index, ctxt_data| {
             let pos = AbsoluteBytePos::new(encoder.position());
