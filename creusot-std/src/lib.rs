@@ -190,7 +190,7 @@ pub mod macros {
     /// let x = 1;
     /// let mut g = ghost!(Seq::new()); // g is a zero-sized variable at runtime
     /// ghost! {
-    ///     g.push_back_ghost(x);
+    ///     g.push_back(x);
     /// };
     /// ```
     ///
