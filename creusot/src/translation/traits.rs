@@ -94,23 +94,23 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn check_additional_predicates(
-    &self,
-    trait_item: DefId,
-    subst: GenericArgsRef<'tcx>,
-    param_env: ParamEnv<'tcx>,
-    sp: Span,
-) -> Result<(), ErrorGuaranteed> {
-    let Some(ext_spec) = self.extern_spec(trait_item) else { return Ok(()) };
-    let infcx = self.infer_ctxt().ignoring_regions().build(TypingMode::non_body_analysis());
-    let mut fulfill_cx = <dyn TraitEngine<'tcx, _>>::new(&infcx);
-    for predicate in ext_spec.predicates_for(self.tcx, subst) {
-        let predicate = self.erase_and_anonymize_regions(predicate);
-        let cause = ObligationCause::dummy_with_span(sp);
-        let obligation = Obligation { cause, param_env, recursion_depth: 0, predicate };
-        fulfill_cx.register_predicate_obligation(&infcx, obligation);
+        &self,
+        trait_item: DefId,
+        subst: GenericArgsRef<'tcx>,
+        param_env: ParamEnv<'tcx>,
+        sp: Span,
+    ) -> Result<(), ErrorGuaranteed> {
+        let Some(ext_spec) = self.extern_spec(trait_item) else { return Ok(()) };
+        let infcx = self.infer_ctxt().ignoring_regions().build(TypingMode::non_body_analysis());
+        let mut fulfill_cx = <dyn TraitEngine<'tcx, _>>::new(&infcx);
+        for predicate in ext_spec.predicates_for(self.tcx, subst) {
+            let predicate = self.erase_and_anonymize_regions(predicate);
+            let cause = ObligationCause::dummy_with_span(sp);
+            let obligation = Obligation { cause, param_env, recursion_depth: 0, predicate };
+            fulfill_cx.register_predicate_obligation(&infcx, obligation);
+        }
+        fulfill_cx.evaluate_obligations_error_on_ambiguity(&infcx)
     }
-    fulfill_cx.evaluate_obligations_error_on_ambiguity(&infcx)
-}
 }
 
 fn logic_refinement_term<'tcx>(

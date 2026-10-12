@@ -156,7 +156,7 @@ fn equate_anf<'tcx>(
 }
 
 fn erasure_check_level(erasure_check: ErasureCheck) -> rustc_errors::Level {
-    if erasure_check.is_error() { rustc_errors::Level::Error } else { rustc_errors::Level::Warning }
+    if erasure_check.is_error() { rustc_errors::Level::Error } else { rustc_errors::Level::Warning(None) }
 }
 
 fn warn_or_error<'tcx>(
@@ -164,8 +164,8 @@ fn warn_or_error<'tcx>(
     level: rustc_errors::Level,
     span: Span,
     msg: impl Into<DiagMessage>,
-) -> Diag<'tcx, ()> {
-    Diag::<()>::new(tcx.dcx(), level, msg).with_span(span)
+) -> Diag<'tcx> {
+    Diag::new(tcx.dcx(), level, msg).with_span(span)
 }
 
 // * ANF expressions
