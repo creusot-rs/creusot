@@ -409,10 +409,14 @@ impl<'tcx> TranslationCtx<'tcx> {
     }
 
     pub(crate) fn is_aliased(&self, def_id: DefId) -> bool {
-        if !def_id.is_local()
-            && let Some(spec) = self.externs.extern_spec(def_id)
-        {
-            return spec.contract.alias.is_some();
+        if !def_id.is_local() {
+            if let Some(spec) = self.externs.extern_spec(def_id) {
+                return spec.contract.alias.is_some();
+            }
+
+            if let Some(sig) = self.externs.sig(def_id) {
+                return sig.contract.alias.is_some();
+            }
         }
         self.aliased_items.contains(&def_id)
     }

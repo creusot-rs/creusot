@@ -108,17 +108,6 @@ module M_take_first_mut
   
   meta "rewrite_def" predicate gt_log_Int
   
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
   
   let split_first_mut_T (self: MutBorrow.t (Slice64.slice t_T)) (return (x: t_Option_tup2_refmut_T_refmut_slice_T)) =
@@ -129,11 +118,11 @@ module M_take_first_mut
       /\ ([@stop_split] [@expl:split_first_mut ensures] match result with
         | Some {f0 = first; f1 = tail} -> first.current = index_slice_T self.current 0
         /\ first.final = index_slice_T self.final 0
-        /\ gt_log_Int (len_T (Slice64.view self.current)) 0
-        /\ gt_log_Int (len_T (Slice64.view self.final)) 0
+        /\ gt_log_Int (Seq.length (Slice64.view self.current)) 0
+        /\ gt_log_Int (Seq.length (Slice64.view self.final)) 0
         /\ Slice64.view tail.current = tail_T (Slice64.view self.current)
         /\ Slice64.view tail.final = tail_T (Slice64.view self.final)
-        | None -> len_T (Slice64.view self.current) = 0
+        | None -> Seq.length (Slice64.view self.current) = 0
         /\ self.final = self.current /\ Slice64.view self.current = (Seq.empty: Seq.seq t_T)
         end)}
       (! return {result}) ]
@@ -238,8 +227,8 @@ module M_take_first_mut
       /\ ([@stop_split] [@expl:take_first_mut ensures] match result with
         | Some'0 r -> r.current = index_slice_T self_.current.current 0
         /\ r.final = index_slice_T self_.current.final 0
-        /\ gt_log_Int (len_T (Slice64.view self_.current.current)) 0
-        /\ gt_log_Int (len_T (Slice64.view self_.current.final)) 0
+        /\ gt_log_Int (Seq.length (Slice64.view self_.current.current)) 0
+        /\ gt_log_Int (Seq.length (Slice64.view self_.current.final)) 0
         /\ Slice64.view self_.final.current = tail_T (Slice64.view self_.current.current)
         /\ Slice64.view self_.final.final = tail_T (Slice64.view self_.current.final)
         | None'0 -> Slice64.view self_.final.current = (Seq.empty: Seq.seq t_T)

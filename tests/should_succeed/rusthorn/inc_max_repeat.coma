@@ -57,9 +57,6 @@ module M_inc_max_repeat
         end}
       (! return {result}) ]
   
-  let len_u32 (self: Seq.seq UInt32.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate inv_Seq_u32 [@inline:trivial] (_1: Seq.seq UInt32.t) = true
   
   meta "rewrite_def" predicate inv_Seq_u32
@@ -107,10 +104,10 @@ module M_inc_max_repeat
     | bb4 = bb4
       [ bb4 = {[@expl:for invariant] inv_Seq_u32 produced}
         {[@expl:for invariant] produces_Range_u32 iter_old produced iter}
-        {[@expl:loop invariant #0] UInt32.t'int a <= 1000000 + len_u32 produced
-        /\ UInt32.t'int b <= 1000000 + len_u32 produced}
-        {[@expl:loop invariant #1] ge_log_Int (UInt32.t'int a) (UInt32.t'int b + len_u32 produced)
-        \/ ge_log_Int (UInt32.t'int b) (UInt32.t'int a + len_u32 produced)}
+        {[@expl:loop invariant #0] UInt32.t'int a <= 1000000 + Seq.length produced
+        /\ UInt32.t'int b <= 1000000 + Seq.length produced}
+        {[@expl:loop invariant #1] ge_log_Int (UInt32.t'int a) (UInt32.t'int b + Seq.length produced)
+        \/ ge_log_Int (UInt32.t'int b) (UInt32.t'int a + Seq.length produced)}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range_u32> {iter}
             (fun (_bor: MutBorrow.t t_Range_u32) -> [ &_37 <- _bor ] [ &iter <- _bor.final ] s1)

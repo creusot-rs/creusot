@@ -11,12 +11,6 @@ module M_test_split_at
   
   type tup2_ref_str_ref_str = { f0: string; f1: string }
   
-  let len_char (self: Seq.seq Char.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  let len_u8 (self: Seq.seq UInt8.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function tail_char (self: Seq.seq Char.t) : Seq.seq Char.t = Seq.([..]) self 1 (Seq.length self)
   
   function flat_map_char (self: Seq.seq Char.t) (other: Map.map Char.t (Seq.seq UInt8.t)) : Seq.seq UInt8.t
@@ -38,12 +32,12 @@ module M_test_split_at
   
   let split_at (self: string) (mid: UInt64.t) (return (x: tup2_ref_str_ref_str)) =
   {[@stop_split] [@expl:split_at requires] exists i0: int. 0 <= i0
-      /\ i0 <= len_char (view_str self) /\ len_u8 (to_bytes (Seq.([..]) (view_str self) 0 i0)) = UInt64.t'int mid}
+      /\ i0 <= Seq.length (view_str self) /\ Seq.length (to_bytes (Seq.([..]) (view_str self) 0 i0)) = UInt64.t'int mid}
     any
     [ return (result: tup2_ref_str_ref_str) ->
     {[@stop_split] [@expl:split_at ensures] ([@stop_split] [@expl:split_at ensures #0] Seq.(++) (view_str result.f0) (view_str result.f1)
         = view_str self)
-      /\ ([@stop_split] [@expl:split_at ensures #1] len_u8 (to_bytes (view_str result.f0)) = UInt64.t'int mid)}
+      /\ ([@stop_split] [@expl:split_at ensures #1] Seq.length (to_bytes (view_str result.f0)) = UInt64.t'int mid)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -67,15 +61,12 @@ module M_test_split_at
 end
 module M_test_str_len
   use creusot.int.UInt64
-  use creusot.int.UInt8
   use seq.Seq
   use creusot.prelude.Char
+  use creusot.int.UInt8
   use map.Map
   use creusot.prelude.Any
   use int.Int
-  
-  let len_u8 (self: Seq.seq UInt8.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   function tail_char (self: Seq.seq Char.t) : Seq.seq Char.t = Seq.([..]) self 1 (Seq.length self)
   
@@ -100,7 +91,7 @@ module M_test_str_len
   
   let len (self: string) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = len_u8 (to_bytes (view_str self))}
+      = Seq.length (to_bytes (view_str self))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -120,9 +111,9 @@ module M_test_str_len
 end
 module M_test_string_len
   use creusot.int.UInt64
-  use creusot.int.UInt8
   use seq.Seq
   use creusot.prelude.Char
+  use creusot.int.UInt8
   use map.Map
   use creusot.prelude.Any
   use int.Int
@@ -140,9 +131,6 @@ module M_test_string_len
   predicate inv_ref_String [@inline:trivial] (_1: t_String) = invariant_ref_String _1
   
   meta "rewrite_def" predicate inv_ref_String
-  
-  let len_u8 (self: Seq.seq UInt8.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   function tail_char (self: Seq.seq Char.t) : Seq.seq Char.t = Seq.([..]) self 1 (Seq.length self)
   
@@ -169,7 +157,7 @@ module M_test_string_len
   {[@stop_split] [@expl:len 'self' type invariant] inv_ref_String self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = len_u8 (to_bytes (view_String self))}
+      = Seq.length (to_bytes (view_String self))}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000

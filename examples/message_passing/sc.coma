@@ -81,9 +81,6 @@ module M_message_passing
   
   function id_Excl_unit (self: t_Resource_Excl_unit) : t_Id
   
-  let id_Excl_unit'0 (self: t_Resource_Excl_unit) (return (x: t_Id)) = any
-    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_Excl_unit self} (! return {result}) ]
-  
   type tup2_PCell_i32_Id = { f0'2: t_PCell_i32; f1'2: t_Id }
   
   type t_MessagePassingAtomicInv = { atomic_own: t_Perm_AtomicBool; state: t_State; public_data: tup2_PCell_i32_Id }
@@ -98,7 +95,7 @@ module M_message_passing
       | NotWrittenYet -> not val_AtomicBool self.atomic_own
       | Synchronisation data_own -> self.public_data.f0'2 = ward_PCell_i32 data_own
       /\ val_AtomicBool self.atomic_own /\ Int32.to_int (val_PCell_i32 data_own) = 1
-      | Readable tok -> self.public_data.f1'2 = id_Excl_unit'0 tok
+      | Readable tok -> self.public_data.f1'2 = id_Excl_unit tok
       end
   
   meta "rewrite_def" predicate protocol_MessagePassingAtomicInv
@@ -1178,11 +1175,7 @@ module M_message_passing
       | s7 = alloc_Excl_unit {_8} (fun (_x: t_Resource_Excl_unit) -> [ &excl <- _x ] s8)
       | s8 = into_inner_Perm_AtomicBool {atomic_own'0} (fun (_x: t_Perm_AtomicBool) -> [ &_13 <- _x ] s9)
       | s9 = [ &_15 <- NotWrittenYet ] s10
-      | s10 = any
-        [ any_ (_dest: tup2_PCell_i32_Id) -> (! -{([@stop_split] [@expl:id ensures] id_Excl_unit'0 excl
-            = id_Excl_unit excl)
-          /\ _dest = { f0'2 = data; f1'2 = id_Excl_unit'0 excl }}-
-          [ &_16 <- _dest ] s11) ] [ _ck -> (! any) ]
+      | s10 = [ &_16 <- { f0'2 = data; f1'2 = id_Excl_unit excl } ] s11
       | s11 = [ &_12 <- { atomic_own = _13; state = _15; public_data = _16 } ] s12
       | s12 = new_MessagePassingAtomicInv {_12} (fun (_x: t_MessagePassingAtomicInv) -> [ &_11 <- _x ] s13)
       | s13 = [ &_20 <- Namespace_MESSAGE_PASSING 0 ] s14

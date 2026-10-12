@@ -71,39 +71,7 @@ module M_example
   
   meta "rewrite_def" predicate contains_Elem_i32
   
-  predicate invariant_FSet_Elem_i32 [@inline:trivial] (self: Fset.fset t_Elem_i32) =
-    forall x: t_Elem_i32. contains_Elem_i32 self x -> inv_Elem_i32 x
-  
-  meta "rewrite_def" predicate invariant_FSet_Elem_i32
-  
-  predicate inv_FSet_Elem_i32 [@inline:trivial] (_1: Fset.fset t_Elem_i32) = invariant_FSet_Elem_i32 _1
-  
-  meta "rewrite_def" predicate inv_FSet_Elem_i32
-  
-  predicate invariant_ref_FSet_Elem_i32 [@inline:trivial] (self: Fset.fset t_Elem_i32) = inv_FSet_Elem_i32 self
-  
-  meta "rewrite_def" predicate invariant_ref_FSet_Elem_i32
-  
-  predicate inv_ref_FSet_Elem_i32 [@inline:trivial] (_1: Fset.fset t_Elem_i32) = invariant_ref_FSet_Elem_i32 _1
-  
-  meta "rewrite_def" predicate inv_ref_FSet_Elem_i32
-  
-  predicate invariant_ref_Elem_i32 [@inline:trivial] (self: t_Elem_i32) = inv_Elem_i32 self
-  
-  meta "rewrite_def" predicate invariant_ref_Elem_i32
-  
-  predicate inv_ref_Elem_i32 [@inline:trivial] (_1: t_Elem_i32) = invariant_ref_Elem_i32 _1
-  
-  meta "rewrite_def" predicate inv_ref_Elem_i32
-  
-  let contains_Elem_i32'0 (self: Fset.fset t_Elem_i32) (value: t_Elem_i32) (return (x: bool)) =
-  {[@stop_split] [@expl:contains_Elem_i32 requires] ([@stop_split] [@expl:contains 'self' type invariant] inv_ref_FSet_Elem_i32 self)
-    /\ ([@stop_split] [@expl:contains 'value' type invariant] inv_ref_Elem_i32 value)}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Elem_i32 self value}
-      (! return {result}) ]
-  
-  predicate in_domain_i32 (self: t_UF_i32) (e: t_Elem_i32) = contains_Elem_i32'0 (domain_i32 self) e
+  predicate in_domain_i32 (self: t_UF_i32) (e: t_Elem_i32) = contains_Elem_i32 (domain_i32 self) e
   
   function fin_Ghost_refmut_UF_i32 [@inline:trivial] (self: MutBorrow.t t_UF_i32) : t_UF_i32 = self.final
   
@@ -174,6 +142,14 @@ module M_example
     {[@stop_split] [@expl:borrow_UF_i32 ensures] ([@stop_split] [@expl:borrow result type invariant] inv_Ghost_ref_UF_i32 result)
       /\ ([@stop_split] [@expl:borrow ensures] result = self)}
       (! return {result}) ]
+  
+  predicate invariant_ref_Elem_i32 [@inline:trivial] (self: t_Elem_i32) = inv_Elem_i32 self
+  
+  meta "rewrite_def" predicate invariant_ref_Elem_i32
+  
+  predicate inv_ref_Elem_i32 [@inline:trivial] (_1: t_Elem_i32) = invariant_ref_Elem_i32 _1
+  
+  meta "rewrite_def" predicate inv_ref_Elem_i32
   
   function root_i32 (self: t_UF_i32) (e: t_Elem_i32) : t_Elem_i32 =
     index_Mapping_Elem_i32_Elem_i32 (roots_map_i32 self) e
@@ -450,44 +426,6 @@ module M_implementation__find
   
   meta "rewrite_def" predicate contains_Elem_T
   
-  predicate inv_Rc_PCell_Node_T_Global (_1: t_Rc_PCell_Node_T_Global)
-  
-  predicate inv_Elem_T (_1: t_Elem_T)
-  
-  axiom inv_axiom [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PCell_Node_T_Global _1.f0
-  
-  predicate invariant_FSet_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) =
-    forall x: t_Elem_T. contains_Elem_T self x -> inv_Elem_T x
-  
-  meta "rewrite_def" predicate invariant_FSet_Elem_T
-  
-  predicate inv_FSet_Elem_T [@inline:trivial] (_1: Fset.fset t_Elem_T) = invariant_FSet_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_FSet_Elem_T
-  
-  predicate invariant_ref_FSet_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) = inv_FSet_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FSet_Elem_T
-  
-  predicate inv_ref_FSet_Elem_T [@inline:trivial] (_1: Fset.fset t_Elem_T) = invariant_ref_FSet_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FSet_Elem_T
-  
-  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Elem_T
-  
-  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Elem_T
-  
-  let contains_Elem_T'0 (self: Fset.fset t_Elem_T) (value: t_Elem_T) (return (x: bool)) =
-  {[@stop_split] [@expl:contains_Elem_T requires] ([@stop_split] [@expl:contains 'self' type invariant] inv_ref_FSet_Elem_T self)
-    /\ ([@stop_split] [@expl:contains 'value' type invariant] inv_ref_Elem_T value)}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Elem_T self value}
-      (! return {result}) ]
-  
   function domain_T (self: t_UF_T) : Fset.fset t_Elem_T = self.f0'0.domain
   
   type t_Perm_PCell_Node_T
@@ -505,11 +443,6 @@ module M_implementation__find
     lookup_Snapshot_Elem_T self k <> None
   
   meta "rewrite_def" predicate contains_Snapshot_Elem_T
-  
-  let contains_Snapshot_Elem_T'0 (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T) (return (x: bool)) =
-  any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Snapshot_Elem_T self key}
-      (! return {result}) ]
   
   type t_PCell_Node_T
   
@@ -549,15 +482,15 @@ module M_implementation__find
   meta "rewrite_def" function index_Mapping_Elem_T_T
   
   predicate invariant_UF_T [@inline:trivial] (self: t_UF_T) =
-    forall e: t_Elem_T. contains_Elem_T'0 (domain_T self) e
-      -> contains_Snapshot_Elem_T'0 self.f0'0.perms e
+    forall e: t_Elem_T. contains_Elem_T (domain_T self) e
+      -> contains_Snapshot_Elem_T self.f0'0.perms e
       /\ ward_PCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T self.f0'0.perms e)
         = view_Rc_PCell_Node_T_Global e.f0
-      /\ contains_Elem_T'0 (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
+      /\ contains_Elem_T (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
       /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
         = index_Mapping_Elem_T_Elem_T self.f0'0.roots e
       /\ match val_PCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T self.f0'0.perms e) with
-        | Link e2 -> contains_Elem_T'0 (domain_T self) e2
+        | Link e2 -> contains_Elem_T (domain_T self) e2
         /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e <> e
         /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e = index_Mapping_Elem_T_Elem_T self.f0'0.roots e2
         | Root _ payload -> index_Mapping_Elem_T_Elem_T self.f0'0.roots e = e
@@ -568,7 +501,7 @@ module M_implementation__find
   
   predicate inv_UF_T (_1: t_UF_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
+  axiom inv_axiom [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
   
   predicate invariant_refmut_UF_T [@inline:trivial] (self: MutBorrow.t t_UF_T) =
     inv_UF_T self.current /\ inv_UF_T self.final
@@ -630,6 +563,8 @@ module M_implementation__find
   let new_ref_Perm_PCell_Node_T (x: t_Perm_PCell_Node_T) (return (x'0: t_Perm_PCell_Node_T)) = any
     [ return (result: t_Perm_PCell_Node_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
+  predicate inv_Rc_PCell_Node_T_Global (_1: t_Rc_PCell_Node_T_Global)
+  
   predicate invariant_ref_Rc_PCell_Node_T_Global [@inline:trivial] (self: t_Rc_PCell_Node_T_Global) =
     inv_Rc_PCell_Node_T_Global self
   
@@ -647,6 +582,10 @@ module M_implementation__find
       (! return {result}) ]
   
   predicate inv_T (_1: t_T)
+  
+  predicate inv_Elem_T (_1: t_Elem_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PCell_Node_T_Global _1.f0
   
   predicate inv_Node_T (_1: t_Node_T)
   
@@ -679,6 +618,14 @@ module M_implementation__find
         | _ -> false
         end}
       any) ]
+  
+  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Elem_T
+  
+  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Elem_T
   
   let clone_Elem_T (self: t_Elem_T) (return (x: t_Elem_T)) =
   {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Elem_T self}
@@ -733,7 +680,7 @@ module M_implementation__find
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T'0 (domain_T self) e
+  predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T (domain_T self) e
   
   function roots_map_T (self: t_UF_T) : Map.map t_Elem_T t_Elem_T = self.f0'0.roots
   
@@ -1064,44 +1011,6 @@ module M_implementation__get
   
   meta "rewrite_def" predicate contains_Elem_T
   
-  predicate inv_Rc_PCell_Node_T_Global (_1: t_Rc_PCell_Node_T_Global)
-  
-  predicate inv_Elem_T (_1: t_Elem_T)
-  
-  axiom inv_axiom [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PCell_Node_T_Global _1.f0
-  
-  predicate invariant_FSet_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) =
-    forall x: t_Elem_T. contains_Elem_T self x -> inv_Elem_T x
-  
-  meta "rewrite_def" predicate invariant_FSet_Elem_T
-  
-  predicate inv_FSet_Elem_T [@inline:trivial] (_1: Fset.fset t_Elem_T) = invariant_FSet_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_FSet_Elem_T
-  
-  predicate invariant_ref_FSet_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) = inv_FSet_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FSet_Elem_T
-  
-  predicate inv_ref_FSet_Elem_T [@inline:trivial] (_1: Fset.fset t_Elem_T) = invariant_ref_FSet_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FSet_Elem_T
-  
-  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Elem_T
-  
-  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Elem_T
-  
-  let contains_Elem_T'0 (self: Fset.fset t_Elem_T) (value: t_Elem_T) (return (x: bool)) =
-  {[@stop_split] [@expl:contains_Elem_T requires] ([@stop_split] [@expl:contains 'self' type invariant] inv_ref_FSet_Elem_T self)
-    /\ ([@stop_split] [@expl:contains 'value' type invariant] inv_ref_Elem_T value)}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Elem_T self value}
-      (! return {result}) ]
-  
   function domain_T (self: t_UF_T) : Fset.fset t_Elem_T = self.f0'0.domain
   
   type t_Perm_PCell_Node_T
@@ -1119,11 +1028,6 @@ module M_implementation__get
     lookup_Snapshot_Elem_T self k <> None
   
   meta "rewrite_def" predicate contains_Snapshot_Elem_T
-  
-  let contains_Snapshot_Elem_T'0 (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T) (return (x: bool)) =
-  any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Snapshot_Elem_T self key}
-      (! return {result}) ]
   
   type t_PCell_Node_T
   
@@ -1163,15 +1067,15 @@ module M_implementation__get
   meta "rewrite_def" function index_Mapping_Elem_T_T
   
   predicate invariant_UF_T [@inline:trivial] (self: t_UF_T) =
-    forall e: t_Elem_T. contains_Elem_T'0 (domain_T self) e
-      -> contains_Snapshot_Elem_T'0 self.f0'0.perms e
+    forall e: t_Elem_T. contains_Elem_T (domain_T self) e
+      -> contains_Snapshot_Elem_T self.f0'0.perms e
       /\ ward_PCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T self.f0'0.perms e)
         = view_Rc_PCell_Node_T_Global e.f0
-      /\ contains_Elem_T'0 (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
+      /\ contains_Elem_T (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
       /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
         = index_Mapping_Elem_T_Elem_T self.f0'0.roots e
       /\ match val_PCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T self.f0'0.perms e) with
-        | Link e2 -> contains_Elem_T'0 (domain_T self) e2
+        | Link e2 -> contains_Elem_T (domain_T self) e2
         /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e <> e
         /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e = index_Mapping_Elem_T_Elem_T self.f0'0.roots e2
         | Root _ payload -> index_Mapping_Elem_T_Elem_T self.f0'0.roots e = e
@@ -1182,7 +1086,7 @@ module M_implementation__get
   
   predicate inv_UF_T (_1: t_UF_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
+  axiom inv_axiom [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
   
   predicate invariant_ref_UF_T [@inline:trivial] (self: t_UF_T) = inv_UF_T self
   
@@ -1243,6 +1147,8 @@ module M_implementation__get
   let new_ref_Perm_PCell_Node_T (x: t_Perm_PCell_Node_T) (return (x'0: t_Perm_PCell_Node_T)) = any
     [ return (result: t_Perm_PCell_Node_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
+  predicate inv_Rc_PCell_Node_T_Global (_1: t_Rc_PCell_Node_T_Global)
+  
   predicate invariant_ref_Rc_PCell_Node_T_Global [@inline:trivial] (self: t_Rc_PCell_Node_T_Global) =
     inv_Rc_PCell_Node_T_Global self
   
@@ -1260,6 +1166,10 @@ module M_implementation__get
       (! return {result}) ]
   
   predicate inv_T (_1: t_T)
+  
+  predicate inv_Elem_T (_1: t_Elem_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PCell_Node_T_Global _1.f0
   
   predicate inv_Node_T (_1: t_Node_T)
   
@@ -1293,7 +1203,15 @@ module M_implementation__get
         end}
       any) ]
   
-  predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T'0 (domain_T self) e
+  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Elem_T
+  
+  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Elem_T
+  
+  predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T (domain_T self) e
   
   function roots_map_T (self: t_UF_T) : Map.map t_Elem_T t_Elem_T = self.f0'0.roots
   
@@ -1592,44 +1510,6 @@ module M_implementation__impl_UF_T__roots_map (* implementation::UF<T> *)
   
   meta "rewrite_def" predicate contains_Elem_T
   
-  predicate inv_Rc_PCell_Node_T_Global (_1: t_Rc_PCell_Node_T_Global)
-  
-  predicate inv_Elem_T (_1: t_Elem_T)
-  
-  axiom inv_axiom [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PCell_Node_T_Global _1.f0
-  
-  predicate invariant_FSet_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) =
-    forall x: t_Elem_T. contains_Elem_T self x -> inv_Elem_T x
-  
-  meta "rewrite_def" predicate invariant_FSet_Elem_T
-  
-  predicate inv_FSet_Elem_T [@inline:trivial] (_1: Fset.fset t_Elem_T) = invariant_FSet_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_FSet_Elem_T
-  
-  predicate invariant_ref_FSet_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) = inv_FSet_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FSet_Elem_T
-  
-  predicate inv_ref_FSet_Elem_T [@inline:trivial] (_1: Fset.fset t_Elem_T) = invariant_ref_FSet_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FSet_Elem_T
-  
-  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Elem_T
-  
-  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Elem_T
-  
-  let contains_Elem_T'0 (self: Fset.fset t_Elem_T) (value: t_Elem_T) (return (x: bool)) =
-  {[@stop_split] [@expl:contains_Elem_T requires] ([@stop_split] [@expl:contains 'self' type invariant] inv_ref_FSet_Elem_T self)
-    /\ ([@stop_split] [@expl:contains 'value' type invariant] inv_ref_Elem_T value)}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Elem_T self value}
-      (! return {result}) ]
-  
   function domain_T (self: t_UF_T) : Fset.fset t_Elem_T = self.f0'0.domain
   
   type t_Perm_PCell_Node_T
@@ -1647,11 +1527,6 @@ module M_implementation__impl_UF_T__roots_map (* implementation::UF<T> *)
     lookup_Snapshot_Elem_T self k <> None
   
   meta "rewrite_def" predicate contains_Snapshot_Elem_T
-  
-  let contains_Snapshot_Elem_T'0 (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T) (return (x: bool)) =
-  any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Snapshot_Elem_T self key}
-      (! return {result}) ]
   
   type t_PCell_Node_T
   
@@ -1691,15 +1566,15 @@ module M_implementation__impl_UF_T__roots_map (* implementation::UF<T> *)
   meta "rewrite_def" function index_Mapping_Elem_T_T
   
   predicate invariant_UF_T [@inline:trivial] (self: t_UF_T) =
-    forall e: t_Elem_T. contains_Elem_T'0 (domain_T self) e
-      -> contains_Snapshot_Elem_T'0 self.f0'0.perms e
+    forall e: t_Elem_T. contains_Elem_T (domain_T self) e
+      -> contains_Snapshot_Elem_T self.f0'0.perms e
       /\ ward_PCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T self.f0'0.perms e)
         = view_Rc_PCell_Node_T_Global e.f0
-      /\ contains_Elem_T'0 (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
+      /\ contains_Elem_T (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
       /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
         = index_Mapping_Elem_T_Elem_T self.f0'0.roots e
       /\ match val_PCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T self.f0'0.perms e) with
-        | Link e2 -> contains_Elem_T'0 (domain_T self) e2
+        | Link e2 -> contains_Elem_T (domain_T self) e2
         /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e <> e
         /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e = index_Mapping_Elem_T_Elem_T self.f0'0.roots e2
         | Root _ payload -> index_Mapping_Elem_T_Elem_T self.f0'0.roots e = e
@@ -1710,9 +1585,9 @@ module M_implementation__impl_UF_T__roots_map (* implementation::UF<T> *)
   
   predicate inv_UF_T (_1: t_UF_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
+  axiom inv_axiom [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
   
-  predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T'0 (domain_T self) e
+  predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T (domain_T self) e
   
   meta "compute_max_steps" 1000000
   
@@ -1758,44 +1633,6 @@ module M_implementation__link
   
   meta "rewrite_def" predicate contains_Elem_T
   
-  predicate inv_Rc_PCell_Node_T_Global (_1: t_Rc_PCell_Node_T_Global)
-  
-  predicate inv_Elem_T (_1: t_Elem_T)
-  
-  axiom inv_axiom [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PCell_Node_T_Global _1.f0
-  
-  predicate invariant_FSet_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) =
-    forall x: t_Elem_T. contains_Elem_T self x -> inv_Elem_T x
-  
-  meta "rewrite_def" predicate invariant_FSet_Elem_T
-  
-  predicate inv_FSet_Elem_T [@inline:trivial] (_1: Fset.fset t_Elem_T) = invariant_FSet_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_FSet_Elem_T
-  
-  predicate invariant_ref_FSet_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) = inv_FSet_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FSet_Elem_T
-  
-  predicate inv_ref_FSet_Elem_T [@inline:trivial] (_1: Fset.fset t_Elem_T) = invariant_ref_FSet_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FSet_Elem_T
-  
-  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Elem_T
-  
-  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Elem_T
-  
-  let contains_Elem_T'0 (self: Fset.fset t_Elem_T) (value: t_Elem_T) (return (x: bool)) =
-  {[@stop_split] [@expl:contains_Elem_T requires] ([@stop_split] [@expl:contains 'self' type invariant] inv_ref_FSet_Elem_T self)
-    /\ ([@stop_split] [@expl:contains 'value' type invariant] inv_ref_Elem_T value)}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Elem_T self value}
-      (! return {result}) ]
-  
   function domain_T (self: t_UF_T) : Fset.fset t_Elem_T = self.f0'0.domain
   
   type t_Perm_PCell_Node_T
@@ -1813,11 +1650,6 @@ module M_implementation__link
     lookup_Snapshot_Elem_T self k <> None
   
   meta "rewrite_def" predicate contains_Snapshot_Elem_T
-  
-  let contains_Snapshot_Elem_T'0 (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T) (return (x: bool)) =
-  any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Snapshot_Elem_T self key}
-      (! return {result}) ]
   
   type t_PCell_Node_T
   
@@ -1857,15 +1689,15 @@ module M_implementation__link
   meta "rewrite_def" function index_Mapping_Elem_T_T
   
   predicate invariant_UF_T [@inline:trivial] (self: t_UF_T) =
-    forall e: t_Elem_T. contains_Elem_T'0 (domain_T self) e
-      -> contains_Snapshot_Elem_T'0 self.f0'0.perms e
+    forall e: t_Elem_T. contains_Elem_T (domain_T self) e
+      -> contains_Snapshot_Elem_T self.f0'0.perms e
       /\ ward_PCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T self.f0'0.perms e)
         = view_Rc_PCell_Node_T_Global e.f0
-      /\ contains_Elem_T'0 (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
+      /\ contains_Elem_T (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
       /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
         = index_Mapping_Elem_T_Elem_T self.f0'0.roots e
       /\ match val_PCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T self.f0'0.perms e) with
-        | Link e2 -> contains_Elem_T'0 (domain_T self) e2
+        | Link e2 -> contains_Elem_T (domain_T self) e2
         /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e <> e
         /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e = index_Mapping_Elem_T_Elem_T self.f0'0.roots e2
         | Root _ payload -> index_Mapping_Elem_T_Elem_T self.f0'0.roots e = e
@@ -1876,7 +1708,7 @@ module M_implementation__link
   
   predicate inv_UF_T (_1: t_UF_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
+  axiom inv_axiom [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
   
   predicate invariant_refmut_UF_T [@inline:trivial] (self: MutBorrow.t t_UF_T) =
     inv_UF_T self.current /\ inv_UF_T self.final
@@ -1926,6 +1758,20 @@ module M_implementation__link
   
   let new_refmut_UFInner_T (x: MutBorrow.t t_UFInner_T) (return (x'0: MutBorrow.t t_UFInner_T)) = any
     [ return (result: MutBorrow.t t_UFInner_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  predicate inv_Rc_PCell_Node_T_Global (_1: t_Rc_PCell_Node_T_Global)
+  
+  predicate inv_Elem_T (_1: t_Elem_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PCell_Node_T_Global _1.f0
+  
+  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Elem_T
+  
+  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Elem_T
   
   function as_ptr_Rc_PCell_Node_T_Global (self: t_Rc_PCell_Node_T_Global) : Opaque.ptr
   
@@ -2261,7 +2107,7 @@ module M_implementation__link
       = UInt64.t'int self.f0'1 + 1}
       (! return {result}) ]
   
-  predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T'0 (domain_T self) e
+  predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T (domain_T self) e
   
   function roots_map_T (self: t_UF_T) : Map.map t_Elem_T t_Elem_T = self.f0'0.roots
   
@@ -2710,38 +2556,6 @@ module M_implementation__make
   
   meta "rewrite_def" predicate contains_Elem_T
   
-  predicate invariant_FSet_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) =
-    forall x: t_Elem_T. contains_Elem_T self x -> inv_Elem_T x
-  
-  meta "rewrite_def" predicate invariant_FSet_Elem_T
-  
-  predicate inv_FSet_Elem_T [@inline:trivial] (_1: Fset.fset t_Elem_T) = invariant_FSet_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_FSet_Elem_T
-  
-  predicate invariant_ref_FSet_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) = inv_FSet_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FSet_Elem_T
-  
-  predicate inv_ref_FSet_Elem_T [@inline:trivial] (_1: Fset.fset t_Elem_T) = invariant_ref_FSet_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FSet_Elem_T
-  
-  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Elem_T
-  
-  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Elem_T
-  
-  let contains_Elem_T'0 (self: Fset.fset t_Elem_T) (value: t_Elem_T) (return (x: bool)) =
-  {[@stop_split] [@expl:contains_Elem_T requires] ([@stop_split] [@expl:contains 'self' type invariant] inv_ref_FSet_Elem_T self)
-    /\ ([@stop_split] [@expl:contains 'value' type invariant] inv_ref_Elem_T value)}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Elem_T self value}
-      (! return {result}) ]
-  
   function domain_T (self: t_UF_T) : Fset.fset t_Elem_T = self.f0'2.domain
   
   type t_Option_Perm_PCell_Node_T = None | Some t_Perm_PCell_Node_T
@@ -2757,11 +2571,6 @@ module M_implementation__make
     lookup_Snapshot_Elem_T self k <> None
   
   meta "rewrite_def" predicate contains_Snapshot_Elem_T
-  
-  let contains_Snapshot_Elem_T'0 (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T) (return (x: bool)) =
-  any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Snapshot_Elem_T self key}
-      (! return {result}) ]
   
   constant any_Perm_PCell_Node_T : t_Perm_PCell_Node_T
   
@@ -2785,15 +2594,15 @@ module M_implementation__make
   meta "rewrite_def" function index_Mapping_Elem_T_T
   
   predicate invariant_UF_T [@inline:trivial] (self: t_UF_T) =
-    forall e: t_Elem_T. contains_Elem_T'0 (domain_T self) e
-      -> contains_Snapshot_Elem_T'0 self.f0'2.perms e
+    forall e: t_Elem_T. contains_Elem_T (domain_T self) e
+      -> contains_Snapshot_Elem_T self.f0'2.perms e
       /\ ward_PCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T self.f0'2.perms e)
         = view_Rc_PCell_Node_T_Global e.f0'0
-      /\ contains_Elem_T'0 (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'2.roots e)
+      /\ contains_Elem_T (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'2.roots e)
       /\ index_Mapping_Elem_T_Elem_T self.f0'2.roots (index_Mapping_Elem_T_Elem_T self.f0'2.roots e)
         = index_Mapping_Elem_T_Elem_T self.f0'2.roots e
       /\ match val_PCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T self.f0'2.perms e) with
-        | Link e2 -> contains_Elem_T'0 (domain_T self) e2
+        | Link e2 -> contains_Elem_T (domain_T self) e2
         /\ index_Mapping_Elem_T_Elem_T self.f0'2.roots e <> e
         /\ index_Mapping_Elem_T_Elem_T self.f0'2.roots e = index_Mapping_Elem_T_Elem_T self.f0'2.roots e2
         | Root _ payload -> index_Mapping_Elem_T_Elem_T self.f0'2.roots e = e
@@ -2906,7 +2715,7 @@ module M_implementation__make
   let new_unit (x: ()) (return (x'0: ())) = any
     [ return (result: ()) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T'0 (domain_T self) e
+  predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T (domain_T self) e
   
   function fin_Ghost_refmut_UF_T [@inline:trivial] (self: MutBorrow.t t_UF_T) : t_UF_T = self.final
   
@@ -3103,55 +2912,12 @@ module M_implementation__new
   
   meta "rewrite_def" predicate contains_Elem_T
   
-  predicate inv_Rc_PCell_Node_T_Global (_1: t_Rc_PCell_Node_T_Global)
-  
-  predicate inv_Elem_T (_1: t_Elem_T)
-  
-  axiom inv_axiom [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PCell_Node_T_Global _1.f0
-  
-  predicate invariant_FSet_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) =
-    forall x: t_Elem_T. contains_Elem_T self x -> inv_Elem_T x
-  
-  meta "rewrite_def" predicate invariant_FSet_Elem_T
-  
-  predicate inv_FSet_Elem_T [@inline:trivial] (_1: Fset.fset t_Elem_T) = invariant_FSet_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_FSet_Elem_T
-  
-  predicate invariant_ref_FSet_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) = inv_FSet_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FSet_Elem_T
-  
-  predicate inv_ref_FSet_Elem_T [@inline:trivial] (_1: Fset.fset t_Elem_T) = invariant_ref_FSet_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FSet_Elem_T
-  
-  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Elem_T
-  
-  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Elem_T
-  
-  let contains_Elem_T'0 (self: Fset.fset t_Elem_T) (value: t_Elem_T) (return (x: bool)) =
-  {[@stop_split] [@expl:contains_Elem_T requires] ([@stop_split] [@expl:contains 'self' type invariant] inv_ref_FSet_Elem_T self)
-    /\ ([@stop_split] [@expl:contains 'value' type invariant] inv_ref_Elem_T value)}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Elem_T self value}
-      (! return {result}) ]
-  
   function domain_T (self: t_UF_T) : Fset.fset t_Elem_T = self.f0'0.domain
   
   predicate contains_Snapshot_Elem_T [@inline:trivial] (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (k: t_Elem_T) =
     lookup_Snapshot_Elem_T self k <> None
   
   meta "rewrite_def" predicate contains_Snapshot_Elem_T
-  
-  let contains_Snapshot_Elem_T'0 (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T) (return (x: bool)) =
-  any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Snapshot_Elem_T self key}
-      (! return {result}) ]
   
   type t_PCell_Node_T
   
@@ -3191,15 +2957,15 @@ module M_implementation__new
   meta "rewrite_def" function index_Mapping_Elem_T_T
   
   predicate invariant_UF_T [@inline:trivial] (self: t_UF_T) =
-    forall e: t_Elem_T. contains_Elem_T'0 (domain_T self) e
-      -> contains_Snapshot_Elem_T'0 self.f0'0.perms e
+    forall e: t_Elem_T. contains_Elem_T (domain_T self) e
+      -> contains_Snapshot_Elem_T self.f0'0.perms e
       /\ ward_PCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T self.f0'0.perms e)
         = view_Rc_PCell_Node_T_Global e.f0
-      /\ contains_Elem_T'0 (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
+      /\ contains_Elem_T (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
       /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
         = index_Mapping_Elem_T_Elem_T self.f0'0.roots e
       /\ match val_PCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T self.f0'0.perms e) with
-        | Link e2 -> contains_Elem_T'0 (domain_T self) e2
+        | Link e2 -> contains_Elem_T (domain_T self) e2
         /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e <> e
         /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e = index_Mapping_Elem_T_Elem_T self.f0'0.roots e2
         | Root _ payload -> index_Mapping_Elem_T_Elem_T self.f0'0.roots e = e
@@ -3210,7 +2976,7 @@ module M_implementation__new
   
   predicate inv_UF_T (_1: t_UF_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
+  axiom inv_axiom [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
   
   predicate invariant_Ghost_UF_T [@inline:trivial] (self: t_UF_T) = inv_UF_T self
   
@@ -3283,44 +3049,6 @@ module M_implementation__union
   
   meta "rewrite_def" predicate contains_Elem_T
   
-  predicate inv_Rc_PCell_Node_T_Global (_1: t_Rc_PCell_Node_T_Global)
-  
-  predicate inv_Elem_T (_1: t_Elem_T)
-  
-  axiom inv_axiom [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PCell_Node_T_Global _1.f0
-  
-  predicate invariant_FSet_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) =
-    forall x: t_Elem_T. contains_Elem_T self x -> inv_Elem_T x
-  
-  meta "rewrite_def" predicate invariant_FSet_Elem_T
-  
-  predicate inv_FSet_Elem_T [@inline:trivial] (_1: Fset.fset t_Elem_T) = invariant_FSet_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_FSet_Elem_T
-  
-  predicate invariant_ref_FSet_Elem_T [@inline:trivial] (self: Fset.fset t_Elem_T) = inv_FSet_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FSet_Elem_T
-  
-  predicate inv_ref_FSet_Elem_T [@inline:trivial] (_1: Fset.fset t_Elem_T) = invariant_ref_FSet_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FSet_Elem_T
-  
-  predicate invariant_ref_Elem_T [@inline:trivial] (self: t_Elem_T) = inv_Elem_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Elem_T
-  
-  predicate inv_ref_Elem_T [@inline:trivial] (_1: t_Elem_T) = invariant_ref_Elem_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Elem_T
-  
-  let contains_Elem_T'0 (self: Fset.fset t_Elem_T) (value: t_Elem_T) (return (x: bool)) =
-  {[@stop_split] [@expl:contains_Elem_T requires] ([@stop_split] [@expl:contains 'self' type invariant] inv_ref_FSet_Elem_T self)
-    /\ ([@stop_split] [@expl:contains 'value' type invariant] inv_ref_Elem_T value)}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Elem_T self value}
-      (! return {result}) ]
-  
   function domain_T (self: t_UF_T) : Fset.fset t_Elem_T = self.f0'0.domain
   
   type t_Perm_PCell_Node_T
@@ -3338,11 +3066,6 @@ module M_implementation__union
     lookup_Snapshot_Elem_T self k <> None
   
   meta "rewrite_def" predicate contains_Snapshot_Elem_T
-  
-  let contains_Snapshot_Elem_T'0 (self: t_FMap_Snapshot_Elem_T_Perm_PCell_Node_T) (key: t_Elem_T) (return (x: bool)) =
-  any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Snapshot_Elem_T self key}
-      (! return {result}) ]
   
   type t_PCell_Node_T
   
@@ -3382,15 +3105,15 @@ module M_implementation__union
   meta "rewrite_def" function index_Mapping_Elem_T_T
   
   predicate invariant_UF_T [@inline:trivial] (self: t_UF_T) =
-    forall e: t_Elem_T. contains_Elem_T'0 (domain_T self) e
-      -> contains_Snapshot_Elem_T'0 self.f0'0.perms e
+    forall e: t_Elem_T. contains_Elem_T (domain_T self) e
+      -> contains_Snapshot_Elem_T self.f0'0.perms e
       /\ ward_PCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T self.f0'0.perms e)
         = view_Rc_PCell_Node_T_Global e.f0
-      /\ contains_Elem_T'0 (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
+      /\ contains_Elem_T (domain_T self) (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
       /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots (index_Mapping_Elem_T_Elem_T self.f0'0.roots e)
         = index_Mapping_Elem_T_Elem_T self.f0'0.roots e
       /\ match val_PCell_Node_T (index_FMap_Snapshot_Elem_T_Perm_PCell_Node_T self.f0'0.perms e) with
-        | Link e2 -> contains_Elem_T'0 (domain_T self) e2
+        | Link e2 -> contains_Elem_T (domain_T self) e2
         /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e <> e
         /\ index_Mapping_Elem_T_Elem_T self.f0'0.roots e = index_Mapping_Elem_T_Elem_T self.f0'0.roots e2
         | Root _ payload -> index_Mapping_Elem_T_Elem_T self.f0'0.roots e = e
@@ -3401,7 +3124,7 @@ module M_implementation__union
   
   predicate inv_UF_T (_1: t_UF_T)
   
-  axiom inv_axiom'0 [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
+  axiom inv_axiom [@rewrite]: forall _1: t_UF_T [inv_UF_T _1]. inv_UF_T _1 = invariant_UF_T _1
   
   predicate invariant_refmut_UF_T [@inline:trivial] (self: MutBorrow.t t_UF_T) =
     inv_UF_T self.current /\ inv_UF_T self.final
@@ -3465,7 +3188,13 @@ module M_implementation__union
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
-  predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T'0 (domain_T self) e
+  predicate inv_Rc_PCell_Node_T_Global (_1: t_Rc_PCell_Node_T_Global)
+  
+  predicate inv_Elem_T (_1: t_Elem_T)
+  
+  axiom inv_axiom'0 [@rewrite]: forall _1: t_Elem_T [inv_Elem_T _1]. inv_Elem_T _1 = inv_Rc_PCell_Node_T_Global _1.f0
+  
+  predicate in_domain_T (self: t_UF_T) (e: t_Elem_T) = contains_Elem_T (domain_T self) e
   
   function roots_map_T (self: t_UF_T) : Map.map t_Elem_T t_Elem_T = self.f0'0.roots
   

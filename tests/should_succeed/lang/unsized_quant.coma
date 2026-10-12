@@ -5,9 +5,6 @@ module M_l
   use map.Map
   use int.Int
   
-  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
   meta "rewrite_def" predicate ge_log_Int
@@ -18,7 +15,7 @@ module M_l
   meta "rewrite_def" function index_Mapping_slice_i32_Int
   
   predicate f =
-    let len = fun (x: Slice64.slice Int32.t) -> len_i32 (Slice64.view x) in forall x: Slice64.slice Int32.t, y: Slice64.slice Int32.t. ge_log_Int (index_Mapping_slice_i32_Int len x
+    let len = fun (x: Slice64.slice Int32.t) -> Seq.length (Slice64.view x) in forall x: Slice64.slice Int32.t, y: Slice64.slice Int32.t. ge_log_Int (index_Mapping_slice_i32_Int len x
       + index_Mapping_slice_i32_Int len y) 0
   
   meta "compute_max_steps" 1000000

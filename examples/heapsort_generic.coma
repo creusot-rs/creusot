@@ -117,22 +117,11 @@ module M_heap_sort
   
   meta "rewrite_def" predicate inv_ref_Vec_T_Global
   
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  let len_T'0 (self: t_Vec_T_Global) (return (x: UInt64.t)) =
+  let len_T (self: t_Vec_T_Global) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Vec_T_Global self}
     any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = len_T (view_Vec_T_Global self)}
+      = Seq.length (view_Vec_T_Global self)}
       (! return {result}) ]
   
   type t_DeepModelTy
@@ -200,13 +189,13 @@ module M_heap_sort
     /\ ([@stop_split] [@expl:sift_down requires #0] heap_frag_DeepModelTy (deep_model_refmut_Vec_T_Global v) (UInt64.t'int start
       + 1) (UInt64.t'int end'))
     /\ ([@stop_split] [@expl:sift_down requires #1] UInt64.t'int start < UInt64.t'int end')
-    /\ ([@stop_split] [@expl:sift_down requires #2] UInt64.t'int end' <= len_T (view_Vec_T_Global v.current))}
+    /\ ([@stop_split] [@expl:sift_down requires #2] UInt64.t'int end' <= Seq.length (view_Vec_T_Global v.current))}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:sift_down_T ensures] ([@stop_split] [@expl:sift_down ensures #0] heap_frag_DeepModelTy (deep_model_Vec_T_Global v.final) (UInt64.t'int start) (UInt64.t'int end'))
       /\ ([@stop_split] [@expl:sift_down ensures #1] permutation_of_T (view_Vec_T_Global v.final) (view_Vec_T_Global v.current))
       /\ ([@stop_split] [@expl:sift_down ensures #2] forall i: int. 0 <= i /\ i < UInt64.t'int start
-            \/ UInt64.t'int end' <= i /\ i < len_T (view_Vec_T_Global v.current)
+            \/ UInt64.t'int end' <= i /\ i < Seq.length (view_Vec_T_Global v.current)
           -> index_Vec_T_Global v.current i = index_Vec_T_Global v.final i)
       /\ ([@stop_split] [@expl:sift_down ensures #3] forall m: t_DeepModelTy. (forall j: int. UInt64.t'int start <= j
               /\ j < UInt64.t'int end' -> le_log_DeepModelTy (Seq.get (deep_model_refmut_Vec_T_Global v) j) m)
@@ -238,15 +227,15 @@ module M_heap_sort
     [ return (result: MutBorrow.t (Slice64.slice t_T)) ->
     {[@stop_split] [@expl:deref_mut_Vec_T_Global ensures] ([@stop_split] [@expl:deref_mut result type invariant] inv_refmut_slice_T result)
       /\ ([@stop_split] [@expl:deref_mut ensures #0] Slice64.view result.current = view_Vec_T_Global self.current)
-      /\ ([@stop_split] [@expl:deref_mut ensures #1] len_T (view_Vec_T_Global self.final)
-        = len_T (view_Vec_T_Global self.current))
+      /\ ([@stop_split] [@expl:deref_mut ensures #1] Seq.length (view_Vec_T_Global self.final)
+        = Seq.length (view_Vec_T_Global self.current))
       /\ ([@stop_split] [@expl:deref_mut ensures #2] Slice64.view result.final = view_Vec_T_Global self.final)}
       (! return {result}) ]
   
   let swap_T (self: MutBorrow.t (Slice64.slice t_T)) (a: UInt64.t) (b: UInt64.t) (return (x: ())) =
   {[@stop_split] [@expl:swap_T requires] ([@stop_split] [@expl:swap 'self' type invariant] inv_refmut_slice_T self)
-    /\ ([@stop_split] [@expl:swap requires #0] UInt64.t'int a < len_T (Slice64.view self.current))
-    /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < len_T (Slice64.view self.current))}
+    /\ ([@stop_split] [@expl:swap requires #0] UInt64.t'int a < Seq.length (Slice64.view self.current))
+    /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < Seq.length (Slice64.view self.current))}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:swap ensures] Permut.exchange (Slice64.view self.final) (Slice64.view self.current) (UInt64.t'int a) (UInt64.t'int b)}
@@ -276,38 +265,7 @@ module M_heap_sort
   
   meta "rewrite_def" predicate resolve_refmut_Vec_T_Global
   
-  predicate inv_DeepModelTy (_1: t_DeepModelTy)
-  
-  predicate invariant_ref_DeepModelTy [@inline:trivial] (self: t_DeepModelTy) = inv_DeepModelTy self
-  
-  meta "rewrite_def" predicate invariant_ref_DeepModelTy
-  
-  predicate inv_ref_DeepModelTy [@inline:trivial] (_1: t_DeepModelTy) = invariant_ref_DeepModelTy _1
-  
-  meta "rewrite_def" predicate inv_ref_DeepModelTy
-  
-  predicate invariant_Seq_DeepModelTy [@inline:trivial] (self: Seq.seq t_DeepModelTy) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_DeepModelTy (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_DeepModelTy
-  
-  predicate inv_Seq_DeepModelTy [@inline:trivial] (_1: Seq.seq t_DeepModelTy) = invariant_Seq_DeepModelTy _1
-  
-  meta "rewrite_def" predicate inv_Seq_DeepModelTy
-  
-  predicate invariant_ref_Seq_DeepModelTy [@inline:trivial] (self: Seq.seq t_DeepModelTy) = inv_Seq_DeepModelTy self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_DeepModelTy
-  
-  predicate inv_ref_Seq_DeepModelTy [@inline:trivial] (_1: Seq.seq t_DeepModelTy) = invariant_ref_Seq_DeepModelTy _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_DeepModelTy
-  
-  let len_DeepModelTy (self: Seq.seq t_DeepModelTy) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_DeepModelTy self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  predicate sorted_DeepModelTy (s: Seq.seq t_DeepModelTy) = sorted_range_DeepModelTy s 0 (len_DeepModelTy s)
+  predicate sorted_DeepModelTy (s: Seq.seq t_DeepModelTy) = sorted_range_DeepModelTy s 0 (Seq.length s)
   
   meta "compute_max_steps" 1000000
   
@@ -318,7 +276,7 @@ module M_heap_sort
     (! bb0
     [ bb0 = s0
       [ s0 = [ &old_v <- v ] s1
-      | s1 = len_T'0 {v.current} (fun (_x: UInt64.t) -> [ &_10 <- _x ] s2)
+      | s1 = len_T {v.current} (fun (_x: UInt64.t) -> [ &_10 <- _x ] s2)
       | s2 = [ &_12 <- (2: UInt64.t) = (0: UInt64.t) ] s3
       | s3 = {[@expl:division by zero] not _12} s4
       | s4 = UInt64.div {_10} {(2: UInt64.t)} (fun (_x: UInt64.t) -> [ &start <- _x ] s5)
@@ -328,14 +286,15 @@ module M_heap_sort
       [ bb4 = {[@expl:inferred invariant: type invariant] inv_refmut_Vec_T_Global v}
         {[@expl:inferred invariant: unchanged value] _old = v.final}
         {[@expl:loop invariant #0] permutation_of_T (view_Vec_T_Global v.current) (view_Vec_T_Global old_v.current)}
-        {[@expl:loop invariant #1] heap_frag_DeepModelTy (deep_model_refmut_Vec_T_Global v) (UInt64.t'int start) (len_T (view_Vec_T_Global v.current))}
-        {[@expl:loop invariant #2] UInt64.t'int start <= ComputerDivision.div (len_T (view_Vec_T_Global v.current)) 2}
+        {[@expl:loop invariant #1] heap_frag_DeepModelTy (deep_model_refmut_Vec_T_Global v) (UInt64.t'int start) (Seq.length (view_Vec_T_Global v.current))}
+        {[@expl:loop invariant #2] UInt64.t'int start
+        <= ComputerDivision.div (Seq.length (view_Vec_T_Global v.current)) 2}
         (! s0)
         [ s0 = [ &_25 <- UInt64.gt start (0: UInt64.t) ] s1
         | s1 = any [ br0 -> {_25 = false} (! bb9) | br1 -> {_25} (! bb6) ] ]
         [ bb6 = s0
           [ s0 = UInt64.sub {start} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &start <- _x ] s1)
-          | s1 = len_T'0 {v.current} (fun (_x: UInt64.t) -> [ &_30 <- _x ] s2)
+          | s1 = len_T {v.current} (fun (_x: UInt64.t) -> [ &_30 <- _x ] s2)
           | s2 = MutBorrow.borrow_mut <t_Vec_T_Global> {v.current}
               (fun (_bor: MutBorrow.t t_Vec_T_Global) ->
                 [ &_28 <- _bor ] -{inv_Vec_T_Global _bor.final}-
@@ -344,18 +303,16 @@ module M_heap_sort
           | s3 = sift_down_T {_28} {start} {_30} (fun (_x: ()) -> [ &_27 <- _x ] s4)
           | s4 = bb4 ] ] ]
     | bb9 = s0
-      [ s0 = len_T'0 {v.current} (fun (_x: UInt64.t) -> [ &end' <- _x ] s1)
-      | s1 = [ &_old'0 <- v.final ] s2
-      | s2 = bb11 ]
+      [ s0 = len_T {v.current} (fun (_x: UInt64.t) -> [ &end' <- _x ] s1) | s1 = [ &_old'0 <- v.final ] s2 | s2 = bb11 ]
     | bb11 = bb11
       [ bb11 = {[@expl:inferred invariant: type invariant] inv_refmut_Vec_T_Global v}
         {[@expl:inferred invariant: unchanged value] _old'0 = v.final}
-        {[@expl:loop invariant #0] UInt64.t'int end' <= len_T (view_Vec_T_Global v.current)}
+        {[@expl:loop invariant #0] UInt64.t'int end' <= Seq.length (view_Vec_T_Global v.current)}
         {[@expl:loop invariant #1] permutation_of_T (view_Vec_T_Global v.current) (view_Vec_T_Global old_v.current)}
         {[@expl:loop invariant #2] heap_frag_DeepModelTy (deep_model_refmut_Vec_T_Global v) 0 (UInt64.t'int end')}
-        {[@expl:loop invariant #3] sorted_range_DeepModelTy (deep_model_refmut_Vec_T_Global v) (UInt64.t'int end') (len_T (view_Vec_T_Global v.current))}
+        {[@expl:loop invariant #3] sorted_range_DeepModelTy (deep_model_refmut_Vec_T_Global v) (UInt64.t'int end') (Seq.length (view_Vec_T_Global v.current))}
         {[@expl:loop invariant #4] forall i: int, j: int. 0 <= i
-            /\ i < UInt64.t'int end' /\ UInt64.t'int end' <= j /\ j < len_T (view_Vec_T_Global v.current)
+            /\ i < UInt64.t'int end' /\ UInt64.t'int end' <= j /\ j < Seq.length (view_Vec_T_Global v.current)
           -> le_log_DeepModelTy (Seq.get (deep_model_refmut_Vec_T_Global v) i) (Seq.get (deep_model_refmut_Vec_T_Global v) j)}
         (! s0)
         [ s0 = [ &_51 <- UInt64.gt end' (1: UInt64.t) ] s1
@@ -379,7 +336,7 @@ module M_heap_sort
           | s7 =
             {[@expl:assertion] let _ = heap_frag_max_DeepModelTy (deep_model_refmut_Vec_T_Global v) 0 (UInt64.t'int end') in forall i: int, j: int. 0
                   <= i
-                /\ i < UInt64.t'int end' /\ UInt64.t'int end' <= j /\ j < len_T (view_Vec_T_Global v.current)
+                /\ i < UInt64.t'int end' /\ UInt64.t'int end' <= j /\ j < Seq.length (view_Vec_T_Global v.current)
               -> le_log_DeepModelTy (Seq.get (deep_model_refmut_Vec_T_Global v) i) (Seq.get (deep_model_refmut_Vec_T_Global v) j)}
             s8
           | s8 = MutBorrow.borrow_mut <t_Vec_T_Global> {v.current}
@@ -489,6 +446,8 @@ module M_sift_down
   
   meta "rewrite_def" function deep_model_refmut_Vec_T_Global
   
+  predicate permutation_of_T (self: Seq.seq t_T) (other: Seq.seq t_T) = Permut.permut self other 0 (Seq.length self)
+  
   predicate inv_T (_1: t_T)
   
   predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
@@ -507,19 +466,6 @@ module M_sift_down
   predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
   
   meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  predicate permutation_of_T (self: Seq.seq t_T) (other: Seq.seq t_T) = Permut.permut self other 0 (Seq.length self)
   
   predicate invariant_Vec_T_Global (self: t_Vec_T_Global) = inv_Seq_T (view_Vec_T_Global self)
   
@@ -638,15 +584,15 @@ module M_sift_down
     [ return (result: MutBorrow.t (Slice64.slice t_T)) ->
     {[@stop_split] [@expl:deref_mut_Vec_T_Global ensures] ([@stop_split] [@expl:deref_mut result type invariant] inv_refmut_slice_T result)
       /\ ([@stop_split] [@expl:deref_mut ensures #0] Slice64.view result.current = view_Vec_T_Global self.current)
-      /\ ([@stop_split] [@expl:deref_mut ensures #1] len_T (view_Vec_T_Global self.final)
-        = len_T (view_Vec_T_Global self.current))
+      /\ ([@stop_split] [@expl:deref_mut ensures #1] Seq.length (view_Vec_T_Global self.final)
+        = Seq.length (view_Vec_T_Global self.current))
       /\ ([@stop_split] [@expl:deref_mut ensures #2] Slice64.view result.final = view_Vec_T_Global self.final)}
       (! return {result}) ]
   
   let swap_T (self: MutBorrow.t (Slice64.slice t_T)) (a: UInt64.t) (b: UInt64.t) (return (x: ())) =
   {[@stop_split] [@expl:swap_T requires] ([@stop_split] [@expl:swap 'self' type invariant] inv_refmut_slice_T self)
-    /\ ([@stop_split] [@expl:swap requires #0] UInt64.t'int a < len_T (Slice64.view self.current))
-    /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < len_T (Slice64.view self.current))}
+    /\ ([@stop_split] [@expl:swap requires #0] UInt64.t'int a < Seq.length (Slice64.view self.current))
+    /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < Seq.length (Slice64.view self.current))}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:swap ensures] Permut.exchange (Slice64.view self.final) (Slice64.view self.current) (UInt64.t'int a) (UInt64.t'int b)}
@@ -672,7 +618,7 @@ module M_sift_down
     /\ ([@stop_split] [@expl:sift_down requires #0] heap_frag_DeepModelTy (deep_model_refmut_Vec_T_Global v) (UInt64.t'int start
       + 1) (UInt64.t'int end'))
     /\ ([@stop_split] [@expl:sift_down requires #1] UInt64.t'int start < UInt64.t'int end')
-    /\ ([@stop_split] [@expl:sift_down requires #2] UInt64.t'int end' <= len_T (view_Vec_T_Global v.current))}
+    /\ ([@stop_split] [@expl:sift_down requires #2] UInt64.t'int end' <= Seq.length (view_Vec_T_Global v.current))}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_28 <- () ] s1
@@ -686,7 +632,7 @@ module M_sift_down
         {[@expl:loop invariant #0] permutation_of_T (view_Vec_T_Global v.current) (view_Vec_T_Global old_v.current)}
         {[@expl:loop invariant #1] UInt64.t'int start <= UInt64.t'int i /\ UInt64.t'int i < UInt64.t'int end'}
         {[@expl:loop invariant #2] forall j: int. 0 <= j /\ j < UInt64.t'int start
-            \/ UInt64.t'int end' <= j /\ j < len_T (view_Vec_T_Global v.current)
+            \/ UInt64.t'int end' <= j /\ j < Seq.length (view_Vec_T_Global v.current)
           -> index_Vec_T_Global old_v.current j = index_Vec_T_Global v.current j}
         {[@expl:loop invariant #3] forall m: t_DeepModelTy. (forall j: int. UInt64.t'int start <= j
                 /\ j < UInt64.t'int end' -> le_log_DeepModelTy (Seq.get (deep_model_refmut_Vec_T_Global old_v) j) m)
@@ -780,7 +726,7 @@ module M_sift_down
     {[@stop_split] [@expl:sift_down_T ensures] ([@stop_split] [@expl:sift_down ensures #0] heap_frag_DeepModelTy (deep_model_Vec_T_Global v.final) (UInt64.t'int start) (UInt64.t'int end'))
       /\ ([@stop_split] [@expl:sift_down ensures #1] permutation_of_T (view_Vec_T_Global v.final) (view_Vec_T_Global v.current))
       /\ ([@stop_split] [@expl:sift_down ensures #2] forall i: int. 0 <= i /\ i < UInt64.t'int start
-            \/ UInt64.t'int end' <= i /\ i < len_T (view_Vec_T_Global v.current)
+            \/ UInt64.t'int end' <= i /\ i < Seq.length (view_Vec_T_Global v.current)
           -> index_Vec_T_Global v.current i = index_Vec_T_Global v.final i)
       /\ ([@stop_split] [@expl:sift_down ensures #3] forall m: t_DeepModelTy. (forall j: int. UInt64.t'int start <= j
               /\ j < UInt64.t'int end' -> le_log_DeepModelTy (Seq.get (deep_model_refmut_Vec_T_Global v) j) m)

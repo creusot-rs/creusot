@@ -70,43 +70,6 @@ module M_create
   
   type t_Option_T = None | Some t_T
   
-  predicate inv_Option_T (_1: t_Option_T)
-  
-  axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
-      = match _1 with
-        | None -> true
-        | Some f0 -> inv_T f0
-        end
-  
-  predicate invariant_ref_Option_T [@inline:trivial] (self: t_Option_T) = inv_Option_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Option_T
-  
-  predicate inv_ref_Option_T [@inline:trivial] (_1: t_Option_T) = invariant_ref_Option_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Option_T
-  
-  predicate invariant_Seq_Option_T [@inline:trivial] (self: Seq.seq t_Option_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Option_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Option_T
-  
-  predicate inv_Seq_Option_T [@inline:trivial] (_1: Seq.seq t_Option_T) = invariant_Seq_Option_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_Option_T
-  
-  predicate invariant_ref_Seq_Option_T [@inline:trivial] (self: Seq.seq t_Option_T) = inv_Seq_Option_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Option_T
-  
-  predicate inv_ref_Seq_Option_T [@inline:trivial] (_1: Seq.seq t_Option_T) = invariant_ref_Seq_Option_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Option_T
-  
-  let len_Option_T (self: Seq.seq t_Option_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Option_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate is_elt_T (self: t_Sparse_T) (i: int) =
     UInt64.t'int (index_array_usize_n self.idx i) < UInt64.t'int self.n
     /\ UInt64.t'int (index_array_usize_n self.back (UInt64.t'int (index_array_usize_n self.idx i))) = i
@@ -122,7 +85,7 @@ module M_create
       None
     )
   
-  axiom view_Sparse_T_spec: forall self: t_Sparse_T [view_Sparse_T self]. len_Option_T (view_Sparse_T self)
+  axiom view_Sparse_T_spec: forall self: t_Sparse_T [view_Sparse_T self]. Seq.length (view_Sparse_T self)
       = UInt64.t'int const_SIZE
   
   meta "compute_max_steps" 1000000
@@ -208,9 +171,6 @@ module M_f
   
   type t_Option_i32 = None | Some Int32.t
   
-  let len_Option_i32 (self: Seq.seq t_Option_i32) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate is_elt_i32 (self: t_Sparse_i32) (i: int) =
     UInt64.t'int (index_array_usize_10 self.idx i) < UInt64.t'int self.n
     /\ UInt64.t'int (index_array_usize_10 self.back (UInt64.t'int (index_array_usize_10 self.idx i))) = i
@@ -227,7 +187,7 @@ module M_f
       None
     )
   
-  axiom view_Sparse_i32_spec: forall self: t_Sparse_i32 [view_Sparse_i32 self]. len_Option_i32 (view_Sparse_i32 self)
+  axiom view_Sparse_i32_spec: forall self: t_Sparse_i32 [view_Sparse_i32 self]. Seq.length (view_Sparse_i32 self)
       = UInt64.t'int (10: UInt64.t)
   
   let create_i32 (dummy: Int32.t) (return (x: t_Sparse_i32)) = any
@@ -292,7 +252,7 @@ module M_f
     )
   
   axiom view_Sparse_i32_spec'0:
-    forall self: t_Sparse_i32'0 [view_Sparse_i32'0 self]. len_Option_i32 (view_Sparse_i32'0 self)
+    forall self: t_Sparse_i32'0 [view_Sparse_i32'0 self]. Seq.length (view_Sparse_i32'0 self)
       = UInt64.t'int (20: UInt64.t)
   
   let create_i32'0 (dummy: Int32.t) (return (x: t_Sparse_i32'0)) = any
@@ -578,43 +538,6 @@ module M_impl_Resolve_for_Sparse_T__resolve_coherence (* <Sparse<T, SIZE> as cre
         | Some x0 -> resolve_T x0
         end
   
-  predicate inv_Option_T (_1: t_Option_T)
-  
-  axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
-      = match _1 with
-        | None -> true
-        | Some f0 -> inv_T f0
-        end
-  
-  predicate invariant_ref_Option_T [@inline:trivial] (self: t_Option_T) = inv_Option_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Option_T
-  
-  predicate inv_ref_Option_T [@inline:trivial] (_1: t_Option_T) = invariant_ref_Option_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Option_T
-  
-  predicate invariant_Seq_Option_T [@inline:trivial] (self: Seq.seq t_Option_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Option_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Option_T
-  
-  predicate inv_Seq_Option_T [@inline:trivial] (_1: Seq.seq t_Option_T) = invariant_Seq_Option_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_Option_T
-  
-  predicate invariant_ref_Seq_Option_T [@inline:trivial] (self: Seq.seq t_Option_T) = inv_Seq_Option_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Option_T
-  
-  predicate inv_ref_Seq_Option_T [@inline:trivial] (_1: Seq.seq t_Option_T) = invariant_ref_Seq_Option_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Option_T
-  
-  let len_Option_T (self: Seq.seq t_Option_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Option_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate is_elt_T (self: t_Sparse_T) (i: int) =
     UInt64.t'int (index_array_usize_n self.idx i) < UInt64.t'int self.n
     /\ UInt64.t'int (index_array_usize_n self.back (UInt64.t'int (index_array_usize_n self.idx i))) = i
@@ -630,7 +553,7 @@ module M_impl_Resolve_for_Sparse_T__resolve_coherence (* <Sparse<T, SIZE> as cre
       None
     )
   
-  axiom view_Sparse_T_spec: forall self: t_Sparse_T [view_Sparse_T self]. len_Option_T (view_Sparse_T self)
+  axiom view_Sparse_T_spec: forall self: t_Sparse_T [view_Sparse_T self]. Seq.length (view_Sparse_T self)
       = UInt64.t'int const_SIZE
   
   predicate resolve_Sparse_T (self: t_Sparse_T) =
@@ -739,43 +662,6 @@ module M_impl_Resolve_for_Sparse_T__resolve_coherence__refines (* <Sparse<T, SIZ
         | Some x0 -> resolve_T x0
         end
   
-  predicate inv_Option_T (_1: t_Option_T)
-  
-  axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
-      = match _1 with
-        | None -> true
-        | Some f0 -> inv_T f0
-        end
-  
-  predicate invariant_ref_Option_T [@inline:trivial] (self: t_Option_T) = inv_Option_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Option_T
-  
-  predicate inv_ref_Option_T [@inline:trivial] (_1: t_Option_T) = invariant_ref_Option_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Option_T
-  
-  predicate invariant_Seq_Option_T [@inline:trivial] (self: Seq.seq t_Option_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Option_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Option_T
-  
-  predicate inv_Seq_Option_T [@inline:trivial] (_1: Seq.seq t_Option_T) = invariant_Seq_Option_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_Option_T
-  
-  predicate invariant_ref_Seq_Option_T [@inline:trivial] (self: Seq.seq t_Option_T) = inv_Seq_Option_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Option_T
-  
-  predicate inv_ref_Seq_Option_T [@inline:trivial] (_1: Seq.seq t_Option_T) = invariant_ref_Seq_Option_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Option_T
-  
-  let len_Option_T (self: Seq.seq t_Option_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Option_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate is_elt_T (self: t_Sparse_T) (i: int) =
     UInt64.t'int (index_array_usize_n self.idx i) < UInt64.t'int self.n
     /\ UInt64.t'int (index_array_usize_n self.back (UInt64.t'int (index_array_usize_n self.idx i))) = i
@@ -791,7 +677,7 @@ module M_impl_Resolve_for_Sparse_T__resolve_coherence__refines (* <Sparse<T, SIZ
       None
     )
   
-  axiom view_Sparse_T_spec: forall self: t_Sparse_T [view_Sparse_T self]. len_Option_T (view_Sparse_T self)
+  axiom view_Sparse_T_spec: forall self: t_Sparse_T [view_Sparse_T self]. Seq.length (view_Sparse_T self)
       = UInt64.t'int const_SIZE
   
   predicate resolve_Sparse_T (self: t_Sparse_T) =
@@ -814,16 +700,9 @@ module M_impl_Sparse_T__bounded_fset_len (* Sparse<T, SIZE> *)
   
   meta "rewrite_def" predicate contains_Int
   
-  let contains_Int'0 (self: Fset.fset int) (value: int) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Int self value}
-      (! return {result}) ]
-  
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
   meta "rewrite_def" predicate ge_log_Int
-  
-  let len_Int (self: Fset.fset int) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Fset.cardinal self} (! return {result}) ]
   
   predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
@@ -848,17 +727,17 @@ module M_impl_Sparse_T__bounded_fset_len (* Sparse<T, SIZE> *)
   
   function bounded_fset_len_T (s: Fset.fset int) (bnd: int) : ()
   
-  goal vc_bounded_fset_len_T: (forall x: int. contains_Int'0 s x -> 0 <= x /\ x < bnd)
+  goal vc_bounded_fset_len_T: (forall x: int. contains_Int s x -> 0 <= x /\ x < bnd)
     -> ge_log_Int bnd 0
     -> (if gt_log_Int bnd 0 then
-      (([@stop_split] [@expl:bounded_fset_len requires] ([@stop_split] [@expl:bounded_fset_len requires #0] forall x: int. contains_Int'0 (remove_Int s (bnd
+      (([@stop_split] [@expl:bounded_fset_len requires] ([@stop_split] [@expl:bounded_fset_len requires #0] forall x: int. contains_Int (remove_Int s (bnd
                 - 1)) x -> 0 <= x /\ x < bnd - 1)
           /\ ([@stop_split] [@expl:bounded_fset_len requires #1] ge_log_Int (bnd - 1) 0))
         /\ ([@expl:variant decreases] well_founded_relation_Int bnd (bnd - 1)))
-      /\ (([@stop_split] [@expl:bounded_fset_len ensures] len_Int (remove_Int s (bnd - 1)) <= bnd - 1)
-      -> ([@stop_split] [@expl:bounded_fset_len ensures] len_Int s <= bnd))
+      /\ (([@stop_split] [@expl:bounded_fset_len ensures] Fset.cardinal (remove_Int s (bnd - 1)) <= bnd - 1)
+      -> ([@stop_split] [@expl:bounded_fset_len ensures] Fset.cardinal s <= bnd))
     else
-      [@stop_split] [@expl:bounded_fset_len ensures] len_Int s <= bnd
+      [@stop_split] [@expl:bounded_fset_len ensures] Fset.cardinal s <= bnd
     )
 end
 module M_impl_Sparse_T__get (* Sparse<T, SIZE> *)
@@ -951,43 +830,6 @@ module M_impl_Sparse_T__get (* Sparse<T, SIZE> *)
   
   type t_Option_T = None'0 | Some'0 t_T
   
-  predicate inv_Option_T (_1: t_Option_T)
-  
-  axiom inv_axiom'1 [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
-      = match _1 with
-        | None'0 -> true
-        | Some'0 f0 -> inv_T f0
-        end
-  
-  predicate invariant_ref_Option_T [@inline:trivial] (self: t_Option_T) = inv_Option_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Option_T
-  
-  predicate inv_ref_Option_T [@inline:trivial] (_1: t_Option_T) = invariant_ref_Option_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Option_T
-  
-  predicate invariant_Seq_Option_T [@inline:trivial] (self: Seq.seq t_Option_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Option_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Option_T
-  
-  predicate inv_Seq_Option_T [@inline:trivial] (_1: Seq.seq t_Option_T) = invariant_Seq_Option_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_Option_T
-  
-  predicate invariant_ref_Seq_Option_T [@inline:trivial] (self: Seq.seq t_Option_T) = inv_Seq_Option_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Option_T
-  
-  predicate inv_ref_Seq_Option_T [@inline:trivial] (_1: Seq.seq t_Option_T) = invariant_ref_Seq_Option_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Option_T
-  
-  let len_Option_T (self: Seq.seq t_Option_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Option_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate is_elt_T (self: t_Sparse_T) (i: int) =
     UInt64.t'int (index_array_usize_n self.idx i) < UInt64.t'int self.n
     /\ UInt64.t'int (index_array_usize_n self.back (UInt64.t'int (index_array_usize_n self.idx i))) = i
@@ -1003,7 +845,7 @@ module M_impl_Sparse_T__get (* Sparse<T, SIZE> *)
       None'0
     )
   
-  axiom view_Sparse_T_spec: forall self: t_Sparse_T [view_Sparse_T self]. len_Option_T (view_Sparse_T self)
+  axiom view_Sparse_T_spec: forall self: t_Sparse_T [view_Sparse_T self]. Seq.length (view_Sparse_T self)
       = UInt64.t'int const_SIZE
   
   meta "compute_max_steps" 1000000
@@ -1136,16 +978,9 @@ module M_impl_Sparse_T__lemma_permutation (* Sparse<T, SIZE> *)
     UInt64.t'int (index_array_usize_n self.idx i) < UInt64.t'int self.n
     /\ UInt64.t'int (index_array_usize_n self.back (UInt64.t'int (index_array_usize_n self.idx i))) = i
   
-  let len_Int (self: Fset.fset int) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Fset.cardinal self} (! return {result}) ]
-  
   predicate contains_Int [@inline:trivial] (self: Fset.fset int) (e: int) = Fset.mem e self
   
   meta "rewrite_def" predicate contains_Int
-  
-  let contains_Int'0 (self: Fset.fset int) (value: int) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Int self value}
-      (! return {result}) ]
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -1162,14 +997,13 @@ module M_impl_Sparse_T__lemma_permutation (* Sparse<T, SIZE> *)
   function bounded_fset_len_T (s: Fset.fset int) (bnd: int) : ()
   
   axiom bounded_fset_len_T_def:
-    forall s: Fset.fset int, bnd: int [bounded_fset_len_T s bnd]. (forall x: int. contains_Int'0 s x
-          -> 0 <= x /\ x < bnd)
+    forall s: Fset.fset int, bnd: int [bounded_fset_len_T s bnd]. (forall x: int. contains_Int s x -> 0 <= x /\ x < bnd)
       -> ge_log_Int bnd 0
       -> bounded_fset_len_T s bnd
       = (if gt_log_Int bnd 0 then bounded_fset_len_T (remove_Int s (bnd - 1)) (bnd - 1) else ())
   
-  axiom bounded_fset_len_T_spec: forall s: Fset.fset int, bnd: int. (forall x: int. contains_Int'0 s x
-          -> 0 <= x /\ x < bnd) -> ge_log_Int bnd 0 -> len_Int s <= bnd
+  axiom bounded_fset_len_T_spec: forall s: Fset.fset int, bnd: int. (forall x: int. contains_Int s x
+          -> 0 <= x /\ x < bnd) -> ge_log_Int bnd 0 -> Fset.cardinal s <= bnd
   
   function add_Int [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = Fset.add e self
   
@@ -1181,12 +1015,12 @@ module M_impl_Sparse_T__lemma_permutation (* Sparse<T, SIZE> *)
     forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int [lemma_permutation_aux_T self seen i cur]. inv_Sparse_T self
       -> self.n = const_SIZE
       -> 0 <= cur /\ cur < UInt64.t'int const_SIZE
-      -> (forall k: int. contains_Int'0 seen k
+      -> (forall k: int. contains_Int seen k
           -> 0 <= k
           /\ k < UInt64.t'int const_SIZE
-          /\ (k = i \/ contains_Int'0 seen (UInt64.t'int (index_array_usize_n self.idx k))))
-      -> i = cur \/ contains_Int'0 seen i /\ contains_Int'0 seen (UInt64.t'int (index_array_usize_n self.idx cur))
-      -> not contains_Int'0 seen cur
+          /\ (k = i \/ contains_Int seen (UInt64.t'int (index_array_usize_n self.idx k))))
+      -> i = cur \/ contains_Int seen i /\ contains_Int seen (UInt64.t'int (index_array_usize_n self.idx cur))
+      -> not contains_Int seen cur
       -> lemma_permutation_aux_T self seen i cur
       = (if UInt64.t'int (index_array_usize_n self.back cur) = i then
         cur
@@ -1198,12 +1032,12 @@ module M_impl_Sparse_T__lemma_permutation (* Sparse<T, SIZE> *)
     forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int [lemma_permutation_aux_T self seen i cur]. inv_Sparse_T self
       -> self.n = const_SIZE
       -> 0 <= cur /\ cur < UInt64.t'int const_SIZE
-      -> (forall k: int. contains_Int'0 seen k
+      -> (forall k: int. contains_Int seen k
           -> 0 <= k
           /\ k < UInt64.t'int const_SIZE
-          /\ (k = i \/ contains_Int'0 seen (UInt64.t'int (index_array_usize_n self.idx k))))
-      -> i = cur \/ contains_Int'0 seen i /\ contains_Int'0 seen (UInt64.t'int (index_array_usize_n self.idx cur))
-      -> not contains_Int'0 seen cur
+          /\ (k = i \/ contains_Int seen (UInt64.t'int (index_array_usize_n self.idx k))))
+      -> i = cur \/ contains_Int seen i /\ contains_Int seen (UInt64.t'int (index_array_usize_n self.idx cur))
+      -> not contains_Int seen cur
       -> 0 <= lemma_permutation_aux_T self seen i cur
       /\ lemma_permutation_aux_T self seen i cur < UInt64.t'int const_SIZE
   
@@ -1211,12 +1045,12 @@ module M_impl_Sparse_T__lemma_permutation (* Sparse<T, SIZE> *)
     forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int [lemma_permutation_aux_T self seen i cur]. inv_Sparse_T self
       -> self.n = const_SIZE
       -> 0 <= cur /\ cur < UInt64.t'int const_SIZE
-      -> (forall k: int. contains_Int'0 seen k
+      -> (forall k: int. contains_Int seen k
           -> 0 <= k
           /\ k < UInt64.t'int const_SIZE
-          /\ (k = i \/ contains_Int'0 seen (UInt64.t'int (index_array_usize_n self.idx k))))
-      -> i = cur \/ contains_Int'0 seen i /\ contains_Int'0 seen (UInt64.t'int (index_array_usize_n self.idx cur))
-      -> not contains_Int'0 seen cur
+          /\ (k = i \/ contains_Int seen (UInt64.t'int (index_array_usize_n self.idx k))))
+      -> i = cur \/ contains_Int seen i /\ contains_Int seen (UInt64.t'int (index_array_usize_n self.idx cur))
+      -> not contains_Int seen cur
       -> UInt64.t'int (index_array_usize_n self.back (lemma_permutation_aux_T self seen i cur)) = i
   
   meta "compute_max_steps" 1000000
@@ -1235,14 +1069,14 @@ module M_impl_Sparse_T__lemma_permutation (* Sparse<T, SIZE> *)
     -> ([@stop_split] [@expl:lemma_permutation_aux requires] ([@stop_split] [@expl:lemma_permutation_aux requires #0] inv_Sparse_T self)
       /\ ([@stop_split] [@expl:lemma_permutation_aux requires #1] self.n = const_SIZE)
       /\ ([@stop_split] [@expl:lemma_permutation_aux requires #2] 0 <= i /\ i < UInt64.t'int const_SIZE)
-      /\ ([@stop_split] [@expl:lemma_permutation_aux requires #3] forall k: int. contains_Int'0 (Fset.empty: Fset.fset int) k
+      /\ ([@stop_split] [@expl:lemma_permutation_aux requires #3] forall k: int. contains_Int (Fset.empty: Fset.fset int) k
           -> 0 <= k
           /\ k < UInt64.t'int const_SIZE
-          /\ (k = i \/ contains_Int'0 (Fset.empty: Fset.fset int) (UInt64.t'int (index_array_usize_n self.idx k))))
+          /\ (k = i \/ contains_Int (Fset.empty: Fset.fset int) (UInt64.t'int (index_array_usize_n self.idx k))))
       /\ ([@stop_split] [@expl:lemma_permutation_aux requires #4] i = i
-        \/ contains_Int'0 (Fset.empty: Fset.fset int) i
-        /\ contains_Int'0 (Fset.empty: Fset.fset int) (UInt64.t'int (index_array_usize_n self.idx i)))
-      /\ ([@stop_split] [@expl:lemma_permutation_aux requires #5] not contains_Int'0 (Fset.empty: Fset.fset int) i))
+        \/ contains_Int (Fset.empty: Fset.fset int) i
+        /\ contains_Int (Fset.empty: Fset.fset int) (UInt64.t'int (index_array_usize_n self.idx i)))
+      /\ ([@stop_split] [@expl:lemma_permutation_aux requires #5] not contains_Int (Fset.empty: Fset.fset int) i))
     /\ (([@stop_split] [@expl:lemma_permutation_aux ensures] ([@stop_split] [@expl:lemma_permutation_aux ensures #0] 0
           <= lemma_permutation_aux_T self (Fset.empty: Fset.fset int) i i
         /\ lemma_permutation_aux_T self (Fset.empty: Fset.fset int) i i < UInt64.t'int const_SIZE)
@@ -1265,9 +1099,6 @@ module M_impl_Sparse_T__lemma_permutation_aux (* Sparse<T, SIZE> *)
     back: Slice64.array UInt64.t }
   
   constant const_SIZE : UInt64.t
-  
-  let len_Int (self: Fset.fset int) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Fset.cardinal self} (! return {result}) ]
   
   function index_array_usize_n [@inline:trivial] (self: Slice64.array UInt64.t) (ix: int) : UInt64.t =
     Seq.get (Slice64.view self) ix
@@ -1326,10 +1157,6 @@ module M_impl_Sparse_T__lemma_permutation_aux (* Sparse<T, SIZE> *)
   
   meta "rewrite_def" predicate contains_Int
   
-  let contains_Int'0 (self: Fset.fset int) (value: int) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Int self value}
-      (! return {result}) ]
-  
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
   meta "rewrite_def" predicate ge_log_Int
@@ -1345,14 +1172,13 @@ module M_impl_Sparse_T__lemma_permutation_aux (* Sparse<T, SIZE> *)
   function bounded_fset_len_T (s: Fset.fset int) (bnd: int) : ()
   
   axiom bounded_fset_len_T_def:
-    forall s: Fset.fset int, bnd: int [bounded_fset_len_T s bnd]. (forall x: int. contains_Int'0 s x
-          -> 0 <= x /\ x < bnd)
+    forall s: Fset.fset int, bnd: int [bounded_fset_len_T s bnd]. (forall x: int. contains_Int s x -> 0 <= x /\ x < bnd)
       -> ge_log_Int bnd 0
       -> bounded_fset_len_T s bnd
       = (if gt_log_Int bnd 0 then bounded_fset_len_T (remove_Int s (bnd - 1)) (bnd - 1) else ())
   
-  axiom bounded_fset_len_T_spec: forall s: Fset.fset int, bnd: int. (forall x: int. contains_Int'0 s x
-          -> 0 <= x /\ x < bnd) -> ge_log_Int bnd 0 -> len_Int s <= bnd
+  axiom bounded_fset_len_T_spec: forall s: Fset.fset int, bnd: int. (forall x: int. contains_Int s x
+          -> 0 <= x /\ x < bnd) -> ge_log_Int bnd 0 -> Fset.cardinal s <= bnd
   
   function add_Int [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = Fset.add e self
   
@@ -1380,12 +1206,11 @@ module M_impl_Sparse_T__lemma_permutation_aux (* Sparse<T, SIZE> *)
   goal vc_lemma_permutation_aux_T: inv_Sparse_T self
     -> self.n = const_SIZE
     -> 0 <= cur /\ cur < UInt64.t'int const_SIZE
-    -> (forall k: int. contains_Int'0 seen k
+    -> (forall k: int. contains_Int seen k
         -> 0 <= k
-        /\ k < UInt64.t'int const_SIZE
-        /\ (k = i \/ contains_Int'0 seen (UInt64.t'int (index_array_usize_n self.idx k))))
-    -> i = cur \/ contains_Int'0 seen i /\ contains_Int'0 seen (UInt64.t'int (index_array_usize_n self.idx cur))
-    -> not contains_Int'0 seen cur
+        /\ k < UInt64.t'int const_SIZE /\ (k = i \/ contains_Int seen (UInt64.t'int (index_array_usize_n self.idx k))))
+    -> i = cur \/ contains_Int seen i /\ contains_Int seen (UInt64.t'int (index_array_usize_n self.idx cur))
+    -> not contains_Int seen cur
     -> (if UInt64.t'int (index_array_usize_n self.back cur) = i then
       let result = cur in [@stop_split] [@expl:lemma_permutation_aux_T ensures] ([@stop_split] [@expl:lemma_permutation_aux ensures #0] 0
           <= result
@@ -1393,26 +1218,26 @@ module M_impl_Sparse_T__lemma_permutation_aux (* Sparse<T, SIZE> *)
       /\ ([@stop_split] [@expl:lemma_permutation_aux ensures #1] UInt64.t'int (index_array_usize_n self.back result)
       = i)
     else
-      ([@stop_split] [@expl:bounded_fset_len requires] ([@stop_split] [@expl:bounded_fset_len requires #0] forall x: int. contains_Int'0 seen x
+      ([@stop_split] [@expl:bounded_fset_len requires] ([@stop_split] [@expl:bounded_fset_len requires #0] forall x: int. contains_Int seen x
             -> 0 <= x /\ x < UInt64.t'int const_SIZE)
         /\ ([@stop_split] [@expl:bounded_fset_len requires #1] ge_log_Int (UInt64.t'int const_SIZE) 0))
-      /\ (([@stop_split] [@expl:bounded_fset_len ensures] len_Int seen <= UInt64.t'int const_SIZE)
+      /\ (([@stop_split] [@expl:bounded_fset_len ensures] Fset.cardinal seen <= UInt64.t'int const_SIZE)
       -> (([@stop_split] [@expl:lemma_permutation_aux requires] ([@stop_split] [@expl:lemma_permutation_aux requires #0] inv_Sparse_T self)
           /\ ([@stop_split] [@expl:lemma_permutation_aux requires #1] self.n = const_SIZE)
           /\ ([@stop_split] [@expl:lemma_permutation_aux requires #2] 0
               <= UInt64.t'int (index_array_usize_n self.back cur)
             /\ UInt64.t'int (index_array_usize_n self.back cur) < UInt64.t'int const_SIZE)
-          /\ ([@stop_split] [@expl:lemma_permutation_aux requires #3] forall k: int. contains_Int'0 (add_Int seen cur) k
+          /\ ([@stop_split] [@expl:lemma_permutation_aux requires #3] forall k: int. contains_Int (add_Int seen cur) k
               -> 0 <= k
               /\ k < UInt64.t'int const_SIZE
-              /\ (k = i \/ contains_Int'0 (add_Int seen cur) (UInt64.t'int (index_array_usize_n self.idx k))))
+              /\ (k = i \/ contains_Int (add_Int seen cur) (UInt64.t'int (index_array_usize_n self.idx k))))
           /\ ([@stop_split] [@expl:lemma_permutation_aux requires #4] i
               = UInt64.t'int (index_array_usize_n self.back cur)
-            \/ contains_Int'0 (add_Int seen cur) i
-            /\ contains_Int'0 (add_Int seen cur) (UInt64.t'int (index_array_usize_n self.idx (UInt64.t'int (index_array_usize_n self.back cur)))))
-          /\ ([@stop_split] [@expl:lemma_permutation_aux requires #5] not contains_Int'0 (add_Int seen cur) (UInt64.t'int (index_array_usize_n self.back cur))))
+            \/ contains_Int (add_Int seen cur) i
+            /\ contains_Int (add_Int seen cur) (UInt64.t'int (index_array_usize_n self.idx (UInt64.t'int (index_array_usize_n self.back cur)))))
+          /\ ([@stop_split] [@expl:lemma_permutation_aux requires #5] not contains_Int (add_Int seen cur) (UInt64.t'int (index_array_usize_n self.back cur))))
         /\ ([@expl:variant decreases] well_founded_relation_Int (UInt64.t'int const_SIZE
-        - len_Int seen) (UInt64.t'int const_SIZE - len_Int (add_Int seen cur))))
+        - Fset.cardinal seen) (UInt64.t'int const_SIZE - Fset.cardinal (add_Int seen cur))))
       /\ (([@stop_split] [@expl:lemma_permutation_aux ensures] ([@stop_split] [@expl:lemma_permutation_aux ensures #0] 0
             <= lemma_permutation_aux_T self (add_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))
           /\ lemma_permutation_aux_T self (add_Int seen cur) i (UInt64.t'int (index_array_usize_n self.back cur))
@@ -1522,16 +1347,9 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
     UInt64.t'int (index_array_usize_n self.idx i) < UInt64.t'int self.n
     /\ UInt64.t'int (index_array_usize_n self.back (UInt64.t'int (index_array_usize_n self.idx i))) = i
   
-  let len_Int (self: Fset.fset int) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Fset.cardinal self} (! return {result}) ]
-  
   predicate contains_Int [@inline:trivial] (self: Fset.fset int) (e: int) = Fset.mem e self
   
   meta "rewrite_def" predicate contains_Int
-  
-  let contains_Int'0 (self: Fset.fset int) (value: int) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Int self value}
-      (! return {result}) ]
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
@@ -1548,14 +1366,13 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
   function bounded_fset_len_T (s: Fset.fset int) (bnd: int) : ()
   
   axiom bounded_fset_len_T_def:
-    forall s: Fset.fset int, bnd: int [bounded_fset_len_T s bnd]. (forall x: int. contains_Int'0 s x
-          -> 0 <= x /\ x < bnd)
+    forall s: Fset.fset int, bnd: int [bounded_fset_len_T s bnd]. (forall x: int. contains_Int s x -> 0 <= x /\ x < bnd)
       -> ge_log_Int bnd 0
       -> bounded_fset_len_T s bnd
       = (if gt_log_Int bnd 0 then bounded_fset_len_T (remove_Int s (bnd - 1)) (bnd - 1) else ())
   
-  axiom bounded_fset_len_T_spec: forall s: Fset.fset int, bnd: int. (forall x: int. contains_Int'0 s x
-          -> 0 <= x /\ x < bnd) -> ge_log_Int bnd 0 -> len_Int s <= bnd
+  axiom bounded_fset_len_T_spec: forall s: Fset.fset int, bnd: int. (forall x: int. contains_Int s x
+          -> 0 <= x /\ x < bnd) -> ge_log_Int bnd 0 -> Fset.cardinal s <= bnd
   
   function add_Int [@inline:trivial] (self: Fset.fset int) (e: int) : Fset.fset int = Fset.add e self
   
@@ -1567,12 +1384,12 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
     forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int [lemma_permutation_aux_T self seen i cur]. inv_Sparse_T self
       -> self.n = const_SIZE
       -> 0 <= cur /\ cur < UInt64.t'int const_SIZE
-      -> (forall k: int. contains_Int'0 seen k
+      -> (forall k: int. contains_Int seen k
           -> 0 <= k
           /\ k < UInt64.t'int const_SIZE
-          /\ (k = i \/ contains_Int'0 seen (UInt64.t'int (index_array_usize_n self.idx k))))
-      -> i = cur \/ contains_Int'0 seen i /\ contains_Int'0 seen (UInt64.t'int (index_array_usize_n self.idx cur))
-      -> not contains_Int'0 seen cur
+          /\ (k = i \/ contains_Int seen (UInt64.t'int (index_array_usize_n self.idx k))))
+      -> i = cur \/ contains_Int seen i /\ contains_Int seen (UInt64.t'int (index_array_usize_n self.idx cur))
+      -> not contains_Int seen cur
       -> lemma_permutation_aux_T self seen i cur
       = (if UInt64.t'int (index_array_usize_n self.back cur) = i then
         cur
@@ -1584,12 +1401,12 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
     forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int [lemma_permutation_aux_T self seen i cur]. inv_Sparse_T self
       -> self.n = const_SIZE
       -> 0 <= cur /\ cur < UInt64.t'int const_SIZE
-      -> (forall k: int. contains_Int'0 seen k
+      -> (forall k: int. contains_Int seen k
           -> 0 <= k
           /\ k < UInt64.t'int const_SIZE
-          /\ (k = i \/ contains_Int'0 seen (UInt64.t'int (index_array_usize_n self.idx k))))
-      -> i = cur \/ contains_Int'0 seen i /\ contains_Int'0 seen (UInt64.t'int (index_array_usize_n self.idx cur))
-      -> not contains_Int'0 seen cur
+          /\ (k = i \/ contains_Int seen (UInt64.t'int (index_array_usize_n self.idx k))))
+      -> i = cur \/ contains_Int seen i /\ contains_Int seen (UInt64.t'int (index_array_usize_n self.idx cur))
+      -> not contains_Int seen cur
       -> 0 <= lemma_permutation_aux_T self seen i cur
       /\ lemma_permutation_aux_T self seen i cur < UInt64.t'int const_SIZE
   
@@ -1597,12 +1414,12 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
     forall self: t_Sparse_T, seen: Fset.fset int, i: int, cur: int [lemma_permutation_aux_T self seen i cur]. inv_Sparse_T self
       -> self.n = const_SIZE
       -> 0 <= cur /\ cur < UInt64.t'int const_SIZE
-      -> (forall k: int. contains_Int'0 seen k
+      -> (forall k: int. contains_Int seen k
           -> 0 <= k
           /\ k < UInt64.t'int const_SIZE
-          /\ (k = i \/ contains_Int'0 seen (UInt64.t'int (index_array_usize_n self.idx k))))
-      -> i = cur \/ contains_Int'0 seen i /\ contains_Int'0 seen (UInt64.t'int (index_array_usize_n self.idx cur))
-      -> not contains_Int'0 seen cur
+          /\ (k = i \/ contains_Int seen (UInt64.t'int (index_array_usize_n self.idx k))))
+      -> i = cur \/ contains_Int seen i /\ contains_Int seen (UInt64.t'int (index_array_usize_n self.idx cur))
+      -> not contains_Int seen cur
       -> UInt64.t'int (index_array_usize_n self.back (lemma_permutation_aux_T self seen i cur)) = i
   
   function lemma_permutation_T (self: t_Sparse_T) (i: int) : () =
@@ -1612,43 +1429,6 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
       -> self.n = const_SIZE -> 0 <= i /\ i < UInt64.t'int const_SIZE -> is_elt_T self i
   
   type t_Option_T = None | Some t_T
-  
-  predicate inv_Option_T (_1: t_Option_T)
-  
-  axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
-      = match _1 with
-        | None -> true
-        | Some f0 -> inv_T f0
-        end
-  
-  predicate invariant_ref_Option_T [@inline:trivial] (self: t_Option_T) = inv_Option_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Option_T
-  
-  predicate inv_ref_Option_T [@inline:trivial] (_1: t_Option_T) = invariant_ref_Option_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Option_T
-  
-  predicate invariant_Seq_Option_T [@inline:trivial] (self: Seq.seq t_Option_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Option_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Option_T
-  
-  predicate inv_Seq_Option_T [@inline:trivial] (_1: Seq.seq t_Option_T) = invariant_Seq_Option_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_Option_T
-  
-  predicate invariant_ref_Seq_Option_T [@inline:trivial] (self: Seq.seq t_Option_T) = inv_Seq_Option_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Option_T
-  
-  predicate inv_ref_Seq_Option_T [@inline:trivial] (_1: Seq.seq t_Option_T) = invariant_ref_Seq_Option_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Option_T
-  
-  let len_Option_T (self: Seq.seq t_Option_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Option_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   function index_array_T_n'0 [@inline:trivial] (self: Slice64.array t_T) (ix: int) : t_T =
     Seq.get (Slice64.view self) ix
@@ -1662,7 +1442,7 @@ module M_impl_Sparse_T__set (* Sparse<T, SIZE> *)
       None
     )
   
-  axiom view_Sparse_T_spec: forall self: t_Sparse_T [view_Sparse_T self]. len_Option_T (view_Sparse_T self)
+  axiom view_Sparse_T_spec: forall self: t_Sparse_T [view_Sparse_T self]. Seq.length (view_Sparse_T self)
       = UInt64.t'int const_SIZE
   
   meta "compute_max_steps" 1000000
@@ -1759,45 +1539,6 @@ module M_impl_View_for_Sparse_T__view (* <Sparse<T, SIZE> as creusot_std::model:
   
   type t_Option_T = None | Some t_T
   
-  predicate inv_T (_1: t_T)
-  
-  predicate inv_Option_T (_1: t_Option_T)
-  
-  axiom inv_axiom [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
-      = match _1 with
-        | None -> true
-        | Some f0 -> inv_T f0
-        end
-  
-  predicate invariant_ref_Option_T [@inline:trivial] (self: t_Option_T) = inv_Option_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Option_T
-  
-  predicate inv_ref_Option_T [@inline:trivial] (_1: t_Option_T) = invariant_ref_Option_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Option_T
-  
-  predicate invariant_Seq_Option_T [@inline:trivial] (self: Seq.seq t_Option_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Option_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Option_T
-  
-  predicate inv_Seq_Option_T [@inline:trivial] (_1: Seq.seq t_Option_T) = invariant_Seq_Option_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_Option_T
-  
-  predicate invariant_ref_Seq_Option_T [@inline:trivial] (self: Seq.seq t_Option_T) = inv_Seq_Option_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Option_T
-  
-  predicate inv_ref_Seq_Option_T [@inline:trivial] (_1: Seq.seq t_Option_T) = invariant_ref_Seq_Option_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Option_T
-  
-  let len_Option_T (self: Seq.seq t_Option_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Option_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   constant const_SIZE : UInt64.t
   
   function index_array_usize_n [@inline:trivial] (self: Slice64.array UInt64.t) (ix: int) : UInt64.t =
@@ -1822,7 +1563,7 @@ module M_impl_View_for_Sparse_T__view (* <Sparse<T, SIZE> as creusot_std::model:
   function view_Sparse_T (self: t_Sparse_T) : Seq.seq t_Option_T
   
   goal vc_view_Sparse_T:
-    [@stop_split] [@expl:view ensures] len_Option_T (Seq.create (UInt64.t'int const_SIZE) (fun (i: int) -> if is_elt_T self i then
+    [@stop_split] [@expl:view ensures] Seq.length (Seq.create (UInt64.t'int const_SIZE) (fun (i: int) -> if is_elt_T self i then
         Some (index_array_T_n self.values i)
       else
         None

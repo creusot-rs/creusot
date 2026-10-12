@@ -9,11 +9,9 @@ module M_insertion_sort
   use creusot.prelude.Any
   use int.Int
   
-  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  let len_i32'0 (self: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] len_i32 (Slice64.view self) = UInt64.t'int result}
+  let len_i32 (self: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
+      = UInt64.t'int result}
       (! return {result}) ]
   
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
@@ -75,9 +73,6 @@ module M_insertion_sort
   predicate sorted_range_i32 (s: Seq.seq Int32.t) (l: int) (u: int) =
     forall i: int, j: int. l <= i /\ i < j /\ j < u -> Int32.le (Seq.get s i) (Seq.get s j)
   
-  let len_usize (self: Seq.seq UInt64.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate inv_Seq_usize [@inline:trivial] (_1: Seq.seq UInt64.t) = true
   
   meta "rewrite_def" predicate inv_Seq_usize
@@ -102,8 +97,8 @@ module M_insertion_sort
   
   let swap_i32 (self: MutBorrow.t (Slice64.slice Int32.t)) (a: UInt64.t) (b: UInt64.t) (return (x: ())) =
   {[@stop_split] [@expl:swap_i32 requires] ([@stop_split] [@expl:swap requires #0] UInt64.t'int a
-      < len_i32 (Slice64.view self.current))
-    /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < len_i32 (Slice64.view self.current))}
+      < Seq.length (Slice64.view self.current))
+    /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < Seq.length (Slice64.view self.current))}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:swap ensures] Permut.exchange (Slice64.view self.final) (Slice64.view self.current) (UInt64.t'int a) (UInt64.t'int b)}
@@ -113,7 +108,7 @@ module M_insertion_sort
   
   meta "rewrite_def" predicate resolve_refmut_slice_i32
   
-  predicate sorted_i32 (s: Seq.seq Int32.t) = sorted_range_i32 s 0 (len_i32 s)
+  predicate sorted_i32 (s: Seq.seq Int32.t) = sorted_range_i32 s 0 (Seq.length s)
   
   meta "compute_max_steps" 1000000
   
@@ -122,7 +117,7 @@ module M_insertion_sort
   let insertion_sort (array: MutBorrow.t (Slice64.slice Int32.t)) (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = [ &original <- array ] s1
-      | s1 = len_i32'0 {array.current} (fun (_x: UInt64.t) -> [ &n <- _x ] s2)
+      | s1 = len_i32 {array.current} (fun (_x: UInt64.t) -> [ &n <- _x ] s2)
       | s2 = [ &_13 <- { start = (1: UInt64.t); end' = n } ] s3
       | s3 = into_iter_Range_usize {_13} (fun (_x: t_Range_usize) -> [ &iter <- _x ] s4)
       | s4 = [ &iter_old <- iter ] s5
@@ -134,8 +129,8 @@ module M_insertion_sort
       [ bb6 = {[@expl:inferred invariant: unchanged value] _old'0 = array.final}
         {[@expl:for invariant] inv_Seq_usize produced}
         {[@expl:for invariant] produces_Range_usize iter_old produced iter}
-        {[@expl:loop invariant #0] sorted_range_i32 (Slice64.view array.current) 0 (len_usize produced + 1)}
-        {[@expl:loop invariant #1] len_i32 (Slice64.view array.current) = UInt64.t'int n}
+        {[@expl:loop invariant #0] sorted_range_i32 (Slice64.view array.current) 0 (Seq.length produced + 1)}
+        {[@expl:loop invariant #1] Seq.length (Slice64.view array.current) = UInt64.t'int n}
         {[@expl:loop invariant #2] permutation_of_i32 (Slice64.view original.current) (Slice64.view array.current)}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range_usize> {iter}
@@ -156,7 +151,7 @@ module M_insertion_sort
         | bb14 = bb14
           [ bb14 = {[@expl:inferred invariant: unchanged value] _old = array.final}
             {[@expl:loop invariant #0] UInt64.le j i}
-            {[@expl:loop invariant #1] len_i32 (Slice64.view array.current) = UInt64.t'int n}
+            {[@expl:loop invariant #1] Seq.length (Slice64.view array.current) = UInt64.t'int n}
             {[@expl:loop invariant #2] permutation_of_i32 (Slice64.view original.current) (Slice64.view array.current)}
             {[@expl:loop invariant #3] forall a: int, b: int. 0 <= a /\ a <= b /\ b <= UInt64.t'int i
               -> a <> UInt64.t'int j
@@ -198,7 +193,8 @@ module M_insertion_sort
               | s4 = bb14 ] ] ] ] ]
     | bb11 = s0
       [ s0 = -{resolve_refmut_slice_i32 array}- s1
-      | s1 = {[@expl:assertion] sorted_range_i32 (Slice64.view array.current) 0 (len_i32 (Slice64.view array.current))}
+      | s1 =
+        {[@expl:assertion] sorted_range_i32 (Slice64.view array.current) 0 (Seq.length (Slice64.view array.current))}
         s2
       | s2 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()

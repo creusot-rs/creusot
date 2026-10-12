@@ -38,9 +38,6 @@ module M_binary_search
   
   meta "rewrite_def" function deep_model_ref_slice_u32
   
-  let len_u32 (self: Seq.seq UInt32.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function deep_model_ref_u32 [@inline:trivial] (self: UInt32.t) : int = deep_model_u32 self
   
   meta "rewrite_def" function deep_model_ref_u32
@@ -51,17 +48,17 @@ module M_binary_search
     [ return (result: t_Result_usize_usize) ->
     {[@stop_split] [@expl:binary_search_u32 ensures] ([@stop_split] [@expl:binary_search ensures #0] forall i: UInt64.t. result
             = Ok i
-          -> UInt64.t'int i < len_u32 (Slice64.view self)
+          -> UInt64.t'int i < Seq.length (Slice64.view self)
           /\ Seq.get (deep_model_slice_u32 self) (UInt64.t'int i) = deep_model_ref_u32 x)
       /\ ([@stop_split] [@expl:binary_search ensures #1] forall i: UInt64.t. result = Err i
-          -> UInt64.t'int i <= len_u32 (Slice64.view self)
-          /\ (forall j: int. 0 <= j /\ j < len_u32 (Slice64.view self)
+          -> UInt64.t'int i <= Seq.length (Slice64.view self)
+          /\ (forall j: int. 0 <= j /\ j < Seq.length (Slice64.view self)
             -> Seq.get (deep_model_ref_slice_u32 self) j <> deep_model_ref_u32 x))
       /\ ([@stop_split] [@expl:binary_search ensures #2] forall i: UInt64.t. result = Err i
           -> (forall j: UInt64.t. UInt64.lt j i
             -> Seq.get (deep_model_ref_slice_u32 self) (UInt64.t'int j) < deep_model_ref_u32 x))
       /\ ([@stop_split] [@expl:binary_search ensures #3] forall i: UInt64.t. result = Err i
-        -> (forall j: UInt64.t. UInt64.le i j /\ UInt64.t'int j < len_u32 (Slice64.view self)
+        -> (forall j: UInt64.t. UInt64.le i j /\ UInt64.t'int j < Seq.length (Slice64.view self)
           -> deep_model_ref_u32 x < Seq.get (deep_model_ref_slice_u32 self) (UInt64.t'int j)))}
       (! return {result}) ]
   
@@ -75,8 +72,8 @@ module M_binary_search
   
   let binary_search (s: Slice64.slice UInt32.t) (return (x: UInt64.t)) =
   {[@stop_split] [@expl:binary_search requires] ([@stop_split] [@expl:binary_search requires #0] forall i: int. 0 <= i
-          /\ i < len_u32 (Slice64.view s) -> UInt32.t'int (index_slice_u32 s i) = i)
-    /\ ([@stop_split] [@expl:binary_search requires #1] len_u32 (Slice64.view s) = 5)}
+          /\ i < Seq.length (Slice64.view s) -> UInt32.t'int (index_slice_u32 s i) = i)
+    /\ ([@stop_split] [@expl:binary_search requires #1] Seq.length (Slice64.view s) = 5)}
     (! bb0
     [ bb0 = s0
       [ s0 = bb0'0

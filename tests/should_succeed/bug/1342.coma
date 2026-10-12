@@ -4,32 +4,6 @@ module M_bar
   
   type t_T
   
-  predicate contains_T [@inline:trivial] (self: Fset.fset t_T) (e: t_T) = Fset.mem e self
-  
-  meta "rewrite_def" predicate contains_T
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_FSet_T [@inline:trivial] (self: Fset.fset t_T) = forall x: t_T. contains_T self x -> inv_T x
-  
-  meta "rewrite_def" predicate invariant_FSet_T
-  
-  predicate inv_FSet_T [@inline:trivial] (_1: Fset.fset t_T) = invariant_FSet_T _1
-  
-  meta "rewrite_def" predicate inv_FSet_T
-  
-  predicate invariant_ref_FSet_T [@inline:trivial] (self: Fset.fset t_T) = inv_FSet_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FSet_T
-  
-  predicate inv_ref_FSet_T [@inline:trivial] (_1: Fset.fset t_T) = invariant_ref_FSet_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FSet_T
-  
-  let len_T (self: Fset.fset t_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_FSet_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Fset.cardinal self} (! return {result}) ]
-  
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
   meta "rewrite_def" predicate ge_log_Int
@@ -54,6 +28,6 @@ module M_bar
   goal vc_bar_T: if Fset.is_empty fset then
       true
     else
-      [@expl:variant decreases] well_founded_relation_Int (len_T fset) (len_T (Fset.empty: Fset.fset t_T))
+      [@expl:variant decreases] well_founded_relation_Int (Fset.cardinal fset) (Fset.cardinal (Fset.empty: Fset.fset t_T))
 
 end

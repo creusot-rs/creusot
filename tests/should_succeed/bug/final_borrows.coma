@@ -675,17 +675,6 @@ module M_index_mut_slice
   
   meta "rewrite_def" predicate resolve_refmut_slice_T
   
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_slice_T [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
   
   meta "rewrite_def" function index_slice_T
@@ -696,7 +685,7 @@ module M_index_mut_slice
   
   let index_mut_slice_T (v: MutBorrow.t (Slice64.slice t_T)) (return (x: MutBorrow.t t_T)) =
   {[@stop_split] [@expl:index_mut_slice_T requires] ([@stop_split] [@expl:index_mut_slice 'v' type invariant] inv_refmut_slice_T v)
-    /\ ([@stop_split] [@expl:index_mut_slice requires] len_T (Slice64.view v.current) = 42)}
+    /\ ([@stop_split] [@expl:index_mut_slice requires] Seq.length (Slice64.view v.current) = 42)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &_8 <- (12: UInt64.t) ] s1

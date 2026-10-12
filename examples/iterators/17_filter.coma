@@ -42,45 +42,14 @@ module M_common__trait_ExactSizeIterator__is_empty
   
   predicate completed_Self (self: MutBorrow.t t_Self)
   
-  predicate inv_Item (_1: t_Item)
-  
-  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Item
-  
-  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Item
-  
-  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Item
-  
-  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_Seq_Item
-  
-  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Item
-  
-  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Item
-  
-  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_Self, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
-            /\ completed_Self i -> UInt64.t'int result.f0 <= len_Item s)
+            /\ completed_Self i -> UInt64.t'int result.f0 <= Seq.length s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> len_Item s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -162,45 +131,14 @@ module M_common__trait_ExactSizeIterator__len
   
   predicate completed_Self (self: MutBorrow.t t_Self)
   
-  predicate inv_Item (_1: t_Item)
-  
-  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Item
-  
-  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Item
-  
-  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Item
-  
-  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_Seq_Item
-  
-  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Item
-  
-  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Item
-  
-  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_Self, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
-            /\ completed_Self i -> UInt64.t'int result.f0 <= len_Item s)
+            /\ completed_Self i -> UInt64.t'int result.f0 <= Seq.length s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> len_Item s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -482,35 +420,6 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
     [ return (result: t_Option_Item) -> {[@stop_split] [@expl:next ensures] postcondition_once_next () self result}
       (! return {result}) ]
   
-  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Item
-  
-  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Item
-  
-  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Item
-  
-  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_Seq_Item
-  
-  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Item
-  
-  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Item
-  
-  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_once_F (self: t_F) (args: t_Item) (result: bool)
   
   predicate resolve_F (_1: t_F)
@@ -558,6 +467,14 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
   predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
   
   meta "rewrite_def" predicate inv_refmut_F
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
   
   predicate inv_tup1_ref_Item [@inline:trivial] (_1: t_Item) = inv_ref_Item _1
   
@@ -608,7 +525,7 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
   predicate completed_Filter_I_F (self: MutBorrow.t t_Filter_I_F) =
     (exists s: Seq.seq t_Item, e: MutBorrow.t t_I. produces_I self.current.iter s e.current
         /\ completed_I e
-        /\ (forall i: int. 0 <= i /\ i < len_Item s
+        /\ (forall i: int. 0 <= i /\ i < Seq.length s
           -> postcondition_mut_F self.current.func (Seq.get s i) self.final.func false))
     /\ self.current.func = self.final.func
   
@@ -616,11 +533,11 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
     invariant_Filter_I_F self
     -> hist_inv_F self.func succ.func
     /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces_I self.iter s succ.iter
-      /\ (forall i: int. 0 <= i /\ i < len_Item visited -> 0 <= Map.get f i /\ Map.get f i < len_Item s)
-      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < len_Item visited -> Map.get f i < Map.get f j)
-      /\ (forall i: int. 0 <= i /\ i < len_Item visited -> Seq.get visited i = Seq.get s (Map.get f i))
-      /\ (forall i: int. 0 <= i /\ i < len_Item s
-        -> (exists j: int. 0 <= j /\ j < len_Item visited /\ Map.get f j = i)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
+      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited -> Map.get f i < Map.get f j)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> Seq.get visited i = Seq.get s (Map.get f i))
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s
+        -> (exists j: int. 0 <= j /\ j < Seq.length visited /\ Map.get f j = i)
         = postcondition_mut_F self.func (Seq.get s i) self.func true))
   
   meta "compute_max_steps" 1000000
@@ -640,7 +557,7 @@ module M_impl_Iterator_for_Filter_I_F__next (* <Filter<I, F> as common::Iterator
         {[@expl:inferred invariant: type invariant] inv_I self.current.iter}
         {[@expl:inferred invariant: unchanged value] _old = self.final}
         {[@expl:loop invariant #0] self.current.func = old_self.current.func}
-        {[@expl:loop invariant #1] forall i: int. 0 <= i /\ i < len_Item produced
+        {[@expl:loop invariant #1] forall i: int. 0 <= i /\ i < Seq.length produced
           -> postcondition_mut_F self.current.func (Seq.get produced i) self.current.func false}
         {[@expl:loop invariant #2] produces_I old_self.current.iter produced self.current.iter}
         (! s0)
@@ -817,31 +734,10 @@ module M_impl_Iterator_for_Filter_I_F__next__refines (* <Filter<I, F> as common:
   
   predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Item
-  
-  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_Seq_Item
-  
-  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Item
-  
-  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Item
-  
-  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate completed_Filter_I_F (self: MutBorrow.t t_Filter_I_F) =
     (exists s: Seq.seq t_Item, e: MutBorrow.t t_I. produces_I self.current.iter s e.current
         /\ completed_I e
-        /\ (forall i: int. 0 <= i /\ i < len_Item s
+        /\ (forall i: int. 0 <= i /\ i < Seq.length s
           -> postcondition_mut_F self.current.func (Seq.get s i) self.final.func false))
     /\ self.current.func = self.final.func
   
@@ -849,11 +745,11 @@ module M_impl_Iterator_for_Filter_I_F__next__refines (* <Filter<I, F> as common:
     invariant_Filter_I_F self
     -> hist_inv_F self.func succ.func
     /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces_I self.iter s succ.iter
-      /\ (forall i: int. 0 <= i /\ i < len_Item visited -> 0 <= Map.get f i /\ Map.get f i < len_Item s)
-      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < len_Item visited -> Map.get f i < Map.get f j)
-      /\ (forall i: int. 0 <= i /\ i < len_Item visited -> Seq.get visited i = Seq.get s (Map.get f i))
-      /\ (forall i: int. 0 <= i /\ i < len_Item s
-        -> (exists j: int. 0 <= j /\ j < len_Item visited /\ Map.get f j = i)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
+      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited -> Map.get f i < Map.get f j)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> Seq.get visited i = Seq.get s (Map.get f i))
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s
+        -> (exists j: int. 0 <= j /\ j < Seq.length visited /\ Map.get f j = i)
         = postcondition_mut_F self.func (Seq.get s i) self.func true))
   
   meta "compute_max_steps" 1000000
@@ -952,36 +848,15 @@ module M_impl_Iterator_for_Filter_I_F__produces_refl (* <Filter<I, F> as common:
   predicate invariant_Filter_I_F (self: t_Filter_I_F) =
     no_precondition_ref_Item self.func /\ immutable_ref_Item self.func /\ precise_ref_Item self.func
   
-  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Item
-  
-  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_Seq_Item
-  
-  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Item
-  
-  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Item
-  
-  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate produces_Filter_I_F (self: t_Filter_I_F) (visited: Seq.seq t_Item) (succ: t_Filter_I_F) =
     invariant_Filter_I_F self
     -> hist_inv_F self.func succ.func
     /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces_I self.iter s succ.iter
-      /\ (forall i: int. 0 <= i /\ i < len_Item visited -> 0 <= Map.get f i /\ Map.get f i < len_Item s)
-      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < len_Item visited -> Map.get f i < Map.get f j)
-      /\ (forall i: int. 0 <= i /\ i < len_Item visited -> Seq.get visited i = Seq.get s (Map.get f i))
-      /\ (forall i: int. 0 <= i /\ i < len_Item s
-        -> (exists j: int. 0 <= j /\ j < len_Item visited /\ Map.get f j = i)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
+      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited -> Map.get f i < Map.get f j)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> Seq.get visited i = Seq.get s (Map.get f i))
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s
+        -> (exists j: int. 0 <= j /\ j < Seq.length visited /\ Map.get f j = i)
         = postcondition_mut_F self.func (Seq.get s i) self.func true))
   
   meta "compute_max_steps" 1000000
@@ -1074,36 +949,15 @@ module M_impl_Iterator_for_Filter_I_F__produces_refl__refines (* <Filter<I, F> a
   predicate invariant_Filter_I_F (self: t_Filter_I_F) =
     no_precondition_ref_Item self.func /\ immutable_ref_Item self.func /\ precise_ref_Item self.func
   
-  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Item
-  
-  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_Seq_Item
-  
-  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Item
-  
-  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Item
-  
-  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate produces_Filter_I_F (self: t_Filter_I_F) (visited: Seq.seq t_Item) (succ: t_Filter_I_F) =
     invariant_Filter_I_F self
     -> hist_inv_F self.func succ.func
     /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces_I self.iter s succ.iter
-      /\ (forall i: int. 0 <= i /\ i < len_Item visited -> 0 <= Map.get f i /\ Map.get f i < len_Item s)
-      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < len_Item visited -> Map.get f i < Map.get f j)
-      /\ (forall i: int. 0 <= i /\ i < len_Item visited -> Seq.get visited i = Seq.get s (Map.get f i))
-      /\ (forall i: int. 0 <= i /\ i < len_Item s
-        -> (exists j: int. 0 <= j /\ j < len_Item visited /\ Map.get f j = i)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
+      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited -> Map.get f i < Map.get f j)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> Seq.get visited i = Seq.get s (Map.get f i))
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s
+        -> (exists j: int. 0 <= j /\ j < Seq.length visited /\ Map.get f j = i)
         = postcondition_mut_F self.func (Seq.get s i) self.func true))
   
   meta "compute_max_steps" 1000000
@@ -1192,36 +1046,15 @@ module M_impl_Iterator_for_Filter_I_F__produces_trans (* <Filter<I, F> as common
   predicate invariant_Filter_I_F (self: t_Filter_I_F) =
     no_precondition_ref_Item self.func /\ immutable_ref_Item self.func /\ precise_ref_Item self.func
   
-  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Item
-  
-  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_Seq_Item
-  
-  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Item
-  
-  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Item
-  
-  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate produces_Filter_I_F (self: t_Filter_I_F) (visited: Seq.seq t_Item) (succ: t_Filter_I_F) =
     invariant_Filter_I_F self
     -> hist_inv_F self.func succ.func
     /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces_I self.iter s succ.iter
-      /\ (forall i: int. 0 <= i /\ i < len_Item visited -> 0 <= Map.get f i /\ Map.get f i < len_Item s)
-      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < len_Item visited -> Map.get f i < Map.get f j)
-      /\ (forall i: int. 0 <= i /\ i < len_Item visited -> Seq.get visited i = Seq.get s (Map.get f i))
-      /\ (forall i: int. 0 <= i /\ i < len_Item s
-        -> (exists j: int. 0 <= j /\ j < len_Item visited /\ Map.get f j = i)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
+      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited -> Map.get f i < Map.get f j)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> Seq.get visited i = Seq.get s (Map.get f i))
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s
+        -> (exists j: int. 0 <= j /\ j < Seq.length visited /\ Map.get f j = i)
         = postcondition_mut_F self.func (Seq.get s i) self.func true))
   
   meta "compute_max_steps" 1000000
@@ -1323,36 +1156,15 @@ module M_impl_Iterator_for_Filter_I_F__produces_trans__refines (* <Filter<I, F> 
   predicate invariant_Filter_I_F (self: t_Filter_I_F) =
     no_precondition_ref_Item self.func /\ immutable_ref_Item self.func /\ precise_ref_Item self.func
   
-  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Item
-  
-  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_Seq_Item
-  
-  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Item
-  
-  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Item
-  
-  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate produces_Filter_I_F (self: t_Filter_I_F) (visited: Seq.seq t_Item) (succ: t_Filter_I_F) =
     invariant_Filter_I_F self
     -> hist_inv_F self.func succ.func
     /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces_I self.iter s succ.iter
-      /\ (forall i: int. 0 <= i /\ i < len_Item visited -> 0 <= Map.get f i /\ Map.get f i < len_Item s)
-      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < len_Item visited -> Map.get f i < Map.get f j)
-      /\ (forall i: int. 0 <= i /\ i < len_Item visited -> Seq.get visited i = Seq.get s (Map.get f i))
-      /\ (forall i: int. 0 <= i /\ i < len_Item s
-        -> (exists j: int. 0 <= j /\ j < len_Item visited /\ Map.get f j = i)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
+      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited -> Map.get f i < Map.get f j)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> Seq.get visited i = Seq.get s (Map.get f i))
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s
+        -> (exists j: int. 0 <= j /\ j < Seq.length visited /\ Map.get f j = i)
         = postcondition_mut_F self.func (Seq.get s i) self.func true))
   
   meta "compute_max_steps" 1000000
@@ -1414,45 +1226,14 @@ module M_impl_Iterator_for_Filter_I_F__size_hint (* <Filter<I, F> as common::Ite
   
   predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate inv_Item (_1: t_Item)
-  
-  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Item
-  
-  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Item
-  
-  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Item
-  
-  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_Seq_Item
-  
-  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Item
-  
-  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Item
-  
-  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int result.f0 <= len_Item s)
+          -> UInt64.t'int result.f0 <= Seq.length s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> len_Item s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -1484,6 +1265,16 @@ module M_impl_Iterator_for_Filter_I_F__size_hint (* <Filter<I, F> as common::Ite
       -> (forall i: int, j: int. 0 <= i /\ i < j /\ j < n -> Map.get f i < Map.get f j) -> n - 1 <= Map.get f (n - 1)
   
   predicate inv_F (_1: t_F)
+  
+  predicate inv_Item (_1: t_Item)
+  
+  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
+  
+  meta "rewrite_def" predicate invariant_ref_Item
+  
+  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
+  
+  meta "rewrite_def" predicate inv_ref_Item
   
   predicate precondition_F (self: t_F) (args: t_Item)
   
@@ -1546,17 +1337,17 @@ module M_impl_Iterator_for_Filter_I_F__size_hint (* <Filter<I, F> as common::Ite
     invariant_Filter_I_F self
     -> hist_inv_F self.func succ.func
     /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces_I self.iter s succ.iter
-      /\ (forall i: int. 0 <= i /\ i < len_Item visited -> 0 <= Map.get f i /\ Map.get f i < len_Item s)
-      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < len_Item visited -> Map.get f i < Map.get f j)
-      /\ (forall i: int. 0 <= i /\ i < len_Item visited -> Seq.get visited i = Seq.get s (Map.get f i))
-      /\ (forall i: int. 0 <= i /\ i < len_Item s
-        -> (exists j: int. 0 <= j /\ j < len_Item visited /\ Map.get f j = i)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
+      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited -> Map.get f i < Map.get f j)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> Seq.get visited i = Seq.get s (Map.get f i))
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s
+        -> (exists j: int. 0 <= j /\ j < Seq.length visited /\ Map.get f j = i)
         = postcondition_mut_F self.func (Seq.get s i) self.func true))
   
   predicate completed_Filter_I_F (self: MutBorrow.t t_Filter_I_F) =
     (exists s: Seq.seq t_Item, e: MutBorrow.t t_I. produces_I self.current.iter s e.current
         /\ completed_I e
-        /\ (forall i: int. 0 <= i /\ i < len_Item s
+        /\ (forall i: int. 0 <= i /\ i < Seq.length s
           -> postcondition_mut_F self.current.func (Seq.get s i) self.final.func false))
     /\ self.current.func = self.final.func
   
@@ -1580,10 +1371,10 @@ module M_impl_Iterator_for_Filter_I_F__size_hint (* <Filter<I, F> as common::Ite
     | & _9: () = Any.any_l () ])
     [ return (result: tup2_usize_Option_usize) ->
     {[@stop_split] [@expl:size_hint_Filter_I_F ensures] ([@stop_split] [@expl:size_hint ensures #0] forall s: Seq.seq t_Item, i: MutBorrow.t t_Filter_I_F. produces_Filter_I_F self s i.current
-            /\ completed_Filter_I_F i -> UInt64.t'int result.f0 <= len_Item s)
+            /\ completed_Filter_I_F i -> UInt64.t'int result.f0 <= Seq.length s)
       /\ ([@stop_split] [@expl:size_hint ensures #1] match result.f1 with
         | Some r -> forall s: Seq.seq t_Item, i: t_Filter_I_F. produces_Filter_I_F self s i
-          -> len_Item s <= UInt64.t'int r
+          -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)}
       (! return {result}) ]
@@ -1684,36 +1475,15 @@ module M_impl_Iterator_for_Filter_I_F__size_hint__refines (* <Filter<I, F> as co
   
   meta "rewrite_def" predicate inv_ref_Filter_I_F
   
-  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Item
-  
-  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_Seq_Item
-  
-  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Item
-  
-  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Item
-  
-  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate produces_Filter_I_F (self: t_Filter_I_F) (visited: Seq.seq t_Item) (succ: t_Filter_I_F) =
     invariant_Filter_I_F self
     -> hist_inv_F self.func succ.func
     /\ (exists s: Seq.seq t_Item, f: Map.map int int. produces_I self.iter s succ.iter
-      /\ (forall i: int. 0 <= i /\ i < len_Item visited -> 0 <= Map.get f i /\ Map.get f i < len_Item s)
-      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < len_Item visited -> Map.get f i < Map.get f j)
-      /\ (forall i: int. 0 <= i /\ i < len_Item visited -> Seq.get visited i = Seq.get s (Map.get f i))
-      /\ (forall i: int. 0 <= i /\ i < len_Item s
-        -> (exists j: int. 0 <= j /\ j < len_Item visited /\ Map.get f j = i)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> 0 <= Map.get f i /\ Map.get f i < Seq.length s)
+      /\ (forall i: int, j: int. 0 <= i /\ i < j /\ j < Seq.length visited -> Map.get f i < Map.get f j)
+      /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> Seq.get visited i = Seq.get s (Map.get f i))
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s
+        -> (exists j: int. 0 <= j /\ j < Seq.length visited /\ Map.get f j = i)
         = postcondition_mut_F self.func (Seq.get s i) self.func true))
   
   predicate completed_I (self: MutBorrow.t t_I)
@@ -1721,7 +1491,7 @@ module M_impl_Iterator_for_Filter_I_F__size_hint__refines (* <Filter<I, F> as co
   predicate completed_Filter_I_F (self: MutBorrow.t t_Filter_I_F) =
     (exists s: Seq.seq t_Item, e: MutBorrow.t t_I. produces_I self.current.iter s e.current
         /\ completed_I e
-        /\ (forall i: int. 0 <= i /\ i < len_Item s
+        /\ (forall i: int. 0 <= i /\ i < Seq.length s
           -> postcondition_mut_F self.current.func (Seq.get s i) self.final.func false))
     /\ self.current.func = self.final.func
   
@@ -1736,17 +1506,17 @@ module M_impl_Iterator_for_Filter_I_F__size_hint__refines (* <Filter<I, F> as co
   goal refines: forall self: t_Filter_I_F. inv_ref_Filter_I_F self
       -> inv_ref_Filter_I_F self
       /\ (forall result: tup2_usize_Option_usize. (forall s: Seq.seq t_Item, i: MutBorrow.t t_Filter_I_F. produces_Filter_I_F self s i.current
-                /\ completed_Filter_I_F i -> UInt64.t'int result.f0 <= len_Item s)
+                /\ completed_Filter_I_F i -> UInt64.t'int result.f0 <= Seq.length s)
           /\ match result.f1 with
             | Some r -> forall s: Seq.seq t_Item, i: t_Filter_I_F. produces_Filter_I_F self s i
-              -> len_Item s <= UInt64.t'int r
+              -> Seq.length s <= UInt64.t'int r
             | None -> true
             end
         -> (forall s: Seq.seq t_Item, i: MutBorrow.t t_Filter_I_F. produces_Filter_I_F self s i.current
-              /\ completed_Filter_I_F i -> UInt64.t'int result.f0 <= len_Item s)
+              /\ completed_Filter_I_F i -> UInt64.t'int result.f0 <= Seq.length s)
         /\ match result.f1 with
           | Some r -> forall s: Seq.seq t_Item, i: t_Filter_I_F. produces_Filter_I_F self s i
-            -> len_Item s <= UInt64.t'int r
+            -> Seq.length s <= UInt64.t'int r
           | None -> true
           end)
 end
@@ -1973,9 +1743,6 @@ module M_less_than
     {[@stop_split] [@expl:collect ensures] postcondition_from_iter () self result}
       (! return {result}) ]
   
-  let len_u32 (self: Seq.seq UInt32.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Vec_u32_Global [@inline:trivial] (self: t_Vec_u32_Global) (ix: int) : UInt32.t =
     Seq.get (view_Vec_u32_Global self) ix
   
@@ -2003,8 +1770,9 @@ module M_less_than
     | & _10: closure2 = Any.any_l () ])
     [ return (result: t_Vec_u32_Global) ->
     {[@stop_split] [@expl:less_than ensures] ([@stop_split] [@expl:less_than ensures #0] forall i: int. 0 <= i
-            /\ i < len_u32 (view_Vec_u32_Global result) -> UInt32.lt (index_Vec_u32_Global result i) n)
-      /\ ([@stop_split] [@expl:less_than ensures #1] forall i: int. 0 <= i /\ i < len_u32 (view_Vec_u32_Global result)
+            /\ i < Seq.length (view_Vec_u32_Global result) -> UInt32.lt (index_Vec_u32_Global result i) n)
+      /\ ([@stop_split] [@expl:less_than ensures #1] forall i: int. 0 <= i
+          /\ i < Seq.length (view_Vec_u32_Global result)
         -> contains_u32 (view_Vec_u32_Global v) (index_Vec_u32_Global result i))}
       (! return {result}) ]
 end

@@ -12,11 +12,6 @@ module M_ghost_vec
   
   type t_Option_ref_i32 = None | Some Int32.t
   
-  let get_i32 (self: Seq.seq Int32.t) (index: int) (return (x: t_Option_ref_i32)) = any
-    [ return (result: t_Option_ref_i32) -> {[@stop_split] [@expl:get ensures] result
-      = (if 0 <= index /\ index < Seq.length self then Some (Seq.get self index) else None)}
-      (! return {result}) ]
-  
   let deref_Ghost_Seq_i32 (self: Seq.seq Int32.t) (return (x: Seq.seq Int32.t)) = any
     [ return (result: Seq.seq Int32.t) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
   
@@ -44,6 +39,11 @@ module M_ghost_vec
   
   let into_inner_Int (self: int) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
+  
+  let get_i32 (self: Seq.seq Int32.t) (index: int) (return (x: t_Option_ref_i32)) = any
+    [ return (result: t_Option_ref_i32) -> {[@stop_split] [@expl:get ensures] result
+      = (if 0 <= index /\ index < Seq.length self then Some (Seq.get self index) else None)}
+      (! return {result}) ]
   
   type t_Option_refmut_i32 = None'0 | Some'0 (MutBorrow.t Int32.t)
   
@@ -124,7 +124,8 @@ module M_ghost_vec
   let ghost_vec (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = new_i32 (fun (_x: Seq.seq Int32.t) -> [ &v <- _x ] s1)
-      | s1 = {[@expl:assertion] forall i: int. get_i32 v i = None} s2
+      | s1 = {[@expl:assertion] forall i: int. (if 0 <= i /\ i < Seq.length v then Some (Seq.get v i) else None) = None}
+        s2
       | s2 = deref_Ghost_Seq_i32 {v} (fun (_x: Seq.seq Int32.t) -> [ &_10 <- _x ] s3)
       | s3 = is_empty_i32 {_10} (fun (_x: bool) -> [ &_8 <- _x ] s4)
       | s4 = any [ br0 -> {_8 = false} (! bb5) | br1 -> {_8} (! bb4) ] ]
@@ -143,7 +144,7 @@ module M_ghost_vec
     | bb10 = {false} any
     | bb11 = s0
       [ s0 = {[@expl:assertion] Seq.get v 0 = (21: Int32.t)} s1
-      | s1 = {[@expl:assertion] len_i32 v = 1} s2
+      | s1 = {[@expl:assertion] Seq.length v = 1} s2
       | s2 = MutBorrow.borrow_mut <Seq.seq Int32.t> {v}
           (fun (_bor: MutBorrow.t (Seq.seq Int32.t)) -> [ &_32 <- _bor ] [ &v <- _bor.final ] s3)
       | s3 = deref_mut_Ghost_Seq_i32 {_32} (fun (_x: MutBorrow.t (Seq.seq Int32.t)) -> [ &_31 <- _x ] s4)

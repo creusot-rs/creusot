@@ -328,15 +328,12 @@ end
 module M_y
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
-  use creusot.int.Int32
   use seq.Seq
+  use creusot.int.Int32
   use creusot.prelude.Any
   use int.Int
   
   type t_Vec_i32_Global
-  
-  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -346,9 +343,9 @@ module M_y
     forall self: t_Vec_i32_Global [view_Vec_i32_Global self]. Seq.length (view_Vec_i32_Global self)
       <= UInt64.t'int const_MAX
   
-  let len_i32'0 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = len_i32 (view_Vec_i32_Global self)}
+      = Seq.length (view_Vec_i32_Global self)}
       (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
@@ -374,8 +371,8 @@ module M_y
     {[@stop_split] [@expl:index_mut_Vec_i32_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_usize index (view_Vec_i32_Global self.current) result.current)
       /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_usize index (view_Vec_i32_Global self.final) result.final)
       /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_usize index (view_Vec_i32_Global self.current) (view_Vec_i32_Global self.final))
-      /\ ([@stop_split] [@expl:index_mut ensures #3] len_i32 (view_Vec_i32_Global self.final)
-      = len_i32 (view_Vec_i32_Global self.current))}
+      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_i32_Global self.final)
+      = Seq.length (view_Vec_i32_Global self.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
@@ -394,11 +391,11 @@ module M_y
     [ bb0 = s0 [ s0 = [ &old_v <- v ] s1 | s1 = [ &i <- (0: UInt64.t) ] s2 | s2 = [ &_old <- v.final ] s3 | s3 = bb2 ]
     | bb2 = bb2
       [ bb2 = {[@expl:inferred invariant: unchanged value] _old = v.final}
-        {[@expl:loop invariant #0] len_i32 (view_Vec_i32_Global old_v.current)
-        = len_i32 (view_Vec_i32_Global v.current)}
+        {[@expl:loop invariant #0] Seq.length (view_Vec_i32_Global old_v.current)
+        = Seq.length (view_Vec_i32_Global v.current)}
         {[@expl:loop invariant #1] UInt64.t'int i <= 10}
         (! s0)
-        [ s0 = len_i32'0 {v.current} (fun (_x: UInt64.t) -> [ &_16 <- _x ] s1)
+        [ s0 = len_i32 {v.current} (fun (_x: UInt64.t) -> [ &_16 <- _x ] s1)
         | s1 = [ &_14 <- UInt64.lt i _16 ] s2
         | s2 = any [ br0 -> {_14 = false} (! bb8) | br1 -> {_14} (! bb5) ] ]
         [ bb5 = s0

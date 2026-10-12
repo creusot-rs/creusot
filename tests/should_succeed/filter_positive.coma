@@ -54,9 +54,6 @@ module M_lemma_num_of_pos_strictly_increasing
   use seq.Seq
   use int.Int
   
-  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
   meta "rewrite_def" predicate gt_log_Int
@@ -84,22 +81,19 @@ module M_lemma_num_of_pos_strictly_increasing
   
   function lemma_num_of_pos_strictly_increasing (i: int) (t: Seq.seq Int32.t) : ()
   
-  goal vc_lemma_num_of_pos_strictly_increasing: 0 <= i /\ i < len_i32 t
+  goal vc_lemma_num_of_pos_strictly_increasing: 0 <= i /\ i < Seq.length t
     -> gt_log_Int (Int32.to_int (Seq.get t i)) 0
     -> ([@stop_split] [@expl:lemma_num_of_pos_strictly_increasing ensures] num_of_pos 0 i t < num_of_pos 0 (i + 1) t)
 end
 module M_m
   use creusot.int.UInt64
-  use creusot.int.Int32
   use seq.Seq
+  use creusot.int.Int32
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use int.Int
   
   type t_Vec_i32_Global
-  
-  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -109,9 +103,9 @@ module M_m
     forall self: t_Vec_i32_Global [view_Vec_i32_Global self]. Seq.length (view_Vec_i32_Global self)
       <= UInt64.t'int const_MAX
   
-  let len_i32'0 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = len_i32 (view_Vec_i32_Global self)}
+      = Seq.length (view_Vec_i32_Global self)}
       (! return {result}) ]
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
@@ -155,7 +149,7 @@ module M_m
   
   let from_elem_i32 (elem: Int32.t) (n: UInt64.t) (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) ->
-    {[@stop_split] [@expl:from_elem_i32 ensures] ([@stop_split] [@expl:from_elem ensures #0] len_i32 (view_Vec_i32_Global result)
+    {[@stop_split] [@expl:from_elem_i32 ensures] ([@stop_split] [@expl:from_elem ensures #0] Seq.length (view_Vec_i32_Global result)
         = UInt64.t'int n)
       /\ ([@stop_split] [@expl:from_elem ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int n
         -> index_Vec_i32_Global'0 result i = elem)}
@@ -163,7 +157,7 @@ module M_m
   
   function lemma_num_of_pos_strictly_increasing (i: int) (t: Seq.seq Int32.t) : () = ()
   
-  axiom lemma_num_of_pos_strictly_increasing_spec: forall i: int, t: Seq.seq Int32.t. 0 <= i /\ i < len_i32 t
+  axiom lemma_num_of_pos_strictly_increasing_spec: forall i: int, t: Seq.seq Int32.t. 0 <= i /\ i < Seq.length t
       -> gt_log_Int (Int32.to_int (Seq.get t i)) 0 -> num_of_pos 0 i t < num_of_pos 0 (i + 1) t
   
   function lemma_num_of_pos_increasing (i: int) (j: int) (k: int) (t: Seq.seq Int32.t) : ()
@@ -188,8 +182,8 @@ module M_m
     {[@stop_split] [@expl:index_mut_Vec_i32_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_usize index (view_Vec_i32_Global self.current) result.current)
       /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_usize index (view_Vec_i32_Global self.final) result.final)
       /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_usize index (view_Vec_i32_Global self.current) (view_Vec_i32_Global self.final))
-      /\ ([@stop_split] [@expl:index_mut ensures #3] len_i32 (view_Vec_i32_Global self.final)
-      = len_i32 (view_Vec_i32_Global self.current))}
+      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_i32_Global self.final)
+      = Seq.length (view_Vec_i32_Global self.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
@@ -203,11 +197,11 @@ module M_m
   let m (t: t_Vec_i32_Global) (return (x: t_Vec_i32_Global)) = (! bb0
     [ bb0 = s0 [ s0 = [ &count <- (0: UInt64.t) ] s1 | s1 = [ &i <- (0: UInt64.t) ] s2 | s2 = bb1 ]
     | bb1 = bb1
-      [ bb1 = {[@expl:loop invariant #0] UInt64.t'int i <= len_i32 (view_Vec_i32_Global t)}
+      [ bb1 = {[@expl:loop invariant #0] UInt64.t'int i <= Seq.length (view_Vec_i32_Global t)}
         {[@expl:loop invariant #1] UInt64.t'int count <= UInt64.t'int i}
         {[@expl:loop invariant #2] UInt64.t'int count = num_of_pos 0 (UInt64.t'int i) (view_Vec_i32_Global t)}
         (! s0)
-        [ s0 = len_i32'0 {t} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s1)
+        [ s0 = len_i32 {t} (fun (_x: UInt64.t) -> [ &_20 <- _x ] s1)
         | s1 = [ &_18 <- UInt64.lt i _20 ] s2
         | s2 = any [ br0 -> {_18 = false} (! bb9) | br1 -> {_18} (! bb4) ] ]
         [ bb4 = s0
@@ -223,10 +217,10 @@ module M_m
       | s3 = bb11 ]
     | bb11 = bb11
       [ bb11 = {[@expl:loop invariant #0] UInt64.t'int count = num_of_pos 0 (UInt64.t'int i) (view_Vec_i32_Global t)}
-        {[@expl:loop invariant #1] len_i32 (view_Vec_i32_Global u)
-        = num_of_pos 0 (len_i32 (view_Vec_i32_Global t)) (view_Vec_i32_Global t)}
+        {[@expl:loop invariant #1] Seq.length (view_Vec_i32_Global u)
+        = num_of_pos 0 (Seq.length (view_Vec_i32_Global t)) (view_Vec_i32_Global t)}
         (! s0)
-        [ s0 = len_i32'0 {t} (fun (_x: UInt64.t) -> [ &_42 <- _x ] s1)
+        [ s0 = len_i32 {t} (fun (_x: UInt64.t) -> [ &_42 <- _x ] s1)
         | s1 = [ &_40 <- UInt64.lt i _42 ] s2
         | s2 = any [ br0 -> {_40 = false} (! bb21) | br1 -> {_40} (! bb14) ] ]
         [ bb14 = s0
@@ -239,8 +233,8 @@ module M_m
             < num_of_pos 0 (UInt64.t'int i + 1) (view_Vec_i32_Global t)}
             s1
           | s1 = {[@expl:assertion] let _ = lemma_num_of_pos_increasing 0 (UInt64.t'int i
-            + 1) (len_i32 (view_Vec_i32_Global t)) (view_Vec_i32_Global t) in UInt64.t'int count
-            < len_i32 (view_Vec_i32_Global u)}
+            + 1) (Seq.length (view_Vec_i32_Global t)) (view_Vec_i32_Global t) in UInt64.t'int count
+            < Seq.length (view_Vec_i32_Global u)}
             s2
           | s2 = index_Vec_i32_Global {t} {i} (fun (_x: Int32.t) -> [ &_62 <- _x ] s3)
           | s3 = MutBorrow.borrow_mut <t_Vec_i32_Global> {u}

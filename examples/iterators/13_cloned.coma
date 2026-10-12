@@ -42,45 +42,14 @@ module M_common__trait_ExactSizeIterator__is_empty
   
   predicate completed_Self (self: MutBorrow.t t_Self)
   
-  predicate inv_Item (_1: t_Item)
-  
-  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Item
-  
-  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Item
-  
-  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Item
-  
-  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_Seq_Item
-  
-  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Item
-  
-  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Item
-  
-  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_Self, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
-            /\ completed_Self i -> UInt64.t'int result.f0 <= len_Item s)
+            /\ completed_Self i -> UInt64.t'int result.f0 <= Seq.length s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> len_Item s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -162,45 +131,14 @@ module M_common__trait_ExactSizeIterator__len
   
   predicate completed_Self (self: MutBorrow.t t_Self)
   
-  predicate inv_Item (_1: t_Item)
-  
-  predicate invariant_ref_Item [@inline:trivial] (self: t_Item) = inv_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Item
-  
-  predicate inv_ref_Item [@inline:trivial] (_1: t_Item) = invariant_ref_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Item
-  
-  predicate invariant_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_Item (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_Item
-  
-  predicate inv_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_Seq_Item
-  
-  predicate invariant_ref_Seq_Item [@inline:trivial] (self: Seq.seq t_Item) = inv_Seq_Item self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Item
-  
-  predicate inv_ref_Seq_Item [@inline:trivial] (_1: Seq.seq t_Item) = invariant_ref_Seq_Item _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Item
-  
-  let len_Item (self: Seq.seq t_Item) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Item self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_size_hint (self: ()) (args: t_Self) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_Self, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_Self. produces_Self self s i.current
-            /\ completed_Self i -> UInt64.t'int result.f0 <= len_Item s)
+            /\ completed_Self i -> UInt64.t'int result.f0 <= Seq.length s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> len_Item s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_Item, i: t_Self. produces_Self self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -311,45 +249,6 @@ module M_impl_ExactSizeIterator_for_Cloned_I__is_empty (* <Cloned<I> as common::
   
   type t_T
   
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_T
-  
-  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_T
-  
-  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_ref_T
-  
-  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_ref_T
-  
-  predicate invariant_ref_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_ref_T
-  
-  predicate inv_ref_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_ref_T
-  
-  let len_ref_T (self: Seq.seq t_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_ref_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   type t_I
   
   type t_Cloned_I = { iter: t_I }
@@ -376,9 +275,9 @@ module M_impl_ExactSizeIterator_for_Cloned_I__is_empty (* <Cloned<I> as common::
   axiom postcondition_fndef:
     forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_T, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int result.f0 <= len_ref_T s)
+          -> UInt64.t'int result.f0 <= Seq.length s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self s i -> len_ref_T s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -453,25 +352,7 @@ module M_impl_ExactSizeIterator_for_Cloned_I__is_empty (* <Cloned<I> as common::
   
   meta "rewrite_def" predicate postcondition_size_hint'0
   
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  predicate inv_T (_1: t_T)
   
   predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
   
@@ -481,8 +362,8 @@ module M_impl_ExactSizeIterator_for_Cloned_I__is_empty (* <Cloned<I> as common::
   
   predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
     exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ len_T visited = len_ref_T s
-      /\ (forall i: int. 0 <= i /\ i < len_ref_T s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
   
   function produces_trans_Cloned_I (a: t_Cloned_I) (ab: Seq.seq t_T) (b: t_Cloned_I) (bc: Seq.seq t_T) (c: t_Cloned_I) : ()
    = ()
@@ -510,7 +391,7 @@ module M_impl_ExactSizeIterator_for_Cloned_I__is_empty (* <Cloned<I> as common::
   {[@stop_split] [@expl:is_empty 'self' type invariant] inv_ref_Cloned_I self}
     (! bb0
     [ bb0 = s0
-      [ s0 = {[@expl:assertion] forall s: Seq.seq t_T. len_ref_T s = 0 -> s = (Seq.empty: Seq.seq t_T)} s1
+      [ s0 = {[@expl:assertion] forall s: Seq.seq t_T. Seq.length s = 0 -> s = (Seq.empty: Seq.seq t_T)} s1
       | s1 = is_empty_I {self.iter} (fun (_x: bool) -> [ &_ret <- _x ] s2)
       | s2 = return {_ret} ] ] [ & _ret: bool = Any.any_l () | & self: t_Cloned_I = self ])
     [ return (result: bool) ->
@@ -562,53 +443,14 @@ module M_impl_ExactSizeIterator_for_Cloned_I__is_empty__refines (* <Cloned<I> as
   
   predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_T
-  
-  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_T
-  
-  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_ref_T
-  
-  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_ref_T
-  
-  predicate invariant_ref_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_ref_T
-  
-  predicate inv_ref_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_ref_T
-  
-  let len_ref_T (self: Seq.seq t_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_ref_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_T, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int result.f0 <= len_ref_T s)
+          -> UInt64.t'int result.f0 <= Seq.length s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self s i -> len_ref_T s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -617,25 +459,7 @@ module M_impl_ExactSizeIterator_for_Cloned_I__is_empty__refines (* <Cloned<I> as
   
   meta "rewrite_def" predicate postcondition_size_hint'0
   
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  predicate inv_T (_1: t_T)
   
   predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
   
@@ -645,8 +469,8 @@ module M_impl_ExactSizeIterator_for_Cloned_I__is_empty__refines (* <Cloned<I> as
   
   predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
     exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ len_T visited = len_ref_T s
-      /\ (forall i: int. 0 <= i /\ i < len_ref_T s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
   
   function produces_trans_Cloned_I (a: t_Cloned_I) (ab: Seq.seq t_T) (b: t_Cloned_I) (bc: Seq.seq t_T) (c: t_Cloned_I) : ()
    = ()
@@ -732,53 +556,14 @@ module M_impl_ExactSizeIterator_for_Cloned_I__len (* <Cloned<I> as common::Exact
   
   predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_T
-  
-  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_T
-  
-  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_ref_T
-  
-  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_ref_T
-  
-  predicate invariant_ref_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_ref_T
-  
-  predicate inv_ref_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_ref_T
-  
-  let len_ref_T (self: Seq.seq t_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_ref_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_T, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int result.f0 <= len_ref_T s)
+          -> UInt64.t'int result.f0 <= Seq.length s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self s i -> len_ref_T s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -851,25 +636,7 @@ module M_impl_ExactSizeIterator_for_Cloned_I__len (* <Cloned<I> as common::Exact
   
   meta "rewrite_def" predicate postcondition_size_hint'0
   
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  predicate inv_T (_1: t_T)
   
   predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
   
@@ -879,8 +646,8 @@ module M_impl_ExactSizeIterator_for_Cloned_I__len (* <Cloned<I> as common::Exact
   
   predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
     exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ len_T visited = len_ref_T s
-      /\ (forall i: int. 0 <= i /\ i < len_ref_T s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
   
   function produces_trans_Cloned_I (a: t_Cloned_I) (ab: Seq.seq t_T) (b: t_Cloned_I) (bc: Seq.seq t_T) (c: t_Cloned_I) : ()
    = ()
@@ -956,53 +723,14 @@ module M_impl_ExactSizeIterator_for_Cloned_I__len__refines (* <Cloned<I> as comm
   
   predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_T
-  
-  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_T
-  
-  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_ref_T
-  
-  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_ref_T
-  
-  predicate invariant_ref_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_ref_T
-  
-  predicate inv_ref_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_ref_T
-  
-  let len_ref_T (self: Seq.seq t_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_ref_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_T, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int result.f0 <= len_ref_T s)
+          -> UInt64.t'int result.f0 <= Seq.length s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self s i -> len_ref_T s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -1011,25 +739,7 @@ module M_impl_ExactSizeIterator_for_Cloned_I__len__refines (* <Cloned<I> as comm
   
   meta "rewrite_def" predicate postcondition_size_hint'0
   
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  predicate inv_T (_1: t_T)
   
   predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
   
@@ -1039,8 +749,8 @@ module M_impl_ExactSizeIterator_for_Cloned_I__len__refines (* <Cloned<I> as comm
   
   predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
     exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ len_T visited = len_ref_T s
-      /\ (forall i: int. 0 <= i /\ i < len_ref_T s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
   
   function produces_trans_Cloned_I (a: t_Cloned_I) (ab: Seq.seq t_T) (b: t_Cloned_I) (bc: Seq.seq t_T) (c: t_Cloned_I) : ()
    = ()
@@ -1123,53 +833,14 @@ module M_impl_ExactSizeIterator_for_Cloned_I__size_hint_exact (* <Cloned<I> as c
   
   predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_T
-  
-  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_T
-  
-  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_ref_T
-  
-  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_ref_T
-  
-  predicate invariant_ref_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_ref_T
-  
-  predicate inv_ref_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_ref_T
-  
-  let len_ref_T (self: Seq.seq t_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_ref_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_T, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int result.f0 <= len_ref_T s)
+          -> UInt64.t'int result.f0 <= Seq.length s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self s i -> len_ref_T s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -1178,25 +849,7 @@ module M_impl_ExactSizeIterator_for_Cloned_I__size_hint_exact (* <Cloned<I> as c
   
   meta "rewrite_def" predicate postcondition_size_hint'0
   
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  predicate inv_T (_1: t_T)
   
   predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
   
@@ -1206,8 +859,8 @@ module M_impl_ExactSizeIterator_for_Cloned_I__size_hint_exact (* <Cloned<I> as c
   
   predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
     exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ len_T visited = len_ref_T s
-      /\ (forall i: int. 0 <= i /\ i < len_ref_T s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
   
   function produces_trans_Cloned_I (a: t_Cloned_I) (ab: Seq.seq t_T) (b: t_Cloned_I) (bc: Seq.seq t_T) (c: t_Cloned_I) : ()
    = ()
@@ -1315,53 +968,14 @@ module M_impl_ExactSizeIterator_for_Cloned_I__size_hint_exact__refines (* <Clone
   
   predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_T
-  
-  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_T
-  
-  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_ref_T
-  
-  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_ref_T
-  
-  predicate invariant_ref_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_ref_T
-  
-  predicate inv_ref_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_ref_T
-  
-  let len_ref_T (self: Seq.seq t_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_ref_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_T, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int result.f0 <= len_ref_T s)
+          -> UInt64.t'int result.f0 <= Seq.length s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self s i -> len_ref_T s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -1370,25 +984,7 @@ module M_impl_ExactSizeIterator_for_Cloned_I__size_hint_exact__refines (* <Clone
   
   meta "rewrite_def" predicate postcondition_size_hint'0
   
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  predicate inv_T (_1: t_T)
   
   predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
   
@@ -1398,8 +994,8 @@ module M_impl_ExactSizeIterator_for_Cloned_I__size_hint_exact__refines (* <Clone
   
   predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
     exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ len_T visited = len_ref_T s
-      /\ (forall i: int. 0 <= i /\ i < len_ref_T s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
   
   function produces_trans_Cloned_I (a: t_Cloned_I) (ab: Seq.seq t_T) (b: t_Cloned_I) (bc: Seq.seq t_T) (c: t_Cloned_I) : ()
    = ()
@@ -1611,59 +1207,10 @@ module M_impl_Iterator_for_Cloned_I__next (* <Cloned<I> as common::Iterator> *)
   predicate completed_Cloned_I (self: MutBorrow.t t_Cloned_I) =
     completed_I (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 0))
   
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_T
-  
-  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_T
-  
-  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_ref_T
-  
-  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_ref_T
-  
-  predicate invariant_ref_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_ref_T
-  
-  predicate inv_ref_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_ref_T
-  
-  let len_ref_T (self: Seq.seq t_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_ref_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
     exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ len_T visited = len_ref_T s
-      /\ (forall i: int. 0 <= i /\ i < len_ref_T s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
   
   meta "compute_max_steps" 1000000
   
@@ -1749,63 +1296,6 @@ module M_impl_Iterator_for_Cloned_I__next__refines (* <Cloned<I> as common::Iter
   predicate completed_Cloned_I (self: MutBorrow.t t_Cloned_I) =
     completed_I (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 0))
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_T
-  
-  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_T
-  
-  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_ref_T
-  
-  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_ref_T
-  
-  predicate invariant_ref_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_ref_T
-  
-  predicate inv_ref_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_ref_T
-  
-  let len_ref_T (self: Seq.seq t_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_ref_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
   
   axiom postcondition_fndef:
@@ -1814,8 +1304,8 @@ module M_impl_Iterator_for_Cloned_I__next__refines (* <Cloned<I> as common::Iter
   
   predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
     exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ len_T visited = len_ref_T s
-      /\ (forall i: int. 0 <= i /\ i < len_ref_T s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
   
   meta "compute_max_steps" 1000000
   
@@ -1857,63 +1347,6 @@ module M_impl_Iterator_for_Cloned_I__produces_refl (* <Cloned<I> as common::Iter
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_T
-  
-  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_T
-  
-  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_ref_T
-  
-  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_ref_T
-  
-  predicate invariant_ref_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_ref_T
-  
-  predicate inv_ref_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_ref_T
-  
-  let len_ref_T (self: Seq.seq t_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_ref_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
   
   axiom postcondition_fndef:
@@ -1922,8 +1355,8 @@ module M_impl_Iterator_for_Cloned_I__produces_refl (* <Cloned<I> as common::Iter
   
   predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
     exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ len_T visited = len_ref_T s
-      /\ (forall i: int. 0 <= i /\ i < len_ref_T s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
   
   meta "compute_max_steps" 1000000
   
@@ -1959,63 +1392,6 @@ module M_impl_Iterator_for_Cloned_I__produces_refl__refines (* <Cloned<I> as com
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_T
-  
-  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_T
-  
-  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_ref_T
-  
-  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_ref_T
-  
-  predicate invariant_ref_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_ref_T
-  
-  predicate inv_ref_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_ref_T
-  
-  let len_ref_T (self: Seq.seq t_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_ref_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
   
   axiom postcondition_fndef:
@@ -2024,8 +1400,8 @@ module M_impl_Iterator_for_Cloned_I__produces_refl__refines (* <Cloned<I> as com
   
   predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
     exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ len_T visited = len_ref_T s
-      /\ (forall i: int. 0 <= i /\ i < len_ref_T s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
   
   meta "compute_max_steps" 1000000
   
@@ -2057,63 +1433,6 @@ module M_impl_Iterator_for_Cloned_I__produces_trans (* <Cloned<I> as common::Ite
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_T
-  
-  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_T
-  
-  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_ref_T
-  
-  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_ref_T
-  
-  predicate invariant_ref_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_ref_T
-  
-  predicate inv_ref_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_ref_T
-  
-  let len_ref_T (self: Seq.seq t_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_ref_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
   
   axiom postcondition_fndef:
@@ -2122,8 +1441,8 @@ module M_impl_Iterator_for_Cloned_I__produces_trans (* <Cloned<I> as common::Ite
   
   predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
     exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ len_T visited = len_ref_T s
-      /\ (forall i: int. 0 <= i /\ i < len_ref_T s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
   
   meta "compute_max_steps" 1000000
   
@@ -2167,63 +1486,6 @@ module M_impl_Iterator_for_Cloned_I__produces_trans__refines (* <Cloned<I> as co
   
   predicate inv_T (_1: t_T)
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_T
-  
-  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_T
-  
-  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_ref_T
-  
-  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_ref_T
-  
-  predicate invariant_ref_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_ref_T
-  
-  predicate inv_ref_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_ref_T
-  
-  let len_ref_T (self: Seq.seq t_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_ref_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
   
   axiom postcondition_fndef:
@@ -2232,8 +1494,8 @@ module M_impl_Iterator_for_Cloned_I__produces_trans__refines (* <Cloned<I> as co
   
   predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
     exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ len_T visited = len_ref_T s
-      /\ (forall i: int. 0 <= i /\ i < len_ref_T s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
   
   meta "compute_max_steps" 1000000
   
@@ -2291,53 +1553,14 @@ module M_impl_Iterator_for_Cloned_I__size_hint (* <Cloned<I> as common::Iterator
   
   predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_T
-  
-  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_T
-  
-  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_ref_T
-  
-  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_ref_T
-  
-  predicate invariant_ref_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_ref_T
-  
-  predicate inv_ref_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_ref_T
-  
-  let len_ref_T (self: Seq.seq t_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_ref_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_T, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int result.f0 <= len_ref_T s)
+          -> UInt64.t'int result.f0 <= Seq.length s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self s i -> len_ref_T s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -2422,53 +1645,14 @@ module M_impl_Iterator_for_Cloned_I__size_hint__refines (* <Cloned<I> as common:
   
   predicate completed_I (self: MutBorrow.t t_I)
   
-  predicate inv_T (_1: t_T)
-  
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_ref_ref_T [@inline:trivial] (self: t_T) = inv_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_ref_T
-  
-  predicate inv_ref_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_ref_T
-  
-  predicate invariant_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_ref_T
-  
-  predicate inv_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_ref_T
-  
-  predicate invariant_ref_Seq_ref_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_ref_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_ref_T
-  
-  predicate inv_ref_Seq_ref_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_ref_T
-  
-  let len_ref_T (self: Seq.seq t_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_ref_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
   
   axiom postcondition_fndef:
     forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
       -> (let self = args in (forall s: Seq.seq t_T, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int result.f0 <= len_ref_T s)
+          -> UInt64.t'int result.f0 <= Seq.length s)
       /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self s i -> len_ref_T s <= UInt64.t'int r
+        | Some r -> forall s: Seq.seq t_T, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
         | None -> true
         end)
   
@@ -2497,25 +1681,7 @@ module M_impl_Iterator_for_Cloned_I__size_hint__refines (* <Cloned<I> as common:
     {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result}
       (! return {result}) ]
   
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
+  predicate inv_T (_1: t_T)
   
   predicate postcondition_clone (self: ()) (args: t_T) (result: t_T)
   
@@ -2525,8 +1691,8 @@ module M_impl_Iterator_for_Cloned_I__size_hint__refines (* <Cloned<I> as common:
   
   predicate produces_Cloned_I (self: t_Cloned_I) (visited: Seq.seq t_T) (o: t_Cloned_I) =
     exists s: Seq.seq t_T. produces_I self.iter s o.iter
-      /\ len_T visited = len_ref_T s
-      /\ (forall i: int. 0 <= i /\ i < len_ref_T s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
+      /\ Seq.length visited = Seq.length s
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s -> postcondition_clone () (Seq.get s i) (Seq.get visited i))
   
   predicate completed_Cloned_I (self: MutBorrow.t t_Cloned_I) =
     completed_I (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 0))
@@ -2539,9 +1705,9 @@ module M_impl_Iterator_for_Cloned_I__size_hint__refines (* <Cloned<I> as common:
       -> inv_ref_Cloned_I self
       /\ (forall result: tup2_usize_Option_usize. postcondition_size_hint () self.iter result
         -> (forall s: Seq.seq t_T, i: MutBorrow.t t_Cloned_I. produces_Cloned_I self s i.current /\ completed_Cloned_I i
-            -> UInt64.t'int result.f0 <= len_T s)
+            -> UInt64.t'int result.f0 <= Seq.length s)
         /\ match result.f1 with
-          | Some r -> forall s: Seq.seq t_T, i: t_Cloned_I. produces_Cloned_I self s i -> len_T s <= UInt64.t'int r
+          | Some r -> forall s: Seq.seq t_T, i: t_Cloned_I. produces_Cloned_I self s i -> Seq.length s <= UInt64.t'int r
           | None -> true
           end)
 end

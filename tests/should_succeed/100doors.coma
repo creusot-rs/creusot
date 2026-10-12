@@ -7,9 +7,6 @@ module M_f
   
   type t_Vec_bool_Global
   
-  let len_bool (self: Seq.seq bool) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
   function view_Vec_bool_Global (self: t_Vec_bool_Global) : Seq.seq bool
@@ -25,7 +22,7 @@ module M_f
   
   let from_elem_bool (elem: bool) (n: UInt64.t) (return (x: t_Vec_bool_Global)) = any
     [ return (result: t_Vec_bool_Global) ->
-    {[@stop_split] [@expl:from_elem_bool ensures] ([@stop_split] [@expl:from_elem ensures #0] len_bool (view_Vec_bool_Global result)
+    {[@stop_split] [@expl:from_elem_bool ensures] ([@stop_split] [@expl:from_elem ensures #0] Seq.length (view_Vec_bool_Global result)
         = UInt64.t'int n)
       /\ ([@stop_split] [@expl:from_elem ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int n
         -> index_Vec_bool_Global result i = elem)}
@@ -124,8 +121,8 @@ module M_f
     {[@stop_split] [@expl:index_mut_Vec_bool_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_usize index (view_Vec_bool_Global self.current) result.current)
       /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_usize index (view_Vec_bool_Global self.final) result.final)
       /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_usize index (view_Vec_bool_Global self.current) (view_Vec_bool_Global self.final))
-      /\ ([@stop_split] [@expl:index_mut ensures #3] len_bool (view_Vec_bool_Global self.final)
-      = len_bool (view_Vec_bool_Global self.current))}
+      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_bool_Global self.final)
+      = Seq.length (view_Vec_bool_Global self.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_bool [@inline:trivial] (_1: MutBorrow.t bool) = _1.final = _1.current
@@ -148,7 +145,7 @@ module M_f
     | bb5 = bb5
       [ bb5 = {[@expl:for invariant] inv_Seq_usize produced}
         {[@expl:for invariant] produces_Range_usize iter_old produced iter}
-        {[@expl:loop invariant] len_bool (view_Vec_bool_Global door_open) = 100}
+        {[@expl:loop invariant] Seq.length (view_Vec_bool_Global door_open) = 100}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range_usize> {iter}
             (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_23 <- _bor ] [ &iter <- _bor.final ] s1)
@@ -166,7 +163,7 @@ module M_f
           | s5 = bb13 ]
         | bb13 = bb13
           [ bb13 = {[@expl:loop invariant #0] 1 <= UInt64.t'int door /\ UInt64.t'int door <= 100 + UInt64.t'int pass}
-            {[@expl:loop invariant #1] len_bool (view_Vec_bool_Global door_open) = 100}
+            {[@expl:loop invariant #1] Seq.length (view_Vec_bool_Global door_open) = 100}
             (! s0)
             [ s0 = [ &_39 <- UInt64.le door (100: UInt64.t) ] s1
             | s1 = any [ br0 -> {_39 = false} (! bb5) | br1 -> {_39} (! bb15) ] ]

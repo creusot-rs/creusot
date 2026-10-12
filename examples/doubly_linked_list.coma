@@ -32,19 +32,16 @@ module M_example
   
   meta "rewrite_def" predicate inv_refmut_List_i32
   
-  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function init_i32 (self: Seq.seq Int32.t) : Seq.seq Int32.t = Seq.([..]) self 0 (Seq.length self - 1)
   
   let pop_back_i32 (self: MutBorrow.t t_List_i32) (return (x: t_Option_i32)) =
   {[@stop_split] [@expl:pop_back 'self' type invariant] inv_refmut_List_i32 self}
     any
-    [ return (result: t_Option_i32) -> {[@stop_split] [@expl:pop_back ensures] if len_i32 (view_List_i32 self.current)
-      = 0 then
+    [ return (result: t_Option_i32) ->
+    {[@stop_split] [@expl:pop_back ensures] if Seq.length (view_List_i32 self.current) = 0 then
         result = None /\ self.final = self.current
       else
-        result = Some (Seq.get (view_List_i32 self.current) (len_i32 (view_List_i32 self.current) - 1))
+        result = Some (Seq.get (view_List_i32 self.current) (Seq.length (view_List_i32 self.current) - 1))
         /\ view_List_i32 self.final = init_i32 (view_List_i32 self.current)
       }
       (! return {result}) ]
@@ -76,8 +73,8 @@ module M_example
   let pop_front_i32 (self: MutBorrow.t t_List_i32) (return (x: t_Option_i32)) =
   {[@stop_split] [@expl:pop_front 'self' type invariant] inv_refmut_List_i32 self}
     any
-    [ return (result: t_Option_i32) -> {[@stop_split] [@expl:pop_front ensures] if len_i32 (view_List_i32 self.current)
-      = 0 then
+    [ return (result: t_Option_i32) ->
+    {[@stop_split] [@expl:pop_front ensures] if Seq.length (view_List_i32 self.current) = 0 then
         result = None /\ self.final = self.current
       else
         result = Some (Seq.get (view_List_i32 self.current) 0)
@@ -123,8 +120,8 @@ module M_example
   function pos_i32 (self: t_Cursor_i32) : int
   
   axiom pos_i32_spec: forall self: t_Cursor_i32 [pos_i32 self]. inv_Cursor_i32 self
-      -> gt_log_Int (len_i32 (view_List_i32 (list_i32 self).current)) 0
-      -> 0 <= pos_i32 self /\ pos_i32 self < len_i32 (view_List_i32 (list_i32 self).current)
+      -> gt_log_Int (Seq.length (view_List_i32 (list_i32 self).current)) 0
+      -> 0 <= pos_i32 self /\ pos_i32 self < Seq.length (view_List_i32 (list_i32 self).current)
   
   let cursor_front_i32 (self: MutBorrow.t t_List_i32) (return (x: t_Cursor_i32)) =
   {[@stop_split] [@expl:cursor_front 'self' type invariant] inv_refmut_List_i32 self}
@@ -149,7 +146,7 @@ module M_example
   {[@stop_split] [@expl:get 'self' type invariant] inv_ref_Cursor_i32 self}
     any
     [ return (result: t_Option_ref_i32) ->
-    {[@stop_split] [@expl:get ensures] if len_i32 (view_List_i32 (list_i32 self).current) = 0 then
+    {[@stop_split] [@expl:get ensures] if Seq.length (view_List_i32 (list_i32 self).current) = 0 then
         result = None'1
       else
         result = Some'1 (Seq.get (view_List_i32 (list_i32 self).current) (pos_i32 self))
@@ -193,7 +190,7 @@ module M_example
   {[@stop_split] [@expl:insert_after 'self' type invariant] inv_refmut_Cursor_i32 self}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:insert_after_i32 ensures] ([@stop_split] [@expl:insert_after ensures #0] if len_i32 (view_List_i32 (list_i32 self.current).current)
+    {[@stop_split] [@expl:insert_after_i32 ensures] ([@stop_split] [@expl:insert_after ensures #0] if Seq.length (view_List_i32 (list_i32 self.current).current)
         = 0 then
           pos_i32 self.final = 0 /\ view_List_i32 (list_i32 self.final).current = Seq.singleton value
         else
@@ -212,10 +209,11 @@ module M_example
     [ return (result: ()) ->
     {[@stop_split] [@expl:move_next_i32 ensures] ([@stop_split] [@expl:move_next ensures #0] list_i32 self.final
         = list_i32 self.current)
-      /\ ([@stop_split] [@expl:move_next ensures #1] if len_i32 (view_List_i32 (list_i32 self.current).current) = 0 then
+      /\ ([@stop_split] [@expl:move_next ensures #1] if Seq.length (view_List_i32 (list_i32 self.current).current)
+      = 0 then
         self.final = self.current
       else
-        if pos_i32 self.current = len_i32 (view_List_i32 (list_i32 self.current).current) - 1 then
+        if pos_i32 self.current = Seq.length (view_List_i32 (list_i32 self.current).current) - 1 then
           self.final = self.current
         else
           pos_i32 self.final = pos_i32 self.current + 1
@@ -227,7 +225,7 @@ module M_example
   {[@stop_split] [@expl:insert_before 'self' type invariant] inv_refmut_Cursor_i32 self}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:insert_before_i32 ensures] ([@stop_split] [@expl:insert_before ensures #0] if len_i32 (view_List_i32 (list_i32 self.current).current)
+    {[@stop_split] [@expl:insert_before_i32 ensures] ([@stop_split] [@expl:insert_before ensures #0] if Seq.length (view_List_i32 (list_i32 self.current).current)
         = 0 then
           pos_i32 self.final = 0 /\ view_List_i32 (list_i32 self.final).current = Seq.singleton value
         else
@@ -244,7 +242,8 @@ module M_example
     [ return (result: ()) ->
     {[@stop_split] [@expl:move_prev_i32 ensures] ([@stop_split] [@expl:move_prev ensures #0] list_i32 self.final
         = list_i32 self.current)
-      /\ ([@stop_split] [@expl:move_prev ensures #1] if len_i32 (view_List_i32 (list_i32 self.current).current) = 0 then
+      /\ ([@stop_split] [@expl:move_prev ensures #1] if Seq.length (view_List_i32 (list_i32 self.current).current)
+      = 0 then
         self.final = self.current
       else
         if pos_i32 self.current = 0 then self.final = self.current else pos_i32 self.final = pos_i32 self.current - 1
@@ -619,11 +618,30 @@ module M_imp__impl_Cursor_T__pos (* imp::Cursor<'a, T> *)
   
   type t_Node_T = { data: t_T; next: Opaque.ptr; prev: Opaque.ptr }
   
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
+    let len = Seq.length self.permissions in if len = 0 then
+      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
+    else
+      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
+      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
+      /\ (forall i: int. 0 <= i /\ i < len - 1
+        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
+        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
+  
+  
+  meta "rewrite_def" predicate invariant_List_T
+  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -668,39 +686,6 @@ module M_imp__impl_Cursor_T__pos (* imp::Cursor<'a, T> *)
   
   meta "rewrite_def" predicate inv_Seq_Perm_ptr_Node_T
   
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
-      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
-    else
-      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
-      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
-      /\ (forall i: int. 0 <= i /\ i < len - 1
-        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
-        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
-  
-  
-  meta "rewrite_def" predicate invariant_List_T
-  
   predicate invariant_Ghost_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
     inv_Seq_Perm_ptr_Node_T self
   
@@ -731,34 +716,6 @@ module M_imp__impl_Cursor_T__pos (* imp::Cursor<'a, T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -781,9 +738,9 @@ module M_imp__impl_Cursor_T__pos (* imp::Cursor<'a, T> *)
   
   predicate invariant_Cursor_T [@inline:trivial] (self: t_Cursor_T) =
     inv_refmut_List_T self.list
-    /\ (gt_log_Int (len_T (view_List_T (list_T self).current)) 0
+    /\ (gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
     -> 0 <= self.pos
-    /\ self.pos < len_T (view_List_T (list_T self).current)
+    /\ self.pos < Seq.length (view_List_T (list_T self).current)
     /\ self.current' = ward_ptr_Node_T (Seq.get self.list.current.permissions self.pos))
   
   meta "rewrite_def" predicate invariant_Cursor_T
@@ -805,8 +762,8 @@ module M_imp__impl_Cursor_T__pos (* imp::Cursor<'a, T> *)
   function pos_T (self: t_Cursor_T) : int
   
   goal vc_pos_T: inv_Cursor_T self
-    -> (let result = self.pos in [@stop_split] [@expl:pos ensures] gt_log_Int (len_T (view_List_T (list_T self).current)) 0
-    -> 0 <= result /\ result < len_T (view_List_T (list_T self).current))
+    -> (let result = self.pos in [@stop_split] [@expl:pos ensures] gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
+    -> 0 <= result /\ result < Seq.length (view_List_T (list_T self).current))
 end
 module M_imp__impl_Cursor_T_0__ghost_current_at_first (* imp::Cursor<'_, T> *)
   use creusot.prelude.MutBorrow
@@ -1023,26 +980,12 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_first (* imp::Cursor<'_, T> *)
   
   meta "rewrite_def" predicate resolve_refmut_Seq_Perm_ptr_Node_T
   
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
   
   meta "rewrite_def" function val_ptr_Node_T
   
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
+    let len = Seq.length self.permissions in if len = 0 then
       is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
     else
       ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
@@ -1076,34 +1019,6 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_first (* imp::Cursor<'_, T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -1126,9 +1041,9 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_first (* imp::Cursor<'_, T> *)
   
   predicate invariant_Cursor_T [@inline:trivial] (self: t_Cursor_T) =
     inv_refmut_List_T self.list
-    /\ (gt_log_Int (len_T (view_List_T (list_T self).current)) 0
+    /\ (gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
     -> 0 <= self.pos
-    /\ self.pos < len_T (view_List_T (list_T self).current)
+    /\ self.pos < Seq.length (view_List_T (list_T self).current)
     /\ self.current' = ward_ptr_Node_T (Seq.get self.list.current.permissions self.pos))
   
   meta "rewrite_def" predicate invariant_Cursor_T
@@ -1515,7 +1430,7 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_last (* imp::Cursor<'_, T> *)
   meta "rewrite_def" function val_ptr_Node_T
   
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
+    let len = Seq.length self.permissions in if len = 0 then
       is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
     else
       ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
@@ -1549,34 +1464,6 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_last (* imp::Cursor<'_, T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -1599,9 +1486,9 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_last (* imp::Cursor<'_, T> *)
   
   predicate invariant_Cursor_T [@inline:trivial] (self: t_Cursor_T) =
     inv_refmut_List_T self.list
-    /\ (gt_log_Int (len_T (view_List_T (list_T self).current)) 0
+    /\ (gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
     -> 0 <= self.pos
-    /\ self.pos < len_T (view_List_T (list_T self).current)
+    /\ self.pos < Seq.length (view_List_T (list_T self).current)
     /\ self.current' = ward_ptr_Node_T (Seq.get self.list.current.permissions self.pos))
   
   meta "rewrite_def" predicate invariant_Cursor_T
@@ -1734,7 +1621,7 @@ module M_imp__impl_Cursor_T_0__ghost_current_at_last (* imp::Cursor<'_, T> *)
     {[@stop_split] [@expl:ghost_current_at_last_T ensures] ([@stop_split] [@expl:ghost_current_at_last ensures #0] self.current
         = self.final)
       /\ ([@stop_split] [@expl:ghost_current_at_last ensures #1] self.current.pos
-      = len_Perm_ptr_Node_T self.current.list.current.permissions - 1)}
+      = Seq.length self.current.list.current.permissions - 1)}
       (! return {result}) ]
 end
 module M_imp__impl_Cursor_T_1__get (* imp::Cursor<'a, T> *)
@@ -1893,16 +1780,12 @@ module M_imp__impl_Cursor_T_1__get (* imp::Cursor<'a, T> *)
       /\ ([@stop_split] [@expl:as_ref ensures] result = val_unsized_ptr_Node_T own)}
       (! return {result}) ]
   
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
   
   meta "rewrite_def" function val_ptr_Node_T
   
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
+    let len = Seq.length self.permissions in if len = 0 then
       is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
     else
       ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
@@ -1936,34 +1819,6 @@ module M_imp__impl_Cursor_T_1__get (* imp::Cursor<'a, T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -1986,9 +1841,9 @@ module M_imp__impl_Cursor_T_1__get (* imp::Cursor<'a, T> *)
   
   predicate invariant_Cursor_T [@inline:trivial] (self: t_Cursor_T) =
     inv_refmut_List_T self.list
-    /\ (gt_log_Int (len_T (view_List_T (list_T self).current)) 0
+    /\ (gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
     -> 0 <= self.pos
-    /\ self.pos < len_T (view_List_T (list_T self).current)
+    /\ self.pos < Seq.length (view_List_T (list_T self).current)
     /\ self.current' = ward_ptr_Node_T (Seq.get self.list.current.permissions self.pos))
   
   meta "rewrite_def" predicate invariant_Cursor_T
@@ -2009,6 +1864,14 @@ module M_imp__impl_Cursor_T_1__get (* imp::Cursor<'a, T> *)
   
   meta "rewrite_def" predicate inv_ref_Cursor_T
   
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
   predicate inv_Option_ref_T (_1: t_Option_ref_T)
   
   axiom inv_axiom'3 [@rewrite]: forall _1: t_Option_ref_T [inv_Option_ref_T _1]. inv_Option_ref_T _1
@@ -2020,8 +1883,8 @@ module M_imp__impl_Cursor_T_1__get (* imp::Cursor<'a, T> *)
   function pos_T (self: t_Cursor_T) : int = self.pos
   
   axiom pos_T_spec: forall self: t_Cursor_T [pos_T self]. inv_Cursor_T self
-      -> gt_log_Int (len_T (view_List_T (list_T self).current)) 0
-      -> 0 <= pos_T self /\ pos_T self < len_T (view_List_T (list_T self).current)
+      -> gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
+      -> 0 <= pos_T self /\ pos_T self < Seq.length (view_List_T (list_T self).current)
   
   meta "compute_max_steps" 1000000
   
@@ -2055,7 +1918,7 @@ module M_imp__impl_Cursor_T_1__get (* imp::Cursor<'a, T> *)
     | & _19: t_Node_T = Any.any_l () ])
     [ return (result: t_Option_ref_T) ->
     {[@stop_split] [@expl:get_T ensures] ([@stop_split] [@expl:get result type invariant] inv_Option_ref_T result)
-      /\ ([@stop_split] [@expl:get ensures] if len_T (view_List_T (list_T self).current) = 0 then
+      /\ ([@stop_split] [@expl:get ensures] if Seq.length (view_List_T (list_T self).current) = 0 then
         result = None
       else
         result = Some (Seq.get (view_List_T (list_T self).current) (pos_T self))
@@ -2090,11 +1953,30 @@ module M_imp__impl_Cursor_T_1__get_mut (* imp::Cursor<'a, T> *)
   
   type t_Node_T = { data: t_T; next: Opaque.ptr; prev: Opaque.ptr }
   
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
+    let len = Seq.length self.permissions in if len = 0 then
+      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
+    else
+      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
+      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
+      /\ (forall i: int. 0 <= i /\ i < len - 1
+        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
+        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
+  
+  
+  meta "rewrite_def" predicate invariant_List_T
+  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -2139,39 +2021,6 @@ module M_imp__impl_Cursor_T_1__get_mut (* imp::Cursor<'a, T> *)
   
   meta "rewrite_def" predicate inv_Seq_Perm_ptr_Node_T
   
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
-      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
-    else
-      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
-      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
-      /\ (forall i: int. 0 <= i /\ i < len - 1
-        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
-        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
-  
-  
-  meta "rewrite_def" predicate invariant_List_T
-  
   predicate invariant_Ghost_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
     inv_Seq_Perm_ptr_Node_T self
   
@@ -2202,34 +2051,6 @@ module M_imp__impl_Cursor_T_1__get_mut (* imp::Cursor<'a, T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -2252,9 +2073,9 @@ module M_imp__impl_Cursor_T_1__get_mut (* imp::Cursor<'a, T> *)
   
   predicate invariant_Cursor_T [@inline:trivial] (self: t_Cursor_T) =
     inv_refmut_List_T self.list
-    /\ (gt_log_Int (len_T (view_List_T (list_T self).current)) 0
+    /\ (gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
     -> 0 <= self.pos
-    /\ self.pos < len_T (view_List_T (list_T self).current)
+    /\ self.pos < Seq.length (view_List_T (list_T self).current)
     /\ self.current' = ward_ptr_Node_T (Seq.get self.list.current.permissions self.pos))
   
   meta "rewrite_def" predicate invariant_Cursor_T
@@ -2424,8 +2245,8 @@ module M_imp__impl_Cursor_T_1__get_mut (* imp::Cursor<'a, T> *)
   function pos_T (self: t_Cursor_T) : int = self.pos
   
   axiom pos_T_spec: forall self: t_Cursor_T [pos_T self]. inv_Cursor_T self
-      -> gt_log_Int (len_T (view_List_T (list_T self).current)) 0
-      -> 0 <= pos_T self /\ pos_T self < len_T (view_List_T (list_T self).current)
+      -> gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
+      -> 0 <= pos_T self /\ pos_T self < Seq.length (view_List_T (list_T self).current)
   
   meta "compute_max_steps" 1000000
   
@@ -2523,13 +2344,14 @@ module M_imp__impl_Cursor_T_1__get_mut (* imp::Cursor<'a, T> *)
     [ return (result: t_Option_refmut_T) ->
     {[@stop_split] [@expl:get_mut_T ensures] ([@stop_split] [@expl:get_mut result type invariant] inv_Option_refmut_T result)
       /\ ([@stop_split] [@expl:get_mut ensures #0] match result with
-          | None -> len_T (view_Cursor_T self.current) = 0 /\ self.final = self.current
-          | Some res -> gt_log_Int (len_T (view_List_T (list_T self.current).current)) 0
-          /\ len_T (view_Cursor_T self.final) = len_T (view_List_T (list_T self.current).current)
+          | None -> Seq.length (view_Cursor_T self.current) = 0 /\ self.final = self.current
+          | Some res -> gt_log_Int (Seq.length (view_List_T (list_T self.current).current)) 0
+          /\ Seq.length (view_Cursor_T self.final) = Seq.length (view_List_T (list_T self.current).current)
           /\ pos_T self.final = pos_T self.current
           /\ res.current = Seq.get (view_List_T (list_T self.current).current) (pos_T self.current)
           /\ res.final = Seq.get (view_List_T (list_T self.final).current) (pos_T self.current)
-          /\ (forall i: int. 0 <= i /\ i < len_T (view_List_T (list_T self.current).current) /\ i <> pos_T self.current
+          /\ (forall i: int. 0 <= i
+              /\ i < Seq.length (view_List_T (list_T self.current).current) /\ i <> pos_T self.current
             -> Seq.get (view_List_T (list_T self.final).current) i
             = Seq.get (view_List_T (list_T self.current).current) i)
           end)
@@ -2717,22 +2539,8 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
   let new_Int (x: int) (return (x'0: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
+    let len = Seq.length self.permissions in if len = 0 then
       is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
     else
       ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
@@ -2766,34 +2574,6 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -2816,9 +2596,9 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
   
   predicate invariant_Cursor_T [@inline:trivial] (self: t_Cursor_T) =
     inv_refmut_List_T self.list
-    /\ (gt_log_Int (len_T (view_List_T (list_T self).current)) 0
+    /\ (gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
     -> 0 <= self.pos
-    /\ self.pos < len_T (view_List_T (list_T self).current)
+    /\ self.pos < Seq.length (view_List_T (list_T self).current)
     /\ self.current' = ward_ptr_Node_T (Seq.get self.list.current.permissions self.pos))
   
   meta "rewrite_def" predicate invariant_Cursor_T
@@ -2853,7 +2633,7 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
     {[@stop_split] [@expl:ghost_current_at_last_T ensures] ([@stop_split] [@expl:ghost_current_at_last ensures #0] self.current
         = self.final)
       /\ ([@stop_split] [@expl:ghost_current_at_last ensures #1] self.current.pos
-      = len_Perm_ptr_Node_T self.current.list.current.permissions - 1)}
+      = Seq.length self.current.list.current.permissions - 1)}
       (! return {result}) ]
   
   let cast_mut_Node_T (self: Opaque.ptr) (return (x: Opaque.ptr)) = any
@@ -2984,8 +2764,8 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
   function pos_T (self: t_Cursor_T) : int = self.pos
   
   axiom pos_T_spec: forall self: t_Cursor_T [pos_T self]. inv_Cursor_T self
-      -> gt_log_Int (len_T (view_List_T (list_T self).current)) 0
-      -> 0 <= pos_T self /\ pos_T self < len_T (view_List_T (list_T self).current)
+      -> gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
+      -> 0 <= pos_T self /\ pos_T self < Seq.length (view_List_T (list_T self).current)
   
   function add_at_T (self: Seq.seq t_T) (position: int) (value: t_T) : Seq.seq t_T
   
@@ -3071,12 +2851,7 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
       | s4 = new_Node_T {_39} (fun (_x: tup2_ptr_Node_T_Ghost_Perm_ptr_Node_T) -> [ &_38 <- _x ] s5)
       | s5 = [ &ptr'0 <- _38.f0 ] s6
       | s6 = [ &perm'0 <- _38.f1 ] s7
-      | s7 = any
-        [ any_ (_dest: int) ->
-        (! -{([@stop_split] [@expl:len ensures] len_Perm_ptr_Node_T self.current.list.current.permissions
-            = Seq.length self.current.list.current.permissions)
-          /\ _dest = len_Perm_ptr_Node_T self.current.list.current.permissions - 1}-
-          [ &last <- _dest ] s8) ] [ _ck -> (! any) ]
+      | s7 = [ &last <- Seq.length self.current.list.current.permissions - 1 ] s8
       | s8 = cast_mut_Node_T {self.current.current'} (fun (_x: Opaque.ptr) -> [ &_48 <- _x ] s9)
       | s9 = MutBorrow.borrow_mut <Seq.seq t_Perm_ptr_Node_T> {self.current.list.current.permissions}
           (fun (_bor: MutBorrow.t (Seq.seq t_Perm_ptr_Node_T)) ->
@@ -3399,7 +3174,7 @@ module M_imp__impl_Cursor_T_1__insert_after (* imp::Cursor<'a, T> *)
     | & _129: int = Any.any_l ()
     | & _130: t_Perm_ptr_Node_T = Any.any_l () ])
     [ return (result: ()) ->
-    {[@stop_split] [@expl:insert_after_T ensures] ([@stop_split] [@expl:insert_after ensures #0] if len_T (view_List_T (list_T self.current).current)
+    {[@stop_split] [@expl:insert_after_T ensures] ([@stop_split] [@expl:insert_after ensures #0] if Seq.length (view_List_T (list_T self.current).current)
         = 0 then
           pos_T self.final = 0 /\ view_List_T (list_T self.final).current = Seq.singleton value
         else
@@ -3591,22 +3366,8 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
   let new_Int (x: int) (return (x'0: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
+    let len = Seq.length self.permissions in if len = 0 then
       is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
     else
       ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
@@ -3640,34 +3401,6 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -3690,9 +3423,9 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
   
   predicate invariant_Cursor_T [@inline:trivial] (self: t_Cursor_T) =
     inv_refmut_List_T self.list
-    /\ (gt_log_Int (len_T (view_List_T (list_T self).current)) 0
+    /\ (gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
     -> 0 <= self.pos
-    /\ self.pos < len_T (view_List_T (list_T self).current)
+    /\ self.pos < Seq.length (view_List_T (list_T self).current)
     /\ self.current' = ward_ptr_Node_T (Seq.get self.list.current.permissions self.pos))
   
   meta "rewrite_def" predicate invariant_Cursor_T
@@ -3863,8 +3596,8 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
   function pos_T (self: t_Cursor_T) : int = self.pos
   
   axiom pos_T_spec: forall self: t_Cursor_T [pos_T self]. inv_Cursor_T self
-      -> gt_log_Int (len_T (view_List_T (list_T self).current)) 0
-      -> 0 <= pos_T self /\ pos_T self < len_T (view_List_T (list_T self).current)
+      -> gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
+      -> 0 <= pos_T self /\ pos_T self < Seq.length (view_List_T (list_T self).current)
   
   function add_at_T (self: Seq.seq t_T) (position: int) (value: t_T) : Seq.seq t_T
   
@@ -4267,7 +4000,7 @@ module M_imp__impl_Cursor_T_1__insert_before (* imp::Cursor<'a, T> *)
     | & _121: int = Any.any_l ()
     | & _123: t_Perm_ptr_Node_T = Any.any_l () ])
     [ return (result: ()) ->
-    {[@stop_split] [@expl:insert_before_T ensures] ([@stop_split] [@expl:insert_before ensures #0] if len_T (view_List_T (list_T self.current).current)
+    {[@stop_split] [@expl:insert_before_T ensures] ([@stop_split] [@expl:insert_before ensures #0] if Seq.length (view_List_T (list_T self.current).current)
         = 0 then
           pos_T self.final = 0 /\ view_List_T (list_T self.final).current = Seq.singleton value
         else
@@ -4307,11 +4040,30 @@ module M_imp__impl_Cursor_T_1__move_next (* imp::Cursor<'a, T> *)
   
   type t_Node_T = { data: t_T; next: Opaque.ptr; prev: Opaque.ptr }
   
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
+    let len = Seq.length self.permissions in if len = 0 then
+      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
+    else
+      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
+      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
+      /\ (forall i: int. 0 <= i /\ i < len - 1
+        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
+        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
+  
+  
+  meta "rewrite_def" predicate invariant_List_T
+  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -4356,39 +4108,6 @@ module M_imp__impl_Cursor_T_1__move_next (* imp::Cursor<'a, T> *)
   
   meta "rewrite_def" predicate inv_Seq_Perm_ptr_Node_T
   
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
-      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
-    else
-      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
-      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
-      /\ (forall i: int. 0 <= i /\ i < len - 1
-        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
-        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
-  
-  
-  meta "rewrite_def" predicate invariant_List_T
-  
   predicate invariant_Ghost_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
     inv_Seq_Perm_ptr_Node_T self
   
@@ -4419,34 +4138,6 @@ module M_imp__impl_Cursor_T_1__move_next (* imp::Cursor<'a, T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -4469,9 +4160,9 @@ module M_imp__impl_Cursor_T_1__move_next (* imp::Cursor<'a, T> *)
   
   predicate invariant_Cursor_T [@inline:trivial] (self: t_Cursor_T) =
     inv_refmut_List_T self.list
-    /\ (gt_log_Int (len_T (view_List_T (list_T self).current)) 0
+    /\ (gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
     -> 0 <= self.pos
-    /\ self.pos < len_T (view_List_T (list_T self).current)
+    /\ self.pos < Seq.length (view_List_T (list_T self).current)
     /\ self.current' = ward_ptr_Node_T (Seq.get self.list.current.permissions self.pos))
   
   meta "rewrite_def" predicate invariant_Cursor_T
@@ -4506,7 +4197,7 @@ module M_imp__impl_Cursor_T_1__move_next (* imp::Cursor<'a, T> *)
     {[@stop_split] [@expl:ghost_current_at_last_T ensures] ([@stop_split] [@expl:ghost_current_at_last ensures #0] self.current
         = self.final)
       /\ ([@stop_split] [@expl:ghost_current_at_last ensures #1] self.current.pos
-      = len_Perm_ptr_Node_T self.current.list.current.permissions - 1)}
+      = Seq.length self.current.list.current.permissions - 1)}
       (! return {result}) ]
   
   predicate invariant_ref_Ghost_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
@@ -4518,6 +4209,16 @@ module M_imp__impl_Cursor_T_1__move_next (* imp::Cursor<'a, T> *)
     invariant_ref_Ghost_Seq_Perm_ptr_Node_T _1
   
   meta "rewrite_def" predicate inv_ref_Ghost_Seq_Perm_ptr_Node_T
+  
+  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
+    inv_Seq_Perm_ptr_Node_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
+  
+  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
+    invariant_ref_Seq_Perm_ptr_Node_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
   
   let deref_Ghost_Seq_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: Seq.seq t_Perm_ptr_Node_T)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_Seq_Perm_ptr_Node_T self}
@@ -4581,8 +4282,8 @@ module M_imp__impl_Cursor_T_1__move_next (* imp::Cursor<'a, T> *)
   function pos_T (self: t_Cursor_T) : int = self.pos
   
   axiom pos_T_spec: forall self: t_Cursor_T [pos_T self]. inv_Cursor_T self
-      -> gt_log_Int (len_T (view_List_T (list_T self).current)) 0
-      -> 0 <= pos_T self /\ pos_T self < len_T (view_List_T (list_T self).current)
+      -> gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
+      -> 0 <= pos_T self /\ pos_T self < Seq.length (view_List_T (list_T self).current)
   
   meta "compute_max_steps" 1000000
   
@@ -4651,10 +4352,10 @@ module M_imp__impl_Cursor_T_1__move_next (* imp::Cursor<'a, T> *)
     [ return (result: ()) ->
     {[@stop_split] [@expl:move_next_T ensures] ([@stop_split] [@expl:move_next ensures #0] list_T self.final
         = list_T self.current)
-      /\ ([@stop_split] [@expl:move_next ensures #1] if len_T (view_List_T (list_T self.current).current) = 0 then
+      /\ ([@stop_split] [@expl:move_next ensures #1] if Seq.length (view_List_T (list_T self.current).current) = 0 then
         self.final = self.current
       else
-        if pos_T self.current = len_T (view_List_T (list_T self.current).current) - 1 then
+        if pos_T self.current = Seq.length (view_List_T (list_T self.current).current) - 1 then
           self.final = self.current
         else
           pos_T self.final = pos_T self.current + 1
@@ -4691,11 +4392,30 @@ module M_imp__impl_Cursor_T_1__move_prev (* imp::Cursor<'a, T> *)
   
   type t_Node_T = { data: t_T; next: Opaque.ptr; prev: Opaque.ptr }
   
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
+    let len = Seq.length self.permissions in if len = 0 then
+      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
+    else
+      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
+      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
+      /\ (forall i: int. 0 <= i /\ i < len - 1
+        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
+        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
+  
+  
+  meta "rewrite_def" predicate invariant_List_T
+  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -4740,39 +4460,6 @@ module M_imp__impl_Cursor_T_1__move_prev (* imp::Cursor<'a, T> *)
   
   meta "rewrite_def" predicate inv_Seq_Perm_ptr_Node_T
   
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
-      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
-    else
-      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
-      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
-      /\ (forall i: int. 0 <= i /\ i < len - 1
-        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
-        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
-  
-  
-  meta "rewrite_def" predicate invariant_List_T
-  
   predicate invariant_Ghost_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
     inv_Seq_Perm_ptr_Node_T self
   
@@ -4803,34 +4490,6 @@ module M_imp__impl_Cursor_T_1__move_prev (* imp::Cursor<'a, T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -4853,9 +4512,9 @@ module M_imp__impl_Cursor_T_1__move_prev (* imp::Cursor<'a, T> *)
   
   predicate invariant_Cursor_T [@inline:trivial] (self: t_Cursor_T) =
     inv_refmut_List_T self.list
-    /\ (gt_log_Int (len_T (view_List_T (list_T self).current)) 0
+    /\ (gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
     -> 0 <= self.pos
-    /\ self.pos < len_T (view_List_T (list_T self).current)
+    /\ self.pos < Seq.length (view_List_T (list_T self).current)
     /\ self.current' = ward_ptr_Node_T (Seq.get self.list.current.permissions self.pos))
   
   meta "rewrite_def" predicate invariant_Cursor_T
@@ -4901,6 +4560,16 @@ module M_imp__impl_Cursor_T_1__move_prev (* imp::Cursor<'a, T> *)
     invariant_ref_Ghost_Seq_Perm_ptr_Node_T _1
   
   meta "rewrite_def" predicate inv_ref_Ghost_Seq_Perm_ptr_Node_T
+  
+  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
+    inv_Seq_Perm_ptr_Node_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
+  
+  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
+    invariant_ref_Seq_Perm_ptr_Node_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
   
   let deref_Ghost_Seq_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: Seq.seq t_Perm_ptr_Node_T)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_Seq_Perm_ptr_Node_T self}
@@ -4964,8 +4633,8 @@ module M_imp__impl_Cursor_T_1__move_prev (* imp::Cursor<'a, T> *)
   function pos_T (self: t_Cursor_T) : int = self.pos
   
   axiom pos_T_spec: forall self: t_Cursor_T [pos_T self]. inv_Cursor_T self
-      -> gt_log_Int (len_T (view_List_T (list_T self).current)) 0
-      -> 0 <= pos_T self /\ pos_T self < len_T (view_List_T (list_T self).current)
+      -> gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
+      -> 0 <= pos_T self /\ pos_T self < Seq.length (view_List_T (list_T self).current)
   
   meta "compute_max_steps" 1000000
   
@@ -5034,7 +4703,7 @@ module M_imp__impl_Cursor_T_1__move_prev (* imp::Cursor<'a, T> *)
     [ return (result: ()) ->
     {[@stop_split] [@expl:move_prev_T ensures] ([@stop_split] [@expl:move_prev ensures #0] list_T self.final
         = list_T self.current)
-      /\ ([@stop_split] [@expl:move_prev ensures #1] if len_T (view_List_T (list_T self.current).current) = 0 then
+      /\ ([@stop_split] [@expl:move_prev ensures #1] if Seq.length (view_List_T (list_T self.current).current) = 0 then
         self.final = self.current
       else
         if pos_T self.current = 0 then self.final = self.current else pos_T self.final = pos_T self.current - 1
@@ -5067,11 +4736,30 @@ module M_imp__impl_Drop_for_List_T__drop (* <imp::List<T> as std::ops::Drop> *)
   
   type t_Node_T = { data: t_T; next: Opaque.ptr; prev: Opaque.ptr }
   
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
+    let len = Seq.length self.permissions in if len = 0 then
+      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
+    else
+      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
+      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
+      /\ (forall i: int. 0 <= i /\ i < len - 1
+        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
+        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
+  
+  
+  meta "rewrite_def" predicate invariant_List_T
+  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -5116,39 +4804,6 @@ module M_imp__impl_Drop_for_List_T__drop (* <imp::List<T> as std::ops::Drop> *)
   
   meta "rewrite_def" predicate inv_Seq_Perm_ptr_Node_T
   
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
-      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
-    else
-      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
-      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
-      /\ (forall i: int. 0 <= i /\ i < len - 1
-        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
-        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
-  
-  
-  meta "rewrite_def" predicate invariant_List_T
-  
   predicate invariant_Ghost_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
     inv_Seq_Perm_ptr_Node_T self
   
@@ -5183,34 +4838,6 @@ module M_imp__impl_Drop_for_List_T__drop (* <imp::List<T> as std::ops::Drop> *)
         | Some f0 -> inv_T f0
         end
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -5238,7 +4865,7 @@ module M_imp__impl_Drop_for_List_T__drop (* <imp::List<T> as std::ops::Drop> *)
     any
     [ return (result: t_Option_T) ->
     {[@stop_split] [@expl:pop_front_T ensures] ([@stop_split] [@expl:pop_front result type invariant] inv_Option_T result)
-      /\ ([@stop_split] [@expl:pop_front ensures] if len_T (view_List_T self.current) = 0 then
+      /\ ([@stop_split] [@expl:pop_front ensures] if Seq.length (view_List_T self.current) = 0 then
         result = None /\ self.final = self.current
       else
         result = Some (Seq.get (view_List_T self.current) 0)
@@ -5318,11 +4945,30 @@ module M_imp__impl_Invariant_for_Cursor_T__invariant (* <imp::Cursor<'a, T> as c
   
   type t_Node_T = { data: t_T; next: Opaque.ptr; prev: Opaque.ptr }
   
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
+    let len = Seq.length self.permissions in if len = 0 then
+      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
+    else
+      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
+      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
+      /\ (forall i: int. 0 <= i /\ i < len - 1
+        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
+        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
+  
+  
+  meta "rewrite_def" predicate invariant_List_T
+  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -5366,39 +5012,6 @@ module M_imp__impl_Invariant_for_Cursor_T__invariant (* <imp::Cursor<'a, T> as c
   predicate inv_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) = invariant_Seq_Perm_ptr_Node_T _1
   
   meta "rewrite_def" predicate inv_Seq_Perm_ptr_Node_T
-  
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
-      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
-    else
-      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
-      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
-      /\ (forall i: int. 0 <= i /\ i < len - 1
-        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
-        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
-  
-  
-  meta "rewrite_def" predicate invariant_List_T
   
   predicate invariant_Ghost_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
     inv_Seq_Perm_ptr_Node_T self
@@ -5446,34 +5059,6 @@ module M_imp__impl_Invariant_for_Cursor_T__invariant (* <imp::Cursor<'a, T> as c
   function view_List_T (self: t_List_T) : Seq.seq t_T =
     map_Perm_ptr_Node_T self.permissions (fun (p: t_Perm_ptr_Node_T) -> (val_ptr_Node_T p).data)
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
   meta "rewrite_def" predicate gt_log_Int
@@ -5486,28 +5071,12 @@ module M_imp__impl_Invariant_for_Cursor_T__invariant (* <imp::Cursor<'a, T> as c
   
   predicate invariant_Cursor_T (self: t_Cursor_T)
   
-  goal vc_invariant_Cursor_T: if inv_refmut_List_T self.list then
-      ([@stop_split] [@expl:len ensures] len_T (view_List_T (list_T self).current)
-        = Seq.length (view_List_T (list_T self).current))
-      -> (if gt_log_Int (len_T (view_List_T (list_T self).current)) 0 then
-        if 0 <= self.pos then
-          ([@stop_split] [@expl:len ensures] len_T (view_List_T (list_T self).current)
-            = Seq.length (view_List_T (list_T self).current))
-          -> (if self.pos < len_T (view_List_T (list_T self).current) then
-            [@stop_split] [@expl:invariant ensures] self.current'
-              = ward_ptr_Node_T (Seq.get self.list.current.permissions self.pos) -> inv_refmut_List_T (list_T self)
-          else
-            [@stop_split] [@expl:invariant ensures] false -> inv_refmut_List_T (list_T self)
-          )
-        else
-          [@stop_split] [@expl:invariant ensures] false -> inv_refmut_List_T (list_T self)
-      
-      else
-        [@stop_split] [@expl:invariant ensures] true -> inv_refmut_List_T (list_T self)
-      )
-    else
-      [@stop_split] [@expl:invariant ensures] false -> inv_refmut_List_T (list_T self)
-
+  goal vc_invariant_Cursor_T: [@stop_split] [@expl:invariant ensures] inv_refmut_List_T self.list
+      /\ (gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
+      -> 0 <= self.pos
+      /\ self.pos < Seq.length (view_List_T (list_T self).current)
+      /\ self.current' = ward_ptr_Node_T (Seq.get self.list.current.permissions self.pos))
+    -> inv_refmut_List_T (list_T self)
 end
 module M_imp__impl_List_T__cursor_front (* imp::List<T> *)
   use seq.Seq
@@ -5532,11 +5101,30 @@ module M_imp__impl_List_T__cursor_front (* imp::List<T> *)
   
   type t_Node_T = { data: t_T; next: Opaque.ptr; prev: Opaque.ptr }
   
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
+    let len = Seq.length self.permissions in if len = 0 then
+      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
+    else
+      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
+      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
+      /\ (forall i: int. 0 <= i /\ i < len - 1
+        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
+        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
+  
+  
+  meta "rewrite_def" predicate invariant_List_T
+  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -5580,39 +5168,6 @@ module M_imp__impl_List_T__cursor_front (* imp::List<T> *)
   predicate inv_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) = invariant_Seq_Perm_ptr_Node_T _1
   
   meta "rewrite_def" predicate inv_Seq_Perm_ptr_Node_T
-  
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
-      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
-    else
-      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
-      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
-      /\ (forall i: int. 0 <= i /\ i < len - 1
-        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
-        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
-  
-  
-  meta "rewrite_def" predicate invariant_List_T
   
   predicate invariant_Ghost_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
     inv_Seq_Perm_ptr_Node_T self
@@ -5659,34 +5214,6 @@ module M_imp__impl_List_T__cursor_front (* imp::List<T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -5709,9 +5236,9 @@ module M_imp__impl_List_T__cursor_front (* imp::List<T> *)
   
   predicate invariant_Cursor_T [@inline:trivial] (self: t_Cursor_T) =
     inv_refmut_List_T self.list
-    /\ (gt_log_Int (len_T (view_List_T (list_T self).current)) 0
+    /\ (gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
     -> 0 <= self.pos
-    /\ self.pos < len_T (view_List_T (list_T self).current)
+    /\ self.pos < Seq.length (view_List_T (list_T self).current)
     /\ self.current' = ward_ptr_Node_T (Seq.get self.list.current.permissions self.pos))
   
   meta "rewrite_def" predicate invariant_Cursor_T
@@ -5727,8 +5254,8 @@ module M_imp__impl_List_T__cursor_front (* imp::List<T> *)
   function pos_T (self: t_Cursor_T) : int = self.pos
   
   axiom pos_T_spec: forall self: t_Cursor_T [pos_T self]. inv_Cursor_T self
-      -> gt_log_Int (len_T (view_List_T (list_T self).current)) 0
-      -> 0 <= pos_T self /\ pos_T self < len_T (view_List_T (list_T self).current)
+      -> gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
+      -> 0 <= pos_T self /\ pos_T self < Seq.length (view_List_T (list_T self).current)
   
   meta "compute_max_steps" 1000000
   
@@ -5895,7 +5422,7 @@ module M_imp__impl_List_T__cursor_tail (* imp::List<T> *)
   meta "rewrite_def" function val_ptr_Node_T
   
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
+    let len = Seq.length self.permissions in if len = 0 then
       is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
     else
       ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
@@ -5935,34 +5462,6 @@ module M_imp__impl_List_T__cursor_tail (* imp::List<T> *)
   
   meta "rewrite_def" predicate gt_log_Int
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -5985,9 +5484,9 @@ module M_imp__impl_List_T__cursor_tail (* imp::List<T> *)
   
   predicate invariant_Cursor_T [@inline:trivial] (self: t_Cursor_T) =
     inv_refmut_List_T self.list
-    /\ (gt_log_Int (len_T (view_List_T (list_T self).current)) 0
+    /\ (gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
     -> 0 <= self.pos
-    /\ self.pos < len_T (view_List_T (list_T self).current)
+    /\ self.pos < Seq.length (view_List_T (list_T self).current)
     /\ self.current' = ward_ptr_Node_T (Seq.get self.list.current.permissions self.pos))
   
   meta "rewrite_def" predicate invariant_Cursor_T
@@ -6003,8 +5502,8 @@ module M_imp__impl_List_T__cursor_tail (* imp::List<T> *)
   function pos_T (self: t_Cursor_T) : int = self.pos
   
   axiom pos_T_spec: forall self: t_Cursor_T [pos_T self]. inv_Cursor_T self
-      -> gt_log_Int (len_T (view_List_T (list_T self).current)) 0
-      -> 0 <= pos_T self /\ pos_T self < len_T (view_List_T (list_T self).current)
+      -> gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
+      -> 0 <= pos_T self /\ pos_T self < Seq.length (view_List_T (list_T self).current)
   
   meta "compute_max_steps" 1000000
   
@@ -6044,7 +5543,7 @@ module M_imp__impl_List_T__cursor_tail (* imp::List<T> *)
     [ return (result: t_Cursor_T) ->
     {[@stop_split] [@expl:cursor_tail_T ensures] ([@stop_split] [@expl:cursor_tail result type invariant] inv_Cursor_T result)
       /\ ([@stop_split] [@expl:cursor_tail ensures #0] list_T result = self)
-      /\ ([@stop_split] [@expl:cursor_tail ensures #1] pos_T result = len_T (view_List_T self.current) - 1)}
+      /\ ([@stop_split] [@expl:cursor_tail ensures #1] pos_T result = Seq.length (view_List_T self.current) - 1)}
       (! return {result}) ]
 end
 module M_imp__impl_List_T__get_head (* imp::List<T> *)
@@ -6204,16 +5703,12 @@ module M_imp__impl_List_T__get_head (* imp::List<T> *)
       /\ ([@stop_split] [@expl:as_ref ensures] result = val_unsized_ptr_Node_T own)}
       (! return {result}) ]
   
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
   
   meta "rewrite_def" function val_ptr_Node_T
   
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
+    let len = Seq.length self.permissions in if len = 0 then
       is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
     else
       ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
@@ -6255,26 +5750,6 @@ module M_imp__impl_List_T__get_head (* imp::List<T> *)
         | None -> true
         | Some f0 -> inv_ref_T f0
         end
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
@@ -6332,7 +5807,7 @@ module M_imp__impl_List_T__get_head (* imp::List<T> *)
     | & _20: int = Any.any_l () ])
     [ return (result: t_Option_ref_T) ->
     {[@stop_split] [@expl:get_head_T ensures] ([@stop_split] [@expl:get_head result type invariant] inv_Option_ref_T result)
-      /\ ([@stop_split] [@expl:get_head ensures] if len_T (view_List_T self) = 0 then
+      /\ ([@stop_split] [@expl:get_head ensures] if Seq.length (view_List_T self) = 0 then
         result = None
       else
         result = Some (Seq.get (view_List_T self) 0)
@@ -6366,11 +5841,30 @@ module M_imp__impl_List_T__get_head_mut (* imp::List<T> *)
   
   type t_Node_T = { data: t_T; next: Opaque.ptr; prev: Opaque.ptr }
   
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
+    let len = Seq.length self.permissions in if len = 0 then
+      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
+    else
+      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
+      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
+      /\ (forall i: int. 0 <= i /\ i < len - 1
+        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
+        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
+  
+  
+  meta "rewrite_def" predicate invariant_List_T
+  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -6414,39 +5908,6 @@ module M_imp__impl_List_T__get_head_mut (* imp::List<T> *)
   predicate inv_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) = invariant_Seq_Perm_ptr_Node_T _1
   
   meta "rewrite_def" predicate inv_Seq_Perm_ptr_Node_T
-  
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
-      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
-    else
-      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
-      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
-      /\ (forall i: int. 0 <= i /\ i < len - 1
-        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
-        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
-  
-  
-  meta "rewrite_def" predicate invariant_List_T
   
   predicate invariant_Ghost_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
     inv_Seq_Perm_ptr_Node_T self
@@ -6618,34 +6079,6 @@ module M_imp__impl_List_T__get_head_mut (* imp::List<T> *)
         | Some f0 -> inv_refmut_T f0
         end
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -6776,12 +6209,12 @@ module M_imp__impl_List_T__get_head_mut (* imp::List<T> *)
     [ return (result: t_Option_refmut_T) ->
     {[@stop_split] [@expl:get_head_mut_T ensures] ([@stop_split] [@expl:get_head_mut result type invariant] inv_Option_refmut_T result)
       /\ ([@stop_split] [@expl:get_head_mut ensures] match result with
-        | None -> len_T (view_List_T self.current) = 0 /\ self.current = self.final
-        | Some r -> gt_log_Int (len_T (view_List_T self.current)) 0
-        /\ len_T (view_List_T self.current) = len_T (view_List_T self.final)
+        | None -> Seq.length (view_List_T self.current) = 0 /\ self.current = self.final
+        | Some r -> gt_log_Int (Seq.length (view_List_T self.current)) 0
+        /\ Seq.length (view_List_T self.current) = Seq.length (view_List_T self.final)
         /\ Seq.get (view_List_T self.current) 0 = r.current
         /\ Seq.get (view_List_T self.final) 0 = r.final
-        /\ (forall i: int. 0 < i /\ i < len_T (view_List_T self.current)
+        /\ (forall i: int. 0 < i /\ i < Seq.length (view_List_T self.current)
           -> Seq.get (view_List_T self.current) i = Seq.get (view_List_T self.final) i)
         end)}
       (! return {result}) ]
@@ -6955,7 +6388,7 @@ module M_imp__impl_List_T__get_tail (* imp::List<T> *)
   meta "rewrite_def" function val_ptr_Node_T
   
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
+    let len = Seq.length self.permissions in if len = 0 then
       is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
     else
       ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
@@ -6997,26 +6430,6 @@ module M_imp__impl_List_T__get_tail (* imp::List<T> *)
         | None -> true
         | Some f0 -> inv_ref_T f0
         end
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
@@ -7081,10 +6494,10 @@ module M_imp__impl_List_T__get_tail (* imp::List<T> *)
     | & _25: int = Any.any_l () ])
     [ return (result: t_Option_ref_T) ->
     {[@stop_split] [@expl:get_tail_T ensures] ([@stop_split] [@expl:get_tail result type invariant] inv_Option_ref_T result)
-      /\ ([@stop_split] [@expl:get_tail ensures] if len_T (view_List_T self) = 0 then
+      /\ ([@stop_split] [@expl:get_tail ensures] if Seq.length (view_List_T self) = 0 then
         result = None
       else
-        result = Some (Seq.get (view_List_T self) (len_T (view_List_T self) - 1))
+        result = Some (Seq.get (view_List_T self) (Seq.length (view_List_T self) - 1))
       )}
       (! return {result}) ]
 end
@@ -7115,11 +6528,30 @@ module M_imp__impl_List_T__get_tail_mut (* imp::List<T> *)
   
   type t_Node_T = { data: t_T; next: Opaque.ptr; prev: Opaque.ptr }
   
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
+    let len = Seq.length self.permissions in if len = 0 then
+      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
+    else
+      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
+      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
+      /\ (forall i: int. 0 <= i /\ i < len - 1
+        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
+        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
+  
+  
+  meta "rewrite_def" predicate invariant_List_T
+  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -7164,39 +6596,6 @@ module M_imp__impl_List_T__get_tail_mut (* imp::List<T> *)
   
   meta "rewrite_def" predicate inv_Seq_Perm_ptr_Node_T
   
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
-      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
-    else
-      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
-      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
-      /\ (forall i: int. 0 <= i /\ i < len - 1
-        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
-        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
-  
-  
-  meta "rewrite_def" predicate invariant_List_T
-  
   predicate invariant_Ghost_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
     inv_Seq_Perm_ptr_Node_T self
   
@@ -7240,6 +6639,16 @@ module M_imp__impl_List_T__get_tail_mut (* imp::List<T> *)
   
   meta "rewrite_def" predicate inv_ref_Ghost_Seq_Perm_ptr_Node_T
   
+  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
+    inv_Seq_Perm_ptr_Node_T self
+  
+  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
+  
+  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
+    invariant_ref_Seq_Perm_ptr_Node_T _1
+  
+  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
+  
   let deref_Ghost_Seq_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: Seq.seq t_Perm_ptr_Node_T)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Ghost_Seq_Perm_ptr_Node_T self}
     any
@@ -7247,6 +6656,10 @@ module M_imp__impl_List_T__get_tail_mut (* imp::List<T> *)
     {[@stop_split] [@expl:deref_Ghost_Seq_Perm_ptr_Node_T ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_Seq_Perm_ptr_Node_T result)
       /\ ([@stop_split] [@expl:deref ensures] result = self)}
       (! return {result}) ]
+  
+  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
+  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
+    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   let new (value: Int128.t) (return (x: int)) = any
     [ return (result: int) -> {[@stop_split] [@expl:new ensures] result = Int128.to_int value} (! return {result}) ]
@@ -7388,34 +6801,6 @@ module M_imp__impl_List_T__get_tail_mut (* imp::List<T> *)
         | Some f0 -> inv_refmut_T f0
         end
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -7553,12 +6938,12 @@ module M_imp__impl_List_T__get_tail_mut (* imp::List<T> *)
     [ return (result: t_Option_refmut_T) ->
     {[@stop_split] [@expl:get_tail_mut_T ensures] ([@stop_split] [@expl:get_tail_mut result type invariant] inv_Option_refmut_T result)
       /\ ([@stop_split] [@expl:get_tail_mut ensures] match result with
-        | None -> len_T (view_List_T self.current) = 0 /\ self.current = self.final
-        | Some r -> let len = len_T (view_List_T self.current) in gt_log_Int len 0
-        /\ len = len_T (view_List_T self.final)
+        | None -> Seq.length (view_List_T self.current) = 0 /\ self.current = self.final
+        | Some r -> let len = Seq.length (view_List_T self.current) in gt_log_Int len 0
+        /\ len = Seq.length (view_List_T self.final)
         /\ Seq.get (view_List_T self.current) (len - 1) = r.current
         /\ Seq.get (view_List_T self.final) (len - 1) = r.final
-        /\ (forall i: int. 0 <= i /\ i < len_T (view_List_T self.current) - 1
+        /\ (forall i: int. 0 <= i /\ i < Seq.length (view_List_T self.current) - 1
           -> Seq.get (view_List_T self.current) i = Seq.get (view_List_T self.final) i)
         end)}
       (! return {result}) ]
@@ -7653,26 +7038,12 @@ module M_imp__impl_List_T__new (* imp::List<T> *)
   
   type t_List_T = { permissions: Seq.seq t_Perm_ptr_Node_T; head: Opaque.ptr; tail: Opaque.ptr }
   
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
   
   meta "rewrite_def" function val_ptr_Node_T
   
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
+    let len = Seq.length self.permissions in if len = 0 then
       is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
     else
       ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
@@ -7757,11 +7128,30 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
   
   type t_Node_T = { data: t_T; next: Opaque.ptr; prev: Opaque.ptr }
   
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
+    let len = Seq.length self.permissions in if len = 0 then
+      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
+    else
+      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
+      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
+      /\ (forall i: int. 0 <= i /\ i < len - 1
+        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
+        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
+  
+  
+  meta "rewrite_def" predicate invariant_List_T
+  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -7805,39 +7195,6 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
   predicate inv_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) = invariant_Seq_Perm_ptr_Node_T _1
   
   meta "rewrite_def" predicate inv_Seq_Perm_ptr_Node_T
-  
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
-      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
-    else
-      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
-      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
-      /\ (forall i: int. 0 <= i /\ i < len - 1
-        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
-        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
-  
-  
-  meta "rewrite_def" predicate invariant_List_T
   
   predicate invariant_Ghost_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
     inv_Seq_Perm_ptr_Node_T self
@@ -8116,34 +7473,6 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
         | Some f0 -> inv_T f0
         end
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -8214,12 +7543,8 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
       | s3 = -{resolve_refmut_List_T self}- s4
       | s4 = bb24 ]
     | bb13 = s0
-      [ s0 = {[@expl:assertion] gt_log_Int (len_Perm_ptr_Node_T self.current.permissions) 0} s1
-      | s1 = any
-        [ any_ (_dest: int) -> (! -{([@stop_split] [@expl:len ensures] len_Perm_ptr_Node_T self.current.permissions
-            = Seq.length self.current.permissions)
-          /\ _dest = len_Perm_ptr_Node_T self.current.permissions - 1}-
-          [ &last_idx <- _dest ] s2) ] [ _ck -> (! any) ]
+      [ s0 = {[@expl:assertion] gt_log_Int (Seq.length self.current.permissions) 0} s1
+      | s1 = [ &last_idx <- Seq.length self.current.permissions - 1 ] s2
       | s2 = null_Node_T (fun (_x: Opaque.ptr) -> [ &_33 <- _x ] s3)
       | s3 = cast_mut_Node_T {self.current.tail} (fun (_x: Opaque.ptr) -> [ &_35 <- _x ] s4)
       | s4 = MutBorrow.borrow_final <Seq.seq t_Perm_ptr_Node_T> {self.current.permissions}
@@ -8316,10 +7641,10 @@ module M_imp__impl_List_T__pop_back (* imp::List<T> *)
     | & _54: Opaque.ptr = Any.any_l () ])
     [ return (result: t_Option_T) ->
     {[@stop_split] [@expl:pop_back_T ensures] ([@stop_split] [@expl:pop_back result type invariant] inv_Option_T result)
-      /\ ([@stop_split] [@expl:pop_back ensures] if len_T (view_List_T self.current) = 0 then
+      /\ ([@stop_split] [@expl:pop_back ensures] if Seq.length (view_List_T self.current) = 0 then
         result = None /\ self.final = self.current
       else
-        result = Some (Seq.get (view_List_T self.current) (len_T (view_List_T self.current) - 1))
+        result = Some (Seq.get (view_List_T self.current) (Seq.length (view_List_T self.current) - 1))
         /\ view_List_T self.final = init_T (view_List_T self.current)
       )}
       (! return {result}) ]
@@ -8351,11 +7676,30 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
   
   type t_Node_T = { data: t_T; next: Opaque.ptr; prev: Opaque.ptr }
   
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
+    let len = Seq.length self.permissions in if len = 0 then
+      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
+    else
+      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
+      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
+      /\ (forall i: int. 0 <= i /\ i < len - 1
+        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
+        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
+  
+  
+  meta "rewrite_def" predicate invariant_List_T
+  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -8399,39 +7743,6 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
   predicate inv_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) = invariant_Seq_Perm_ptr_Node_T _1
   
   meta "rewrite_def" predicate inv_Seq_Perm_ptr_Node_T
-  
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
-      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
-    else
-      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
-      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
-      /\ (forall i: int. 0 <= i /\ i < len - 1
-        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
-        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
-  
-  
-  meta "rewrite_def" predicate invariant_List_T
   
   predicate invariant_Ghost_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
     inv_Seq_Perm_ptr_Node_T self
@@ -8710,34 +8021,6 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
         | Some f0 -> inv_T f0
         end
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -8903,7 +8186,7 @@ module M_imp__impl_List_T__pop_front (* imp::List<T> *)
     | & _45: Opaque.ptr = Any.any_l () ])
     [ return (result: t_Option_T) ->
     {[@stop_split] [@expl:pop_front_T ensures] ([@stop_split] [@expl:pop_front result type invariant] inv_Option_T result)
-      /\ ([@stop_split] [@expl:pop_front ensures] if len_T (view_List_T self.current) = 0 then
+      /\ ([@stop_split] [@expl:pop_front ensures] if Seq.length (view_List_T self.current) = 0 then
         result = None /\ self.final = self.current
       else
         result = Some (Seq.get (view_List_T self.current) 0)
@@ -9200,7 +8483,7 @@ module M_imp__impl_List_T__push_back (* imp::List<T> *)
       (! return {result}) ]
   
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
+    let len = Seq.length self.permissions in if len = 0 then
       is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
     else
       ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
@@ -9648,22 +8931,8 @@ module M_imp__impl_List_T__push_front (* imp::List<T> *)
     [ return (result: ()) -> {[@stop_split] [@expl:push_front ensures] self.final = cons_Perm_ptr_Node_T self.current x}
       (! return {result}) ]
   
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
+    let len = Seq.length self.permissions in if len = 0 then
       is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
     else
       ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
@@ -9873,11 +9142,30 @@ module M_imp__impl_Resolve_for_Cursor_T__resolve_coherence (* <imp::Cursor<'_, T
   
   type t_Node_T = { data: t_T; next: Opaque.ptr; prev: Opaque.ptr }
   
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
+    let len = Seq.length self.permissions in if len = 0 then
+      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
+    else
+      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
+      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
+      /\ (forall i: int. 0 <= i /\ i < len - 1
+        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
+        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
+  
+  
+  meta "rewrite_def" predicate invariant_List_T
+  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -9922,39 +9210,6 @@ module M_imp__impl_Resolve_for_Cursor_T__resolve_coherence (* <imp::Cursor<'_, T
   
   meta "rewrite_def" predicate inv_Seq_Perm_ptr_Node_T
   
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
-      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
-    else
-      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
-      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
-      /\ (forall i: int. 0 <= i /\ i < len - 1
-        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
-        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
-  
-  
-  meta "rewrite_def" predicate invariant_List_T
-  
   predicate invariant_Ghost_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
     inv_Seq_Perm_ptr_Node_T self
   
@@ -9985,34 +9240,6 @@ module M_imp__impl_Resolve_for_Cursor_T__resolve_coherence (* <imp::Cursor<'_, T
   
   meta "rewrite_def" predicate gt_log_Int
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -10035,9 +9262,9 @@ module M_imp__impl_Resolve_for_Cursor_T__resolve_coherence (* <imp::Cursor<'_, T
   
   predicate invariant_Cursor_T [@inline:trivial] (self: t_Cursor_T) =
     inv_refmut_List_T self.list
-    /\ (gt_log_Int (len_T (view_List_T (list_T self).current)) 0
+    /\ (gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
     -> 0 <= self.pos
-    /\ self.pos < len_T (view_List_T (list_T self).current)
+    /\ self.pos < Seq.length (view_List_T (list_T self).current)
     /\ self.current' = ward_ptr_Node_T (Seq.get self.list.current.permissions self.pos))
   
   meta "rewrite_def" predicate invariant_Cursor_T
@@ -10094,11 +9321,30 @@ module M_imp__impl_Resolve_for_Cursor_T__resolve_coherence__refines (* <imp::Cur
   
   type t_Node_T = { data: t_T; next: Opaque.ptr; prev: Opaque.ptr }
   
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
+    let len = Seq.length self.permissions in if len = 0 then
+      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
+    else
+      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
+      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
+      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
+      /\ (forall i: int. 0 <= i /\ i < len - 1
+        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
+        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
+  
+  
+  meta "rewrite_def" predicate invariant_List_T
+  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -10143,39 +9389,6 @@ module M_imp__impl_Resolve_for_Cursor_T__resolve_coherence__refines (* <imp::Cur
   
   meta "rewrite_def" predicate inv_Seq_Perm_ptr_Node_T
   
-  predicate invariant_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
-    inv_Seq_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_Perm_ptr_Node_T
-  
-  predicate inv_ref_Seq_Perm_ptr_Node_T [@inline:trivial] (_1: Seq.seq t_Perm_ptr_Node_T) =
-    invariant_ref_Seq_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_Perm_ptr_Node_T
-  
-  let len_Perm_ptr_Node_T (self: Seq.seq t_Perm_ptr_Node_T) (return (x: int)) =
-  {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_Perm_ptr_Node_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  predicate invariant_List_T [@inline:trivial] (self: t_List_T) =
-    let len = len_Perm_ptr_Node_T self.permissions in if len = 0 then
-      is_null_ptr_Node_T self.head /\ is_null_ptr_Node_T self.tail
-    else
-      ward_ptr_Node_T (Seq.get self.permissions 0) = self.head
-      /\ ward_ptr_Node_T (Seq.get self.permissions (len - 1)) = self.tail
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions 0)).prev
-      /\ is_null_ptr_Node_T (val_ptr_Node_T (Seq.get self.permissions (len - 1))).next
-      /\ (forall i: int. 0 <= i /\ i < len - 1
-        -> (val_ptr_Node_T (Seq.get self.permissions i)).next = ward_ptr_Node_T (Seq.get self.permissions (i + 1))
-        /\ (val_ptr_Node_T (Seq.get self.permissions (i + 1))).prev = ward_ptr_Node_T (Seq.get self.permissions i))
-  
-  
-  meta "rewrite_def" predicate invariant_List_T
-  
   predicate invariant_Ghost_Seq_Perm_ptr_Node_T [@inline:trivial] (self: Seq.seq t_Perm_ptr_Node_T) =
     inv_Seq_Perm_ptr_Node_T self
   
@@ -10206,34 +9419,6 @@ module M_imp__impl_Resolve_for_Cursor_T__resolve_coherence__refines (* <imp::Cur
   
   meta "rewrite_def" predicate gt_log_Int
   
-  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
-  
-  meta "rewrite_def" predicate invariant_ref_T
-  
-  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
-  
-  meta "rewrite_def" predicate inv_ref_T
-  
-  predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
-    forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
-  
-  meta "rewrite_def" predicate invariant_Seq_T
-  
-  predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_Seq_T
-  
-  predicate invariant_ref_Seq_T [@inline:trivial] (self: Seq.seq t_T) = inv_Seq_T self
-  
-  meta "rewrite_def" predicate invariant_ref_Seq_T
-  
-  predicate inv_ref_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_ref_Seq_T _1
-  
-  meta "rewrite_def" predicate inv_ref_Seq_T
-  
-  let len_T (self: Seq.seq t_T) (return (x: int)) = {[@stop_split] [@expl:len 'self' type invariant] inv_ref_Seq_T self}
-    any [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   function index_Mapping_Perm_ptr_Node_T_T [@inline:trivial] (self: Map.map t_Perm_ptr_Node_T t_T) (a: t_Perm_ptr_Node_T) : t_T
    = Map.get self a
   
@@ -10256,9 +9441,9 @@ module M_imp__impl_Resolve_for_Cursor_T__resolve_coherence__refines (* <imp::Cur
   
   predicate invariant_Cursor_T [@inline:trivial] (self: t_Cursor_T) =
     inv_refmut_List_T self.list
-    /\ (gt_log_Int (len_T (view_List_T (list_T self).current)) 0
+    /\ (gt_log_Int (Seq.length (view_List_T (list_T self).current)) 0
     -> 0 <= self.pos
-    /\ self.pos < len_T (view_List_T (list_T self).current)
+    /\ self.pos < Seq.length (view_List_T (list_T self).current)
     /\ self.current' = ward_ptr_Node_T (Seq.get self.list.current.permissions self.pos))
   
   meta "rewrite_def" predicate invariant_Cursor_T

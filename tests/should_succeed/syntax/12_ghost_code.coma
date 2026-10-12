@@ -12,17 +12,14 @@ module M_ghost_arg
     [ return (result: ()) -> (! return {result}) ]
 end
 module M_ghost_check
-  use creusot.int.Int32
   use seq.Seq
+  use creusot.int.Int32
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use int.Int
   
   type t_Vec_i32_Global
-  
-  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -33,7 +30,8 @@ module M_ghost_check
       <= UInt64.t'int const_MAX
   
   let new_i32 (return (x: t_Vec_i32_Global)) = any
-    [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:new ensures] len_i32 (view_Vec_i32_Global result) = 0}
+    [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:new ensures] Seq.length (view_Vec_i32_Global result)
+      = 0}
       (! return {result}) ]
   
   function logi_drop_Vec_i32_Global (_1: t_Vec_i32_Global) : () = ()
@@ -43,9 +41,9 @@ module M_ghost_check
       = Seq.snoc (view_Vec_i32_Global self.current) value}
       (! return {result}) ]
   
-  let len_i32'0 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = len_i32 (view_Vec_i32_Global self)}
+      = Seq.length (view_Vec_i32_Global self)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -59,7 +57,7 @@ module M_ghost_check
       | s2 = MutBorrow.borrow_mut <t_Vec_i32_Global> {x}
           (fun (_bor: MutBorrow.t t_Vec_i32_Global) -> [ &_6 <- _bor ] [ &x <- _bor.final ] s3)
       | s3 = push_i32 {_6} {(0: Int32.t)} (fun (_x: ()) -> [ &_5 <- _x ] s4)
-      | s4 = len_i32'0 {x} (fun (_x: UInt64.t) -> [ &_9 <- _x ] s5)
+      | s4 = len_i32 {x} (fun (_x: UInt64.t) -> [ &_9 <- _x ] s5)
       | s5 = [ &_8 <- _9 = (1: UInt64.t) ] s6
       | s6 = any [ br0 -> {_8 = false} (! bb6) | br1 -> {_8} (! bb7) ] ]
     | bb7 = return {_ret}
@@ -125,16 +123,13 @@ module M_ghost_is_copy
     | & g2: MutBorrow.t Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_ghost_vec
-  use creusot.int.UInt32
   use seq.Seq
+  use creusot.int.UInt32
   use creusot.int.UInt64
   use creusot.prelude.Any
   use int.Int
   
   type t_Vec_u32_Global
-  
-  let len_u32 (self: Seq.seq UInt32.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -145,7 +140,8 @@ module M_ghost_vec
       <= UInt64.t'int const_MAX
   
   let new_u32 (return (x: t_Vec_u32_Global)) = any
-    [ return (result: t_Vec_u32_Global) -> {[@stop_split] [@expl:new ensures] len_u32 (view_Vec_u32_Global result) = 0}
+    [ return (result: t_Vec_u32_Global) -> {[@stop_split] [@expl:new ensures] Seq.length (view_Vec_u32_Global result)
+      = 0}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000

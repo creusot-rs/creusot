@@ -2,9 +2,6 @@ module M_all_zero
   use seq.Seq
   use int.Int
   
-  let len_Int (self: Seq.seq int) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
   meta "rewrite_def" predicate ge_log_Int
@@ -26,19 +23,16 @@ module M_all_zero
   
   predicate all_zero (seq: Seq.seq int)
   
-  goal vc_all_zero: ([@stop_split] [@expl:len ensures] len_Int seq = Seq.length seq)
-    -> (if len_Int seq = 0 then
+  goal vc_all_zero: if Seq.length seq = 0 then
       true
     else
-      ([@stop_split] [@expl:len ensures] len_Int seq = Seq.length seq)
-      -> (if Seq.get seq (len_Int seq - 1) = 0 then
-        ([@stop_split] [@expl:len ensures] len_Int seq = Seq.length seq)
-        -> ([@expl:variant decreases] well_founded_relation_Int (len_Int seq) (len_Int (Seq.([..]) seq 0 (len_Int seq
-        - 1))))
+      if Seq.get seq (Seq.length seq - 1) = 0 then
+        [@expl:variant decreases] well_founded_relation_Int (Seq.length seq) (Seq.length (Seq.([..]) seq 0 (Seq.length seq
+        - 1)))
       else
         true
-      )
-    )
+    
+
 end
 module M_stupid
   use int.Int
@@ -78,9 +72,6 @@ module M_sum
   use seq.Seq
   use int.Int
   
-  let len_Int (self: Seq.seq int) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   
   meta "rewrite_def" predicate ge_log_Int
@@ -102,13 +93,10 @@ module M_sum
   
   function sum (seq: Seq.seq int) : int
   
-  goal vc_sum: ([@stop_split] [@expl:len ensures] len_Int seq = Seq.length seq)
-    -> (if len_Int seq = 0 then
+  goal vc_sum: if Seq.length seq = 0 then
       true
     else
-      ([@stop_split] [@expl:len ensures] len_Int seq = Seq.length seq)
-      -> ([@stop_split] [@expl:len ensures] len_Int seq = Seq.length seq)
-      -> ([@expl:variant decreases] well_founded_relation_Int (len_Int seq) (len_Int (Seq.([..]) seq 0 (len_Int seq
-      - 1))))
-    )
+      [@expl:variant decreases] well_founded_relation_Int (Seq.length seq) (Seq.length (Seq.([..]) seq 0 (Seq.length seq
+      - 1)))
+
 end

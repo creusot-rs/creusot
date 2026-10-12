@@ -34,9 +34,6 @@ module M_sum_first_n_iter
       -> not is_empty_log_RangeInclusive_usize result)}
       (! return {result}) ]
   
-  let len_usize (self: Seq.seq UInt64.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
-  
   type closure0 = { c0: MutBorrow.t UInt64.t }
   
   predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
@@ -50,7 +47,7 @@ module M_sum_first_n_iter
   let closure0 [@coma:extspec] (self: MutBorrow.t closure0) (x: UInt64.t) (produced: Seq.seq UInt64.t)
     (return (x'0: ())) = bb0
     [ bb0 = s0
-      [ s0 = {[@expl:assertion] UInt64.t'int x = len_usize produced + 1} s1
+      [ s0 = {[@expl:assertion] UInt64.t'int x = Seq.length produced + 1} s1
       | s1 = UInt64.add {self.current.c0.current} {x}
           (fun (_x: UInt64.t) -> [ &self <- { self with current = { c0 = { self.current.c0 with current = _x } } } ] s2)
       | s2 = -{resolve_refmut_closure0 self}- s3

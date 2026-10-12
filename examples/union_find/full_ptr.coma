@@ -28,47 +28,13 @@ module M_example
   
   meta "rewrite_def" predicate contains_Element
   
-  predicate inv_Element (_1: t_Element)
-  
-  predicate invariant_FSet_Element [@inline:trivial] (self: Fset.fset t_Element) =
-    forall x: t_Element. contains_Element self x -> inv_Element x
-  
-  meta "rewrite_def" predicate invariant_FSet_Element
-  
-  predicate inv_FSet_Element [@inline:trivial] (_1: Fset.fset t_Element) = invariant_FSet_Element _1
-  
-  meta "rewrite_def" predicate inv_FSet_Element
-  
-  predicate invariant_ref_FSet_Element [@inline:trivial] (self: Fset.fset t_Element) = inv_FSet_Element self
-  
-  meta "rewrite_def" predicate invariant_ref_FSet_Element
-  
-  predicate inv_ref_FSet_Element [@inline:trivial] (_1: Fset.fset t_Element) = invariant_ref_FSet_Element _1
-  
-  meta "rewrite_def" predicate inv_ref_FSet_Element
-  
-  predicate invariant_ref_Element [@inline:trivial] (self: t_Element) = inv_Element self
-  
-  meta "rewrite_def" predicate invariant_ref_Element
-  
-  predicate inv_ref_Element [@inline:trivial] (_1: t_Element) = invariant_ref_Element _1
-  
-  meta "rewrite_def" predicate inv_ref_Element
-  
-  let contains_Element'0 (self: Fset.fset t_Element) (value: t_Element) (return (x: bool)) =
-  {[@stop_split] [@expl:contains_Element requires] ([@stop_split] [@expl:contains 'self' type invariant] inv_ref_FSet_Element self)
-    /\ ([@stop_split] [@expl:contains 'value' type invariant] inv_ref_Element value)}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element self value}
-      (! return {result}) ]
-  
   function deep_model_Element (self: t_Element) : UInt64.t
   
   function domain_i32 (self: t_UnionFind_i32) : Fset.fset t_Element
   
   axiom domain_i32_spec: forall self: t_UnionFind_i32 [domain_i32 self]. inv_UnionFind_i32 self
-      -> (forall e1: t_Element, e2: t_Element. contains_Element'0 (domain_i32 self) e1
-          /\ contains_Element'0 (domain_i32 self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
+      -> (forall e1: t_Element, e2: t_Element. contains_Element (domain_i32 self) e1
+          /\ contains_Element (domain_i32 self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
   
   let new_i32 (return (x: t_UnionFind_i32)) = any
     [ return (result: t_UnionFind_i32) ->
@@ -114,7 +80,9 @@ module M_example
       /\ ([@stop_split] [@expl:borrow_mut ensures] result = self)}
       (! return {result}) ]
   
-  predicate in_domain_i32 (self: t_UnionFind_i32) (e: t_Element) = contains_Element'0 (domain_i32 self) e
+  predicate inv_Element (_1: t_Element)
+  
+  predicate in_domain_i32 (self: t_UnionFind_i32) (e: t_Element) = contains_Element (domain_i32 self) e
   
   function fin_Ghost_refmut_UnionFind_i32 [@inline:trivial] (self: MutBorrow.t t_UnionFind_i32) : t_UnionFind_i32 =
     self.final
@@ -461,37 +429,13 @@ module M_example_addrs_eq
   
   meta "rewrite_def" predicate contains_Element
   
-  predicate invariant_FSet_Element [@inline:trivial] (self: Fset.fset t_Element) =
-    forall x: t_Element. contains_Element self x -> inv_Element x
-  
-  meta "rewrite_def" predicate invariant_FSet_Element
-  
-  predicate inv_FSet_Element [@inline:trivial] (_1: Fset.fset t_Element) = invariant_FSet_Element _1
-  
-  meta "rewrite_def" predicate inv_FSet_Element
-  
-  predicate invariant_ref_FSet_Element [@inline:trivial] (self: Fset.fset t_Element) = inv_FSet_Element self
-  
-  meta "rewrite_def" predicate invariant_ref_FSet_Element
-  
-  predicate inv_ref_FSet_Element [@inline:trivial] (_1: Fset.fset t_Element) = invariant_ref_FSet_Element _1
-  
-  meta "rewrite_def" predicate inv_ref_FSet_Element
-  
-  let contains_Element'0 (self: Fset.fset t_Element) (value: t_Element) (return (x: bool)) =
-  {[@stop_split] [@expl:contains_Element requires] ([@stop_split] [@expl:contains 'self' type invariant] inv_ref_FSet_Element self)
-    /\ ([@stop_split] [@expl:contains 'value' type invariant] inv_ref_Element value)}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element self value}
-      (! return {result}) ]
-  
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element
   
   axiom domain_T_spec: forall self: t_UnionFind_T [domain_T self]. inv_UnionFind_T self
-      -> (forall e1: t_Element, e2: t_Element. contains_Element'0 (domain_T self) e1
-          /\ contains_Element'0 (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
+      -> (forall e1: t_Element, e2: t_Element. contains_Element (domain_T self) e1
+          /\ contains_Element (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
   
-  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element'0 (domain_T self) e
+  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element (domain_T self) e
   
   meta "compute_max_steps" 1000000
   
@@ -541,10 +485,6 @@ module M_implementation__equiv
   
   meta "rewrite_def" predicate contains_Element
   
-  let contains_Element'0 (self: Fset.fset t_Element) (value: t_Element) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element self value}
-      (! return {result}) ]
-  
   function deep_model_Element [@inline:trivial] (self: t_Element) : UInt64.t = Ptr.addr_logic_u64 self.f0
   
   meta "rewrite_def" function deep_model_Element
@@ -564,10 +504,72 @@ module M_implementation__equiv
   
   meta "rewrite_def" function lookup_Element
   
-  predicate contains_Element'1 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
+  predicate contains_Element'0 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
     lookup_Element self k <> None
   
-  meta "rewrite_def" predicate contains_Element'1
+  meta "rewrite_def" predicate contains_Element'0
+  
+  function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
+  
+  constant any_Perm_ptr_Node_T : t_Perm_ptr_Node_T
+  
+  function unwrap_Option_Perm_ptr_Node_T (self: t_Option_Perm_ptr_Node_T) : t_Perm_ptr_Node_T = match self with
+      | Some x -> x
+      | None -> any_Perm_ptr_Node_T
+      end
+  
+  function index_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) : t_Perm_ptr_Node_T
+   = unwrap_Option_Perm_ptr_Node_T (lookup_Element self key)
+  
+  meta "rewrite_def" function index_FMap_Element_Perm_ptr_Node_T
+  
+  function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
+   = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_Element
+  
+  type t_PeanoInt = { f0'1: UInt64.t }
+  
+  type t_Node_T = Root t_PeanoInt t_T | Link t_Element
+  
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_T
+  
+  function index_Mapping_Element_Int [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
+    Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_Int
+  
+  predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
+    (forall e1: t_Element, e2: t_Element. contains_Element self.f0'0.domain e1
+          /\ contains_Element self.f0'0.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
+    /\ (forall e: t_Element. contains_Element self.f0'0.domain e
+      -> contains_Element'0 self.f0'0.perms e
+      /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) = e.f0
+      /\ contains_Element self.f0'0.domain (index_Mapping_Element_Element self.f0'0.roots e)
+      /\ index_Mapping_Element_Element self.f0'0.roots (index_Mapping_Element_Element self.f0'0.roots e)
+        = index_Mapping_Element_Element self.f0'0.roots e
+      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
+          | Link e2 -> index_Mapping_Element_Element self.f0'0.roots e <> e
+          /\ contains_Element self.f0'0.domain e2
+          /\ index_Mapping_Element_Element self.f0'0.roots e = index_Mapping_Element_Element self.f0'0.roots e2
+          | Root _ payload -> index_Mapping_Element_Element self.f0'0.roots e = e
+          /\ index_Mapping_Element_T self.f0'0.payloads e = payload
+          end
+      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
+          | Link e2 -> index_Mapping_Element_Int self.f0'0.depth e < index_Mapping_Element_Int self.f0'0.depth e2
+          | Root _ _ -> true
+          end
+      /\ index_Mapping_Element_Int self.f0'0.depth e <= self.f0'0.max_depth)
+  
+  meta "rewrite_def" predicate invariant_UnionFind_T
   
   predicate inv_Element [@inline:trivial] (_1: t_Element) = true
   
@@ -575,17 +577,9 @@ module M_implementation__equiv
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
-  
-  type t_PeanoInt = { f0'1: UInt64.t }
-  
-  type t_Node_T = Root t_PeanoInt t_T | Link t_Element
-  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -617,20 +611,8 @@ module M_implementation__equiv
   axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
       = invariant_Perm_ptr_Node_T _1
   
-  constant any_Perm_ptr_Node_T : t_Perm_ptr_Node_T
-  
-  function unwrap_Option_Perm_ptr_Node_T (self: t_Option_Perm_ptr_Node_T) : t_Perm_ptr_Node_T = match self with
-      | Some x -> x
-      | None -> any_Perm_ptr_Node_T
-      end
-  
-  function index_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) : t_Perm_ptr_Node_T
-   = unwrap_Option_Perm_ptr_Node_T (lookup_Element self key)
-  
-  meta "rewrite_def" function index_FMap_Element_Perm_ptr_Node_T
-  
   predicate invariant_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    forall k: t_Element. contains_Element'1 self k
+    forall k: t_Element. contains_Element'0 self k
       -> inv_Element k /\ inv_Perm_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self k)
   
   meta "rewrite_def" predicate invariant_FMap_Element_Perm_ptr_Node_T
@@ -640,64 +622,6 @@ module M_implementation__equiv
   axiom inv_axiom'1 [@rewrite]:
     forall _1: t_FMap_Element_Perm_ptr_Node_T [inv_FMap_Element_Perm_ptr_Node_T _1]. inv_FMap_Element_Perm_ptr_Node_T _1
       = invariant_FMap_Element_Perm_ptr_Node_T _1
-  
-  predicate invariant_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    inv_FMap_Element_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FMap_Element_Perm_ptr_Node_T
-  
-  predicate inv_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (_1: t_FMap_Element_Perm_ptr_Node_T) =
-    invariant_ref_FMap_Element_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FMap_Element_Perm_ptr_Node_T
-  
-  let contains_Element'2 (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) (return (x: bool)) =
-  {[@stop_split] [@expl:contains 'self' type invariant] inv_ref_FMap_Element_Perm_ptr_Node_T self}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element'1 self key}
-      (! return {result}) ]
-  
-  function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_Element
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_T
-  
-  function index_Mapping_Element_Int [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
-    Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_Int
-  
-  predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
-    (forall e1: t_Element, e2: t_Element. contains_Element'0 self.f0'0.domain e1
-          /\ contains_Element'0 self.f0'0.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
-    /\ (forall e: t_Element. contains_Element'0 self.f0'0.domain e
-      -> contains_Element'2 self.f0'0.perms e
-      /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) = e.f0
-      /\ contains_Element'0 self.f0'0.domain (index_Mapping_Element_Element self.f0'0.roots e)
-      /\ index_Mapping_Element_Element self.f0'0.roots (index_Mapping_Element_Element self.f0'0.roots e)
-        = index_Mapping_Element_Element self.f0'0.roots e
-      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
-          | Link e2 -> index_Mapping_Element_Element self.f0'0.roots e <> e
-          /\ contains_Element'0 self.f0'0.domain e2
-          /\ index_Mapping_Element_Element self.f0'0.roots e = index_Mapping_Element_Element self.f0'0.roots e2
-          | Root _ payload -> index_Mapping_Element_Element self.f0'0.roots e = e
-          /\ index_Mapping_Element_T self.f0'0.payloads e = payload
-          end
-      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
-          | Link e2 -> index_Mapping_Element_Int self.f0'0.depth e < index_Mapping_Element_Int self.f0'0.depth e2
-          | Root _ _ -> true
-          end
-      /\ index_Mapping_Element_Int self.f0'0.depth e <= self.f0'0.max_depth)
-  
-  meta "rewrite_def" predicate invariant_UnionFind_T
   
   predicate inv_UFInner_T (_1: t_UFInner_T)
   
@@ -777,10 +701,10 @@ module M_implementation__equiv
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'0.domain
   
   axiom domain_T_spec: forall self: t_UnionFind_T [domain_T self]. inv_UnionFind_T self
-      -> (forall e1: t_Element, e2: t_Element. contains_Element'0 (domain_T self) e1
-          /\ contains_Element'0 (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
+      -> (forall e1: t_Element, e2: t_Element. contains_Element (domain_T self) e1
+          /\ contains_Element (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
   
-  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element'0 (domain_T self) e
+  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element (domain_T self) e
   
   function roots_map_T (self: t_UnionFind_T) : Map.map t_Element t_Element = self.f0'0.roots
   
@@ -914,10 +838,6 @@ module M_implementation__find
   
   meta "rewrite_def" predicate contains_Element
   
-  let contains_Element'0 (self: Fset.fset t_Element) (value: t_Element) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element self value}
-      (! return {result}) ]
-  
   function deep_model_Element [@inline:trivial] (self: t_Element) : UInt64.t = Ptr.addr_logic_u64 self.f0
   
   meta "rewrite_def" function deep_model_Element
@@ -937,10 +857,67 @@ module M_implementation__find
   
   meta "rewrite_def" function lookup_Element
   
-  predicate contains_Element'1 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
+  predicate contains_Element'0 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
     lookup_Element self k <> None
   
-  meta "rewrite_def" predicate contains_Element'1
+  meta "rewrite_def" predicate contains_Element'0
+  
+  function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
+  
+  constant any_Perm_ptr_Node_T : t_Perm_ptr_Node_T
+  
+  function unwrap_Option_Perm_ptr_Node_T (self: t_Option_Perm_ptr_Node_T) : t_Perm_ptr_Node_T = match self with
+      | Some x -> x
+      | None -> any_Perm_ptr_Node_T
+      end
+  
+  function index_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) : t_Perm_ptr_Node_T
+   = unwrap_Option_Perm_ptr_Node_T (lookup_Element self key)
+  
+  meta "rewrite_def" function index_FMap_Element_Perm_ptr_Node_T
+  
+  function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
+   = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_Element
+  
+  type t_PeanoInt = { f0'1: UInt64.t }
+  
+  type t_Node_T = Root t_PeanoInt t_T | Link t_Element
+  
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_T
+  
+  predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
+    (forall e1: t_Element, e2: t_Element. contains_Element self.f0'0.domain e1
+          /\ contains_Element self.f0'0.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
+    /\ (forall e: t_Element. contains_Element self.f0'0.domain e
+      -> contains_Element'0 self.f0'0.perms e
+      /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) = e.f0
+      /\ contains_Element self.f0'0.domain (index_Mapping_Element_Element self.f0'0.roots e)
+      /\ index_Mapping_Element_Element self.f0'0.roots (index_Mapping_Element_Element self.f0'0.roots e)
+        = index_Mapping_Element_Element self.f0'0.roots e
+      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
+          | Link e2 -> index_Mapping_Element_Element self.f0'0.roots e <> e
+          /\ contains_Element self.f0'0.domain e2
+          /\ index_Mapping_Element_Element self.f0'0.roots e = index_Mapping_Element_Element self.f0'0.roots e2
+          | Root _ payload -> index_Mapping_Element_Element self.f0'0.roots e = e
+          /\ index_Mapping_Element_T self.f0'0.payloads e = payload
+          end
+      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
+          | Link e2 -> index_Mapping_Element_Int self.f0'0.depth e < index_Mapping_Element_Int self.f0'0.depth e2
+          | Root _ _ -> true
+          end
+      /\ index_Mapping_Element_Int self.f0'0.depth e <= self.f0'0.max_depth)
+  
+  meta "rewrite_def" predicate invariant_UnionFind_T
   
   predicate inv_Element [@inline:trivial] (_1: t_Element) = true
   
@@ -948,17 +925,9 @@ module M_implementation__find
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
-  
-  type t_PeanoInt = { f0'1: UInt64.t }
-  
-  type t_Node_T = Root t_PeanoInt t_T | Link t_Element
-  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -990,20 +959,8 @@ module M_implementation__find
   axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
       = invariant_Perm_ptr_Node_T _1
   
-  constant any_Perm_ptr_Node_T : t_Perm_ptr_Node_T
-  
-  function unwrap_Option_Perm_ptr_Node_T (self: t_Option_Perm_ptr_Node_T) : t_Perm_ptr_Node_T = match self with
-      | Some x -> x
-      | None -> any_Perm_ptr_Node_T
-      end
-  
-  function index_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) : t_Perm_ptr_Node_T
-   = unwrap_Option_Perm_ptr_Node_T (lookup_Element self key)
-  
-  meta "rewrite_def" function index_FMap_Element_Perm_ptr_Node_T
-  
   predicate invariant_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    forall k: t_Element. contains_Element'1 self k
+    forall k: t_Element. contains_Element'0 self k
       -> inv_Element k /\ inv_Perm_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self k)
   
   meta "rewrite_def" predicate invariant_FMap_Element_Perm_ptr_Node_T
@@ -1013,59 +970,6 @@ module M_implementation__find
   axiom inv_axiom'1 [@rewrite]:
     forall _1: t_FMap_Element_Perm_ptr_Node_T [inv_FMap_Element_Perm_ptr_Node_T _1]. inv_FMap_Element_Perm_ptr_Node_T _1
       = invariant_FMap_Element_Perm_ptr_Node_T _1
-  
-  predicate invariant_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    inv_FMap_Element_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FMap_Element_Perm_ptr_Node_T
-  
-  predicate inv_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (_1: t_FMap_Element_Perm_ptr_Node_T) =
-    invariant_ref_FMap_Element_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FMap_Element_Perm_ptr_Node_T
-  
-  let contains_Element'2 (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) (return (x: bool)) =
-  {[@stop_split] [@expl:contains 'self' type invariant] inv_ref_FMap_Element_Perm_ptr_Node_T self}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element'1 self key}
-      (! return {result}) ]
-  
-  function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_Element
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_T
-  
-  predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
-    (forall e1: t_Element, e2: t_Element. contains_Element'0 self.f0'0.domain e1
-          /\ contains_Element'0 self.f0'0.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
-    /\ (forall e: t_Element. contains_Element'0 self.f0'0.domain e
-      -> contains_Element'2 self.f0'0.perms e
-      /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) = e.f0
-      /\ contains_Element'0 self.f0'0.domain (index_Mapping_Element_Element self.f0'0.roots e)
-      /\ index_Mapping_Element_Element self.f0'0.roots (index_Mapping_Element_Element self.f0'0.roots e)
-        = index_Mapping_Element_Element self.f0'0.roots e
-      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
-          | Link e2 -> index_Mapping_Element_Element self.f0'0.roots e <> e
-          /\ contains_Element'0 self.f0'0.domain e2
-          /\ index_Mapping_Element_Element self.f0'0.roots e = index_Mapping_Element_Element self.f0'0.roots e2
-          | Root _ payload -> index_Mapping_Element_Element self.f0'0.roots e = e
-          /\ index_Mapping_Element_T self.f0'0.payloads e = payload
-          end
-      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
-          | Link e2 -> index_Mapping_Element_Int self.f0'0.depth e < index_Mapping_Element_Int self.f0'0.depth e2
-          | Root _ _ -> true
-          end
-      /\ index_Mapping_Element_Int self.f0'0.depth e <= self.f0'0.max_depth)
-  
-  meta "rewrite_def" predicate invariant_UnionFind_T
   
   predicate inv_UFInner_T (_1: t_UFInner_T)
   
@@ -1099,10 +1003,10 @@ module M_implementation__find
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'0.domain
   
   axiom domain_T_spec: forall self: t_UnionFind_T [domain_T self]. inv_UnionFind_T self
-      -> (forall e1: t_Element, e2: t_Element. contains_Element'0 (domain_T self) e1
-          /\ contains_Element'0 (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
+      -> (forall e1: t_Element, e2: t_Element. contains_Element (domain_T self) e1
+          /\ contains_Element (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
   
-  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element'0 (domain_T self) e
+  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element (domain_T self) e
   
   function roots_map_T (self: t_UnionFind_T) : Map.map t_Element t_Element = self.f0'0.roots
   
@@ -1186,10 +1090,6 @@ module M_implementation__find_inner
   
   meta "rewrite_def" predicate contains_Element
   
-  let contains_Element'0 (self: Fset.fset t_Element) (value: t_Element) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element self value}
-      (! return {result}) ]
-  
   function deep_model_Element [@inline:trivial] (self: t_Element) : UInt64.t = Ptr.addr_logic_u64 self.f0
   
   meta "rewrite_def" function deep_model_Element
@@ -1209,10 +1109,72 @@ module M_implementation__find_inner
   
   meta "rewrite_def" function lookup_Element
   
-  predicate contains_Element'1 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
+  predicate contains_Element'0 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
     lookup_Element self k <> None
   
-  meta "rewrite_def" predicate contains_Element'1
+  meta "rewrite_def" predicate contains_Element'0
+  
+  function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
+  
+  constant any_Perm_ptr_Node_T : t_Perm_ptr_Node_T
+  
+  function unwrap_Option_Perm_ptr_Node_T (self: t_Option_Perm_ptr_Node_T) : t_Perm_ptr_Node_T = match self with
+      | Some x -> x
+      | None -> any_Perm_ptr_Node_T
+      end
+  
+  function index_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) : t_Perm_ptr_Node_T
+   = unwrap_Option_Perm_ptr_Node_T (lookup_Element self key)
+  
+  meta "rewrite_def" function index_FMap_Element_Perm_ptr_Node_T
+  
+  function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
+   = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_Element
+  
+  type t_PeanoInt = { f0'1: UInt64.t }
+  
+  type t_Node_T = Root t_PeanoInt t_T | Link t_Element
+  
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_T
+  
+  function index_Mapping_Element_Int [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
+    Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_Int
+  
+  predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
+    (forall e1: t_Element, e2: t_Element. contains_Element self.f0'0.domain e1
+          /\ contains_Element self.f0'0.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
+    /\ (forall e: t_Element. contains_Element self.f0'0.domain e
+      -> contains_Element'0 self.f0'0.perms e
+      /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) = e.f0
+      /\ contains_Element self.f0'0.domain (index_Mapping_Element_Element self.f0'0.roots e)
+      /\ index_Mapping_Element_Element self.f0'0.roots (index_Mapping_Element_Element self.f0'0.roots e)
+        = index_Mapping_Element_Element self.f0'0.roots e
+      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
+          | Link e2 -> index_Mapping_Element_Element self.f0'0.roots e <> e
+          /\ contains_Element self.f0'0.domain e2
+          /\ index_Mapping_Element_Element self.f0'0.roots e = index_Mapping_Element_Element self.f0'0.roots e2
+          | Root _ payload -> index_Mapping_Element_Element self.f0'0.roots e = e
+          /\ index_Mapping_Element_T self.f0'0.payloads e = payload
+          end
+      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
+          | Link e2 -> index_Mapping_Element_Int self.f0'0.depth e < index_Mapping_Element_Int self.f0'0.depth e2
+          | Root _ _ -> true
+          end
+      /\ index_Mapping_Element_Int self.f0'0.depth e <= self.f0'0.max_depth)
+  
+  meta "rewrite_def" predicate invariant_UnionFind_T
   
   predicate inv_Element [@inline:trivial] (_1: t_Element) = true
   
@@ -1220,17 +1182,9 @@ module M_implementation__find_inner
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
-  
-  type t_PeanoInt = { f0'1: UInt64.t }
-  
-  type t_Node_T = Root t_PeanoInt t_T | Link t_Element
-  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -1262,20 +1216,8 @@ module M_implementation__find_inner
   axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
       = invariant_Perm_ptr_Node_T _1
   
-  constant any_Perm_ptr_Node_T : t_Perm_ptr_Node_T
-  
-  function unwrap_Option_Perm_ptr_Node_T (self: t_Option_Perm_ptr_Node_T) : t_Perm_ptr_Node_T = match self with
-      | Some x -> x
-      | None -> any_Perm_ptr_Node_T
-      end
-  
-  function index_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) : t_Perm_ptr_Node_T
-   = unwrap_Option_Perm_ptr_Node_T (lookup_Element self key)
-  
-  meta "rewrite_def" function index_FMap_Element_Perm_ptr_Node_T
-  
   predicate invariant_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    forall k: t_Element. contains_Element'1 self k
+    forall k: t_Element. contains_Element'0 self k
       -> inv_Element k /\ inv_Perm_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self k)
   
   meta "rewrite_def" predicate invariant_FMap_Element_Perm_ptr_Node_T
@@ -1285,64 +1227,6 @@ module M_implementation__find_inner
   axiom inv_axiom'1 [@rewrite]:
     forall _1: t_FMap_Element_Perm_ptr_Node_T [inv_FMap_Element_Perm_ptr_Node_T _1]. inv_FMap_Element_Perm_ptr_Node_T _1
       = invariant_FMap_Element_Perm_ptr_Node_T _1
-  
-  predicate invariant_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    inv_FMap_Element_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FMap_Element_Perm_ptr_Node_T
-  
-  predicate inv_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (_1: t_FMap_Element_Perm_ptr_Node_T) =
-    invariant_ref_FMap_Element_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FMap_Element_Perm_ptr_Node_T
-  
-  let contains_Element'2 (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) (return (x: bool)) =
-  {[@stop_split] [@expl:contains 'self' type invariant] inv_ref_FMap_Element_Perm_ptr_Node_T self}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element'1 self key}
-      (! return {result}) ]
-  
-  function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_Element
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_T
-  
-  function index_Mapping_Element_Int [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
-    Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_Int
-  
-  predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
-    (forall e1: t_Element, e2: t_Element. contains_Element'0 self.f0'0.domain e1
-          /\ contains_Element'0 self.f0'0.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
-    /\ (forall e: t_Element. contains_Element'0 self.f0'0.domain e
-      -> contains_Element'2 self.f0'0.perms e
-      /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) = e.f0
-      /\ contains_Element'0 self.f0'0.domain (index_Mapping_Element_Element self.f0'0.roots e)
-      /\ index_Mapping_Element_Element self.f0'0.roots (index_Mapping_Element_Element self.f0'0.roots e)
-        = index_Mapping_Element_Element self.f0'0.roots e
-      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
-          | Link e2 -> index_Mapping_Element_Element self.f0'0.roots e <> e
-          /\ contains_Element'0 self.f0'0.domain e2
-          /\ index_Mapping_Element_Element self.f0'0.roots e = index_Mapping_Element_Element self.f0'0.roots e2
-          | Root _ payload -> index_Mapping_Element_Element self.f0'0.roots e = e
-          /\ index_Mapping_Element_T self.f0'0.payloads e = payload
-          end
-      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
-          | Link e2 -> index_Mapping_Element_Int self.f0'0.depth e < index_Mapping_Element_Int self.f0'0.depth e2
-          | Root _ _ -> true
-          end
-      /\ index_Mapping_Element_Int self.f0'0.depth e <= self.f0'0.max_depth)
-  
-  meta "rewrite_def" predicate invariant_UnionFind_T
   
   predicate inv_UFInner_T (_1: t_UFInner_T)
   
@@ -1402,6 +1286,16 @@ module M_implementation__find_inner
       (! return {result}) ]
   
   type t_Option_ref_Perm_ptr_Node_T = None'0 | Some'0 t_Perm_ptr_Node_T
+  
+  predicate invariant_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
+    inv_FMap_Element_Perm_ptr_Node_T self
+  
+  meta "rewrite_def" predicate invariant_ref_FMap_Element_Perm_ptr_Node_T
+  
+  predicate inv_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (_1: t_FMap_Element_Perm_ptr_Node_T) =
+    invariant_ref_FMap_Element_Perm_ptr_Node_T _1
+  
+  meta "rewrite_def" predicate inv_ref_FMap_Element_Perm_ptr_Node_T
   
   predicate invariant_ref_Perm_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -1523,10 +1417,10 @@ module M_implementation__find_inner
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'0.domain
   
   axiom domain_T_spec: forall self: t_UnionFind_T [domain_T self]. inv_UnionFind_T self
-      -> (forall e1: t_Element, e2: t_Element. contains_Element'0 (domain_T self) e1
-          /\ contains_Element'0 (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
+      -> (forall e1: t_Element, e2: t_Element. contains_Element (domain_T self) e1
+          /\ contains_Element (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
   
-  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element'0 (domain_T self) e
+  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element (domain_T self) e
   
   function roots_map_T (self: t_UnionFind_T) : Map.map t_Element t_Element = self.f0'0.roots
   
@@ -1663,10 +1557,10 @@ module M_implementation__find_inner
     any
     [ return (result: t_Option_refmut_Perm_ptr_Node_T) ->
     {[@stop_split] [@expl:get_mut_Element ensures] ([@stop_split] [@expl:get_mut result type invariant] inv_Option_refmut_Perm_ptr_Node_T result)
-      /\ ([@stop_split] [@expl:get_mut ensures #0] if contains_Element'1 self.current key then
+      /\ ([@stop_split] [@expl:get_mut ensures #0] if contains_Element'0 self.current key then
           match result with
             | None'1 -> false
-            | Some'1 r -> contains_Element'1 self.final key
+            | Some'1 r -> contains_Element'0 self.final key
             /\ index_FMap_Element_Perm_ptr_Node_T self.current key = r.current
             /\ index_FMap_Element_Perm_ptr_Node_T self.final key = r.final
             end
@@ -1991,10 +1885,6 @@ module M_implementation__get
   
   meta "rewrite_def" predicate contains_Element
   
-  let contains_Element'0 (self: Fset.fset t_Element) (value: t_Element) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element self value}
-      (! return {result}) ]
-  
   function deep_model_Element [@inline:trivial] (self: t_Element) : UInt64.t = Ptr.addr_logic_u64 self.f0
   
   meta "rewrite_def" function deep_model_Element
@@ -2014,10 +1904,72 @@ module M_implementation__get
   
   meta "rewrite_def" function lookup_Element
   
-  predicate contains_Element'1 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
+  predicate contains_Element'0 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
     lookup_Element self k <> None
   
-  meta "rewrite_def" predicate contains_Element'1
+  meta "rewrite_def" predicate contains_Element'0
+  
+  function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
+  
+  constant any_Perm_ptr_Node_T : t_Perm_ptr_Node_T
+  
+  function unwrap_Option_Perm_ptr_Node_T (self: t_Option_Perm_ptr_Node_T) : t_Perm_ptr_Node_T = match self with
+      | Some x -> x
+      | None -> any_Perm_ptr_Node_T
+      end
+  
+  function index_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) : t_Perm_ptr_Node_T
+   = unwrap_Option_Perm_ptr_Node_T (lookup_Element self key)
+  
+  meta "rewrite_def" function index_FMap_Element_Perm_ptr_Node_T
+  
+  function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
+   = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_Element
+  
+  type t_PeanoInt = { f0'1: UInt64.t }
+  
+  type t_Node_T = Root t_PeanoInt t_T | Link t_Element
+  
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_T
+  
+  function index_Mapping_Element_Int [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
+    Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_Int
+  
+  predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
+    (forall e1: t_Element, e2: t_Element. contains_Element self.f0'0.domain e1
+          /\ contains_Element self.f0'0.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
+    /\ (forall e: t_Element. contains_Element self.f0'0.domain e
+      -> contains_Element'0 self.f0'0.perms e
+      /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) = e.f0
+      /\ contains_Element self.f0'0.domain (index_Mapping_Element_Element self.f0'0.roots e)
+      /\ index_Mapping_Element_Element self.f0'0.roots (index_Mapping_Element_Element self.f0'0.roots e)
+        = index_Mapping_Element_Element self.f0'0.roots e
+      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
+          | Link e2 -> index_Mapping_Element_Element self.f0'0.roots e <> e
+          /\ contains_Element self.f0'0.domain e2
+          /\ index_Mapping_Element_Element self.f0'0.roots e = index_Mapping_Element_Element self.f0'0.roots e2
+          | Root _ payload -> index_Mapping_Element_Element self.f0'0.roots e = e
+          /\ index_Mapping_Element_T self.f0'0.payloads e = payload
+          end
+      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
+          | Link e2 -> index_Mapping_Element_Int self.f0'0.depth e < index_Mapping_Element_Int self.f0'0.depth e2
+          | Root _ _ -> true
+          end
+      /\ index_Mapping_Element_Int self.f0'0.depth e <= self.f0'0.max_depth)
+  
+  meta "rewrite_def" predicate invariant_UnionFind_T
   
   predicate inv_Element [@inline:trivial] (_1: t_Element) = true
   
@@ -2025,17 +1977,9 @@ module M_implementation__get
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
-  
-  type t_PeanoInt = { f0'1: UInt64.t }
-  
-  type t_Node_T = Root t_PeanoInt t_T | Link t_Element
-  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -2067,20 +2011,8 @@ module M_implementation__get
   axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
       = invariant_Perm_ptr_Node_T _1
   
-  constant any_Perm_ptr_Node_T : t_Perm_ptr_Node_T
-  
-  function unwrap_Option_Perm_ptr_Node_T (self: t_Option_Perm_ptr_Node_T) : t_Perm_ptr_Node_T = match self with
-      | Some x -> x
-      | None -> any_Perm_ptr_Node_T
-      end
-  
-  function index_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) : t_Perm_ptr_Node_T
-   = unwrap_Option_Perm_ptr_Node_T (lookup_Element self key)
-  
-  meta "rewrite_def" function index_FMap_Element_Perm_ptr_Node_T
-  
   predicate invariant_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    forall k: t_Element. contains_Element'1 self k
+    forall k: t_Element. contains_Element'0 self k
       -> inv_Element k /\ inv_Perm_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self k)
   
   meta "rewrite_def" predicate invariant_FMap_Element_Perm_ptr_Node_T
@@ -2090,64 +2022,6 @@ module M_implementation__get
   axiom inv_axiom'1 [@rewrite]:
     forall _1: t_FMap_Element_Perm_ptr_Node_T [inv_FMap_Element_Perm_ptr_Node_T _1]. inv_FMap_Element_Perm_ptr_Node_T _1
       = invariant_FMap_Element_Perm_ptr_Node_T _1
-  
-  predicate invariant_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    inv_FMap_Element_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FMap_Element_Perm_ptr_Node_T
-  
-  predicate inv_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (_1: t_FMap_Element_Perm_ptr_Node_T) =
-    invariant_ref_FMap_Element_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FMap_Element_Perm_ptr_Node_T
-  
-  let contains_Element'2 (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) (return (x: bool)) =
-  {[@stop_split] [@expl:contains 'self' type invariant] inv_ref_FMap_Element_Perm_ptr_Node_T self}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element'1 self key}
-      (! return {result}) ]
-  
-  function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_Element
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_T
-  
-  function index_Mapping_Element_Int [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
-    Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_Int
-  
-  predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
-    (forall e1: t_Element, e2: t_Element. contains_Element'0 self.f0'0.domain e1
-          /\ contains_Element'0 self.f0'0.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
-    /\ (forall e: t_Element. contains_Element'0 self.f0'0.domain e
-      -> contains_Element'2 self.f0'0.perms e
-      /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) = e.f0
-      /\ contains_Element'0 self.f0'0.domain (index_Mapping_Element_Element self.f0'0.roots e)
-      /\ index_Mapping_Element_Element self.f0'0.roots (index_Mapping_Element_Element self.f0'0.roots e)
-        = index_Mapping_Element_Element self.f0'0.roots e
-      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
-          | Link e2 -> index_Mapping_Element_Element self.f0'0.roots e <> e
-          /\ contains_Element'0 self.f0'0.domain e2
-          /\ index_Mapping_Element_Element self.f0'0.roots e = index_Mapping_Element_Element self.f0'0.roots e2
-          | Root _ payload -> index_Mapping_Element_Element self.f0'0.roots e = e
-          /\ index_Mapping_Element_T self.f0'0.payloads e = payload
-          end
-      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
-          | Link e2 -> index_Mapping_Element_Int self.f0'0.depth e < index_Mapping_Element_Int self.f0'0.depth e2
-          | Root _ _ -> true
-          end
-      /\ index_Mapping_Element_Int self.f0'0.depth e <= self.f0'0.max_depth)
-  
-  meta "rewrite_def" predicate invariant_UnionFind_T
   
   predicate inv_UFInner_T (_1: t_UFInner_T)
   
@@ -2200,6 +2074,16 @@ module M_implementation__get
       (! return {result}) ]
   
   type t_Option_ref_Perm_ptr_Node_T = None'0 | Some'0 t_Perm_ptr_Node_T
+  
+  predicate invariant_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
+    inv_FMap_Element_Perm_ptr_Node_T self
+  
+  meta "rewrite_def" predicate invariant_ref_FMap_Element_Perm_ptr_Node_T
+  
+  predicate inv_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (_1: t_FMap_Element_Perm_ptr_Node_T) =
+    invariant_ref_FMap_Element_Perm_ptr_Node_T _1
+  
+  meta "rewrite_def" predicate inv_ref_FMap_Element_Perm_ptr_Node_T
   
   predicate invariant_ref_Perm_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -2275,10 +2159,10 @@ module M_implementation__get
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'0.domain
   
   axiom domain_T_spec: forall self: t_UnionFind_T [domain_T self]. inv_UnionFind_T self
-      -> (forall e1: t_Element, e2: t_Element. contains_Element'0 (domain_T self) e1
-          /\ contains_Element'0 (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
+      -> (forall e1: t_Element, e2: t_Element. contains_Element (domain_T self) e1
+          /\ contains_Element (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
   
-  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element'0 (domain_T self) e
+  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element (domain_T self) e
   
   function roots_map_T (self: t_UnionFind_T) : Map.map t_Element t_Element = self.f0'0.roots
   
@@ -2496,10 +2380,6 @@ module M_implementation__impl_UnionFind_T__domain (* implementation::UnionFind<T
   
   meta "rewrite_def" predicate contains_Element
   
-  let contains_Element'0 (self: Fset.fset t_Element) (value: t_Element) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element self value}
-      (! return {result}) ]
-  
   function deep_model_Element [@inline:trivial] (self: t_Element) : UInt64.t = Ptr.addr_logic_u64 self.f0
   
   meta "rewrite_def" function deep_model_Element
@@ -2519,10 +2399,72 @@ module M_implementation__impl_UnionFind_T__domain (* implementation::UnionFind<T
   
   meta "rewrite_def" function lookup_Element
   
-  predicate contains_Element'1 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
+  predicate contains_Element'0 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
     lookup_Element self k <> None
   
-  meta "rewrite_def" predicate contains_Element'1
+  meta "rewrite_def" predicate contains_Element'0
+  
+  function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
+  
+  constant any_Perm_ptr_Node_T : t_Perm_ptr_Node_T
+  
+  function unwrap_Option_Perm_ptr_Node_T (self: t_Option_Perm_ptr_Node_T) : t_Perm_ptr_Node_T = match self with
+      | Some x -> x
+      | None -> any_Perm_ptr_Node_T
+      end
+  
+  function index_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) : t_Perm_ptr_Node_T
+   = unwrap_Option_Perm_ptr_Node_T (lookup_Element self key)
+  
+  meta "rewrite_def" function index_FMap_Element_Perm_ptr_Node_T
+  
+  function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
+   = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_Element
+  
+  type t_PeanoInt = { f0'1: UInt64.t }
+  
+  type t_Node_T = Root t_PeanoInt t_T | Link t_Element
+  
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_T
+  
+  function index_Mapping_Element_Int [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
+    Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_Int
+  
+  predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
+    (forall e1: t_Element, e2: t_Element. contains_Element self.f0'0.domain e1
+          /\ contains_Element self.f0'0.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
+    /\ (forall e: t_Element. contains_Element self.f0'0.domain e
+      -> contains_Element'0 self.f0'0.perms e
+      /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) = e.f0
+      /\ contains_Element self.f0'0.domain (index_Mapping_Element_Element self.f0'0.roots e)
+      /\ index_Mapping_Element_Element self.f0'0.roots (index_Mapping_Element_Element self.f0'0.roots e)
+        = index_Mapping_Element_Element self.f0'0.roots e
+      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
+          | Link e2 -> index_Mapping_Element_Element self.f0'0.roots e <> e
+          /\ contains_Element self.f0'0.domain e2
+          /\ index_Mapping_Element_Element self.f0'0.roots e = index_Mapping_Element_Element self.f0'0.roots e2
+          | Root _ payload -> index_Mapping_Element_Element self.f0'0.roots e = e
+          /\ index_Mapping_Element_T self.f0'0.payloads e = payload
+          end
+      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
+          | Link e2 -> index_Mapping_Element_Int self.f0'0.depth e < index_Mapping_Element_Int self.f0'0.depth e2
+          | Root _ _ -> true
+          end
+      /\ index_Mapping_Element_Int self.f0'0.depth e <= self.f0'0.max_depth)
+  
+  meta "rewrite_def" predicate invariant_UnionFind_T
   
   predicate inv_Element [@inline:trivial] (_1: t_Element) = true
   
@@ -2530,17 +2472,9 @@ module M_implementation__impl_UnionFind_T__domain (* implementation::UnionFind<T
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
-  
-  type t_PeanoInt = { f0'1: UInt64.t }
-  
-  type t_Node_T = Root t_PeanoInt t_T | Link t_Element
-  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -2572,20 +2506,8 @@ module M_implementation__impl_UnionFind_T__domain (* implementation::UnionFind<T
   axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
       = invariant_Perm_ptr_Node_T _1
   
-  constant any_Perm_ptr_Node_T : t_Perm_ptr_Node_T
-  
-  function unwrap_Option_Perm_ptr_Node_T (self: t_Option_Perm_ptr_Node_T) : t_Perm_ptr_Node_T = match self with
-      | Some x -> x
-      | None -> any_Perm_ptr_Node_T
-      end
-  
-  function index_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) : t_Perm_ptr_Node_T
-   = unwrap_Option_Perm_ptr_Node_T (lookup_Element self key)
-  
-  meta "rewrite_def" function index_FMap_Element_Perm_ptr_Node_T
-  
   predicate invariant_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    forall k: t_Element. contains_Element'1 self k
+    forall k: t_Element. contains_Element'0 self k
       -> inv_Element k /\ inv_Perm_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self k)
   
   meta "rewrite_def" predicate invariant_FMap_Element_Perm_ptr_Node_T
@@ -2595,64 +2517,6 @@ module M_implementation__impl_UnionFind_T__domain (* implementation::UnionFind<T
   axiom inv_axiom'1 [@rewrite]:
     forall _1: t_FMap_Element_Perm_ptr_Node_T [inv_FMap_Element_Perm_ptr_Node_T _1]. inv_FMap_Element_Perm_ptr_Node_T _1
       = invariant_FMap_Element_Perm_ptr_Node_T _1
-  
-  predicate invariant_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    inv_FMap_Element_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FMap_Element_Perm_ptr_Node_T
-  
-  predicate inv_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (_1: t_FMap_Element_Perm_ptr_Node_T) =
-    invariant_ref_FMap_Element_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FMap_Element_Perm_ptr_Node_T
-  
-  let contains_Element'2 (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) (return (x: bool)) =
-  {[@stop_split] [@expl:contains 'self' type invariant] inv_ref_FMap_Element_Perm_ptr_Node_T self}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element'1 self key}
-      (! return {result}) ]
-  
-  function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_Element
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_T
-  
-  function index_Mapping_Element_Int [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
-    Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_Int
-  
-  predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
-    (forall e1: t_Element, e2: t_Element. contains_Element'0 self.f0'0.domain e1
-          /\ contains_Element'0 self.f0'0.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
-    /\ (forall e: t_Element. contains_Element'0 self.f0'0.domain e
-      -> contains_Element'2 self.f0'0.perms e
-      /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) = e.f0
-      /\ contains_Element'0 self.f0'0.domain (index_Mapping_Element_Element self.f0'0.roots e)
-      /\ index_Mapping_Element_Element self.f0'0.roots (index_Mapping_Element_Element self.f0'0.roots e)
-        = index_Mapping_Element_Element self.f0'0.roots e
-      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
-          | Link e2 -> index_Mapping_Element_Element self.f0'0.roots e <> e
-          /\ contains_Element'0 self.f0'0.domain e2
-          /\ index_Mapping_Element_Element self.f0'0.roots e = index_Mapping_Element_Element self.f0'0.roots e2
-          | Root _ payload -> index_Mapping_Element_Element self.f0'0.roots e = e
-          /\ index_Mapping_Element_T self.f0'0.payloads e = payload
-          end
-      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
-          | Link e2 -> index_Mapping_Element_Int self.f0'0.depth e < index_Mapping_Element_Int self.f0'0.depth e2
-          | Root _ _ -> true
-          end
-      /\ index_Mapping_Element_Int self.f0'0.depth e <= self.f0'0.max_depth)
-  
-  meta "rewrite_def" predicate invariant_UnionFind_T
   
   predicate inv_UFInner_T (_1: t_UFInner_T)
   
@@ -2673,8 +2537,8 @@ module M_implementation__impl_UnionFind_T__domain (* implementation::UnionFind<T
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element
   
   goal vc_domain_T: inv_UnionFind_T self
-    -> (let result = self.f0'0.domain in [@stop_split] [@expl:domain ensures] forall e1: t_Element, e2: t_Element. contains_Element'0 result e1
-        /\ contains_Element'0 result e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
+    -> (let result = self.f0'0.domain in [@stop_split] [@expl:domain ensures] forall e1: t_Element, e2: t_Element. contains_Element result e1
+        /\ contains_Element result e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
 end
 module M_implementation__impl_UnionFind_T__roots_map (* implementation::UnionFind<T> *)
   use creusot.prelude.Opaque
@@ -2704,10 +2568,6 @@ module M_implementation__impl_UnionFind_T__roots_map (* implementation::UnionFin
   
   meta "rewrite_def" predicate contains_Element
   
-  let contains_Element'0 (self: Fset.fset t_Element) (value: t_Element) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element self value}
-      (! return {result}) ]
-  
   function deep_model_Element [@inline:trivial] (self: t_Element) : UInt64.t = Ptr.addr_logic_u64 self.f0
   
   meta "rewrite_def" function deep_model_Element
@@ -2727,10 +2587,72 @@ module M_implementation__impl_UnionFind_T__roots_map (* implementation::UnionFin
   
   meta "rewrite_def" function lookup_Element
   
-  predicate contains_Element'1 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
+  predicate contains_Element'0 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
     lookup_Element self k <> None
   
-  meta "rewrite_def" predicate contains_Element'1
+  meta "rewrite_def" predicate contains_Element'0
+  
+  function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
+  
+  constant any_Perm_ptr_Node_T : t_Perm_ptr_Node_T
+  
+  function unwrap_Option_Perm_ptr_Node_T (self: t_Option_Perm_ptr_Node_T) : t_Perm_ptr_Node_T = match self with
+      | Some x -> x
+      | None -> any_Perm_ptr_Node_T
+      end
+  
+  function index_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) : t_Perm_ptr_Node_T
+   = unwrap_Option_Perm_ptr_Node_T (lookup_Element self key)
+  
+  meta "rewrite_def" function index_FMap_Element_Perm_ptr_Node_T
+  
+  function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
+   = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_Element
+  
+  type t_PeanoInt = { f0'1: UInt64.t }
+  
+  type t_Node_T = Root t_PeanoInt t_T | Link t_Element
+  
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_T
+  
+  function index_Mapping_Element_Int [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
+    Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_Int
+  
+  predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
+    (forall e1: t_Element, e2: t_Element. contains_Element self.f0'0.domain e1
+          /\ contains_Element self.f0'0.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
+    /\ (forall e: t_Element. contains_Element self.f0'0.domain e
+      -> contains_Element'0 self.f0'0.perms e
+      /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) = e.f0
+      /\ contains_Element self.f0'0.domain (index_Mapping_Element_Element self.f0'0.roots e)
+      /\ index_Mapping_Element_Element self.f0'0.roots (index_Mapping_Element_Element self.f0'0.roots e)
+        = index_Mapping_Element_Element self.f0'0.roots e
+      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
+          | Link e2 -> index_Mapping_Element_Element self.f0'0.roots e <> e
+          /\ contains_Element self.f0'0.domain e2
+          /\ index_Mapping_Element_Element self.f0'0.roots e = index_Mapping_Element_Element self.f0'0.roots e2
+          | Root _ payload -> index_Mapping_Element_Element self.f0'0.roots e = e
+          /\ index_Mapping_Element_T self.f0'0.payloads e = payload
+          end
+      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
+          | Link e2 -> index_Mapping_Element_Int self.f0'0.depth e < index_Mapping_Element_Int self.f0'0.depth e2
+          | Root _ _ -> true
+          end
+      /\ index_Mapping_Element_Int self.f0'0.depth e <= self.f0'0.max_depth)
+  
+  meta "rewrite_def" predicate invariant_UnionFind_T
   
   predicate inv_Element [@inline:trivial] (_1: t_Element) = true
   
@@ -2738,17 +2660,9 @@ module M_implementation__impl_UnionFind_T__roots_map (* implementation::UnionFin
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
-  
-  type t_PeanoInt = { f0'1: UInt64.t }
-  
-  type t_Node_T = Root t_PeanoInt t_T | Link t_Element
-  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -2780,20 +2694,8 @@ module M_implementation__impl_UnionFind_T__roots_map (* implementation::UnionFin
   axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
       = invariant_Perm_ptr_Node_T _1
   
-  constant any_Perm_ptr_Node_T : t_Perm_ptr_Node_T
-  
-  function unwrap_Option_Perm_ptr_Node_T (self: t_Option_Perm_ptr_Node_T) : t_Perm_ptr_Node_T = match self with
-      | Some x -> x
-      | None -> any_Perm_ptr_Node_T
-      end
-  
-  function index_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) : t_Perm_ptr_Node_T
-   = unwrap_Option_Perm_ptr_Node_T (lookup_Element self key)
-  
-  meta "rewrite_def" function index_FMap_Element_Perm_ptr_Node_T
-  
   predicate invariant_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    forall k: t_Element. contains_Element'1 self k
+    forall k: t_Element. contains_Element'0 self k
       -> inv_Element k /\ inv_Perm_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self k)
   
   meta "rewrite_def" predicate invariant_FMap_Element_Perm_ptr_Node_T
@@ -2803,64 +2705,6 @@ module M_implementation__impl_UnionFind_T__roots_map (* implementation::UnionFin
   axiom inv_axiom'1 [@rewrite]:
     forall _1: t_FMap_Element_Perm_ptr_Node_T [inv_FMap_Element_Perm_ptr_Node_T _1]. inv_FMap_Element_Perm_ptr_Node_T _1
       = invariant_FMap_Element_Perm_ptr_Node_T _1
-  
-  predicate invariant_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    inv_FMap_Element_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FMap_Element_Perm_ptr_Node_T
-  
-  predicate inv_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (_1: t_FMap_Element_Perm_ptr_Node_T) =
-    invariant_ref_FMap_Element_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FMap_Element_Perm_ptr_Node_T
-  
-  let contains_Element'2 (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) (return (x: bool)) =
-  {[@stop_split] [@expl:contains 'self' type invariant] inv_ref_FMap_Element_Perm_ptr_Node_T self}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element'1 self key}
-      (! return {result}) ]
-  
-  function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_Element
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_T
-  
-  function index_Mapping_Element_Int [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
-    Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_Int
-  
-  predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
-    (forall e1: t_Element, e2: t_Element. contains_Element'0 self.f0'0.domain e1
-          /\ contains_Element'0 self.f0'0.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
-    /\ (forall e: t_Element. contains_Element'0 self.f0'0.domain e
-      -> contains_Element'2 self.f0'0.perms e
-      /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) = e.f0
-      /\ contains_Element'0 self.f0'0.domain (index_Mapping_Element_Element self.f0'0.roots e)
-      /\ index_Mapping_Element_Element self.f0'0.roots (index_Mapping_Element_Element self.f0'0.roots e)
-        = index_Mapping_Element_Element self.f0'0.roots e
-      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
-          | Link e2 -> index_Mapping_Element_Element self.f0'0.roots e <> e
-          /\ contains_Element'0 self.f0'0.domain e2
-          /\ index_Mapping_Element_Element self.f0'0.roots e = index_Mapping_Element_Element self.f0'0.roots e2
-          | Root _ payload -> index_Mapping_Element_Element self.f0'0.roots e = e
-          /\ index_Mapping_Element_T self.f0'0.payloads e = payload
-          end
-      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
-          | Link e2 -> index_Mapping_Element_Int self.f0'0.depth e < index_Mapping_Element_Int self.f0'0.depth e2
-          | Root _ _ -> true
-          end
-      /\ index_Mapping_Element_Int self.f0'0.depth e <= self.f0'0.max_depth)
-  
-  meta "rewrite_def" predicate invariant_UnionFind_T
   
   predicate inv_UFInner_T (_1: t_UFInner_T)
   
@@ -2875,10 +2719,10 @@ module M_implementation__impl_UnionFind_T__roots_map (* implementation::UnionFin
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'0.domain
   
   axiom domain_T_spec: forall self: t_UnionFind_T [domain_T self]. inv_UnionFind_T self
-      -> (forall e1: t_Element, e2: t_Element. contains_Element'0 (domain_T self) e1
-          /\ contains_Element'0 (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
+      -> (forall e1: t_Element, e2: t_Element. contains_Element (domain_T self) e1
+          /\ contains_Element (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
   
-  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element'0 (domain_T self) e
+  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element (domain_T self) e
   
   meta "compute_max_steps" 1000000
   
@@ -2938,10 +2782,6 @@ module M_implementation__link
   
   meta "rewrite_def" predicate contains_Element
   
-  let contains_Element'0 (self: Fset.fset t_Element) (value: t_Element) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element self value}
-      (! return {result}) ]
-  
   type t_Perm_ptr_Node_T
   
   type t_Option_Perm_ptr_Node_T = None | Some t_Perm_ptr_Node_T
@@ -2953,10 +2793,72 @@ module M_implementation__link
   
   meta "rewrite_def" function lookup_Element
   
-  predicate contains_Element'1 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
+  predicate contains_Element'0 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
     lookup_Element self k <> None
   
-  meta "rewrite_def" predicate contains_Element'1
+  meta "rewrite_def" predicate contains_Element'0
+  
+  function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
+  
+  constant any_Perm_ptr_Node_T : t_Perm_ptr_Node_T
+  
+  function unwrap_Option_Perm_ptr_Node_T (self: t_Option_Perm_ptr_Node_T) : t_Perm_ptr_Node_T = match self with
+      | Some x -> x
+      | None -> any_Perm_ptr_Node_T
+      end
+  
+  function index_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) : t_Perm_ptr_Node_T
+   = unwrap_Option_Perm_ptr_Node_T (lookup_Element self key)
+  
+  meta "rewrite_def" function index_FMap_Element_Perm_ptr_Node_T
+  
+  function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
+   = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_Element
+  
+  type t_PeanoInt = { f0'1: UInt64.t }
+  
+  type t_Node_T = Root t_PeanoInt t_T | Link t_Element
+  
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_T
+  
+  function index_Mapping_Element_Int [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
+    Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_Int
+  
+  predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
+    (forall e1: t_Element, e2: t_Element. contains_Element self.f0'0.domain e1
+          /\ contains_Element self.f0'0.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
+    /\ (forall e: t_Element. contains_Element self.f0'0.domain e
+      -> contains_Element'0 self.f0'0.perms e
+      /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) = e.f0
+      /\ contains_Element self.f0'0.domain (index_Mapping_Element_Element self.f0'0.roots e)
+      /\ index_Mapping_Element_Element self.f0'0.roots (index_Mapping_Element_Element self.f0'0.roots e)
+        = index_Mapping_Element_Element self.f0'0.roots e
+      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
+          | Link e2 -> index_Mapping_Element_Element self.f0'0.roots e <> e
+          /\ contains_Element self.f0'0.domain e2
+          /\ index_Mapping_Element_Element self.f0'0.roots e = index_Mapping_Element_Element self.f0'0.roots e2
+          | Root _ payload -> index_Mapping_Element_Element self.f0'0.roots e = e
+          /\ index_Mapping_Element_T self.f0'0.payloads e = payload
+          end
+      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
+          | Link e2 -> index_Mapping_Element_Int self.f0'0.depth e < index_Mapping_Element_Int self.f0'0.depth e2
+          | Root _ _ -> true
+          end
+      /\ index_Mapping_Element_Int self.f0'0.depth e <= self.f0'0.max_depth)
+  
+  meta "rewrite_def" predicate invariant_UnionFind_T
   
   predicate inv_Element [@inline:trivial] (_1: t_Element) = true
   
@@ -2964,17 +2866,9 @@ module M_implementation__link
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
-  
-  type t_PeanoInt = { f0'1: UInt64.t }
-  
-  type t_Node_T = Root t_PeanoInt t_T | Link t_Element
-  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -3006,20 +2900,8 @@ module M_implementation__link
   axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
       = invariant_Perm_ptr_Node_T _1
   
-  constant any_Perm_ptr_Node_T : t_Perm_ptr_Node_T
-  
-  function unwrap_Option_Perm_ptr_Node_T (self: t_Option_Perm_ptr_Node_T) : t_Perm_ptr_Node_T = match self with
-      | Some x -> x
-      | None -> any_Perm_ptr_Node_T
-      end
-  
-  function index_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) : t_Perm_ptr_Node_T
-   = unwrap_Option_Perm_ptr_Node_T (lookup_Element self key)
-  
-  meta "rewrite_def" function index_FMap_Element_Perm_ptr_Node_T
-  
   predicate invariant_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    forall k: t_Element. contains_Element'1 self k
+    forall k: t_Element. contains_Element'0 self k
       -> inv_Element k /\ inv_Perm_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self k)
   
   meta "rewrite_def" predicate invariant_FMap_Element_Perm_ptr_Node_T
@@ -3029,64 +2911,6 @@ module M_implementation__link
   axiom inv_axiom'1 [@rewrite]:
     forall _1: t_FMap_Element_Perm_ptr_Node_T [inv_FMap_Element_Perm_ptr_Node_T _1]. inv_FMap_Element_Perm_ptr_Node_T _1
       = invariant_FMap_Element_Perm_ptr_Node_T _1
-  
-  predicate invariant_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    inv_FMap_Element_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FMap_Element_Perm_ptr_Node_T
-  
-  predicate inv_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (_1: t_FMap_Element_Perm_ptr_Node_T) =
-    invariant_ref_FMap_Element_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FMap_Element_Perm_ptr_Node_T
-  
-  let contains_Element'2 (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) (return (x: bool)) =
-  {[@stop_split] [@expl:contains 'self' type invariant] inv_ref_FMap_Element_Perm_ptr_Node_T self}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element'1 self key}
-      (! return {result}) ]
-  
-  function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_Element
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_T
-  
-  function index_Mapping_Element_Int [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
-    Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_Int
-  
-  predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
-    (forall e1: t_Element, e2: t_Element. contains_Element'0 self.f0'0.domain e1
-          /\ contains_Element'0 self.f0'0.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
-    /\ (forall e: t_Element. contains_Element'0 self.f0'0.domain e
-      -> contains_Element'2 self.f0'0.perms e
-      /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) = e.f0
-      /\ contains_Element'0 self.f0'0.domain (index_Mapping_Element_Element self.f0'0.roots e)
-      /\ index_Mapping_Element_Element self.f0'0.roots (index_Mapping_Element_Element self.f0'0.roots e)
-        = index_Mapping_Element_Element self.f0'0.roots e
-      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
-          | Link e2 -> index_Mapping_Element_Element self.f0'0.roots e <> e
-          /\ contains_Element'0 self.f0'0.domain e2
-          /\ index_Mapping_Element_Element self.f0'0.roots e = index_Mapping_Element_Element self.f0'0.roots e2
-          | Root _ payload -> index_Mapping_Element_Element self.f0'0.roots e = e
-          /\ index_Mapping_Element_T self.f0'0.payloads e = payload
-          end
-      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
-          | Link e2 -> index_Mapping_Element_Int self.f0'0.depth e < index_Mapping_Element_Int self.f0'0.depth e2
-          | Root _ _ -> true
-          end
-      /\ index_Mapping_Element_Int self.f0'0.depth e <= self.f0'0.max_depth)
-  
-  meta "rewrite_def" predicate invariant_UnionFind_T
   
   predicate inv_UFInner_T (_1: t_UFInner_T)
   
@@ -3262,7 +3086,7 @@ module M_implementation__link
   
   axiom remove_Element_spec'0:
     forall self: t_FMap_Element_Perm_ptr_Node_T, k: t_Element [remove_Element self k]. len_Element (remove_Element self k)
-      = (if contains_Element'1 self k then len_Element self - 1 else len_Element self)
+      = (if contains_Element'0 self k then len_Element self - 1 else len_Element self)
   
   function add_Element (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) (v: t_Perm_ptr_Node_T) : t_FMap_Element_Perm_ptr_Node_T
   
@@ -3272,12 +3096,12 @@ module M_implementation__link
   
   axiom add_Element_spec'0:
     forall self: t_FMap_Element_Perm_ptr_Node_T, k: t_Element, v: t_Perm_ptr_Node_T [add_Element self k v]. len_Element (add_Element self k v)
-      = (if contains_Element'1 self k then len_Element self else len_Element self + 1)
+      = (if contains_Element'0 self k then len_Element self else len_Element self + 1)
   
   let split_mut_Element (self: MutBorrow.t t_FMap_Element_Perm_ptr_Node_T) (key: t_Element)
     (return (x: tup2_refmut_Perm_ptr_Node_T_refmut_FMap_Element_Perm_ptr_Node_T)) =
   {[@stop_split] [@expl:split_mut_Element requires] ([@stop_split] [@expl:split_mut 'self' type invariant] inv_refmut_FMap_Element_Perm_ptr_Node_T self)
-    /\ ([@stop_split] [@expl:split_mut requires] contains_Element'1 self.current key)}
+    /\ ([@stop_split] [@expl:split_mut requires] contains_Element'0 self.current key)}
     any
     [ return (result: tup2_refmut_Perm_ptr_Node_T_refmut_FMap_Element_Perm_ptr_Node_T) ->
     {[@stop_split] [@expl:split_mut_Element ensures] ([@stop_split] [@expl:split_mut result type invariant] inv_tup2_refmut_Perm_ptr_Node_T_refmut_FMap_Element_Perm_ptr_Node_T result)
@@ -3476,10 +3300,10 @@ module M_implementation__link
     any
     [ return (result: t_Option_refmut_Perm_ptr_Node_T) ->
     {[@stop_split] [@expl:get_mut_Element ensures] ([@stop_split] [@expl:get_mut result type invariant] inv_Option_refmut_Perm_ptr_Node_T result)
-      /\ ([@stop_split] [@expl:get_mut ensures #0] if contains_Element'1 self.current key then
+      /\ ([@stop_split] [@expl:get_mut ensures #0] if contains_Element'0 self.current key then
           match result with
             | None'0 -> false
-            | Some'0 r -> contains_Element'1 self.final key
+            | Some'0 r -> contains_Element'0 self.final key
             /\ index_FMap_Element_Perm_ptr_Node_T self.current key = r.current
             /\ index_FMap_Element_Perm_ptr_Node_T self.final key = r.final
             end
@@ -3595,10 +3419,10 @@ module M_implementation__link
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'0.domain
   
   axiom domain_T_spec: forall self: t_UnionFind_T [domain_T self]. inv_UnionFind_T self
-      -> (forall e1: t_Element, e2: t_Element. contains_Element'0 (domain_T self) e1
-          /\ contains_Element'0 (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
+      -> (forall e1: t_Element, e2: t_Element. contains_Element (domain_T self) e1
+          /\ contains_Element (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
   
-  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element'0 (domain_T self) e
+  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element (domain_T self) e
   
   function roots_map_T (self: t_UnionFind_T) : Map.map t_Element t_Element = self.f0'0.roots
   
@@ -4162,10 +3986,6 @@ module M_implementation__make
   
   meta "rewrite_def" predicate contains_Element
   
-  let contains_Element'0 (self: Fset.fset t_Element) (value: t_Element) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element self value}
-      (! return {result}) ]
-  
   function deep_model_Element [@inline:trivial] (self: t_Element) : UInt64.t = Ptr.addr_logic_u64 self.f0'0
   
   meta "rewrite_def" function deep_model_Element
@@ -4183,14 +4003,10 @@ module M_implementation__make
   
   meta "rewrite_def" function lookup_Element
   
-  predicate contains_Element'1 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
+  predicate contains_Element'0 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
     lookup_Element self k <> None
   
-  meta "rewrite_def" predicate contains_Element'1
-  
-  predicate inv_Element [@inline:trivial] (_1: t_Element) = true
-  
-  meta "rewrite_def" predicate inv_Element
+  meta "rewrite_def" predicate contains_Element'0
   
   constant any_Perm_ptr_Node_T : t_Perm_ptr_Node_T
   
@@ -4203,34 +4019,6 @@ module M_implementation__make
    = unwrap_Option_Perm_ptr_Node_T (lookup_Element self key)
   
   meta "rewrite_def" function index_FMap_Element_Perm_ptr_Node_T
-  
-  predicate invariant_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    forall k: t_Element. contains_Element'1 self k
-      -> inv_Element k /\ inv_Perm_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self k)
-  
-  meta "rewrite_def" predicate invariant_FMap_Element_Perm_ptr_Node_T
-  
-  predicate inv_FMap_Element_Perm_ptr_Node_T (_1: t_FMap_Element_Perm_ptr_Node_T)
-  
-  axiom inv_axiom'1 [@rewrite]:
-    forall _1: t_FMap_Element_Perm_ptr_Node_T [inv_FMap_Element_Perm_ptr_Node_T _1]. inv_FMap_Element_Perm_ptr_Node_T _1
-      = invariant_FMap_Element_Perm_ptr_Node_T _1
-  
-  predicate invariant_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    inv_FMap_Element_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FMap_Element_Perm_ptr_Node_T
-  
-  predicate inv_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (_1: t_FMap_Element_Perm_ptr_Node_T) =
-    invariant_ref_FMap_Element_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FMap_Element_Perm_ptr_Node_T
-  
-  let contains_Element'2 (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) (return (x: bool)) =
-  {[@stop_split] [@expl:contains 'self' type invariant] inv_ref_FMap_Element_Perm_ptr_Node_T self}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element'1 self key}
-      (! return {result}) ]
   
   function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
    = Map.get self a
@@ -4247,17 +4035,17 @@ module M_implementation__make
   meta "rewrite_def" function index_Mapping_Element_Int
   
   predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
-    (forall e1: t_Element, e2: t_Element. contains_Element'0 self.f0'2.domain e1
-          /\ contains_Element'0 self.f0'2.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
-    /\ (forall e: t_Element. contains_Element'0 self.f0'2.domain e
-      -> contains_Element'2 self.f0'2.perms e
+    (forall e1: t_Element, e2: t_Element. contains_Element self.f0'2.domain e1
+          /\ contains_Element self.f0'2.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
+    /\ (forall e: t_Element. contains_Element self.f0'2.domain e
+      -> contains_Element'0 self.f0'2.perms e
       /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'2.perms e) = e.f0'0
-      /\ contains_Element'0 self.f0'2.domain (index_Mapping_Element_Element self.f0'2.roots e)
+      /\ contains_Element self.f0'2.domain (index_Mapping_Element_Element self.f0'2.roots e)
       /\ index_Mapping_Element_Element self.f0'2.roots (index_Mapping_Element_Element self.f0'2.roots e)
         = index_Mapping_Element_Element self.f0'2.roots e
       /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'2.perms e) with
           | Link e2 -> index_Mapping_Element_Element self.f0'2.roots e <> e
-          /\ contains_Element'0 self.f0'2.domain e2
+          /\ contains_Element self.f0'2.domain e2
           /\ index_Mapping_Element_Element self.f0'2.roots e = index_Mapping_Element_Element self.f0'2.roots e2
           | Root _ payload -> index_Mapping_Element_Element self.f0'2.roots e = e
           /\ index_Mapping_Element_T self.f0'2.payloads e = payload
@@ -4269,6 +4057,22 @@ module M_implementation__make
       /\ index_Mapping_Element_Int self.f0'2.depth e <= self.f0'2.max_depth)
   
   meta "rewrite_def" predicate invariant_UnionFind_T
+  
+  predicate inv_Element [@inline:trivial] (_1: t_Element) = true
+  
+  meta "rewrite_def" predicate inv_Element
+  
+  predicate invariant_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
+    forall k: t_Element. contains_Element'0 self k
+      -> inv_Element k /\ inv_Perm_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self k)
+  
+  meta "rewrite_def" predicate invariant_FMap_Element_Perm_ptr_Node_T
+  
+  predicate inv_FMap_Element_Perm_ptr_Node_T (_1: t_FMap_Element_Perm_ptr_Node_T)
+  
+  axiom inv_axiom'1 [@rewrite]:
+    forall _1: t_FMap_Element_Perm_ptr_Node_T [inv_FMap_Element_Perm_ptr_Node_T _1]. inv_FMap_Element_Perm_ptr_Node_T _1
+      = invariant_FMap_Element_Perm_ptr_Node_T _1
   
   predicate inv_UFInner_T (_1: t_UFInner_T)
   
@@ -4312,10 +4116,10 @@ module M_implementation__make
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'2.domain
   
   axiom domain_T_spec: forall self: t_UnionFind_T [domain_T self]. inv_UnionFind_T self
-      -> (forall e1: t_Element, e2: t_Element. contains_Element'0 (domain_T self) e1
-          /\ contains_Element'0 (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
+      -> (forall e1: t_Element, e2: t_Element. contains_Element (domain_T self) e1
+          /\ contains_Element (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
   
-  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element'0 (domain_T self) e
+  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element (domain_T self) e
   
   type t_Option_Element = None'0 | Some'0 t_Element
   
@@ -4354,6 +4158,16 @@ module M_implementation__make
       any) ]
   
   type t_Option_ref_Perm_ptr_Node_T = None'1 | Some'1 t_Perm_ptr_Node_T
+  
+  predicate invariant_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
+    inv_FMap_Element_Perm_ptr_Node_T self
+  
+  meta "rewrite_def" predicate invariant_ref_FMap_Element_Perm_ptr_Node_T
+  
+  predicate inv_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (_1: t_FMap_Element_Perm_ptr_Node_T) =
+    invariant_ref_FMap_Element_Perm_ptr_Node_T _1
+  
+  meta "rewrite_def" predicate inv_ref_FMap_Element_Perm_ptr_Node_T
   
   predicate invariant_ref_Perm_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) = inv_Perm_ptr_Node_T self
   
@@ -4468,7 +4282,7 @@ module M_implementation__make
   
   axiom add_Element_spec'0:
     forall self: t_FMap_Element_Perm_ptr_Node_T, k: t_Element, v: t_Perm_ptr_Node_T [add_Element self k v]. len_Element (add_Element self k v)
-      = (if contains_Element'1 self k then len_Element self else len_Element self + 1)
+      = (if contains_Element'0 self k then len_Element self else len_Element self + 1)
   
   let insert_Element (self: MutBorrow.t t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) (value: t_Perm_ptr_Node_T)
     (return (x: t_Option_Perm_ptr_Node_T)) =
@@ -4804,10 +4618,6 @@ module M_implementation__new
   
   meta "rewrite_def" predicate contains_Element'0
   
-  let contains_Element'1 (self: Fset.fset t_Element) (value: t_Element) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element'0 self value}
-      (! return {result}) ]
-  
   function deep_model_Element [@inline:trivial] (self: t_Element) : UInt64.t = Ptr.addr_logic_u64 self.f0
   
   meta "rewrite_def" function deep_model_Element
@@ -4815,22 +4625,6 @@ module M_implementation__new
   function deep_model_ref_Element [@inline:trivial] (self: t_Element) : UInt64.t = deep_model_Element self
   
   meta "rewrite_def" function deep_model_ref_Element
-  
-  predicate invariant_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    inv_FMap_Element_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FMap_Element_Perm_ptr_Node_T
-  
-  predicate inv_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (_1: t_FMap_Element_Perm_ptr_Node_T) =
-    invariant_ref_FMap_Element_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FMap_Element_Perm_ptr_Node_T
-  
-  let contains_Element'2 (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) (return (x: bool)) =
-  {[@stop_split] [@expl:contains 'self' type invariant] inv_ref_FMap_Element_Perm_ptr_Node_T self}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element self key}
-      (! return {result}) ]
   
   function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
    = Map.get self a
@@ -4851,17 +4645,17 @@ module M_implementation__new
   meta "rewrite_def" function index_Mapping_Element_Int
   
   predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
-    (forall e1: t_Element, e2: t_Element. contains_Element'1 self.f0'1.domain e1
-          /\ contains_Element'1 self.f0'1.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
-    /\ (forall e: t_Element. contains_Element'1 self.f0'1.domain e
-      -> contains_Element'2 self.f0'1.perms e
+    (forall e1: t_Element, e2: t_Element. contains_Element'0 self.f0'1.domain e1
+          /\ contains_Element'0 self.f0'1.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
+    /\ (forall e: t_Element. contains_Element'0 self.f0'1.domain e
+      -> contains_Element self.f0'1.perms e
       /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'1.perms e) = e.f0
-      /\ contains_Element'1 self.f0'1.domain (index_Mapping_Element_Element self.f0'1.roots e)
+      /\ contains_Element'0 self.f0'1.domain (index_Mapping_Element_Element self.f0'1.roots e)
       /\ index_Mapping_Element_Element self.f0'1.roots (index_Mapping_Element_Element self.f0'1.roots e)
         = index_Mapping_Element_Element self.f0'1.roots e
       /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'1.perms e) with
           | Link e2 -> index_Mapping_Element_Element self.f0'1.roots e <> e
-          /\ contains_Element'1 self.f0'1.domain e2
+          /\ contains_Element'0 self.f0'1.domain e2
           /\ index_Mapping_Element_Element self.f0'1.roots e = index_Mapping_Element_Element self.f0'1.roots e2
           | Root _ payload -> index_Mapping_Element_Element self.f0'1.roots e = e
           /\ index_Mapping_Element_T self.f0'1.payloads e = payload
@@ -4903,8 +4697,8 @@ module M_implementation__new
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'1.domain
   
   axiom domain_T_spec: forall self: t_UnionFind_T [domain_T self]. inv_UnionFind_T self
-      -> (forall e1: t_Element, e2: t_Element. contains_Element'1 (domain_T self) e1
-          /\ contains_Element'1 (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
+      -> (forall e1: t_Element, e2: t_Element. contains_Element'0 (domain_T self) e1
+          /\ contains_Element'0 (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
   
   meta "compute_max_steps" 1000000
   
@@ -4968,10 +4762,6 @@ module M_implementation__union
   
   meta "rewrite_def" predicate contains_Element
   
-  let contains_Element'0 (self: Fset.fset t_Element) (value: t_Element) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element self value}
-      (! return {result}) ]
-  
   function deep_model_Element [@inline:trivial] (self: t_Element) : UInt64.t = Ptr.addr_logic_u64 self.f0
   
   meta "rewrite_def" function deep_model_Element
@@ -4991,10 +4781,72 @@ module M_implementation__union
   
   meta "rewrite_def" function lookup_Element
   
-  predicate contains_Element'1 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
+  predicate contains_Element'0 [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (k: t_Element) =
     lookup_Element self k <> None
   
-  meta "rewrite_def" predicate contains_Element'1
+  meta "rewrite_def" predicate contains_Element'0
+  
+  function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
+  
+  constant any_Perm_ptr_Node_T : t_Perm_ptr_Node_T
+  
+  function unwrap_Option_Perm_ptr_Node_T (self: t_Option_Perm_ptr_Node_T) : t_Perm_ptr_Node_T = match self with
+      | Some x -> x
+      | None -> any_Perm_ptr_Node_T
+      end
+  
+  function index_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) : t_Perm_ptr_Node_T
+   = unwrap_Option_Perm_ptr_Node_T (lookup_Element self key)
+  
+  meta "rewrite_def" function index_FMap_Element_Perm_ptr_Node_T
+  
+  function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
+   = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_Element
+  
+  type t_PeanoInt = { f0'1: UInt64.t }
+  
+  type t_Node_T = Root t_PeanoInt t_T | Link t_Element
+  
+  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
+  
+  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
+  
+  meta "rewrite_def" function val_ptr_Node_T
+  
+  function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_T
+  
+  function index_Mapping_Element_Int [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
+    Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Element_Int
+  
+  predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
+    (forall e1: t_Element, e2: t_Element. contains_Element self.f0'0.domain e1
+          /\ contains_Element self.f0'0.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
+    /\ (forall e: t_Element. contains_Element self.f0'0.domain e
+      -> contains_Element'0 self.f0'0.perms e
+      /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) = e.f0
+      /\ contains_Element self.f0'0.domain (index_Mapping_Element_Element self.f0'0.roots e)
+      /\ index_Mapping_Element_Element self.f0'0.roots (index_Mapping_Element_Element self.f0'0.roots e)
+        = index_Mapping_Element_Element self.f0'0.roots e
+      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
+          | Link e2 -> index_Mapping_Element_Element self.f0'0.roots e <> e
+          /\ contains_Element self.f0'0.domain e2
+          /\ index_Mapping_Element_Element self.f0'0.roots e = index_Mapping_Element_Element self.f0'0.roots e2
+          | Root _ payload -> index_Mapping_Element_Element self.f0'0.roots e = e
+          /\ index_Mapping_Element_T self.f0'0.payloads e = payload
+          end
+      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
+          | Link e2 -> index_Mapping_Element_Int self.f0'0.depth e < index_Mapping_Element_Int self.f0'0.depth e2
+          | Root _ _ -> true
+          end
+      /\ index_Mapping_Element_Int self.f0'0.depth e <= self.f0'0.max_depth)
+  
+  meta "rewrite_def" predicate invariant_UnionFind_T
   
   predicate inv_Element [@inline:trivial] (_1: t_Element) = true
   
@@ -5002,17 +4854,9 @@ module M_implementation__union
   
   predicate is_null_ptr_Node_T (self: Opaque.ptr) = Ptr.addr_logic_u64 self = (0: UInt64.t)
   
-  function ward_ptr_Node_T (self: t_Perm_ptr_Node_T) : Opaque.ptr
-  
-  type t_PeanoInt = { f0'1: UInt64.t }
-  
-  type t_Node_T = Root t_PeanoInt t_T | Link t_Element
-  
   predicate metadata_matches_Node_T [@inline:trivial] (_value: t_Node_T) (_metadata: ()) = true
   
   meta "rewrite_def" predicate metadata_matches_Node_T
-  
-  function val_unsized_ptr_Node_T (self: t_Perm_ptr_Node_T) : t_Node_T
   
   function metadata_Node_T (_1: Opaque.ptr) : ()
   
@@ -5044,20 +4888,8 @@ module M_implementation__union
   axiom inv_axiom'0 [@rewrite]: forall _1: t_Perm_ptr_Node_T [inv_Perm_ptr_Node_T _1]. inv_Perm_ptr_Node_T _1
       = invariant_Perm_ptr_Node_T _1
   
-  constant any_Perm_ptr_Node_T : t_Perm_ptr_Node_T
-  
-  function unwrap_Option_Perm_ptr_Node_T (self: t_Option_Perm_ptr_Node_T) : t_Perm_ptr_Node_T = match self with
-      | Some x -> x
-      | None -> any_Perm_ptr_Node_T
-      end
-  
-  function index_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) : t_Perm_ptr_Node_T
-   = unwrap_Option_Perm_ptr_Node_T (lookup_Element self key)
-  
-  meta "rewrite_def" function index_FMap_Element_Perm_ptr_Node_T
-  
   predicate invariant_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    forall k: t_Element. contains_Element'1 self k
+    forall k: t_Element. contains_Element'0 self k
       -> inv_Element k /\ inv_Perm_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self k)
   
   meta "rewrite_def" predicate invariant_FMap_Element_Perm_ptr_Node_T
@@ -5067,64 +4899,6 @@ module M_implementation__union
   axiom inv_axiom'1 [@rewrite]:
     forall _1: t_FMap_Element_Perm_ptr_Node_T [inv_FMap_Element_Perm_ptr_Node_T _1]. inv_FMap_Element_Perm_ptr_Node_T _1
       = invariant_FMap_Element_Perm_ptr_Node_T _1
-  
-  predicate invariant_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (self: t_FMap_Element_Perm_ptr_Node_T) =
-    inv_FMap_Element_Perm_ptr_Node_T self
-  
-  meta "rewrite_def" predicate invariant_ref_FMap_Element_Perm_ptr_Node_T
-  
-  predicate inv_ref_FMap_Element_Perm_ptr_Node_T [@inline:trivial] (_1: t_FMap_Element_Perm_ptr_Node_T) =
-    invariant_ref_FMap_Element_Perm_ptr_Node_T _1
-  
-  meta "rewrite_def" predicate inv_ref_FMap_Element_Perm_ptr_Node_T
-  
-  let contains_Element'2 (self: t_FMap_Element_Perm_ptr_Node_T) (key: t_Element) (return (x: bool)) =
-  {[@stop_split] [@expl:contains 'self' type invariant] inv_ref_FMap_Element_Perm_ptr_Node_T self}
-    any
-    [ return (result: bool) -> {[@stop_split] [@expl:contains ensures] result = contains_Element'1 self key}
-      (! return {result}) ]
-  
-  function index_Mapping_Element_Element [@inline:trivial] (self: Map.map t_Element t_Element) (a: t_Element) : t_Element
-   = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_Element
-  
-  function val_ptr_Node_T [@inline:trivial] (self: t_Perm_ptr_Node_T) : t_Node_T = val_unsized_ptr_Node_T self
-  
-  meta "rewrite_def" function val_ptr_Node_T
-  
-  function index_Mapping_Element_T [@inline:trivial] (self: Map.map t_Element t_T) (a: t_Element) : t_T = Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_T
-  
-  function index_Mapping_Element_Int [@inline:trivial] (self: Map.map t_Element int) (a: t_Element) : int =
-    Map.get self a
-  
-  meta "rewrite_def" function index_Mapping_Element_Int
-  
-  predicate invariant_UnionFind_T [@inline:trivial] (self: t_UnionFind_T) =
-    (forall e1: t_Element, e2: t_Element. contains_Element'0 self.f0'0.domain e1
-          /\ contains_Element'0 self.f0'0.domain e2 /\ deep_model_ref_Element e1 = deep_model_ref_Element e2 -> e1 = e2)
-    /\ (forall e: t_Element. contains_Element'0 self.f0'0.domain e
-      -> contains_Element'2 self.f0'0.perms e
-      /\ ward_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) = e.f0
-      /\ contains_Element'0 self.f0'0.domain (index_Mapping_Element_Element self.f0'0.roots e)
-      /\ index_Mapping_Element_Element self.f0'0.roots (index_Mapping_Element_Element self.f0'0.roots e)
-        = index_Mapping_Element_Element self.f0'0.roots e
-      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
-          | Link e2 -> index_Mapping_Element_Element self.f0'0.roots e <> e
-          /\ contains_Element'0 self.f0'0.domain e2
-          /\ index_Mapping_Element_Element self.f0'0.roots e = index_Mapping_Element_Element self.f0'0.roots e2
-          | Root _ payload -> index_Mapping_Element_Element self.f0'0.roots e = e
-          /\ index_Mapping_Element_T self.f0'0.payloads e = payload
-          end
-      /\ match val_ptr_Node_T (index_FMap_Element_Perm_ptr_Node_T self.f0'0.perms e) with
-          | Link e2 -> index_Mapping_Element_Int self.f0'0.depth e < index_Mapping_Element_Int self.f0'0.depth e2
-          | Root _ _ -> true
-          end
-      /\ index_Mapping_Element_Int self.f0'0.depth e <= self.f0'0.max_depth)
-  
-  meta "rewrite_def" predicate invariant_UnionFind_T
   
   predicate inv_UFInner_T (_1: t_UFInner_T)
   
@@ -5204,10 +4978,10 @@ module M_implementation__union
   function domain_T (self: t_UnionFind_T) : Fset.fset t_Element = self.f0'0.domain
   
   axiom domain_T_spec: forall self: t_UnionFind_T [domain_T self]. inv_UnionFind_T self
-      -> (forall e1: t_Element, e2: t_Element. contains_Element'0 (domain_T self) e1
-          /\ contains_Element'0 (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
+      -> (forall e1: t_Element, e2: t_Element. contains_Element (domain_T self) e1
+          /\ contains_Element (domain_T self) e2 /\ deep_model_Element e1 = deep_model_Element e2 -> e1 = e2)
   
-  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element'0 (domain_T self) e
+  predicate in_domain_T (self: t_UnionFind_T) (e: t_Element) = contains_Element (domain_T self) e
   
   function roots_map_T (self: t_UnionFind_T) : Map.map t_Element t_Element = self.f0'0.roots
   

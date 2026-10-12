@@ -1,15 +1,12 @@
 module M_create_arr
-  use creusot.int.Int32
   use seq.Seq
+  use creusot.int.Int32
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use int.Int
   
   type t_Vec_i32_Global
-  
-  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -20,7 +17,8 @@ module M_create_arr
       <= UInt64.t'int const_MAX
   
   let new_i32 (return (x: t_Vec_i32_Global)) = any
-    [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:new ensures] len_i32 (view_Vec_i32_Global result) = 0}
+    [ return (result: t_Vec_i32_Global) -> {[@stop_split] [@expl:new ensures] Seq.length (view_Vec_i32_Global result)
+      = 0}
       (! return {result}) ]
   
   let push_i32 (self: MutBorrow.t t_Vec_i32_Global) (value: Int32.t) (return (x: ())) = any
@@ -70,7 +68,7 @@ module M_create_arr
     | & _11: () = Any.any_l ()
     | & _12: MutBorrow.t t_Vec_i32_Global = Any.any_l () ])
     [ return (result: t_Vec_i32_Global) ->
-    {[@stop_split] [@expl:create_arr ensures] len_i32 (view_Vec_i32_Global result) = 5
+    {[@stop_split] [@expl:create_arr ensures] Seq.length (view_Vec_i32_Global result) = 5
       /\ Int32.to_int (index_Vec_i32_Global result 0) = 0
       /\ Int32.to_int (index_Vec_i32_Global result 1) = 1
       /\ Int32.to_int (index_Vec_i32_Global result 2) = 2
@@ -78,8 +76,8 @@ module M_create_arr
       (! return {result}) ]
 end
 module M_test_range
-  use creusot.int.Int32
   use seq.Seq
+  use creusot.int.Int32
   use creusot.int.UInt64
   use creusot.slice.Slice64
   use creusot.prelude.MutBorrow
@@ -88,9 +86,6 @@ module M_test_range
   use int.Int
   
   type t_Vec_i32_Global
-  
-  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -107,7 +102,7 @@ module M_test_range
   
   let create_arr (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) ->
-    {[@stop_split] [@expl:create_arr ensures] len_i32 (view_Vec_i32_Global result) = 5
+    {[@stop_split] [@expl:create_arr ensures] Seq.length (view_Vec_i32_Global result) = 5
       /\ Int32.to_int (index_Vec_i32_Global result 0) = 0
       /\ Int32.to_int (index_Vec_i32_Global result 1) = 1
       /\ Int32.to_int (index_Vec_i32_Global result 2) = 2
@@ -129,8 +124,9 @@ module M_test_range
     {[@stop_split] [@expl:index ensures] has_value_Range_usize index (view_Vec_i32_Global self) result}
       (! return {result}) ]
   
-  let len_i32'0 (self: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] len_i32 (Slice64.view self) = UInt64.t'int result}
+  let len_i32 (self: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
+      = UInt64.t'int result}
       (! return {result}) ]
   
   let deref_Vec_i32_Global (self: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
@@ -162,17 +158,17 @@ module M_test_range
     {[@stop_split] [@expl:index_mut_Vec_i32_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_Range_usize index (view_Vec_i32_Global self.current) result.current)
       /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_Range_usize index (view_Vec_i32_Global self.final) result.final)
       /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_Range_usize index (view_Vec_i32_Global self.current) (view_Vec_i32_Global self.final))
-      /\ ([@stop_split] [@expl:index_mut ensures #3] len_i32 (view_Vec_i32_Global self.final)
-      = len_i32 (view_Vec_i32_Global self.current))}
+      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_i32_Global self.final)
+      = Seq.length (view_Vec_i32_Global self.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_slice_i32
   
-  let len_i32'1 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32'0 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = len_i32 (view_Vec_i32_Global self)}
+      = Seq.length (view_Vec_i32_Global self)}
       (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
@@ -202,7 +198,7 @@ module M_test_range
       | s1 = [ &_5 <- { start = (0: UInt64.t); end' = (2: UInt64.t) } ] s2
       | s2 = index_Vec_i32_Global'0 {arr} {_5} (fun (_x: Slice64.slice Int32.t) -> [ &_3 <- _x ] s3)
       | s3 = [ &s <- _3 ] s4
-      | s4 = len_i32'0 {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
+      | s4 = len_i32 {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
       | s5 = [ &_7 <- _8 = (2: UInt64.t) ] s6
       | s6 = any [ br0 -> {_7 = false} (! bb12) | br1 -> {_7} (! bb4) ] ]
     | bb4 = s0
@@ -225,7 +221,7 @@ module M_test_range
       [ s0 = [ &_24 <- { start = (3: UInt64.t); end' = (5: UInt64.t) } ] s1
       | s1 = index_Vec_i32_Global'0 {arr} {_24} (fun (_x: Slice64.slice Int32.t) -> [ &_22 <- _x ] s2)
       | s2 = [ &s'0 <- _22 ] s3
-      | s3 = len_i32'0 {s'0} (fun (_x: UInt64.t) -> [ &_27 <- _x ] s4)
+      | s3 = len_i32 {s'0} (fun (_x: UInt64.t) -> [ &_27 <- _x ] s4)
       | s4 = [ &_26 <- _27 = (2: UInt64.t) ] s5
       | s5 = any [ br0 -> {_26 = false} (! bb23) | br1 -> {_26} (! bb15) ] ]
     | bb15 = s0
@@ -247,13 +243,13 @@ module M_test_range
     | bb19 = s0
       [ s0 = [ &_46 <- { start = (2: UInt64.t); end' = (2: UInt64.t) } ] s1
       | s1 = index_Vec_i32_Global'0 {arr} {_46} (fun (_x: Slice64.slice Int32.t) -> [ &_44 <- _x ] s2)
-      | s2 = len_i32'0 {_44} (fun (_x: UInt64.t) -> [ &_42 <- _x ] s3)
+      | s2 = len_i32 {_44} (fun (_x: UInt64.t) -> [ &_42 <- _x ] s3)
       | s3 = [ &_41 <- _42 = (0: UInt64.t) ] s4
       | s4 = any [ br0 -> {_41 = false} (! bb27) | br1 -> {_41} (! bb26) ] ]
     | bb26 = s0
       [ s0 = [ &_54 <- { start = (5: UInt64.t); end' = (5: UInt64.t) } ] s1
       | s1 = index_Vec_i32_Global'0 {arr} {_54} (fun (_x: Slice64.slice Int32.t) -> [ &_52 <- _x ] s2)
-      | s2 = len_i32'0 {_52} (fun (_x: UInt64.t) -> [ &_50 <- _x ] s3)
+      | s2 = len_i32 {_52} (fun (_x: UInt64.t) -> [ &_50 <- _x ] s3)
       | s3 = [ &_49 <- _50 = (0: UInt64.t) ] s4
       | s4 = any [ br0 -> {_49 = false} (! bb31) | br1 -> {_49} (! bb30) ] ]
     | bb30 = s0
@@ -288,7 +284,7 @@ module M_test_range
       | s3 = MutBorrow.borrow_final <Slice64.slice Int32.t> {_93.current} {MutBorrow.get_id _93}
           (fun (_bor: MutBorrow.t (Slice64.slice Int32.t)) ->
             [ &s'1 <- _bor ] [ &_93 <- { _93 with current = _bor.final } ] s4)
-      | s4 = len_i32'0 {s'1.current} (fun (_x: UInt64.t) -> [ &_98 <- _x ] s5)
+      | s4 = len_i32 {s'1.current} (fun (_x: UInt64.t) -> [ &_98 <- _x ] s5)
       | s5 = [ &_97 <- _98 = (3: UInt64.t) ] s6
       | s6 = any [ br0 -> {_97 = false} (! bb55) | br1 -> {_97} (! bb54) ] ]
     | bb54 = s0
@@ -320,7 +316,7 @@ module M_test_range
       | s20 = [ &_110 <- _111 = (3: Int32.t) ] s21
       | s21 = any [ br0 -> {_110 = false} (! bb60) | br1 -> {_110} (! bb59) ] ]
     | bb59 = s0
-      [ s0 = len_i32'1 {arr} (fun (_x: UInt64.t) -> [ &_119 <- _x ] s1)
+      [ s0 = len_i32'0 {arr} (fun (_x: UInt64.t) -> [ &_119 <- _x ] s1)
       | s1 = [ &_118 <- _119 = (5: UInt64.t) ] s2
       | s2 = any [ br0 -> {_118 = false} (! bb63) | br1 -> {_118} (! bb62) ] ]
     | bb62 = s0
@@ -451,8 +447,8 @@ module M_test_range
     | & _149: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_range_from
-  use creusot.int.Int32
   use seq.Seq
+  use creusot.int.Int32
   use creusot.int.UInt64
   use creusot.slice.Slice64
   use creusot.prelude.MutBorrow
@@ -461,9 +457,6 @@ module M_test_range_from
   use int.Int
   
   type t_Vec_i32_Global
-  
-  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -480,7 +473,7 @@ module M_test_range_from
   
   let create_arr (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) ->
-    {[@stop_split] [@expl:create_arr ensures] len_i32 (view_Vec_i32_Global result) = 5
+    {[@stop_split] [@expl:create_arr ensures] Seq.length (view_Vec_i32_Global result) = 5
       /\ Int32.to_int (index_Vec_i32_Global result 0) = 0
       /\ Int32.to_int (index_Vec_i32_Global result 1) = 1
       /\ Int32.to_int (index_Vec_i32_Global result 2) = 2
@@ -502,8 +495,9 @@ module M_test_range_from
     {[@stop_split] [@expl:index ensures] has_value_RangeFrom_usize index (view_Vec_i32_Global self) result}
       (! return {result}) ]
   
-  let len_i32'0 (self: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] len_i32 (Slice64.view self) = UInt64.t'int result}
+  let len_i32 (self: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
+      = UInt64.t'int result}
       (! return {result}) ]
   
   let deref_Vec_i32_Global (self: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
@@ -534,17 +528,17 @@ module M_test_range_from
     {[@stop_split] [@expl:index_mut_Vec_i32_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_RangeFrom_usize index (view_Vec_i32_Global self.current) result.current)
       /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_RangeFrom_usize index (view_Vec_i32_Global self.final) result.final)
       /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_RangeFrom_usize index (view_Vec_i32_Global self.current) (view_Vec_i32_Global self.final))
-      /\ ([@stop_split] [@expl:index_mut ensures #3] len_i32 (view_Vec_i32_Global self.final)
-      = len_i32 (view_Vec_i32_Global self.current))}
+      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_i32_Global self.final)
+      = Seq.length (view_Vec_i32_Global self.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_slice_i32
   
-  let len_i32'1 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32'0 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = len_i32 (view_Vec_i32_Global self)}
+      = Seq.length (view_Vec_i32_Global self)}
       (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
@@ -574,7 +568,7 @@ module M_test_range_from
       | s1 = [ &_5 <- { start = (3: UInt64.t) } ] s2
       | s2 = index_Vec_i32_Global'0 {arr} {_5} (fun (_x: Slice64.slice Int32.t) -> [ &_3 <- _x ] s3)
       | s3 = [ &s <- _3 ] s4
-      | s4 = len_i32'0 {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
+      | s4 = len_i32 {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
       | s5 = [ &_7 <- _8 = (2: UInt64.t) ] s6
       | s6 = any [ br0 -> {_7 = false} (! bb12) | br1 -> {_7} (! bb4) ] ]
     | bb4 = s0
@@ -596,7 +590,7 @@ module M_test_range_from
     | bb8 = s0
       [ s0 = [ &_27 <- { start = (5: UInt64.t) } ] s1
       | s1 = index_Vec_i32_Global'0 {arr} {_27} (fun (_x: Slice64.slice Int32.t) -> [ &_25 <- _x ] s2)
-      | s2 = len_i32'0 {_25} (fun (_x: UInt64.t) -> [ &_23 <- _x ] s3)
+      | s2 = len_i32 {_25} (fun (_x: UInt64.t) -> [ &_23 <- _x ] s3)
       | s3 = [ &_22 <- _23 = (0: UInt64.t) ] s4
       | s4 = any [ br0 -> {_22 = false} (! bb16) | br1 -> {_22} (! bb15) ] ]
     | bb15 = s0
@@ -619,7 +613,7 @@ module M_test_range_from
       | s3 = MutBorrow.borrow_final <Slice64.slice Int32.t> {_48.current} {MutBorrow.get_id _48}
           (fun (_bor: MutBorrow.t (Slice64.slice Int32.t)) ->
             [ &s'0 <- _bor ] [ &_48 <- { _48 with current = _bor.final } ] s4)
-      | s4 = len_i32'0 {s'0.current} (fun (_x: UInt64.t) -> [ &_53 <- _x ] s5)
+      | s4 = len_i32 {s'0.current} (fun (_x: UInt64.t) -> [ &_53 <- _x ] s5)
       | s5 = [ &_52 <- _53 = (3: UInt64.t) ] s6
       | s6 = any [ br0 -> {_52 = false} (! bb30) | br1 -> {_52} (! bb29) ] ]
     | bb29 = s0
@@ -651,7 +645,7 @@ module M_test_range_from
       | s20 = [ &_65 <- _66 = (4: Int32.t) ] s21
       | s21 = any [ br0 -> {_65 = false} (! bb35) | br1 -> {_65} (! bb34) ] ]
     | bb34 = s0
-      [ s0 = len_i32'1 {arr} (fun (_x: UInt64.t) -> [ &_74 <- _x ] s1)
+      [ s0 = len_i32'0 {arr} (fun (_x: UInt64.t) -> [ &_74 <- _x ] s1)
       | s1 = [ &_73 <- _74 = (5: UInt64.t) ] s2
       | s2 = any [ br0 -> {_73 = false} (! bb38) | br1 -> {_73} (! bb37) ] ]
     | bb37 = s0
@@ -751,8 +745,8 @@ module M_test_range_from
     | & _104: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_range_full
-  use creusot.int.Int32
   use seq.Seq
+  use creusot.int.Int32
   use creusot.int.UInt64
   use creusot.slice.Slice64
   use creusot.prelude.MutBorrow
@@ -761,9 +755,6 @@ module M_test_range_full
   use int.Int
   
   type t_Vec_i32_Global
-  
-  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -780,7 +771,7 @@ module M_test_range_full
   
   let create_arr (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) ->
-    {[@stop_split] [@expl:create_arr ensures] len_i32 (view_Vec_i32_Global result) = 5
+    {[@stop_split] [@expl:create_arr ensures] Seq.length (view_Vec_i32_Global result) = 5
       /\ Int32.to_int (index_Vec_i32_Global result 0) = 0
       /\ Int32.to_int (index_Vec_i32_Global result 1) = 1
       /\ Int32.to_int (index_Vec_i32_Global result 2) = 2
@@ -798,8 +789,9 @@ module M_test_range_full
     {[@stop_split] [@expl:index ensures] has_value_RangeFull index (view_Vec_i32_Global self) result}
       (! return {result}) ]
   
-  let len_i32'0 (self: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] len_i32 (Slice64.view self) = UInt64.t'int result}
+  let len_i32 (self: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
+      = UInt64.t'int result}
       (! return {result}) ]
   
   predicate resolve_elswhere_RangeFull (self: ()) (_old: Seq.seq Int32.t) (_fin: Seq.seq Int32.t) = true
@@ -812,17 +804,17 @@ module M_test_range_full
     {[@stop_split] [@expl:index_mut_Vec_i32_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_RangeFull index (view_Vec_i32_Global self.current) result.current)
       /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_RangeFull index (view_Vec_i32_Global self.final) result.final)
       /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_RangeFull index (view_Vec_i32_Global self.current) (view_Vec_i32_Global self.final))
-      /\ ([@stop_split] [@expl:index_mut ensures #3] len_i32 (view_Vec_i32_Global self.final)
-      = len_i32 (view_Vec_i32_Global self.current))}
+      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_i32_Global self.final)
+      = Seq.length (view_Vec_i32_Global self.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_slice_i32
   
-  let len_i32'1 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32'0 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = len_i32 (view_Vec_i32_Global self)}
+      = Seq.length (view_Vec_i32_Global self)}
       (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
@@ -852,7 +844,7 @@ module M_test_range_full
       | s1 = [ &_5 <- () ] s2
       | s2 = index_Vec_i32_Global'0 {arr} {_5} (fun (_x: Slice64.slice Int32.t) -> [ &_3 <- _x ] s3)
       | s3 = [ &s <- _3 ] s4
-      | s4 = len_i32'0 {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
+      | s4 = len_i32 {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
       | s5 = [ &_7 <- _8 = (5: UInt64.t) ] s6
       | s6 = any [ br0 -> {_7 = false} (! bb21) | br1 -> {_7} (! bb4) ] ]
     | bb4 = s0
@@ -903,7 +895,7 @@ module M_test_range_full
       | s3 = MutBorrow.borrow_final <Slice64.slice Int32.t> {_37.current} {MutBorrow.get_id _37}
           (fun (_bor: MutBorrow.t (Slice64.slice Int32.t)) ->
             [ &s'0 <- _bor ] [ &_37 <- { _37 with current = _bor.final } ] s4)
-      | s4 = len_i32'0 {s'0.current} (fun (_x: UInt64.t) -> [ &_42 <- _x ] s5)
+      | s4 = len_i32 {s'0.current} (fun (_x: UInt64.t) -> [ &_42 <- _x ] s5)
       | s5 = [ &_41 <- _42 = (5: UInt64.t) ] s6
       | s6 = any [ br0 -> {_41 = false} (! bb25) | br1 -> {_41} (! bb24) ] ]
     | bb24 = s0
@@ -925,7 +917,7 @@ module M_test_range_full
           (fun (r: Slice64.slice Int32.t) -> [ &s'0 <- { s'0 with current = r } ] s12)
       | s12 = -{resolve_refmut_slice_i32 s'0}- s13
       | s13 = -{resolve_refmut_slice_i32 _37}- s14
-      | s14 = len_i32'1 {arr} (fun (_x: UInt64.t) -> [ &_55 <- _x ] s15)
+      | s14 = len_i32'0 {arr} (fun (_x: UInt64.t) -> [ &_55 <- _x ] s15)
       | s15 = [ &_54 <- _55 = (5: UInt64.t) ] s16
       | s16 = any [ br0 -> {_54 = false} (! bb30) | br1 -> {_54} (! bb29) ] ]
     | bb29 = s0
@@ -1018,8 +1010,8 @@ module M_test_range_full
     | & _85: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_range_to
-  use creusot.int.Int32
   use seq.Seq
+  use creusot.int.Int32
   use creusot.int.UInt64
   use creusot.slice.Slice64
   use creusot.prelude.MutBorrow
@@ -1028,9 +1020,6 @@ module M_test_range_to
   use int.Int
   
   type t_Vec_i32_Global
-  
-  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -1047,7 +1036,7 @@ module M_test_range_to
   
   let create_arr (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) ->
-    {[@stop_split] [@expl:create_arr ensures] len_i32 (view_Vec_i32_Global result) = 5
+    {[@stop_split] [@expl:create_arr ensures] Seq.length (view_Vec_i32_Global result) = 5
       /\ Int32.to_int (index_Vec_i32_Global result 0) = 0
       /\ Int32.to_int (index_Vec_i32_Global result 1) = 1
       /\ Int32.to_int (index_Vec_i32_Global result 2) = 2
@@ -1069,8 +1058,9 @@ module M_test_range_to
     {[@stop_split] [@expl:index ensures] has_value_RangeTo_usize index (view_Vec_i32_Global self) result}
       (! return {result}) ]
   
-  let len_i32'0 (self: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] len_i32 (Slice64.view self) = UInt64.t'int result}
+  let len_i32 (self: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
+      = UInt64.t'int result}
       (! return {result}) ]
   
   let deref_Vec_i32_Global (self: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
@@ -1101,17 +1091,17 @@ module M_test_range_to
     {[@stop_split] [@expl:index_mut_Vec_i32_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_RangeTo_usize index (view_Vec_i32_Global self.current) result.current)
       /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_RangeTo_usize index (view_Vec_i32_Global self.final) result.final)
       /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_RangeTo_usize index (view_Vec_i32_Global self.current) (view_Vec_i32_Global self.final))
-      /\ ([@stop_split] [@expl:index_mut ensures #3] len_i32 (view_Vec_i32_Global self.final)
-      = len_i32 (view_Vec_i32_Global self.current))}
+      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_i32_Global self.final)
+      = Seq.length (view_Vec_i32_Global self.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_slice_i32
   
-  let len_i32'1 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32'0 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = len_i32 (view_Vec_i32_Global self)}
+      = Seq.length (view_Vec_i32_Global self)}
       (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
@@ -1141,7 +1131,7 @@ module M_test_range_to
       | s1 = [ &_5 <- { end' = (2: UInt64.t) } ] s2
       | s2 = index_Vec_i32_Global'0 {arr} {_5} (fun (_x: Slice64.slice Int32.t) -> [ &_3 <- _x ] s3)
       | s3 = [ &s <- _3 ] s4
-      | s4 = len_i32'0 {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
+      | s4 = len_i32 {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
       | s5 = [ &_7 <- _8 = (2: UInt64.t) ] s6
       | s6 = any [ br0 -> {_7 = false} (! bb12) | br1 -> {_7} (! bb4) ] ]
     | bb4 = s0
@@ -1163,7 +1153,7 @@ module M_test_range_to
     | bb8 = s0
       [ s0 = [ &_27 <- { end' = (0: UInt64.t) } ] s1
       | s1 = index_Vec_i32_Global'0 {arr} {_27} (fun (_x: Slice64.slice Int32.t) -> [ &_25 <- _x ] s2)
-      | s2 = len_i32'0 {_25} (fun (_x: UInt64.t) -> [ &_23 <- _x ] s3)
+      | s2 = len_i32 {_25} (fun (_x: UInt64.t) -> [ &_23 <- _x ] s3)
       | s3 = [ &_22 <- _23 = (0: UInt64.t) ] s4
       | s4 = any [ br0 -> {_22 = false} (! bb16) | br1 -> {_22} (! bb15) ] ]
     | bb15 = s0
@@ -1180,7 +1170,7 @@ module M_test_range_to
       | s3 = MutBorrow.borrow_final <Slice64.slice Int32.t> {_39.current} {MutBorrow.get_id _39}
           (fun (_bor: MutBorrow.t (Slice64.slice Int32.t)) ->
             [ &s'0 <- _bor ] [ &_39 <- { _39 with current = _bor.final } ] s4)
-      | s4 = len_i32'0 {s'0.current} (fun (_x: UInt64.t) -> [ &_44 <- _x ] s5)
+      | s4 = len_i32 {s'0.current} (fun (_x: UInt64.t) -> [ &_44 <- _x ] s5)
       | s5 = [ &_43 <- _44 = (3: UInt64.t) ] s6
       | s6 = any [ br0 -> {_43 = false} (! bb25) | br1 -> {_43} (! bb24) ] ]
     | bb24 = s0
@@ -1212,7 +1202,7 @@ module M_test_range_to
       | s20 = [ &_56 <- _57 = (1: Int32.t) ] s21
       | s21 = any [ br0 -> {_56 = false} (! bb30) | br1 -> {_56} (! bb29) ] ]
     | bb29 = s0
-      [ s0 = len_i32'1 {arr} (fun (_x: UInt64.t) -> [ &_65 <- _x ] s1)
+      [ s0 = len_i32'0 {arr} (fun (_x: UInt64.t) -> [ &_65 <- _x ] s1)
       | s1 = [ &_64 <- _65 = (5: UInt64.t) ] s2
       | s2 = any [ br0 -> {_64 = false} (! bb33) | br1 -> {_64} (! bb32) ] ]
     | bb32 = s0
@@ -1307,8 +1297,8 @@ module M_test_range_to
     | & _95: Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test_range_to_inclusive
-  use creusot.int.Int32
   use seq.Seq
+  use creusot.int.Int32
   use creusot.int.UInt64
   use creusot.slice.Slice64
   use creusot.prelude.MutBorrow
@@ -1317,9 +1307,6 @@ module M_test_range_to_inclusive
   use int.Int
   
   type t_Vec_i32_Global
-  
-  let len_i32 (self: Seq.seq Int32.t) (return (x: int)) = any
-    [ return (result: int) -> {[@stop_split] [@expl:len ensures] result = Seq.length self} (! return {result}) ]
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
@@ -1336,7 +1323,7 @@ module M_test_range_to_inclusive
   
   let create_arr (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) ->
-    {[@stop_split] [@expl:create_arr ensures] len_i32 (view_Vec_i32_Global result) = 5
+    {[@stop_split] [@expl:create_arr ensures] Seq.length (view_Vec_i32_Global result) = 5
       /\ Int32.to_int (index_Vec_i32_Global result 0) = 0
       /\ Int32.to_int (index_Vec_i32_Global result 1) = 1
       /\ Int32.to_int (index_Vec_i32_Global result 2) = 2
@@ -1359,8 +1346,9 @@ module M_test_range_to_inclusive
     {[@stop_split] [@expl:index ensures] has_value_RangeToInclusive_usize index (view_Vec_i32_Global self) result}
       (! return {result}) ]
   
-  let len_i32'0 (self: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
-    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] len_i32 (Slice64.view self) = UInt64.t'int result}
+  let len_i32 (self: Slice64.slice Int32.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
+      = UInt64.t'int result}
       (! return {result}) ]
   
   let deref_Vec_i32_Global (self: t_Vec_i32_Global) (return (x: Slice64.slice Int32.t)) = any
@@ -1393,17 +1381,17 @@ module M_test_range_to_inclusive
     {[@stop_split] [@expl:index_mut_Vec_i32_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] has_value_RangeToInclusive_usize index (view_Vec_i32_Global self.current) result.current)
       /\ ([@stop_split] [@expl:index_mut ensures #1] has_value_RangeToInclusive_usize index (view_Vec_i32_Global self.final) result.final)
       /\ ([@stop_split] [@expl:index_mut ensures #2] resolve_elswhere_RangeToInclusive_usize index (view_Vec_i32_Global self.current) (view_Vec_i32_Global self.final))
-      /\ ([@stop_split] [@expl:index_mut ensures #3] len_i32 (view_Vec_i32_Global self.final)
-      = len_i32 (view_Vec_i32_Global self.current))}
+      /\ ([@stop_split] [@expl:index_mut ensures #3] Seq.length (view_Vec_i32_Global self.final)
+      = Seq.length (view_Vec_i32_Global self.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
   
   meta "rewrite_def" predicate resolve_refmut_slice_i32
   
-  let len_i32'1 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
+  let len_i32'0 (self: t_Vec_i32_Global) (return (x: UInt64.t)) = any
     [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] UInt64.t'int result
-      = len_i32 (view_Vec_i32_Global self)}
+      = Seq.length (view_Vec_i32_Global self)}
       (! return {result}) ]
   
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq Int32.t) =
@@ -1433,7 +1421,7 @@ module M_test_range_to_inclusive
       | s1 = [ &_5 <- { end' = (1: UInt64.t) } ] s2
       | s2 = index_Vec_i32_Global'0 {arr} {_5} (fun (_x: Slice64.slice Int32.t) -> [ &_3 <- _x ] s3)
       | s3 = [ &s <- _3 ] s4
-      | s4 = len_i32'0 {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
+      | s4 = len_i32 {s} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s5)
       | s5 = [ &_7 <- _8 = (2: UInt64.t) ] s6
       | s6 = any [ br0 -> {_7 = false} (! bb12) | br1 -> {_7} (! bb4) ] ]
     | bb4 = s0
@@ -1466,7 +1454,7 @@ module M_test_range_to_inclusive
       | s3 = MutBorrow.borrow_final <Slice64.slice Int32.t> {_31.current} {MutBorrow.get_id _31}
           (fun (_bor: MutBorrow.t (Slice64.slice Int32.t)) ->
             [ &s'0 <- _bor ] [ &_31 <- { _31 with current = _bor.final } ] s4)
-      | s4 = len_i32'0 {s'0.current} (fun (_x: UInt64.t) -> [ &_36 <- _x ] s5)
+      | s4 = len_i32 {s'0.current} (fun (_x: UInt64.t) -> [ &_36 <- _x ] s5)
       | s5 = [ &_35 <- _36 = (3: UInt64.t) ] s6
       | s6 = any [ br0 -> {_35 = false} (! bb21) | br1 -> {_35} (! bb20) ] ]
     | bb20 = s0
@@ -1498,7 +1486,7 @@ module M_test_range_to_inclusive
       | s20 = [ &_48 <- _49 = (1: Int32.t) ] s21
       | s21 = any [ br0 -> {_48 = false} (! bb26) | br1 -> {_48} (! bb25) ] ]
     | bb25 = s0
-      [ s0 = len_i32'1 {arr} (fun (_x: UInt64.t) -> [ &_57 <- _x ] s1)
+      [ s0 = len_i32'0 {arr} (fun (_x: UInt64.t) -> [ &_57 <- _x ] s1)
       | s1 = [ &_56 <- _57 = (5: UInt64.t) ] s2
       | s2 = any [ br0 -> {_56 = false} (! bb29) | br1 -> {_56} (! bb28) ] ]
     | bb28 = s0
