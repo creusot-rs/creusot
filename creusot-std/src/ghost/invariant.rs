@@ -230,11 +230,11 @@ impl View for Tokens<'_> {
     }
 }
 
-/// A variant of [`Invariant`] for use in [`AtomicInvariantSC`]s,
+/// A variant of [`Invariant`] for use in `AtomicInvariantSC`s,
 /// [`AtomicInvariant`]s and [`NonAtomicInvariant`]s.
 ///
 /// This allows specifying an invariant that depends on some public
-/// data ([`AtomicInvariantSC::public`], [`AtomicInvariant::public`],
+/// data (`AtomicInvariantSC::public`, [`AtomicInvariant::public`],
 /// [`NonAtomicInvariant::public`]).
 pub trait Protocol {
     type Public;
@@ -264,14 +264,19 @@ pub trait Protocol {
 ///
 /// If you do not need to share the invariant across threads, see
 /// [`NonAtomicInvariant`].
+#[cfg(feature = "sc-drf")]
 #[opaque]
 pub struct AtomicInvariantSC<T>(PhantomData<*mut T>);
 
+#[cfg(feature = "sc-drf")]
 #[trusted]
 unsafe impl<T: Send> Sync for AtomicInvariantSC<T> {}
+
+#[cfg(feature = "sc-drf")]
 #[trusted]
 unsafe impl<T: Send> Send for AtomicInvariantSC<T> {}
 
+#[cfg(feature = "sc-drf")]
 impl<T: Protocol> AtomicInvariantSC<T> {
     /// Construct a `AtomicInvariantSC`, aka a sequentially consistent atomic invariant.
     ///
@@ -418,7 +423,7 @@ impl<T: Protocol> AtomicInvariant<T> {
 /// - It is invariant because it gives access to a mutable borrow of this data.
 ///
 /// If you need to share an invariant across threads, consider
-/// [`AtomicInvariantSC`] or [`AtomicInvariant`].
+/// `AtomicInvariantSC` or [`AtomicInvariant`].
 #[opaque]
 pub struct NonAtomicInvariant<T: Protocol>(PhantomData<*mut T>);
 

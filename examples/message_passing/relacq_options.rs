@@ -23,6 +23,7 @@ use creusot_std::{
         thread::{self, JoinHandleExt},
     },
 };
+use std::mem::swap;
 
 declare_namespace! { MESSAGE_PASSING }
 
@@ -111,16 +112,16 @@ pub fn message_passing() {
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
             while !atomic.load(ghost! { |c: &Committer<_, bool, Acquire, _>| {
             inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                if !*snapshot!(c.val_load()).into_ghost() {
+                if !c.val_load() {
                     return
                 }
-
-                excl.valid_op_lemma(&inv.tok_read);
-                std::mem::swap(&mut inv.tok_read, &mut *excl);
-
                 let mut sync_view = *SyncView::new();
                 c.shoot_load(&inv.atomic_own, &mut sync_view);
-                data_own = Ghost::new(Some(inv.at_view.take().unwrap().sync(sync_view)))
+
+                excl.valid_op_lemma(&inv.tok_read);
+
+                swap(&mut inv.tok_read, &mut *excl);
+                *data_own = Some(inv.at_view.take().unwrap().sync(sync_view))
             })}}) {}
 
             let res = unsafe { data.get(ghost! { data_own.as_ref().unwrap() }) };

@@ -1105,15 +1105,9 @@ module M_message_passing
   
   predicate val_load_AtomicBool'0 (self: t_Committer_AtomicBool_bool_Relaxed_None)
   
-  predicate inv_bool [@inline:trivial] (_1: bool) = true
-  
-  meta "rewrite_def" predicate inv_bool
-  
-  let into_ghost_bool (self: bool) (return (x: bool)) = {[@stop_split] [@expl:into_ghost requires] inv_bool self}
-    any [ return (result: bool) -> {[@stop_split] [@expl:into_ghost ensures] result = self} (! return {result}) ]
-  
-  let deref_Ghost_bool (self: bool) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
+  let val_load_AtomicBool'1 (self: t_Committer_AtomicBool_bool_Relaxed_None) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:val_load ensures] result = val_load_AtomicBool'0 self}
+      (! return {result}) ]
   
   let deref_Ghost_SyncView (self: t_SyncView) (return (x: t_SyncView)) = any
     [ return (result: t_SyncView) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
@@ -1218,75 +1212,73 @@ module M_message_passing
     /\ ([@stop_split] [@expl:closure 'inv' type invariant] inv_refmut_MessagePassingAtomicInv inv)}
     bb0
     [ bb0 = s0
-      [ s0 = [ &_8 <- val_load_AtomicBool'0 self.current.c0'5 ] s1
-      | s1 = into_ghost_bool {_8} (fun (_x: bool) -> [ &_7 <- _x ] s2)
-      | s2 = deref_Ghost_bool {_7} (fun (_x: bool) -> [ &_5 <- _x ] s3)
-      | s3 = any [ br0 -> {_5 = false} (! bb5) | br1 -> {_5} (! bb4) ] ]
-    | bb4 = s0
+      [ s0 = val_load_AtomicBool'1 {self.current.c0'5} (fun (_x: bool) -> [ &_4 <- _x ] s1)
+      | s1 = any [ br0 -> {_4 = false} (! bb3) | br1 -> {_4} (! bb2) ] ]
+    | bb2 = s0
       [ s0 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {self.current.c1'5.current}
           (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
-            [ &_15 <- _bor ]
+            [ &_10 <- _bor ]
             [ &self <- { self with current = { self.current with c1'5 = { self.current.c1'5 with current = _bor.final } } } ]
             s1)
-      | s1 = deref_mut_Ghost_Resource_Option_Excl_unit {_15}
-          (fun (_x: MutBorrow.t t_Resource_Option_Excl_unit) -> [ &_14 <- _x ] s2)
-      | s2 = [ &_17 <- inv.current.tok_read ] s3
-      | s3 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_14.current} {MutBorrow.get_id _14}
+      | s1 = deref_mut_Ghost_Resource_Option_Excl_unit {_10}
+          (fun (_x: MutBorrow.t t_Resource_Option_Excl_unit) -> [ &_9 <- _x ] s2)
+      | s2 = [ &_12 <- inv.current.tok_read ] s3
+      | s3 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_9.current} {MutBorrow.get_id _9}
           (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
-            [ &_13 <- _bor ] [ &_14 <- { _14 with current = _bor.final } ] s4)
-      | s4 = valid_op_lemma_Option_Excl_unit {_13} {_17} (fun (_x: ()) -> [ &_12 <- _x ] s5)
-      | s5 = -{resolve_refmut_Resource_Option_Excl_unit _14}- s6
+            [ &_8 <- _bor ] [ &_9 <- { _9 with current = _bor.final } ] s4)
+      | s4 = valid_op_lemma_Option_Excl_unit {_8} {_12} (fun (_x: ()) -> [ &_7 <- _x ] s5)
+      | s5 = -{resolve_refmut_Resource_Option_Excl_unit _9}- s6
       | s6 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {inv.current.tok_read}
           {MutBorrow.inherit_id (MutBorrow.get_id inv) 3}
           (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
-            [ &_20 <- _bor ] [ &inv <- { inv with current = { inv.current with tok_read = _bor.final } } ] s7)
+            [ &_15 <- _bor ] [ &inv <- { inv with current = { inv.current with tok_read = _bor.final } } ] s7)
       | s7 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {self.current.c1'5.current}
           (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
-            [ &_24 <- _bor ]
+            [ &_19 <- _bor ]
             [ &self <- { self with current = { self.current with c1'5 = { self.current.c1'5 with current = _bor.final } } } ]
             s8)
-      | s8 = deref_mut_Ghost_Resource_Option_Excl_unit {_24}
-          (fun (_x: MutBorrow.t t_Resource_Option_Excl_unit) -> [ &_23 <- _x ] s9)
-      | s9 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_23.current} {MutBorrow.get_id _23}
+      | s8 = deref_mut_Ghost_Resource_Option_Excl_unit {_19}
+          (fun (_x: MutBorrow.t t_Resource_Option_Excl_unit) -> [ &_18 <- _x ] s9)
+      | s9 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_18.current} {MutBorrow.get_id _18}
           (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
-            [ &_22 <- _bor ] [ &_23 <- { _23 with current = _bor.final } ] s10)
-      | s10 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_20.current} {MutBorrow.get_id _20}
+            [ &_17 <- _bor ] [ &_18 <- { _18 with current = _bor.final } ] s10)
+      | s10 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_15.current} {MutBorrow.get_id _15}
           (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
-            [ &_19 <- _bor ] [ &_20 <- { _20 with current = _bor.final } ] s11)
-      | s11 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_22.current} {MutBorrow.get_id _22}
+            [ &_14 <- _bor ] [ &_15 <- { _15 with current = _bor.final } ] s11)
+      | s11 = MutBorrow.borrow_final <t_Resource_Option_Excl_unit> {_17.current} {MutBorrow.get_id _17}
           (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
-            [ &_21 <- _bor ] [ &_22 <- { _22 with current = _bor.final } ] s12)
-      | s12 = swap_Resource_Option_Excl_unit {_19} {_21} (fun (_x: ()) -> [ &_18 <- _x ] s13)
-      | s13 = -{resolve_refmut_Resource_Option_Excl_unit _23}- s14
-      | s14 = -{resolve_refmut_Resource_Option_Excl_unit _22}- s15
-      | s15 = -{resolve_refmut_Resource_Option_Excl_unit _20}- s16
-      | s16 = new (fun (_x: t_SyncView) -> [ &_28 <- _x ] s17)
-      | s17 = deref_Ghost_SyncView {_28} (fun (_x: t_SyncView) -> [ &_26 <- _x ] s18)
-      | s18 = [ &sync_view <- _26 ] s19
-      | s19 = [ &_32 <- inv.current.atomic_own ] s20
+            [ &_16 <- _bor ] [ &_17 <- { _17 with current = _bor.final } ] s12)
+      | s12 = swap_Resource_Option_Excl_unit {_14} {_16} (fun (_x: ()) -> [ &_13 <- _x ] s13)
+      | s13 = -{resolve_refmut_Resource_Option_Excl_unit _18}- s14
+      | s14 = -{resolve_refmut_Resource_Option_Excl_unit _17}- s15
+      | s15 = -{resolve_refmut_Resource_Option_Excl_unit _15}- s16
+      | s16 = new (fun (_x: t_SyncView) -> [ &_23 <- _x ] s17)
+      | s17 = deref_Ghost_SyncView {_23} (fun (_x: t_SyncView) -> [ &_21 <- _x ] s18)
+      | s18 = [ &sync_view <- _21 ] s19
+      | s19 = [ &_27 <- inv.current.atomic_own ] s20
       | s20 = MutBorrow.borrow_mut <t_SyncView> {sync_view}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_34 <- _bor ] [ &sync_view <- _bor.final ] s21)
-      | s21 = MutBorrow.borrow_final <t_SyncView> {_34.current} {MutBorrow.get_id _34}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_33 <- _bor ] [ &_34 <- { _34 with current = _bor.final } ] s22)
-      | s22 = shoot_load_AtomicBool {self.current.c0'5} {_32} {_33}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_29 <- _bor ] [ &sync_view <- _bor.final ] s21)
+      | s21 = MutBorrow.borrow_final <t_SyncView> {_29.current} {MutBorrow.get_id _29}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_28 <- _bor ] [ &_29 <- { _29 with current = _bor.final } ] s22)
+      | s22 = shoot_load_AtomicBool {self.current.c0'5} {_27} {_28}
           (fun (_x: t_AcquireSyncView) -> [ &acq_view <- _x ] s23)
-      | s23 = -{resolve_refmut_SyncView _34}- s24
-      | s24 = [ &_36 <- Some'3 acq_view ] s25
-      | s25 = new_Option_AcquireSyncView {_36} (fun (_x: t_Option_AcquireSyncView) -> [ &_35 <- _x ] s26)
-      | s26 = [ &self <- { self with current = { self.current with c2'5 = { self.current.c2'5 with current = _35 } } } ]
+      | s23 = -{resolve_refmut_SyncView _29}- s24
+      | s24 = [ &_31 <- Some'3 acq_view ] s25
+      | s25 = new_Option_AcquireSyncView {_31} (fun (_x: t_Option_AcquireSyncView) -> [ &_30 <- _x ] s26)
+      | s26 = [ &self <- { self with current = { self.current with c2'5 = { self.current.c2'5 with current = _30 } } } ]
         s27
       | s27 = MutBorrow.borrow_final <t_Option_AtView_Perm_PCell_i32> {inv.current.at_view}
           {MutBorrow.inherit_id (MutBorrow.get_id inv) 1}
           (fun (_bor: MutBorrow.t t_Option_AtView_Perm_PCell_i32) ->
-            [ &_42 <- _bor ] -{inv_Option_AtView_Perm_PCell_i32 _bor.final}-
+            [ &_37 <- _bor ] -{inv_Option_AtView_Perm_PCell_i32 _bor.final}-
             [ &inv <- { inv with current = { inv.current with at_view = _bor.final } } ] s28)
         [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Perm_PCell_i32 inv.current.at_view} any) ]
-      | s28 = take_AtView_Perm_PCell_i32 {_42} (fun (_x: t_Option_AtView_Perm_PCell_i32) -> [ &_41 <- _x ] s29)
+      | s28 = take_AtView_Perm_PCell_i32 {_37} (fun (_x: t_Option_AtView_Perm_PCell_i32) -> [ &_36 <- _x ] s29)
       | s29 = s30 [ _ck -> (! {[@expl:type invariant] inv_refmut_MessagePassingAtomicInv inv} any) ]
       | s30 = -{resolve_refmut_MessagePassingAtomicInv inv}- s31
-      | s31 = unwrap_AtView_Perm_PCell_i32 {_41} (fun (_x: t_AtView_Perm_PCell_i32) -> [ &_40 <- _x ] s32)
-      | s32 = [ &_39 <- Some'1 _40 ] s33
-      | s33 = new_Option_AtView_Perm_PCell_i32 {_39} (fun (_x: t_Option_AtView_Perm_PCell_i32) -> [ &_38 <- _x ] s34)
+      | s31 = unwrap_AtView_Perm_PCell_i32 {_36} (fun (_x: t_AtView_Perm_PCell_i32) -> [ &_35 <- _x ] s32)
+      | s32 = [ &_34 <- Some'1 _35 ] s33
+      | s33 = new_Option_AtView_Perm_PCell_i32 {_34} (fun (_x: t_Option_AtView_Perm_PCell_i32) -> [ &_33 <- _x ] s34)
       | s34 = s35
         [ _ck -> (! {[@expl:type invariant] match self with
             | {current = {c3'5 = x}} -> inv_Ghost_Option_AtView_Perm_PCell_i32 x.current
@@ -1298,12 +1290,12 @@ module M_message_passing
           | _ -> true
           end}-
         s36
-      | s36 = [ &self <- { self with current = { self.current with c3'5 = { self.current.c3'5 with current = _38 } } } ]
+      | s36 = [ &self <- { self with current = { self.current with c3'5 = { self.current.c3'5 with current = _33 } } } ]
         s37
       | s37 = s38 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure0 self} any) ]
       | s38 = -{resolve_refmut_closure0 self}- s39
       | s39 = return {_ret} ]
-    | bb5 = s0
+    | bb3 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_MessagePassingAtomicInv inv} any) ]
       | s1 = -{resolve_refmut_MessagePassingAtomicInv inv}- s2
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure0 self} any) ]
@@ -1312,35 +1304,33 @@ module M_message_passing
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t closure0'3 = self
     | & inv: MutBorrow.t t_MessagePassingAtomicInv = inv
-    | & _5: bool = Any.any_l ()
-    | & _7: bool = Any.any_l ()
-    | & _8: bool = Any.any_l ()
-    | & _12: () = Any.any_l ()
-    | & _13: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _4: bool = Any.any_l ()
+    | & _7: () = Any.any_l ()
+    | & _8: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _9: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _10: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _12: t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _13: () = Any.any_l ()
     | & _14: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
     | & _15: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _17: t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _18: () = Any.any_l ()
+    | & _16: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _17: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+    | & _18: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
     | & _19: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _20: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _21: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _22: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _23: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
-    | & _24: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
     | & sync_view: t_SyncView = Any.any_l ()
-    | & _26: t_SyncView = Any.any_l ()
-    | & _28: t_SyncView = Any.any_l ()
+    | & _21: t_SyncView = Any.any_l ()
+    | & _23: t_SyncView = Any.any_l ()
     | & acq_view: t_AcquireSyncView = Any.any_l ()
-    | & _32: t_Perm_AtomicBool = Any.any_l ()
-    | & _33: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _34: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _35: t_Option_AcquireSyncView = Any.any_l ()
-    | & _36: t_Option_AcquireSyncView = Any.any_l ()
-    | & _38: t_Option_AtView_Perm_PCell_i32 = Any.any_l ()
-    | & _39: t_Option_AtView_Perm_PCell_i32 = Any.any_l ()
-    | & _40: t_AtView_Perm_PCell_i32 = Any.any_l ()
-    | & _41: t_Option_AtView_Perm_PCell_i32 = Any.any_l ()
-    | & _42: MutBorrow.t t_Option_AtView_Perm_PCell_i32 = Any.any_l () ]
+    | & _27: t_Perm_AtomicBool = Any.any_l ()
+    | & _28: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _29: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _30: t_Option_AcquireSyncView = Any.any_l ()
+    | & _31: t_Option_AcquireSyncView = Any.any_l ()
+    | & _33: t_Option_AtView_Perm_PCell_i32 = Any.any_l ()
+    | & _34: t_Option_AtView_Perm_PCell_i32 = Any.any_l ()
+    | & _35: t_AtView_Perm_PCell_i32 = Any.any_l ()
+    | & _36: t_Option_AtView_Perm_PCell_i32 = Any.any_l ()
+    | & _37: MutBorrow.t t_Option_AtView_Perm_PCell_i32 = Any.any_l () ]
     [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
       return {result} ]
   

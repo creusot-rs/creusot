@@ -167,7 +167,7 @@ impl<T> TicketLock<T> {
         #[invariant(ticket_own.unwrap_logic()@.lookup(ticket@) == Some(Excl(())))]
         while self.now_serving.load(ghost!(|c: &Committer<_, _, SeqCst, _>| {
             self.inner_inv.open(tokens.reborrow(), |inv: &mut TicketLockInv<T>| {
-                if *snapshot!(c.val_load() != ticket).into_ghost() {
+                if c.val_load() != ticket {
                     return;
                 }
                 c.shoot_load(&inv.perm_now_serving);
