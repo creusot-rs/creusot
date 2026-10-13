@@ -46,6 +46,7 @@ mod ctx;
 mod extended_location;
 mod gather_spec_closures;
 mod lints;
+mod logic_alias;
 mod metadata;
 mod naming;
 mod resolution;

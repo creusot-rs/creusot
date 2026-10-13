@@ -1094,10 +1094,10 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   function to_mapping_Int (self: t_FMap_Int_tup2_u32_SyncView) : Map.map int t_Option_tup2_u32_SyncView
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (k: int) : t_Option_tup2_u32_SyncView =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (k: int) : t_Option_tup2_u32_SyncView =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
   function val_unsized_AtomicU32 (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView
   
@@ -1114,18 +1114,18 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   axiom len_Int_spec: forall self: t_FMap_Int_tup2_u32_SyncView [len_Int self]. ge_log_Int (len_Int self) 0
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (k: int) = get_Int self k <> None'1
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (k: int) = lookup_Int self k <> None'1
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_tup2_u32_SyncView) (k: int) (v: tup2_u32_SyncView) : t_FMap_Int_tup2_u32_SyncView
+  function add_Int (self: t_FMap_Int_tup2_u32_SyncView) (k: int) (v: tup2_u32_SyncView) : t_FMap_Int_tup2_u32_SyncView
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_tup2_u32_SyncView, k: int, v: tup2_u32_SyncView [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_tup2_u32_SyncView, k: int, v: tup2_u32_SyncView [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some'1 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_tup2_u32_SyncView, k: int, v: tup2_u32_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_tup2_u32_SyncView, k: int, v: tup2_u32_SyncView [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   let shoot_store_AtomicU32 (self: MutBorrow.t t_Committer_AtomicU32_u32_None_Release)
@@ -1142,11 +1142,11 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
         <= timestamp_AtomicU32 self.current)
       /\ ([@stop_split] [@expl:shoot_store ensures #5] timestamp_AtomicU32 self.current
         < get_timestamp_AtomicU32 (ward_AtomicU32'0 self.current) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #6] get_Int (val_AtomicU32 own.current) (timestamp_AtomicU32 self.current
+      /\ ([@stop_split] [@expl:shoot_store ensures #6] lookup_Int (val_AtomicU32 own.current) (timestamp_AtomicU32 self.current
           + 1)
         = None'1)
       /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicU32 own.final
-      = insert_Int (val_AtomicU32 own.current) (timestamp_AtomicU32 self.current
+      = add_Int (val_AtomicU32 own.current) (timestamp_AtomicU32 self.current
       + 1) { f0'1 = val_store_AtomicU32 self.current; f1'1 = sync_view.final })}
       (! return {result}) ]
   
@@ -1482,12 +1482,12 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
   
   function to_mapping_Int'0 (self: t_FMap_Int_Excl_unit) : Map.map int t_Option_Excl_unit
   
-  function get_Int'0 [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) : t_Option_Excl_unit =
+  function lookup_Int'0 [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) : t_Option_Excl_unit =
     Map.get (to_mapping_Int'0 self) k
   
-  meta "rewrite_def" function get_Int'0
+  meta "rewrite_def" function lookup_Int'0
   
-  predicate contains_Int'0 [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) = get_Int'0 self k <> None'2
+  predicate contains_Int'0 [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) = lookup_Int'0 self k <> None'2
   
   meta "rewrite_def" predicate contains_Int'0
   
@@ -1500,13 +1500,8 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
       | None'1 -> any_tup2_u32_SyncView
       end
   
-  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (k: int) : tup2_u32_SyncView =
-    unwrap_Option_tup2_u32_SyncView (get_Int self k)
-  
-  meta "rewrite_def" function lookup_Int
-  
   function index_FMap_Int_tup2_u32_SyncView [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (key: int) : tup2_u32_SyncView
-   = lookup_Int self key
+   = unwrap_Option_tup2_u32_SyncView (lookup_Int self key)
   
   meta "rewrite_def" function index_FMap_Int_tup2_u32_SyncView
   
@@ -1536,7 +1531,7 @@ module M_impl_TicketLockGuard_T__unlock (* TicketLockGuard<'a, T> *)
     /\ (forall k: int. contains_Int'0 (view_Authority_FMap_Int_Excl_unit self.auth_tickets'1) k
         -> k < next_ticket_T self)
     /\ (forall ts: int. Some'0 ts <> self.ts_now_serving'1
-        -> match get_Int (val_AtomicU32 self.perm_now_serving'1) ts with
+        -> match lookup_Int (val_AtomicU32 self.perm_now_serving'1) ts with
           | Some'1 {f0'1 = n} -> not contains_Int'0 (view_Authority_FMap_Int_Excl_unit self.auth_tickets'1) (UInt32.t'int n)
           /\ UInt32.t'int n < next_ticket_T self
           | None'1 -> true
@@ -2213,10 +2208,10 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   function to_mapping_Int (self: t_FMap_Int_tup2_u32_SyncView) : Map.map int t_Option_tup2_u32_SyncView
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (k: int) : t_Option_tup2_u32_SyncView =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (k: int) : t_Option_tup2_u32_SyncView =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
   function val_unsized_AtomicU32 (self: t_Perm_AtomicU32) : t_FMap_Int_tup2_u32_SyncView
   
@@ -2238,7 +2233,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
         <= timestamp_AtomicU32 self)
       /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicU32 self
         <= get_timestamp_AtomicU32 (ward_AtomicU32 self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] get_Int (val_AtomicU32 own) (timestamp_AtomicU32 self)
+      /\ ([@stop_split] [@expl:shoot_load ensures #3] lookup_Int (val_AtomicU32 own) (timestamp_AtomicU32 self)
       = Some'2 { f0 = val_load_AtomicU32 self; f1 = view_AcquireSyncView result })}
       (! return {result}) ]
   
@@ -2270,18 +2265,18 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   axiom len_Int_spec: forall self: t_FMap_Int_tup2_u32_SyncView [len_Int self]. ge_log_Int (len_Int self) 0
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (k: int) = get_Int self k <> None'2
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (k: int) = lookup_Int self k <> None'2
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_tup2_u32_SyncView) (k: int) (v: tup2_u32_SyncView) : t_FMap_Int_tup2_u32_SyncView
+  function add_Int (self: t_FMap_Int_tup2_u32_SyncView) (k: int) (v: tup2_u32_SyncView) : t_FMap_Int_tup2_u32_SyncView
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_tup2_u32_SyncView, k: int, v: tup2_u32_SyncView [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_tup2_u32_SyncView, k: int, v: tup2_u32_SyncView [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some'2 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_tup2_u32_SyncView, k: int, v: tup2_u32_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_tup2_u32_SyncView, k: int, v: tup2_u32_SyncView [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   function view_ReleaseSyncView (self: t_ReleaseSyncView) : t_SyncView
@@ -2301,11 +2296,11 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
         <= timestamp_AtomicU32 self.current)
       /\ ([@stop_split] [@expl:shoot_store ensures #5] timestamp_AtomicU32 self.current
         < get_timestamp_AtomicU32 (ward_AtomicU32 self.current) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #6] get_Int (val_AtomicU32 own.current) (timestamp_AtomicU32 self.current
+      /\ ([@stop_split] [@expl:shoot_store ensures #6] lookup_Int (val_AtomicU32 own.current) (timestamp_AtomicU32 self.current
           + 1)
         = None'2)
       /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicU32 own.final
-      = insert_Int (val_AtomicU32 own.current) (timestamp_AtomicU32 self.current
+      = add_Int (val_AtomicU32 own.current) (timestamp_AtomicU32 self.current
       + 1) { f0 = val_store_AtomicU32 self.current; f1 = view_ReleaseSyncView rel_view })}
       (! return {result}) ]
   
@@ -2335,23 +2330,23 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   axiom len_Int_spec'0: forall self: t_FMap_Int_Excl_unit [len_Int'0 self]. ge_log_Int (len_Int'0 self) 0
   
-  function get_Int'0 [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) : t_Option_Excl_unit =
+  function lookup_Int'0 [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) : t_Option_Excl_unit =
     Map.get (to_mapping_Int'0 self) k
   
-  meta "rewrite_def" function get_Int'0
+  meta "rewrite_def" function lookup_Int'0
   
-  predicate contains_Int'0 [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) = get_Int'0 self k <> None'3
+  predicate contains_Int'0 [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) = lookup_Int'0 self k <> None'3
   
   meta "rewrite_def" predicate contains_Int'0
   
-  function insert_Int'0 (self: t_FMap_Int_Excl_unit) (k: int) (v: t_Excl_unit) : t_FMap_Int_Excl_unit
+  function add_Int'0 (self: t_FMap_Int_Excl_unit) (k: int) (v: t_Excl_unit) : t_FMap_Int_Excl_unit
   
-  axiom insert_Int_spec'1:
-    forall self: t_FMap_Int_Excl_unit, k: int, v: t_Excl_unit [insert_Int'0 self k v]. to_mapping_Int'0 (insert_Int'0 self k v)
+  axiom add_Int_spec'1:
+    forall self: t_FMap_Int_Excl_unit, k: int, v: t_Excl_unit [add_Int'0 self k v]. to_mapping_Int'0 (add_Int'0 self k v)
       = Map.set (to_mapping_Int'0 self) k (Some'3 v)
   
-  axiom insert_Int_spec'2:
-    forall self: t_FMap_Int_Excl_unit, k: int, v: t_Excl_unit [insert_Int'0 self k v]. len_Int'0 (insert_Int'0 self k v)
+  axiom add_Int_spec'2:
+    forall self: t_FMap_Int_Excl_unit, k: int, v: t_Excl_unit [add_Int'0 self k v]. len_Int'0 (add_Int'0 self k v)
       = (if contains_Int'0 self k then len_Int'0 self else len_Int'0 self + 1)
   
   constant empty_Int : t_FMap_Int_Excl_unit
@@ -2360,7 +2355,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   
   axiom empty_Int_spec'0: to_mapping_Int'0 empty_Int = Const.const (None'3)
   
-  function singleton_Int (k: int) (v: t_Excl_unit) : t_FMap_Int_Excl_unit = insert_Int'0 empty_Int k v
+  function singleton_Int (k: int) (v: t_Excl_unit) : t_FMap_Int_Excl_unit = add_Int'0 empty_Int k v
   
   predicate invariant_Authority_FMap_Int_Excl_unit (self: t_Authority_FMap_Int_Excl_unit)
   
@@ -2413,13 +2408,13 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
   function total_op_Int (self: t_FMap_Int_Excl_unit) (other: t_FMap_Int_Excl_unit) : t_FMap_Int_Excl_unit
   
   axiom total_op_Int_spec:
-    forall self: t_FMap_Int_Excl_unit, other: t_FMap_Int_Excl_unit [total_op_Int self other]. (forall k: int. op_Option_Excl_unit (get_Int'0 self k) (get_Int'0 other k)
+    forall self: t_FMap_Int_Excl_unit, other: t_FMap_Int_Excl_unit [total_op_Int self other]. (forall k: int. op_Option_Excl_unit (lookup_Int'0 self k) (lookup_Int'0 other k)
           <> None'5)
-      -> (forall k: int. Some'5 (get_Int'0 (total_op_Int self other) k)
-        = op_Option_Excl_unit (get_Int'0 self k) (get_Int'0 other k))
+      -> (forall k: int. Some'5 (lookup_Int'0 (total_op_Int self other) k)
+        = op_Option_Excl_unit (lookup_Int'0 self k) (lookup_Int'0 other k))
   
   function op_FMap_Int_Excl_unit (self: t_FMap_Int_Excl_unit) (other: t_FMap_Int_Excl_unit) : t_Option_FMap_Int_Excl_unit
-   = if forall k: int. op_Option_Excl_unit (get_Int'0 self k) (get_Int'0 other k) <> None'5 then
+   = if forall k: int. op_Option_Excl_unit (lookup_Int'0 self k) (lookup_Int'0 other k) <> None'5 then
       Some'4 (total_op_Int self other)
     else
       None'4
@@ -2742,13 +2737,8 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
       | None'2 -> any_tup2_u32_SyncView
       end
   
-  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (k: int) : tup2_u32_SyncView =
-    unwrap_Option_tup2_u32_SyncView (get_Int self k)
-  
-  meta "rewrite_def" function lookup_Int
-  
   function index_FMap_Int_tup2_u32_SyncView [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (key: int) : tup2_u32_SyncView
-   = lookup_Int self key
+   = unwrap_Option_tup2_u32_SyncView (lookup_Int self key)
   
   meta "rewrite_def" function index_FMap_Int_tup2_u32_SyncView
   
@@ -2800,7 +2790,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
     /\ (forall k: int. contains_Int'0 (view_Authority_FMap_Int_Excl_unit self.auth_tickets'0) k
         -> k < next_ticket_T self)
     /\ (forall ts: int. Some'1 ts <> self.ts_now_serving'0
-        -> match get_Int (val_AtomicU32 self.perm_now_serving'0) ts with
+        -> match lookup_Int (val_AtomicU32 self.perm_now_serving'0) ts with
           | Some'2 {f0 = n} -> not contains_Int'0 (view_Authority_FMap_Int_Excl_unit self.auth_tickets'0) (UInt32.t'int n)
           /\ UInt32.t'int n < next_ticket_T self
           | None'2 -> true
@@ -3272,7 +3262,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
         <= timestamp_AtomicU32'0 self)
       /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicU32'0 self
         <= get_timestamp_AtomicU32 (ward_AtomicU32'1 self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] match get_Int (val_AtomicU32 own) (timestamp_AtomicU32'0 self) with
+      /\ ([@stop_split] [@expl:shoot_load ensures #3] match lookup_Int (val_AtomicU32 own) (timestamp_AtomicU32'0 self) with
         | Some'2 {f0 = v; f1 = v_view} -> v = val_load_AtomicU32'0 self /\ le_log_SyncView v_view sync_view.final
         | None'2 -> false
         end)}
@@ -3341,7 +3331,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
         -> op_Option_Excl_unit self x = op_Option_Excl_unit self y -> x = y)
   
   predicate cancelable_FMap_Int_Excl_unit (self: t_FMap_Int_Excl_unit) =
-    forall k: int. cancelable_Option_Excl_unit (get_Int'0 self k)
+    forall k: int. cancelable_Option_Excl_unit (lookup_Int'0 self k)
   
   axiom cancelable_FMap_Int_Excl_unit_spec:
     forall self: t_FMap_Int_Excl_unit [cancelable_FMap_Int_Excl_unit self]. cancelable_FMap_Int_Excl_unit self
@@ -3401,7 +3391,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
       = (exists factor: t_Option_Excl_unit. op_Option_Excl_unit self factor = Some'5 other)
   
   predicate incl_FMap_Int_Excl_unit (self: t_FMap_Int_Excl_unit) (other: t_FMap_Int_Excl_unit) =
-    let r = forall k: int. incl_Option_Excl_unit (get_Int'0 self k) (get_Int'0 other k) in r
+    let r = forall k: int. incl_Option_Excl_unit (lookup_Int'0 self k) (lookup_Int'0 other k) in r
   
   axiom incl_FMap_Int_Excl_unit_spec:
     forall self: t_FMap_Int_Excl_unit, other: t_FMap_Int_Excl_unit [incl_FMap_Int_Excl_unit self other]. incl_FMap_Int_Excl_unit self other
@@ -4116,7 +4106,7 @@ module M_impl_TicketLock_T__lock (* TicketLock<T> *)
         {[@expl:loop invariant #1] ticket_own <> None}
         {[@expl:loop invariant #2] id_FMap_Int_Excl_unit (unwrap_Option_Fragment_FMap_Int_Excl_unit ticket_own)
         = (public_TicketLockInv_T'0 self.inner_inv).f1'4}
-        {[@expl:loop invariant #3] get_Int'0 (view_Fragment_FMap_Int_Excl_unit (unwrap_Option_Fragment_FMap_Int_Excl_unit ticket_own)) (UInt32.t'int ticket)
+        {[@expl:loop invariant #3] lookup_Int'0 (view_Fragment_FMap_Int_Excl_unit (unwrap_Option_Fragment_FMap_Int_Excl_unit ticket_own)) (UInt32.t'int ticket)
         = Some'3 { f0'0 = () }}
         {[@expl:loop invariant #4] id_Option_Excl_unit token = (public_TicketLockInv_T'0 self.inner_inv).f2'4}
         (! s0)
@@ -4256,23 +4246,23 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   
   axiom len_Int_spec: forall self: t_FMap_Int_tup2_u32_SyncView [len_Int self]. ge_log_Int (len_Int self) 0
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (k: int) : t_Option_tup2_u32_SyncView =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (k: int) : t_Option_tup2_u32_SyncView =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (k: int) = get_Int self k <> None
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (k: int) = lookup_Int self k <> None
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_tup2_u32_SyncView) (k: int) (v: tup2_u32_SyncView) : t_FMap_Int_tup2_u32_SyncView
+  function add_Int (self: t_FMap_Int_tup2_u32_SyncView) (k: int) (v: tup2_u32_SyncView) : t_FMap_Int_tup2_u32_SyncView
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_tup2_u32_SyncView, k: int, v: tup2_u32_SyncView [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_tup2_u32_SyncView, k: int, v: tup2_u32_SyncView [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_tup2_u32_SyncView, k: int, v: tup2_u32_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_tup2_u32_SyncView, k: int, v: tup2_u32_SyncView [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   constant empty_Int : t_FMap_Int_tup2_u32_SyncView
@@ -4281,7 +4271,7 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   
   axiom empty_Int_spec'0: to_mapping_Int empty_Int = Const.const (None)
   
-  function singleton_Int (k: int) (v: tup2_u32_SyncView) : t_FMap_Int_tup2_u32_SyncView = insert_Int empty_Int k v
+  function singleton_Int (k: int) (v: tup2_u32_SyncView) : t_FMap_Int_tup2_u32_SyncView = add_Int empty_Int k v
   
   predicate lt_log_SyncView (self: t_SyncView) (_2: t_SyncView)
   
@@ -4651,21 +4641,21 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   
   function to_mapping_Int'0 (self: t_FMap_Int_Excl_unit) : Map.map int t_Option_Excl_unit
   
-  function get_Int'0 [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) : t_Option_Excl_unit =
+  function lookup_Int'0 [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) : t_Option_Excl_unit =
     Map.get (to_mapping_Int'0 self) k
   
-  meta "rewrite_def" function get_Int'0
+  meta "rewrite_def" function lookup_Int'0
   
   function total_op_Int (self: t_FMap_Int_Excl_unit) (other: t_FMap_Int_Excl_unit) : t_FMap_Int_Excl_unit
   
   axiom total_op_Int_spec:
-    forall self: t_FMap_Int_Excl_unit, other: t_FMap_Int_Excl_unit [total_op_Int self other]. (forall k: int. op_Option_Excl_unit (get_Int'0 self k) (get_Int'0 other k)
+    forall self: t_FMap_Int_Excl_unit, other: t_FMap_Int_Excl_unit [total_op_Int self other]. (forall k: int. op_Option_Excl_unit (lookup_Int'0 self k) (lookup_Int'0 other k)
           <> None'3)
-      -> (forall k: int. Some'3 (get_Int'0 (total_op_Int self other) k)
-        = op_Option_Excl_unit (get_Int'0 self k) (get_Int'0 other k))
+      -> (forall k: int. Some'3 (lookup_Int'0 (total_op_Int self other) k)
+        = op_Option_Excl_unit (lookup_Int'0 self k) (lookup_Int'0 other k))
   
   function op_FMap_Int_Excl_unit (self: t_FMap_Int_Excl_unit) (other: t_FMap_Int_Excl_unit) : t_Option_FMap_Int_Excl_unit
-   = if forall k: int. op_Option_Excl_unit (get_Int'0 self k) (get_Int'0 other k) <> None'3 then
+   = if forall k: int. op_Option_Excl_unit (lookup_Int'0 self k) (lookup_Int'0 other k) <> None'3 then
       Some'1 (total_op_Int self other)
     else
       None'1
@@ -4783,7 +4773,7 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
   
   type t_AtomicInvariant_TicketLockInv_T
   
-  predicate contains_Int'0 [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) = get_Int'0 self k <> None'2
+  predicate contains_Int'0 [@inline:trivial] (self: t_FMap_Int_Excl_unit) (k: int) = lookup_Int'0 self k <> None'2
   
   meta "rewrite_def" predicate contains_Int'0
   
@@ -4794,13 +4784,8 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
       | None -> any_tup2_u32_SyncView
       end
   
-  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (k: int) : tup2_u32_SyncView =
-    unwrap_Option_tup2_u32_SyncView (get_Int self k)
-  
-  meta "rewrite_def" function lookup_Int
-  
   function index_FMap_Int_tup2_u32_SyncView [@inline:trivial] (self: t_FMap_Int_tup2_u32_SyncView) (key: int) : tup2_u32_SyncView
-   = lookup_Int self key
+   = unwrap_Option_tup2_u32_SyncView (lookup_Int self key)
   
   meta "rewrite_def" function index_FMap_Int_tup2_u32_SyncView
   
@@ -4817,7 +4802,7 @@ module M_impl_TicketLock_T__new (* TicketLock<T> *)
     /\ (forall k: int. contains_Int'0 (view_Authority_FMap_Int_Excl_unit self.auth_tickets'0) k
         -> k < next_ticket_T self)
     /\ (forall ts: int. Some'4 ts <> self.ts_now_serving'0
-        -> match get_Int (val_AtomicU32 self.perm_now_serving'0) ts with
+        -> match lookup_Int (val_AtomicU32 self.perm_now_serving'0) ts with
           | Some {f0'0 = n} -> not contains_Int'0 (view_Authority_FMap_Int_Excl_unit self.auth_tickets'0) (UInt32.t'int n)
           /\ UInt32.t'int n < next_ticket_T self
           | None -> true

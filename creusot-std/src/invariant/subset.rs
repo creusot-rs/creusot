@@ -107,7 +107,7 @@ impl<T: InhabitedInvariant> Subset<T> {
     /// ```
     #[check(ghost)]
     #[trusted]
-    #[ensures(result == Self::new_logic(x))]
+    #[logic_alias(Self::new_logic(x))]
     pub fn new(x: T) -> Self {
         Subset(x)
     }

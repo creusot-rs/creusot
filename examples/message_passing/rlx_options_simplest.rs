@@ -34,7 +34,7 @@ impl Protocol for MessagePassingAtomicInv {
     #[logic(inline)]
     fn protocol(self) -> bool {
         pearlite! {
-            forall<t> match self.atomic_own.val().get(t) {
+            forall<t> match self.atomic_own.val().lookup(t) {
                 Some((false, _)) => self.t_initial == t,
                 Some((true, _)) => self.t_initial < t,
                 _ => true,

@@ -38,8 +38,8 @@ impl Protocol for ParallelAddAtomicInv {
     #[logic(inline)]
     fn protocol(self) -> bool {
         pearlite! {
-            (forall<t> self.own.val().contains(t) ==> t == self.t_last || self.own.val().contains(t + 1)) &&
-            match self.own.val().get(self.t_last) {
+            (forall<t> self.own.val().contains(&t) ==> t == self.t_last || self.own.val().contains_logic(t + 1)) &&
+            match self.own.val().lookup(self.t_last) {
                 Some((v, _)) =>
                     v@ == if self.auth1@ == Some(Excl(true)) { 2 } else { 0 } +
                     if self.auth2@ == Some(Excl(true)) { 2 } else { 0 },
@@ -55,14 +55,14 @@ pub fn parallel_add() {
     // Create our ghost state
     let mut auth1 = Authority::alloc();
     let mut auth2 = Authority::alloc();
-    let mut frag1 = ghost!(Fragment::new_unit(auth1.id_ghost()));
-    let mut frag2 = ghost!(Fragment::new_unit(auth2.id_ghost()));
+    let mut frag1 = ghost!(Fragment::new_unit(auth1.id()));
+    let mut frag2 = ghost!(Fragment::new_unit(auth2.id()));
     ghost! {
         auth1.update(&mut frag1, snapshot!((Some(Excl(false)), Some(Excl(false)))));
         auth2.update(&mut frag2, snapshot!((Some(Excl(false)), Some(Excl(false)))));
     };
 
-    let timestamp = snapshot!(such_that(|t| own.val().contains(t)));
+    let timestamp = snapshot!(such_that(|t| own.val().contains(&t)));
 
     // Initialize our invariant
     let inv = AtomicInvariant::new(

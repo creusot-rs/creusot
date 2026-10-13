@@ -79,14 +79,14 @@ mod implementation {
             pearlite! {
             // this invariant was not in the why3 proof: it is here because of the specifics of `DeepModel` and equality in Creusot
             (forall<e1, e2> self.0.domain.contains(e1) && self.0.domain.contains(e2) && e1.deep_model() == e2.deep_model() ==> e1 == e2) &&
-            (forall<e> /*#[trigger(self.0.domain.contains(e))]*/ self.0.domain.contains(e) ==>
+            (forall<e> /*#[trigger(self.0.domain.contains(e))]*/ self.0.domain.contains(&e) ==>
                 // this invariant was not in the why3 proof: it ensures that the keys and the payloads of `perm` agree
-                self.0.perms.contains(e) &&
+                self.0.perms.contains(&e) &&
                 *self.0.perms[e].ward() == e.0 as *const Node<T> &&
-                self.0.domain.contains(self.0.roots[e]) &&
+                self.0.domain.contains(&self.0.roots[e]) &&
                 self.0.roots[self.0.roots[e]] == self.0.roots[e] &&
                 match self.0.perms[e].val() {
-                    Node::Link(e2) => self.0.roots[e] != e && self.0.domain.contains(e2) && self.0.roots[e] == self.0.roots[e2],
+                    Node::Link(e2) => self.0.roots[e] != e && self.0.domain.contains(&e2) && self.0.roots[e] == self.0.roots[e2],
                     Node::Root { payload, .. } => self.0.roots[e] == e && self.0.payloads[e] == payload,
                 } &&
                 match self.0.perms[e].val() {
@@ -102,7 +102,7 @@ mod implementation {
         /// Returns all the element that are handled by this union-find structure.
         #[logic]
         #[requires(inv(self))]
-        #[ensures(forall<e1: Element, e2: Element> result.contains(e1) && result.contains(e2) && e1.deep_model() == e2.deep_model() ==> e1 == e2)]
+        #[ensures(forall<e1: Element, e2: Element> result.contains(&e1) && result.contains(&e2) && e1.deep_model() == e2.deep_model() ==> e1 == e2)]
         pub fn domain(self) -> FSet<Element> {
             *self.0.domain
         }
@@ -110,7 +110,7 @@ mod implementation {
         /// Returns all the element that are handled by this union-find structure.
         #[logic(open)]
         pub fn in_domain(self, e: Element) -> bool {
-            self.domain().contains(e)
+            self.domain().contains(&e)
         }
 
         /// Returns the map of roots of the union find.
@@ -192,7 +192,7 @@ mod implementation {
 
     #[check(terminates)]
     #[ensures(!uf.in_domain(result))]
-    #[ensures((^uf).domain() == uf.domain().insert(result))]
+    #[ensures((^uf).domain() == uf.domain().add(result))]
     #[ensures((^uf).roots_map() == uf.roots_map().set(result, result))]
     #[ensures((^uf).payloads_map() == uf.payloads_map().set(result, payload))]
     pub fn make<T>(mut uf: Ghost<&mut UnionFind<T>>, payload: T) -> Element {
@@ -209,11 +209,11 @@ mod implementation {
                 snapshot!(try_such_that(|e| uf.in_domain(e) && e.deep_model() == elt.deep_model()))
                 .into_ghost().into_inner();
             if let Some(other_elt) = other_elt {
-                Perm::disjoint_lemma(&mut perm, uf.0.perms.get_ghost(&other_elt).unwrap())
+                Perm::disjoint_lemma(&mut perm, uf.0.perms.get(&other_elt).unwrap())
             }
 
-            uf.0.perms.insert_ghost(elt, perm);
-            uf.0.domain = snapshot!(uf.0.domain.insert(elt));
+            uf.0.perms.insert(elt, perm);
+            uf.0.domain = snapshot!(uf.0.domain.add(elt));
             uf.0.payloads = snapshot!(uf.0.payloads.set(elt, *payload_snap));
             uf.0.depth = snapshot!(uf.0.depth.set(elt, *uf.0.max_depth));
             uf.0.roots = snapshot!(uf.0.roots.set(elt, elt));
@@ -231,7 +231,7 @@ mod implementation {
     #[ensures(uf.0.depth[result] >= uf.0.depth[elem])]
     #[variant(*uf.0.max_depth - uf.0.depth[elem])]
     fn find_inner<T>(mut uf: Ghost<&mut UnionFind<T>>, elem: Element) -> Element {
-        let perm = ghost!(uf.0.perms.get_ghost(&elem).unwrap());
+        let perm = ghost!(uf.0.perms.get(&elem).unwrap());
         match unsafe { Perm::as_ref(elem.0 as *const _, perm) } {
             &Node::Root { .. } => elem,
             &Node::Link(e) => {
@@ -239,7 +239,7 @@ mod implementation {
                 // path compression
                 ghost_let!(mut uf = &mut uf.0);
                 proof_assert!(uf.depth[elem] < uf.depth[root]);
-                let mut_perm = ghost!(uf.perms.get_mut_ghost(&elem).unwrap());
+                let mut_perm = ghost!(uf.perms.get_mut(&elem).unwrap());
                 unsafe { *Perm::as_mut(elem.0 as *mut Node<T>, mut_perm) = Node::Link(root) };
                 root
             }
@@ -263,7 +263,7 @@ mod implementation {
     #[requires(uf.root(elem) == elem)]
     #[ensures(*result == uf.payload(elem))]
     pub fn get<T>(uf: Ghost<&UnionFind<T>>, elem: Element) -> &T {
-        let perm = ghost!(uf.0.perms.get_ghost(&elem).unwrap());
+        let perm = ghost!(uf.0.perms.get(&elem).unwrap());
         match unsafe { Perm::as_ref(elem.0 as *const _, perm) } {
             Node::Root { payload, .. } => payload,
             _ => unreachable!(),
@@ -300,9 +300,9 @@ mod implementation {
 
         ghost_let!(mut uf = &mut uf.0);
 
-        let (mut perm_x, mut m) = ghost!(uf.perms.split_mut_ghost(&x)).split();
+        let (mut perm_x, mut m) = ghost!(uf.perms.split_mut(&x)).split();
         let bx = unsafe { Perm::as_mut(x.0 as *mut Node<T>, ghost!(&mut **perm_x)) };
-        let by = unsafe { Perm::as_mut(y.0 as *mut Node<T>, ghost!(m.get_mut_ghost(&y).unwrap())) };
+        let by = unsafe { Perm::as_mut(y.0 as *mut Node<T>, ghost!(m.get_mut(&y).unwrap())) };
 
         let Node::Root { rank: rx, .. } = bx else { unreachable!() };
         let Node::Root { rank: ry, .. } = by else { unreachable!() };

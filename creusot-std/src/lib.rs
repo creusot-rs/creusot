@@ -190,7 +190,7 @@ pub mod macros {
     /// let x = 1;
     /// let mut g = ghost!(Seq::new()); // g is a zero-sized variable at runtime
     /// ghost! {
-    ///     g.push_back_ghost(x);
+    ///     g.push_back(x);
     /// };
     /// ```
     ///
@@ -365,6 +365,53 @@ pub mod macros {
     /// This can improve usage of such functions as triggers, when their body contains a logical
     /// quantifier or interpreted function calls.
     pub use base_macros::logic;
+
+    /// Declare a program function as being callable in logic context, by giving its logical
+    /// definition.
+    ///
+    /// A logic alias can be either:
+    /// - a path to a logical function, in which case the logical function must have the same
+    ///   signature as the program function
+    /// - an arbitrary pearlite term, in which case the term must have the same type as the
+    ///   return type of the function.
+    ///
+    /// # Note
+    /// The logic alias must be non-prophetic. See `prophetic_alias` for an equivalent mechanism
+    /// with prophetic logic.
+    ///
+    /// # Example
+    ///
+    /// ## Declaring an alias with a logic function path
+    ///
+    /// ```
+    /// use creusot_std::prelude::*;
+    ///
+    /// #[logic]
+    /// fn is_zero_logic(a: i64) -> bool {
+    ///     a == 0i64
+    /// }
+    ///
+    /// #[logic_alias(is_zero_logic)]
+    /// fn is_zero(a: i64) -> bool {
+    ///     a == 0
+    /// }
+    /// ```
+    ///
+    /// ## Declaring an alias with a pearlite term
+    ///
+    /// ```
+    /// use creusot_std::prelude::*;
+    ///
+    /// #[logic_alias(forall<i, j> 0 <= i && && i < j && j < elems@.len() ==> elems@[i] <= elems@[j])]
+    /// fn is_sorted(elems: &[i64]) -> bool {
+    ///     // ...
+    /// # true
+    /// }
+    /// ```
+    pub use base_macros::logic_alias;
+
+    /// Same as `logic_alias`, but the alias is a prophetic term
+    pub use base_macros::prophetic_alias;
 
     /// Inserts a *logical* assertion into the code
     ///

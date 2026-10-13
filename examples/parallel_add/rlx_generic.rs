@@ -58,8 +58,8 @@ impl Protocol for ParallelAddAtomicInv {
     #[logic(inline)]
     fn protocol(self) -> bool {
         pearlite! {
-            (forall<t> self.own.val().contains(t) ==> t == self.t_last || self.own.val().contains(t + 1)) &&
-            match self.own.val().get(self.t_last) {
+            (forall<t> self.own.val().contains(&t) ==> t == self.t_last || self.own.val().contains_logic(t + 1)) &&
+            match self.own.val().lookup(self.t_last) {
                 Some((v, _)) =>
                   exists<k: Int>
                     self.auth@ == Some((PR::from_int(1), k * Int::pow2(32) + v@)),
@@ -76,12 +76,12 @@ pub fn parallel_add(n: i32) {
 
     // Create our ghost state
     let mut auth = Authority::alloc();
-    let mut frag = ghost!(Fragment::new_unit(auth.id_ghost()));
+    let mut frag = ghost!(Fragment::new_unit(auth.id()));
     ghost! {
         auth.update(&mut frag, snapshot!((Some((PR::from_int(1), 0)), Some((PR::from_int(1), 0)))));
     };
 
-    let timestamp = snapshot!(such_that(|t| own.val().contains(t)));
+    let timestamp = snapshot!(such_that(|t| own.val().contains(&t)));
 
     // Initialize our invariant
     let inv = AtomicInvariant::new(

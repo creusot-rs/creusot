@@ -63,19 +63,20 @@ module M_impl_Authority_K_V__contains (* Authority<K, V> *)
   
   function to_mapping_K (self: t_FMap_K_Ag_V) : Map.map t_K t_Option_Ag_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
+  function lookup_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
   
-  meta "rewrite_def" function get_K
+  meta "rewrite_def" function lookup_K
   
   function total_op_K (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_FMap_K_Ag_V
   
   axiom total_op_K_spec:
-    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k)
+    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (lookup_K self k) (lookup_K other k)
           <> None'2)
-      -> (forall k: t_K. Some'2 (get_K (total_op_K self other) k) = op_Option_Ag_V (get_K self k) (get_K other k))
+      -> (forall k: t_K. Some'2 (lookup_K (total_op_K self other) k)
+        = op_Option_Ag_V (lookup_K self k) (lookup_K other k))
   
   function op_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V =
-    if forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k) <> None'2 then
+    if forall k: t_K. op_Option_Ag_V (lookup_K self k) (lookup_K other k) <> None'2 then
       Some'0 (total_op_K self other)
     else
       None'0
@@ -153,7 +154,7 @@ module M_impl_Authority_K_V__contains (* Authority<K, V> *)
       = (exists factor: t_Option_Ag_V. op_Option_Ag_V self factor = Some'2 other)
   
   predicate incl_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) =
-    let r = forall k: t_K. incl_Option_Ag_V (get_K self k) (get_K other k) in r
+    let r = forall k: t_K. incl_Option_Ag_V (lookup_K self k) (lookup_K other k) in r
   
   axiom incl_FMap_K_Ag_V_spec:
     forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [incl_FMap_K_Ag_V self other]. incl_FMap_K_Ag_V self other
@@ -163,14 +164,14 @@ module M_impl_Authority_K_V__contains (* Authority<K, V> *)
   
   function to_mapping_K'0 (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
+  function lookup_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
   
-  meta "rewrite_def" function get_K'0
+  meta "rewrite_def" function lookup_K'0
   
   predicate rel_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) =
     match a with
-      | Some'3 a'0 -> forall k: t_K. match get_K f k with
-          | Some'1 {f0'1 = v} -> get_K'0 a'0 k = Some'4 v
+      | Some'3 a'0 -> forall k: t_K. match lookup_K f k with
+          | Some'1 {f0'1 = v} -> lookup_K'0 a'0 k = Some'4 v
           | _ -> true
           end
       | None'3 -> true
@@ -313,20 +314,19 @@ module M_impl_Authority_K_V__contains (* Authority<K, V> *)
   
   meta "rewrite_def" function new_frag_MapRelation_K_V
   
-  predicate contains_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) = get_K self k <> None'1
+  predicate contains_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) = lookup_K self k <> None'1
   
   meta "rewrite_def" predicate contains_K
   
-  function insert_K (self: t_FMap_K_Ag_V) (k: t_K) (v: t_Ag_V) : t_FMap_K_Ag_V
+  function add_K (self: t_FMap_K_Ag_V) (k: t_K) (v: t_Ag_V) : t_FMap_K_Ag_V
   
-  axiom insert_K_spec:
-    forall self: t_FMap_K_Ag_V, k: t_K, v: t_Ag_V [insert_K self k v]. to_mapping_K (insert_K self k v)
+  axiom add_K_spec: forall self: t_FMap_K_Ag_V, k: t_K, v: t_Ag_V [add_K self k v]. to_mapping_K (add_K self k v)
       = Map.set (to_mapping_K self) k (Some'1 v)
   
-  axiom insert_K_spec'0: forall self: t_FMap_K_Ag_V, k: t_K, v: t_Ag_V [insert_K self k v]. len_K (insert_K self k v)
+  axiom add_K_spec'0: forall self: t_FMap_K_Ag_V, k: t_K, v: t_Ag_V [add_K self k v]. len_K (add_K self k v)
       = (if contains_K self k then len_K self else len_K self + 1)
   
-  function singleton_K (k: t_K) (v: t_Ag_V) : t_FMap_K_Ag_V = insert_K empty_K k v
+  function singleton_K (k: t_K) (v: t_Ag_V) : t_FMap_K_Ag_V = add_K empty_K k v
   
   predicate invariant_Fragment_K_V (self: t_Fragment_K_V) =
     incl_View_MapRelation_K_V (new_frag_MapRelation_K_V (singleton_K self.f1 { f0'1 = self.f2 })) (view_Resource_View_MapRelation_K_V self.f0)
@@ -372,7 +372,7 @@ module M_impl_Authority_K_V__contains (* Authority<K, V> *)
       | s1 = join_shared_View_MapRelation_K_V {self.f0'0} {_12}
           (fun (_x: t_Resource_View_MapRelation_K_V) -> [ &new_resource <- _x ] s2)
       | s2 =
-        {[@expl:assertion] get_K (frag_MapRelation_K_V (view_Resource_View_MapRelation_K_V new_resource)) (view_Fragment_K_V frag).f0'4
+        {[@expl:assertion] lookup_K (frag_MapRelation_K_V (view_Resource_View_MapRelation_K_V new_resource)) (view_Fragment_K_V frag).f0'4
         = Some'1 { f0'1 = (view_Fragment_K_V frag).f1'4 }}
         s3
       | s3 = return {_ret} ] ]
@@ -382,7 +382,7 @@ module M_impl_Authority_K_V__contains (* Authority<K, V> *)
     | & new_resource: t_Resource_View_MapRelation_K_V = Any.any_l ()
     | & _12: t_Resource_View_MapRelation_K_V = Any.any_l () ])
     [ return (result: ()) ->
-    {[@stop_split] [@expl:contains ensures] get_K'0 (view_Authority_K_V self) (view_Fragment_K_V frag).f0'4
+    {[@stop_split] [@expl:contains ensures] lookup_K'0 (view_Authority_K_V self) (view_Fragment_K_V frag).f0'4
       = Some'4 ((view_Fragment_K_V frag).f1'4)}
       (! return {result}) ]
 end
@@ -438,20 +438,20 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   
   axiom len_K_spec: forall self: t_FMap_K_V [len_K self]. ge_log_Int (len_K self) 0
   
-  function get_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+  function lookup_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
-  meta "rewrite_def" function get_K
+  meta "rewrite_def" function lookup_K
   
-  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = get_K self k <> None'0
+  predicate contains_K [@inline:trivial] (self: t_FMap_K_V) (k: t_K) = lookup_K self k <> None'0
   
   meta "rewrite_def" predicate contains_K
   
-  function insert_K (self: t_FMap_K_V) (k: t_K) (v: t_V) : t_FMap_K_V
+  function add_K (self: t_FMap_K_V) (k: t_K) (v: t_V) : t_FMap_K_V
   
-  axiom insert_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V [insert_K self k v]. to_mapping_K (insert_K self k v)
+  axiom add_K_spec: forall self: t_FMap_K_V, k: t_K, v: t_V [add_K self k v]. to_mapping_K (add_K self k v)
       = Map.set (to_mapping_K self) k (Some'0 v)
   
-  axiom insert_K_spec'0: forall self: t_FMap_K_V, k: t_K, v: t_V [insert_K self k v]. len_K (insert_K self k v)
+  axiom add_K_spec'0: forall self: t_FMap_K_V, k: t_K, v: t_V [add_K self k v]. len_K (add_K self k v)
       = (if contains_K self k then len_K self else len_K self + 1)
   
   type t_Ag_V = { f0'0: t_V }
@@ -466,22 +466,21 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   
   axiom len_K_spec'0: forall self: t_FMap_K_Ag_V [len_K'0 self]. ge_log_Int (len_K'0 self) 0
   
-  function get_K'0 [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K'0 self) k
+  function lookup_K'0 [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K'0 self) k
   
-  meta "rewrite_def" function get_K'0
+  meta "rewrite_def" function lookup_K'0
   
-  predicate contains_K'0 [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) = get_K'0 self k <> None'1
+  predicate contains_K'0 [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) = lookup_K'0 self k <> None'1
   
   meta "rewrite_def" predicate contains_K'0
   
-  function insert_K'0 (self: t_FMap_K_Ag_V) (k: t_K) (v: t_Ag_V) : t_FMap_K_Ag_V
+  function add_K'0 (self: t_FMap_K_Ag_V) (k: t_K) (v: t_Ag_V) : t_FMap_K_Ag_V
   
-  axiom insert_K_spec'1:
-    forall self: t_FMap_K_Ag_V, k: t_K, v: t_Ag_V [insert_K'0 self k v]. to_mapping_K'0 (insert_K'0 self k v)
+  axiom add_K_spec'1:
+    forall self: t_FMap_K_Ag_V, k: t_K, v: t_Ag_V [add_K'0 self k v]. to_mapping_K'0 (add_K'0 self k v)
       = Map.set (to_mapping_K'0 self) k (Some'1 v)
   
-  axiom insert_K_spec'2:
-    forall self: t_FMap_K_Ag_V, k: t_K, v: t_Ag_V [insert_K'0 self k v]. len_K'0 (insert_K'0 self k v)
+  axiom add_K_spec'2: forall self: t_FMap_K_Ag_V, k: t_K, v: t_Ag_V [add_K'0 self k v]. len_K'0 (add_K'0 self k v)
       = (if contains_K'0 self k then len_K'0 self else len_K'0 self + 1)
   
   constant empty_K : t_FMap_K_Ag_V
@@ -490,7 +489,7 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   
   axiom empty_K_spec'0: to_mapping_K'0 empty_K = Const.const (None'1)
   
-  function singleton_K (k: t_K) (v: t_Ag_V) : t_FMap_K_Ag_V = insert_K'0 empty_K k v
+  function singleton_K (k: t_K) (v: t_Ag_V) : t_FMap_K_Ag_V = add_K'0 empty_K k v
   
   type t_ViewUpdateInsert_MapRelation_K_V = { f0'1: t_FMap_K_V; f1'1: t_FMap_K_Ag_V }
   
@@ -530,12 +529,13 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   function total_op_K (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_FMap_K_Ag_V
   
   axiom total_op_K_spec:
-    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (get_K'0 self k) (get_K'0 other k)
+    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (lookup_K'0 self k) (lookup_K'0 other k)
           <> None'3)
-      -> (forall k: t_K. Some'3 (get_K'0 (total_op_K self other) k) = op_Option_Ag_V (get_K'0 self k) (get_K'0 other k))
+      -> (forall k: t_K. Some'3 (lookup_K'0 (total_op_K self other) k)
+        = op_Option_Ag_V (lookup_K'0 self k) (lookup_K'0 other k))
   
   function op_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V =
-    if forall k: t_K. op_Option_Ag_V (get_K'0 self k) (get_K'0 other k) <> None'3 then
+    if forall k: t_K. op_Option_Ag_V (lookup_K'0 self k) (lookup_K'0 other k) <> None'3 then
       Some'2 (total_op_K self other)
     else
       None'2
@@ -595,7 +595,7 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
       = (exists factor: t_Option_Ag_V. op_Option_Ag_V self factor = Some'3 other)
   
   predicate incl_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) =
-    let r = forall k: t_K. incl_Option_Ag_V (get_K'0 self k) (get_K'0 other k) in r
+    let r = forall k: t_K. incl_Option_Ag_V (lookup_K'0 self k) (lookup_K'0 other k) in r
   
   axiom incl_FMap_K_Ag_V_spec:
     forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [incl_FMap_K_Ag_V self other]. incl_FMap_K_Ag_V self other
@@ -603,8 +603,8 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   
   predicate rel_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) =
     match a with
-      | Some a'0 -> forall k: t_K. match get_K'0 f k with
-          | Some'1 {f0'0 = v} -> get_K a'0 k = Some'0 v
+      | Some a'0 -> forall k: t_K. match lookup_K'0 f k with
+          | Some'1 {f0'0 = v} -> lookup_K a'0 k = Some'0 v
           | _ -> true
           end
       | None -> true
@@ -810,22 +810,22 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
   
   meta "select_lsinst" "all"
   
-  let insert_K'1 (self: MutBorrow.t t_Authority_K_V) (k: t_K) (v: t_V) (return (x: t_Fragment_K_V)) =
+  let insert_K (self: MutBorrow.t t_Authority_K_V) (k: t_K) (v: t_V) (return (x: t_Fragment_K_V)) =
   {[@stop_split] [@expl:insert_K requires] ([@stop_split] [@expl:insert 'self' type invariant] inv_refmut_Authority_K_V self)
     /\ ([@stop_split] [@expl:insert requires] not contains_K (view_Authority_K_V self.current) k)}
     (! bb0
     [ bb0 = s0
       [ s0 = any
         [ any_ (_dest: t_FMap_K_V) ->
-        (! -{([@stop_split] [@expl:insert ensures] ([@stop_split] [@expl:insert ensures #0] to_mapping_K (insert_K (view_Authority_K_V self.current) k v)
+        (! -{([@stop_split] [@expl:add ensures] ([@stop_split] [@expl:add ensures #0] to_mapping_K (add_K (view_Authority_K_V self.current) k v)
               = Map.set (to_mapping_K (view_Authority_K_V self.current)) k (Some'0 v))
-            /\ ([@stop_split] [@expl:insert ensures #1] len_K (insert_K (view_Authority_K_V self.current) k v)
+            /\ ([@stop_split] [@expl:add ensures #1] len_K (add_K (view_Authority_K_V self.current) k v)
             = (if contains_K (view_Authority_K_V self.current) k then
               len_K (view_Authority_K_V self.current)
             else
               len_K (view_Authority_K_V self.current) + 1
             )))
-          /\ _dest = insert_K (view_Authority_K_V self.current) k v}-
+          /\ _dest = add_K (view_Authority_K_V self.current) k v}-
           [ &auth <- _dest ] s1) ] [ _ck -> (! any) ]
       | s1 = [ &frag <- singleton_K k { f0'0 = v } ] s2
       | s2 = [ &_29 <- { f0'1 = auth; f1'1 = frag } ] s3
@@ -867,7 +867,7 @@ module M_impl_Authority_K_V__insert (* Authority<K, V> *)
     [ return (result: t_Fragment_K_V) ->
     {[@stop_split] [@expl:insert_K ensures] ([@stop_split] [@expl:insert result type invariant] inv_Fragment_K_V result)
       /\ ([@stop_split] [@expl:insert ensures #0] view_Authority_K_V self.final
-        = insert_K (view_Authority_K_V self.current) k v)
+        = add_K (view_Authority_K_V self.current) k v)
       /\ ([@stop_split] [@expl:insert ensures #1] id_K self.final = id_K self.current)
       /\ ([@stop_split] [@expl:insert ensures #2] view_Fragment_K_V result = { f0'5 = k; f1'5 = v })
       /\ ([@stop_split] [@expl:insert ensures #3] id_K'0 result = id_K self.current)}
@@ -944,19 +944,20 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
   
   function to_mapping_K'0 (self: t_FMap_K_Ag_V) : Map.map t_K t_Option_Ag_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K'0 self) k
+  function lookup_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K'0 self) k
   
-  meta "rewrite_def" function get_K
+  meta "rewrite_def" function lookup_K
   
   function total_op_K (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_FMap_K_Ag_V
   
   axiom total_op_K_spec:
-    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k)
+    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (lookup_K self k) (lookup_K other k)
           <> None'3)
-      -> (forall k: t_K. Some'3 (get_K (total_op_K self other) k) = op_Option_Ag_V (get_K self k) (get_K other k))
+      -> (forall k: t_K. Some'3 (lookup_K (total_op_K self other) k)
+        = op_Option_Ag_V (lookup_K self k) (lookup_K other k))
   
   function op_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V =
-    if forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k) <> None'3 then
+    if forall k: t_K. op_Option_Ag_V (lookup_K self k) (lookup_K other k) <> None'3 then
       Some'1 (total_op_K self other)
     else
       None'1
@@ -1026,20 +1027,20 @@ module M_impl_Authority_K_V__new (* Authority<K, V> *)
       = (exists factor: t_Option_Ag_V. op_Option_Ag_V self factor = Some'3 other)
   
   predicate incl_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) =
-    let r = forall k: t_K. incl_Option_Ag_V (get_K self k) (get_K other k) in r
+    let r = forall k: t_K. incl_Option_Ag_V (lookup_K self k) (lookup_K other k) in r
   
   axiom incl_FMap_K_Ag_V_spec:
     forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [incl_FMap_K_Ag_V self other]. incl_FMap_K_Ag_V self other
       = (exists factor: t_FMap_K_Ag_V. op_FMap_K_Ag_V self factor = Some'1 other)
   
-  function get_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
+  function lookup_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K self) k
   
-  meta "rewrite_def" function get_K'0
+  meta "rewrite_def" function lookup_K'0
   
   predicate rel_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) =
     match a with
-      | Some'0 a'0 -> forall k: t_K. match get_K f k with
-          | Some'2 {f0 = v} -> get_K'0 a'0 k = Some v
+      | Some'0 a'0 -> forall k: t_K. match lookup_K f k with
+          | Some'2 {f0 = v} -> lookup_K'0 a'0 k = Some v
           | _ -> true
           end
       | None'0 -> true
@@ -1224,19 +1225,20 @@ module M_impl_Clone_for_Fragment_K_V__clone (* <Fragment<K, V> as std::clone::Cl
   
   function to_mapping_K (self: t_FMap_K_Ag_V) : Map.map t_K t_Option_Ag_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
+  function lookup_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
   
-  meta "rewrite_def" function get_K
+  meta "rewrite_def" function lookup_K
   
   function total_op_K (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_FMap_K_Ag_V
   
   axiom total_op_K_spec:
-    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k)
+    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (lookup_K self k) (lookup_K other k)
           <> None'2)
-      -> (forall k: t_K. Some'2 (get_K (total_op_K self other) k) = op_Option_Ag_V (get_K self k) (get_K other k))
+      -> (forall k: t_K. Some'2 (lookup_K (total_op_K self other) k)
+        = op_Option_Ag_V (lookup_K self k) (lookup_K other k))
   
   function op_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V =
-    if forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k) <> None'2 then
+    if forall k: t_K. op_Option_Ag_V (lookup_K self k) (lookup_K other k) <> None'2 then
       Some'0 (total_op_K self other)
     else
       None'0
@@ -1314,7 +1316,7 @@ module M_impl_Clone_for_Fragment_K_V__clone (* <Fragment<K, V> as std::clone::Cl
       = (exists factor: t_Option_Ag_V. op_Option_Ag_V self factor = Some'2 other)
   
   predicate incl_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) =
-    let r = forall k: t_K. incl_Option_Ag_V (get_K self k) (get_K other k) in r
+    let r = forall k: t_K. incl_Option_Ag_V (lookup_K self k) (lookup_K other k) in r
   
   axiom incl_FMap_K_Ag_V_spec:
     forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [incl_FMap_K_Ag_V self other]. incl_FMap_K_Ag_V self other
@@ -1324,14 +1326,14 @@ module M_impl_Clone_for_Fragment_K_V__clone (* <Fragment<K, V> as std::clone::Cl
   
   function to_mapping_K'0 (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
+  function lookup_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
   
-  meta "rewrite_def" function get_K'0
+  meta "rewrite_def" function lookup_K'0
   
   predicate rel_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) =
     match a with
-      | Some'3 a'0 -> forall k: t_K. match get_K f k with
-          | Some'1 {f0'0 = v} -> get_K'0 a'0 k = Some'4 v
+      | Some'3 a'0 -> forall k: t_K. match lookup_K f k with
+          | Some'1 {f0'0 = v} -> lookup_K'0 a'0 k = Some'4 v
           | _ -> true
           end
       | None'3 -> true
@@ -1402,8 +1404,8 @@ module M_impl_Clone_for_Fragment_K_V__clone (* <Fragment<K, V> as std::clone::Cl
   function filter_map_K (self: t_FMap_K_Ag_V) (f: Map.map tup2_K_Ag_V t_Option_Ag_V) : t_FMap_K_Ag_V
   
   axiom filter_map_K_spec:
-    forall self: t_FMap_K_Ag_V, f: Map.map tup2_K_Ag_V t_Option_Ag_V [filter_map_K self f]. forall k: t_K [get_K (filter_map_K self f) k]. get_K (filter_map_K self f) k
-        = match get_K self k with
+    forall self: t_FMap_K_Ag_V, f: Map.map tup2_K_Ag_V t_Option_Ag_V [filter_map_K self f]. forall k: t_K [lookup_K (filter_map_K self f) k]. lookup_K (filter_map_K self f) k
+        = match lookup_K self k with
           | None'1 -> None'1
           | Some'1 v -> index_Mapping_tup2_K_Ag_V_Option_Ag_V f { f0'3 = k; f1'3 = v }
           end
@@ -1452,20 +1454,19 @@ module M_impl_Clone_for_Fragment_K_V__clone (* <Fragment<K, V> as std::clone::Cl
     forall self: t_View_MapRelation_K_V, other: t_View_MapRelation_K_V [incl_View_MapRelation_K_V self other]. incl_View_MapRelation_K_V self other
       = (exists factor: t_View_MapRelation_K_V. op_View_MapRelation_K_V self factor = Some other)
   
-  predicate contains_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) = get_K self k <> None'1
+  predicate contains_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) = lookup_K self k <> None'1
   
   meta "rewrite_def" predicate contains_K
   
-  function insert_K (self: t_FMap_K_Ag_V) (k: t_K) (v: t_Ag_V) : t_FMap_K_Ag_V
+  function add_K (self: t_FMap_K_Ag_V) (k: t_K) (v: t_Ag_V) : t_FMap_K_Ag_V
   
-  axiom insert_K_spec:
-    forall self: t_FMap_K_Ag_V, k: t_K, v: t_Ag_V [insert_K self k v]. to_mapping_K (insert_K self k v)
+  axiom add_K_spec: forall self: t_FMap_K_Ag_V, k: t_K, v: t_Ag_V [add_K self k v]. to_mapping_K (add_K self k v)
       = Map.set (to_mapping_K self) k (Some'1 v)
   
-  axiom insert_K_spec'0: forall self: t_FMap_K_Ag_V, k: t_K, v: t_Ag_V [insert_K self k v]. len_K (insert_K self k v)
+  axiom add_K_spec'0: forall self: t_FMap_K_Ag_V, k: t_K, v: t_Ag_V [add_K self k v]. len_K (add_K self k v)
       = (if contains_K self k then len_K self else len_K self + 1)
   
-  function singleton_K (k: t_K) (v: t_Ag_V) : t_FMap_K_Ag_V = insert_K empty_K k v
+  function singleton_K (k: t_K) (v: t_Ag_V) : t_FMap_K_Ag_V = add_K empty_K k v
   
   predicate invariant_Fragment_K_V (self: t_Fragment_K_V) =
     incl_View_MapRelation_K_V (new_frag_MapRelation_K_V (singleton_K self.f1 { f0'0 = self.f2 })) (view_Resource_View_MapRelation_K_V self.f0)
@@ -1564,19 +1565,20 @@ module M_impl_Clone_for_Fragment_K_V__clone__refines (* <Fragment<K, V> as std::
   
   function to_mapping_K (self: t_FMap_K_Ag_V) : Map.map t_K t_Option_Ag_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
+  function lookup_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
   
-  meta "rewrite_def" function get_K
+  meta "rewrite_def" function lookup_K
   
   function total_op_K (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_FMap_K_Ag_V
   
   axiom total_op_K_spec:
-    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k)
+    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (lookup_K self k) (lookup_K other k)
           <> None'2)
-      -> (forall k: t_K. Some'2 (get_K (total_op_K self other) k) = op_Option_Ag_V (get_K self k) (get_K other k))
+      -> (forall k: t_K. Some'2 (lookup_K (total_op_K self other) k)
+        = op_Option_Ag_V (lookup_K self k) (lookup_K other k))
   
   function op_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V =
-    if forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k) <> None'2 then
+    if forall k: t_K. op_Option_Ag_V (lookup_K self k) (lookup_K other k) <> None'2 then
       Some'0 (total_op_K self other)
     else
       None'0
@@ -1654,7 +1656,7 @@ module M_impl_Clone_for_Fragment_K_V__clone__refines (* <Fragment<K, V> as std::
       = (exists factor: t_Option_Ag_V. op_Option_Ag_V self factor = Some'2 other)
   
   predicate incl_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) =
-    let r = forall k: t_K. incl_Option_Ag_V (get_K self k) (get_K other k) in r
+    let r = forall k: t_K. incl_Option_Ag_V (lookup_K self k) (lookup_K other k) in r
   
   axiom incl_FMap_K_Ag_V_spec:
     forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [incl_FMap_K_Ag_V self other]. incl_FMap_K_Ag_V self other
@@ -1664,14 +1666,14 @@ module M_impl_Clone_for_Fragment_K_V__clone__refines (* <Fragment<K, V> as std::
   
   function to_mapping_K'0 (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
+  function lookup_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
   
-  meta "rewrite_def" function get_K'0
+  meta "rewrite_def" function lookup_K'0
   
   predicate rel_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) =
     match a with
-      | Some'3 a'0 -> forall k: t_K. match get_K f k with
-          | Some'1 {f0'0 = v} -> get_K'0 a'0 k = Some'4 v
+      | Some'3 a'0 -> forall k: t_K. match lookup_K f k with
+          | Some'1 {f0'0 = v} -> lookup_K'0 a'0 k = Some'4 v
           | _ -> true
           end
       | None'3 -> true
@@ -1740,20 +1742,19 @@ module M_impl_Clone_for_Fragment_K_V__clone__refines (* <Fragment<K, V> as std::
   
   meta "rewrite_def" function new_frag_MapRelation_K_V
   
-  predicate contains_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) = get_K self k <> None'1
+  predicate contains_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) = lookup_K self k <> None'1
   
   meta "rewrite_def" predicate contains_K
   
-  function insert_K (self: t_FMap_K_Ag_V) (k: t_K) (v: t_Ag_V) : t_FMap_K_Ag_V
+  function add_K (self: t_FMap_K_Ag_V) (k: t_K) (v: t_Ag_V) : t_FMap_K_Ag_V
   
-  axiom insert_K_spec:
-    forall self: t_FMap_K_Ag_V, k: t_K, v: t_Ag_V [insert_K self k v]. to_mapping_K (insert_K self k v)
+  axiom add_K_spec: forall self: t_FMap_K_Ag_V, k: t_K, v: t_Ag_V [add_K self k v]. to_mapping_K (add_K self k v)
       = Map.set (to_mapping_K self) k (Some'1 v)
   
-  axiom insert_K_spec'0: forall self: t_FMap_K_Ag_V, k: t_K, v: t_Ag_V [insert_K self k v]. len_K (insert_K self k v)
+  axiom add_K_spec'0: forall self: t_FMap_K_Ag_V, k: t_K, v: t_Ag_V [add_K self k v]. len_K (add_K self k v)
       = (if contains_K self k then len_K self else len_K self + 1)
   
-  function singleton_K (k: t_K) (v: t_Ag_V) : t_FMap_K_Ag_V = insert_K empty_K k v
+  function singleton_K (k: t_K) (v: t_Ag_V) : t_FMap_K_Ag_V = add_K empty_K k v
   
   function val_View_MapRelation_K_V (self: t_Resource_View_MapRelation_K_V) : t_View_MapRelation_K_V
   
@@ -1810,22 +1811,22 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_mono (* <MapRelation<K, V> as cre
   
   function to_mapping_K (self: t_FMap_K_Ag_V) : Map.map t_K t_Option_Ag_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
+  function lookup_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
   
-  meta "rewrite_def" function get_K
+  meta "rewrite_def" function lookup_K
   
   type t_Option_V = None'1 | Some'1 t_V
   
   function to_mapping_K'0 (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
+  function lookup_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
   
-  meta "rewrite_def" function get_K'0
+  meta "rewrite_def" function lookup_K'0
   
   predicate rel_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) =
     match a with
-      | Some a'0 -> forall k: t_K. match get_K f k with
-          | Some'0 {f0 = v} -> get_K'0 a'0 k = Some'1 v
+      | Some a'0 -> forall k: t_K. match lookup_K f k with
+          | Some'0 {f0 = v} -> lookup_K'0 a'0 k = Some'1 v
           | _ -> true
           end
       | None -> true
@@ -1863,12 +1864,13 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_mono (* <MapRelation<K, V> as cre
   function total_op_K (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_FMap_K_Ag_V
   
   axiom total_op_K_spec:
-    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k)
+    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (lookup_K self k) (lookup_K other k)
           <> None'3)
-      -> (forall k: t_K. Some'3 (get_K (total_op_K self other) k) = op_Option_Ag_V (get_K self k) (get_K other k))
+      -> (forall k: t_K. Some'3 (lookup_K (total_op_K self other) k)
+        = op_Option_Ag_V (lookup_K self k) (lookup_K other k))
   
   function op_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V =
-    if forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k) <> None'3 then
+    if forall k: t_K. op_Option_Ag_V (lookup_K self k) (lookup_K other k) <> None'3 then
       Some'2 (total_op_K self other)
     else
       None'2
@@ -1923,7 +1925,7 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_mono (* <MapRelation<K, V> as cre
       = (exists factor: t_Option_Ag_V. op_Option_Ag_V self factor = Some'3 other)
   
   predicate incl_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) =
-    let r = forall k: t_K. incl_Option_Ag_V (get_K self k) (get_K other k) in r
+    let r = forall k: t_K. incl_Option_Ag_V (lookup_K self k) (lookup_K other k) in r
   
   axiom incl_FMap_K_Ag_V_spec:
     forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [incl_FMap_K_Ag_V self other]. incl_FMap_K_Ag_V self other
@@ -1963,22 +1965,22 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_mono__refines (* <MapRelation<K, 
   
   function to_mapping_K (self: t_FMap_K_Ag_V) : Map.map t_K t_Option_Ag_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
+  function lookup_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
   
-  meta "rewrite_def" function get_K
+  meta "rewrite_def" function lookup_K
   
   type t_Option_V = None'1 | Some'1 t_V
   
   function to_mapping_K'0 (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
+  function lookup_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
   
-  meta "rewrite_def" function get_K'0
+  meta "rewrite_def" function lookup_K'0
   
   predicate rel_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) =
     match a with
-      | Some a'0 -> forall k: t_K. match get_K f k with
-          | Some'0 {f0 = v} -> get_K'0 a'0 k = Some'1 v
+      | Some a'0 -> forall k: t_K. match lookup_K f k with
+          | Some'0 {f0 = v} -> lookup_K'0 a'0 k = Some'1 v
           | _ -> true
           end
       | None -> true
@@ -2016,12 +2018,13 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_mono__refines (* <MapRelation<K, 
   function total_op_K (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_FMap_K_Ag_V
   
   axiom total_op_K_spec:
-    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k)
+    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (lookup_K self k) (lookup_K other k)
           <> None'3)
-      -> (forall k: t_K. Some'3 (get_K (total_op_K self other) k) = op_Option_Ag_V (get_K self k) (get_K other k))
+      -> (forall k: t_K. Some'3 (lookup_K (total_op_K self other) k)
+        = op_Option_Ag_V (lookup_K self k) (lookup_K other k))
   
   function op_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V =
-    if forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k) <> None'3 then
+    if forall k: t_K. op_Option_Ag_V (lookup_K self k) (lookup_K other k) <> None'3 then
       Some'2 (total_op_K self other)
     else
       None'2
@@ -2076,7 +2079,7 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_mono__refines (* <MapRelation<K, 
       = (exists factor: t_Option_Ag_V. op_Option_Ag_V self factor = Some'3 other)
   
   predicate incl_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) =
-    let r = forall k: t_K. incl_Option_Ag_V (get_K self k) (get_K other k) in r
+    let r = forall k: t_K. incl_Option_Ag_V (lookup_K self k) (lookup_K other k) in r
   
   axiom incl_FMap_K_Ag_V_spec:
     forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [incl_FMap_K_Ag_V self other]. incl_FMap_K_Ag_V self other
@@ -2110,22 +2113,22 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_none (* <MapRelation<K, V> as cre
   
   function to_mapping_K (self: t_FMap_K_Ag_V) : Map.map t_K t_Option_Ag_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
+  function lookup_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
   
-  meta "rewrite_def" function get_K
+  meta "rewrite_def" function lookup_K
   
   type t_Option_V = None'1 | Some'1 t_V
   
   function to_mapping_K'0 (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
+  function lookup_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
   
-  meta "rewrite_def" function get_K'0
+  meta "rewrite_def" function lookup_K'0
   
   predicate rel_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) =
     match a with
-      | Some a'0 -> forall k: t_K. match get_K f k with
-          | Some'0 {f0 = v} -> get_K'0 a'0 k = Some'1 v
+      | Some a'0 -> forall k: t_K. match lookup_K f k with
+          | Some'0 {f0 = v} -> lookup_K'0 a'0 k = Some'1 v
           | _ -> true
           end
       | None -> true
@@ -2163,22 +2166,22 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_none__refines (* <MapRelation<K, 
   
   function to_mapping_K (self: t_FMap_K_Ag_V) : Map.map t_K t_Option_Ag_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
+  function lookup_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
   
-  meta "rewrite_def" function get_K
+  meta "rewrite_def" function lookup_K
   
   type t_Option_V = None'1 | Some'1 t_V
   
   function to_mapping_K'0 (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
+  function lookup_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
   
-  meta "rewrite_def" function get_K'0
+  meta "rewrite_def" function lookup_K'0
   
   predicate rel_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) =
     match a with
-      | Some a'0 -> forall k: t_K. match get_K f k with
-          | Some'0 {f0 = v} -> get_K'0 a'0 k = Some'1 v
+      | Some a'0 -> forall k: t_K. match lookup_K f k with
+          | Some'0 {f0 = v} -> lookup_K'0 a'0 k = Some'1 v
           | _ -> true
           end
       | None -> true
@@ -2212,22 +2215,22 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_unit (* <MapRelation<K, V> as cre
   
   function to_mapping_K (self: t_FMap_K_Ag_V) : Map.map t_K t_Option_Ag_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
+  function lookup_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
   
-  meta "rewrite_def" function get_K
+  meta "rewrite_def" function lookup_K
   
   type t_Option_V = None'1 | Some'1 t_V
   
   function to_mapping_K'0 (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
+  function lookup_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
   
-  meta "rewrite_def" function get_K'0
+  meta "rewrite_def" function lookup_K'0
   
   predicate rel_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) =
     match a with
-      | Some a'0 -> forall k: t_K. match get_K f k with
-          | Some'0 {f0 = v} -> get_K'0 a'0 k = Some'1 v
+      | Some a'0 -> forall k: t_K. match lookup_K f k with
+          | Some'0 {f0 = v} -> lookup_K'0 a'0 k = Some'1 v
           | _ -> true
           end
       | None -> true
@@ -2265,12 +2268,13 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_unit (* <MapRelation<K, V> as cre
   function total_op_K (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_FMap_K_Ag_V
   
   axiom total_op_K_spec:
-    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k)
+    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (lookup_K self k) (lookup_K other k)
           <> None'3)
-      -> (forall k: t_K. Some'3 (get_K (total_op_K self other) k) = op_Option_Ag_V (get_K self k) (get_K other k))
+      -> (forall k: t_K. Some'3 (lookup_K (total_op_K self other) k)
+        = op_Option_Ag_V (lookup_K self k) (lookup_K other k))
   
   function op_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V =
-    if forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k) <> None'3 then
+    if forall k: t_K. op_Option_Ag_V (lookup_K self k) (lookup_K other k) <> None'3 then
       Some'2 (total_op_K self other)
     else
       None'2
@@ -2330,22 +2334,22 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_unit__refines (* <MapRelation<K, 
   
   function to_mapping_K (self: t_FMap_K_Ag_V) : Map.map t_K t_Option_Ag_V
   
-  function get_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
+  function lookup_K [@inline:trivial] (self: t_FMap_K_Ag_V) (k: t_K) : t_Option_Ag_V = Map.get (to_mapping_K self) k
   
-  meta "rewrite_def" function get_K
+  meta "rewrite_def" function lookup_K
   
   type t_Option_V = None'1 | Some'1 t_V
   
   function to_mapping_K'0 (self: t_FMap_K_V) : Map.map t_K t_Option_V
   
-  function get_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
+  function lookup_K'0 [@inline:trivial] (self: t_FMap_K_V) (k: t_K) : t_Option_V = Map.get (to_mapping_K'0 self) k
   
-  meta "rewrite_def" function get_K'0
+  meta "rewrite_def" function lookup_K'0
   
   predicate rel_MapRelation_K_V (a: t_Option_FMap_K_V) (f: t_FMap_K_Ag_V) =
     match a with
-      | Some a'0 -> forall k: t_K. match get_K f k with
-          | Some'0 {f0 = v} -> get_K'0 a'0 k = Some'1 v
+      | Some a'0 -> forall k: t_K. match lookup_K f k with
+          | Some'0 {f0 = v} -> lookup_K'0 a'0 k = Some'1 v
           | _ -> true
           end
       | None -> true
@@ -2383,12 +2387,13 @@ module M_impl_ViewRel_for_MapRelation_K_V__rel_unit__refines (* <MapRelation<K, 
   function total_op_K (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_FMap_K_Ag_V
   
   axiom total_op_K_spec:
-    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k)
+    forall self: t_FMap_K_Ag_V, other: t_FMap_K_Ag_V [total_op_K self other]. (forall k: t_K. op_Option_Ag_V (lookup_K self k) (lookup_K other k)
           <> None'3)
-      -> (forall k: t_K. Some'3 (get_K (total_op_K self other) k) = op_Option_Ag_V (get_K self k) (get_K other k))
+      -> (forall k: t_K. Some'3 (lookup_K (total_op_K self other) k)
+        = op_Option_Ag_V (lookup_K self k) (lookup_K other k))
   
   function op_FMap_K_Ag_V (self: t_FMap_K_Ag_V) (other: t_FMap_K_Ag_V) : t_Option_FMap_K_Ag_V =
-    if forall k: t_K. op_Option_Ag_V (get_K self k) (get_K other k) <> None'3 then
+    if forall k: t_K. op_Option_Ag_V (lookup_K self k) (lookup_K other k) <> None'3 then
       Some'2 (total_op_K self other)
     else
       None'2

@@ -9,7 +9,7 @@ pub fn reverse_ghost<T>(s: Ghost<Seq<T>>) -> Ghost<Seq<T>> {
         #[variant(*len - produced.len())]
         #[invariant(result == produced.reverse())]
         for x in s.into_inner() {
-            result.push_front_ghost(x);
+            result.push_front(x);
         }
         result
     }
@@ -23,7 +23,7 @@ pub fn reverse_ghost_ref<T>(s: Ghost<&Seq<T>>) -> Ghost<Seq<&T>> {
         #[variant(*len - produced.len())]
         #[invariant(result == produced.reverse())]
         for x in s.into_inner() {
-            result.push_front_ghost(x);
+            result.push_front(x);
         }
         result
     }

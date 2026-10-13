@@ -51,7 +51,7 @@ impl<T> Protocol for TicketLockInv<T> {
     #[logic(inline)]
     fn protocol(self) -> bool {
         pearlite! {
-            (forall<k: Int> self.auth_tickets@.contains(k) ==> k < self.perm_next_ticket.val()@) &&
+            (forall<k: Int> self.auth_tickets@.contains(&k) ==> k < self.perm_next_ticket.val()@) &&
             match self.perm {
                 Some(bor) => {
                     bor.inner.lft() == *self.lft &&
@@ -60,7 +60,7 @@ impl<T> Protocol for TicketLockInv<T> {
                 }
                 None => {
                     let n = self.perm_now_serving.val();
-                    !self.auth_tickets@.contains(n@) && n < self.perm_next_ticket.val()
+                    !self.auth_tickets@.contains(&n@) && n < self.perm_next_ticket.val()
                 }
             }
         }
@@ -164,7 +164,7 @@ impl<T> TicketLock<T> {
         #[invariant(tokens.contains(TICKET_LOCK()))]
         #[invariant(*ticket_own != None)]
         #[invariant(ticket_own.unwrap_logic().id() == self.inner_inv.public().1)]
-        #[invariant(ticket_own.unwrap_logic()@.get(ticket@) == Some(Excl(())))]
+        #[invariant(ticket_own.unwrap_logic()@.lookup(ticket@) == Some(Excl(())))]
         while self.now_serving.load(ghost!(|c: &Committer<_, _, SeqCst, _>| {
             self.inner_inv.open(tokens.reborrow(), |inv: &mut TicketLockInv<T>| {
                 if *snapshot!(c.val_load() != ticket).into_ghost() {
@@ -174,8 +174,8 @@ impl<T> TicketLock<T> {
                 let auth_tickets_snap = snapshot!(inv.auth_tickets);
                 inv.auth_tickets.update(ticket_own.as_mut().unwrap(), CancelLocalUpdateUnit);
                 proof_assert!(exists<m> inv.auth_tickets@.op(m) == Some(auth_tickets_snap@));
-                proof_assert!(forall<k> inv.auth_tickets@.contains(k) ==> auth_tickets_snap@.contains(k) && k != ticket@);
-                proof_assert!(auth_tickets_snap@.contains(ticket@));
+                proof_assert!(forall<k> inv.auth_tickets@.contains(&k) ==> auth_tickets_snap@.contains(&k) && k != ticket@);
+                proof_assert!(auth_tickets_snap@.contains(&ticket@));
                 *perm = inv.perm.take();
             })
         })) != ticket

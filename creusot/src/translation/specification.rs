@@ -1,8 +1,8 @@
 use crate::{
     backend::closures::ClosSubst,
     contracts_items::{
-        Intrinsic, creusot_clause_attrs, is_check_ghost, is_check_terminates, is_trusted_ghost,
-        is_trusted_terminates,
+        Intrinsic, creusot_clause_attrs, has_logic_alias, is_check_ghost, is_check_terminates,
+        is_trusted_ghost, is_trusted_terminates,
     },
     ctx::*,
     lints::{Diagnostics, RESULT_PARAM},
@@ -10,7 +10,8 @@ use crate::{
     translation::{
         external::ExternSpec,
         pearlite::{
-            Ident, PIdent, Subst, Substable, Term, TermSort, TermWithTriggers, Trigger, normalize,
+            Ident, PIdent, Subst, Substable, Term, TermKind, TermSort, TermWithTriggers, Trigger,
+            normalize,
         },
     },
     util::erased_identity_for_item,
@@ -92,6 +93,8 @@ pub struct PreContract<'tcx> {
     pub(crate) variant: Option<Term<'tcx>>,
     pub(crate) requires: Vec<Condition<'tcx>>,
     pub(crate) ensures: Vec<(Box<[Trigger<'tcx>]>, Condition<'tcx>)>,
+    pub(crate) alias: Option<(Span, Term<'tcx>, bool)>,
+    pub(crate) alias_id: Option<DefId>,
     /// Ignored for logic functions
     pub(crate) purity: ProgramPurity,
     source: ContractSource,
@@ -104,6 +107,8 @@ impl<'tcx> PreContract<'tcx> {
             variant: None,
             requires: Vec::new(),
             ensures: Vec::new(),
+            alias: None,
+            alias_id: None,
             purity: ProgramPurity::Impure,
             source: ContractSource::Extern,
         }
@@ -176,6 +181,10 @@ impl<'tcx> PreContract<'tcx> {
     pub fn const_param(&self) -> bool {
         matches!(self.source, ContractSource::ConstParam)
     }
+
+    pub fn get_alias_info(&self) -> Option<(Span, DefId, bool)> {
+        self.alias.as_ref().map(|alias| (alias.0, self.alias_id.unwrap(), alias.2))
+    }
 }
 
 impl<'tcx> Substable<'tcx> for PreContract<'tcx> {
@@ -200,6 +209,7 @@ pub struct ContractClauses {
     variant: Option<DefId>,
     requires: Vec<DefId>,
     ensures: Vec<DefId>,
+    alias: Option<(Span, DefId, bool)>,
     pub(crate) purity: ProgramPurity,
 }
 
@@ -215,6 +225,7 @@ impl ContractClauses {
         let source = ContractSource::Basic { has_user_contract };
         let sort = TermSort::Contract(inputs);
         let n_requires = self.requires.len();
+        let mut alias = None;
         let requires = self
             .requires
             .into_iter()
@@ -229,7 +240,6 @@ impl ContractClauses {
                 Condition { term, expl }
             })
             .collect();
-
         let n_ensures = self.ensures.len();
         let ensures = self
             .ensures
@@ -241,19 +251,39 @@ impl ContractClauses {
                 if n_ensures > 1 {
                     expl.push_str(&format!(" #{i}"))
                 }
+
                 let TermWithTriggers { box term, triggers } = ctx.term(ens_id, sort);
+
+                if let Some((aspan, aid, proph)) = self.alias
+                    && aid == ens_id
+                {
+                    if let TermKind::Binary { rhs, .. } = &term.kind {
+                        alias = Some((aspan, *rhs.clone(), proph));
+                    } else {
+                        unreachable!("This should be an equality");
+                    }
+                }
+
                 (triggers, Condition { term, expl })
             })
             .collect();
-
         let variant = self.variant.map(|var_id| {
             log::trace!("variant clause {:?}", var_id);
             *ctx.term(var_id, sort).no_triggers()
         });
+        let alias_id = self.alias.map(|(_, id, _)| id);
         log::trace!("purity: {}", self.purity);
         EarlyBinder::bind(
             ctx.tcx,
-            PreContract { variant, requires, ensures, purity: self.purity, source },
+            PreContract {
+                variant,
+                requires,
+                ensures,
+                alias,
+                alias_id,
+                purity: self.purity,
+                source,
+            },
         )
     }
 }
@@ -271,7 +301,6 @@ pub(crate) fn contract_clauses_of(
     def_id: DefId,
 ) -> Result<ContractClauses, SpecAttrError> {
     use SpecAttrError::*;
-
     let get_creusot_item = |arg: &AttrArgs| {
         let predicate_name = match arg {
             AttrArgs::Eq { expr: l, .. } => l.symbol,
@@ -286,6 +315,27 @@ pub(crate) fn contract_clauses_of(
     let ensures = creusot_clause_attrs(ctx.tcx, def_id, "ensures")
         .map(get_creusot_item)
         .collect::<Result<Vec<_>, _>>()?;
+    let alias = has_logic_alias(ctx, def_id);
+
+    if alias.is_none()
+        && let Some(trait_id) = ctx.tcx.trait_item_of(def_id)
+        && let Some(alias) = has_logic_alias(ctx, trait_id)
+    {
+        let sp =
+            alias.0.find_ancestor_not_from_macro().unwrap_or(alias.0).to(ctx.def_span(trait_id));
+        let sid = ctx.def_span(def_id);
+        let mut err =
+            ctx.dcx().struct_span_err(sid, "Implicit logic alias in trait impl is not supported");
+        err.span_note(sp, "Trait item has a `#[logic_alias]` attribute");
+        err.span_suggestion_hidden(
+            sid,
+            "Trait item and Impl item must have the same `#[logic_alias]` attribute",
+            "",
+            rustc_errors::Applicability::MachineApplicable,
+        );
+        err.emit();
+    }
+
     let mut it_variant = creusot_clause_attrs(ctx.tcx, def_id, "variant").map(get_creusot_item);
     let variant = it_variant.next().transpose()?;
     if it_variant.next().transpose()?.is_some() {
@@ -299,7 +349,7 @@ pub(crate) fn contract_clauses_of(
         ProgramPurity::Impure
     };
 
-    Ok(ContractClauses { requires, ensures, variant, purity })
+    Ok(ContractClauses { requires, ensures, alias, variant, purity })
 }
 
 pub(crate) fn inherited_extern_spec<'tcx, 'a>(
@@ -338,7 +388,6 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         .get_pre(ctx, fn_name, &inputs)
         .instantiate(ctx.tcx, subst)
         .skip_normalization();
-
     if let Some(spec) = ctx.extern_spec(def_id) {
         assert!(contract.is_empty());
         // We do NOT normalize the contract here. See below.
@@ -431,6 +480,8 @@ pub(crate) fn pre_sig_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pre
             variant: None,
             requires: vec![],
             ensures: vec![],
+            alias: None,
+            alias_id: None,
             purity: ProgramPurity::Ghost,
             source: ContractSource::ConstParam,
         };

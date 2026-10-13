@@ -1049,10 +1049,10 @@ module M_impl_SpinLockGuard_T__unlock (* SpinLockGuard<'a, T> *)
   
   function to_mapping_Int (self: t_FMap_Int_tup2_bool_SyncView) : Map.map int t_Option_tup2_bool_SyncView
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : t_Option_tup2_bool_SyncView =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : t_Option_tup2_bool_SyncView =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
   function val_unsized_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
   
@@ -1069,18 +1069,18 @@ module M_impl_SpinLockGuard_T__unlock (* SpinLockGuard<'a, T> *)
   
   axiom len_Int_spec: forall self: t_FMap_Int_tup2_bool_SyncView [len_Int self]. ge_log_Int (len_Int self) 0
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) = get_Int self k <> None'3
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) = lookup_Int self k <> None'3
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_tup2_bool_SyncView) (k: int) (v: tup2_bool_SyncView) : t_FMap_Int_tup2_bool_SyncView
+  function add_Int (self: t_FMap_Int_tup2_bool_SyncView) (k: int) (v: tup2_bool_SyncView) : t_FMap_Int_tup2_bool_SyncView
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some'3 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   let shoot_store_AtomicBool (self: MutBorrow.t t_Committer_AtomicBool_bool_None_Release)
@@ -1097,11 +1097,11 @@ module M_impl_SpinLockGuard_T__unlock (* SpinLockGuard<'a, T> *)
         <= timestamp_AtomicBool self.current)
       /\ ([@stop_split] [@expl:shoot_store ensures #5] timestamp_AtomicBool self.current
         < get_timestamp_AtomicBool (ward_AtomicBool self.current) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #6] get_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
+      /\ ([@stop_split] [@expl:shoot_store ensures #6] lookup_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
           + 1)
         = None'3)
       /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicBool own.final
-      = insert_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
+      = add_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
       + 1) { f0'2 = val_store_AtomicBool self.current; f1'2 = sync_view.final })}
       (! return {result}) ]
   
@@ -1316,13 +1316,8 @@ module M_impl_SpinLockGuard_T__unlock (* SpinLockGuard<'a, T> *)
       | None'3 -> any_tup2_bool_SyncView
       end
   
-  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : tup2_bool_SyncView =
-    unwrap_Option_tup2_bool_SyncView (get_Int self k)
-  
-  meta "rewrite_def" function lookup_Int
-  
   function index_FMap_Int_tup2_bool_SyncView [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (key: int) : tup2_bool_SyncView
-   = lookup_Int self key
+   = unwrap_Option_tup2_bool_SyncView (lookup_Int self key)
   
   meta "rewrite_def" function index_FMap_Int_tup2_bool_SyncView
   
@@ -1340,9 +1335,9 @@ module M_impl_SpinLockGuard_T__unlock (* SpinLockGuard<'a, T> *)
   meta "rewrite_def" function val_PCell_T
   
   predicate protocol_SpinLockInv_T (self: t_SpinLockInv_T) =
-    (forall t: int, view: t_SyncView. get_Int (val_AtomicBool self.perm_atomic'0) t
+    (forall t: int, view: t_SyncView. lookup_Int (val_AtomicBool self.perm_atomic'0) t
           = Some'3 { f0'2 = false; f1'2 = view }
-        -> Some'0 t = self.ts'0 \/ get_Int (val_AtomicBool self.perm_atomic'0) (t + 1) <> None'3)
+        -> Some'0 t = self.ts'0 \/ lookup_Int (val_AtomicBool self.perm_atomic'0) (t + 1) <> None'3)
     /\ match { f0'6 = self.perm'0; f1'6 = self.ts'0; f2'6 = val_Option_Excl_unit self.excl'0 } with
       | {f0'6 = None; f1'6 = None'0; f2'6 = None'1} -> true
       | {f0'6 = Some bor; f1'6 = Some'0 ts; f2'6 = Some'1 _} -> le_log_SyncView (view_Guarded_FullBorrow_Perm_PCell_T_PCell_T bor) (index_FMap_Int_tup2_bool_SyncView (val_AtomicBool self.perm_atomic'0) ts).f1'2
@@ -2145,10 +2140,10 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   
   function to_mapping_Int (self: t_FMap_Int_tup2_bool_SyncView) : Map.map int t_Option_tup2_bool_SyncView
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : t_Option_tup2_bool_SyncView =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : t_Option_tup2_bool_SyncView =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
   function val_unsized_AtomicBool (self: t_Perm_AtomicBool) : t_FMap_Int_tup2_bool_SyncView
   
@@ -2170,7 +2165,7 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
         <= timestamp_AtomicBool self)
       /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicBool self
         <= get_timestamp_AtomicBool (ward_AtomicBool self) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_load ensures #3] match get_Int (val_AtomicBool own) (timestamp_AtomicBool self) with
+      /\ ([@stop_split] [@expl:shoot_load ensures #3] match lookup_Int (val_AtomicBool own) (timestamp_AtomicBool self) with
         | Some'3 {f0'1 = v; f1'1 = v_view} -> v = val_load_AtomicBool self /\ le_log_SyncView v_view sync_view.final
         | None'3 -> false
         end)}
@@ -2204,18 +2199,18 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   
   axiom len_Int_spec: forall self: t_FMap_Int_tup2_bool_SyncView [len_Int self]. ge_log_Int (len_Int self) 0
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) = get_Int self k <> None'3
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) = lookup_Int self k <> None'3
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_tup2_bool_SyncView) (k: int) (v: tup2_bool_SyncView) : t_FMap_Int_tup2_bool_SyncView
+  function add_Int (self: t_FMap_Int_tup2_bool_SyncView) (k: int) (v: tup2_bool_SyncView) : t_FMap_Int_tup2_bool_SyncView
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some'3 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   function view_ReleaseSyncView (self: t_ReleaseSyncView) : t_SyncView
@@ -2235,11 +2230,11 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
         <= timestamp_AtomicBool self.current)
       /\ ([@stop_split] [@expl:shoot_store ensures #5] timestamp_AtomicBool self.current
         < get_timestamp_AtomicBool (ward_AtomicBool self.current) sync_view.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #6] get_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
+      /\ ([@stop_split] [@expl:shoot_store ensures #6] lookup_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
           + 1)
         = None'3)
       /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicBool own.final
-      = insert_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
+      = add_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
       + 1) { f0'1 = val_store_AtomicBool self.current; f1'1 = view_ReleaseSyncView rel_view })}
       (! return {result}) ]
   
@@ -2732,13 +2727,8 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
       | None'3 -> any_tup2_bool_SyncView
       end
   
-  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : tup2_bool_SyncView =
-    unwrap_Option_tup2_bool_SyncView (get_Int self k)
-  
-  meta "rewrite_def" function lookup_Int
-  
   function index_FMap_Int_tup2_bool_SyncView [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (key: int) : tup2_bool_SyncView
-   = lookup_Int self key
+   = unwrap_Option_tup2_bool_SyncView (lookup_Int self key)
   
   meta "rewrite_def" function index_FMap_Int_tup2_bool_SyncView
   
@@ -2756,9 +2746,9 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
   meta "rewrite_def" function val_PCell_T
   
   predicate protocol_SpinLockInv_T (self: t_SpinLockInv_T) =
-    (forall t: int, view: t_SyncView. get_Int (val_AtomicBool self.perm_atomic'0) t
+    (forall t: int, view: t_SyncView. lookup_Int (val_AtomicBool self.perm_atomic'0) t
           = Some'3 { f0'1 = false; f1'1 = view }
-        -> Some'2 t = self.ts'0 \/ get_Int (val_AtomicBool self.perm_atomic'0) (t + 1) <> None'3)
+        -> Some'2 t = self.ts'0 \/ lookup_Int (val_AtomicBool self.perm_atomic'0) (t + 1) <> None'3)
     /\ match { f0'5 = self.perm'0; f1'5 = self.ts'0; f2'5 = val_Option_Excl_unit self.excl'0 } with
       | {f0'5 = None'1; f1'5 = None'2; f2'5 = None'4} -> true
       | {f0'5 = Some'1 bor; f1'5 = Some'2 ts; f2'5 = Some'4 _} -> le_log_SyncView (view_Guarded_FullBorrow_Perm_PCell_T_PCell_T bor) (index_FMap_Int_tup2_bool_SyncView (val_AtomicBool self.perm_atomic'0) ts).f1'1
@@ -3481,23 +3471,23 @@ module M_impl_SpinLock_T__new (* SpinLock<T> *)
   
   axiom len_Int_spec: forall self: t_FMap_Int_tup2_bool_SyncView [len_Int self]. ge_log_Int (len_Int self) 0
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : t_Option_tup2_bool_SyncView =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : t_Option_tup2_bool_SyncView =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) = get_Int self k <> None
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) = lookup_Int self k <> None
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_tup2_bool_SyncView) (k: int) (v: tup2_bool_SyncView) : t_FMap_Int_tup2_bool_SyncView
+  function add_Int (self: t_FMap_Int_tup2_bool_SyncView) (k: int) (v: tup2_bool_SyncView) : t_FMap_Int_tup2_bool_SyncView
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_tup2_bool_SyncView, k: int, v: tup2_bool_SyncView [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   constant empty_Int : t_FMap_Int_tup2_bool_SyncView
@@ -3506,7 +3496,7 @@ module M_impl_SpinLock_T__new (* SpinLock<T> *)
   
   axiom empty_Int_spec'0: to_mapping_Int empty_Int = Const.const (None)
   
-  function singleton_Int (k: int) (v: tup2_bool_SyncView) : t_FMap_Int_tup2_bool_SyncView = insert_Int empty_Int k v
+  function singleton_Int (k: int) (v: tup2_bool_SyncView) : t_FMap_Int_tup2_bool_SyncView = add_Int empty_Int k v
   
   predicate lt_log_SyncView (self: t_SyncView) (_2: t_SyncView)
   
@@ -3658,19 +3648,15 @@ module M_impl_SpinLock_T__new (* SpinLock<T> *)
       | None -> any_tup2_bool_SyncView
       end
   
-  function lookup_Int [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (k: int) : tup2_bool_SyncView =
-    unwrap_Option_tup2_bool_SyncView (get_Int self k)
-  
-  meta "rewrite_def" function lookup_Int
-  
   function index_FMap_Int_tup2_bool_SyncView [@inline:trivial] (self: t_FMap_Int_tup2_bool_SyncView) (key: int) : tup2_bool_SyncView
-   = lookup_Int self key
+   = unwrap_Option_tup2_bool_SyncView (lookup_Int self key)
   
   meta "rewrite_def" function index_FMap_Int_tup2_bool_SyncView
   
   predicate protocol_SpinLockInv_T (self: t_SpinLockInv_T) =
-    (forall t: int, view: t_SyncView. get_Int (val_AtomicBool self.perm_atomic'0) t = Some { f0'4 = false; f1'4 = view }
-        -> Some'2 t = self.ts'0 \/ get_Int (val_AtomicBool self.perm_atomic'0) (t + 1) <> None)
+    (forall t: int, view: t_SyncView. lookup_Int (val_AtomicBool self.perm_atomic'0) t
+          = Some { f0'4 = false; f1'4 = view }
+        -> Some'2 t = self.ts'0 \/ lookup_Int (val_AtomicBool self.perm_atomic'0) (t + 1) <> None)
     /\ match { f0'6 = self.perm'0; f1'6 = self.ts'0; f2'6 = val_Option_Excl_unit self.excl'0 } with
       | {f0'6 = None'0; f1'6 = None'2; f2'6 = None'1} -> true
       | {f0'6 = Some'0 bor; f1'6 = Some'2 ts; f2'6 = Some'1 _} -> le_log_SyncView (view_Guarded_FullBorrow_Perm_PCell_T_PCell_T bor) (index_FMap_Int_tup2_bool_SyncView (val_AtomicBool self.perm_atomic'0) ts).f1'4

@@ -558,14 +558,7 @@ module M_impl_Queue_T__new (* Queue<T> *)
   
   function ward_AtomicUsize (self: t_Perm_AtomicUsize) : t_AtomicUsize
   
-  type t_Option_Authority = None'2 | Some'2 t_Authority
-  
-  function get_Authority (self: Seq.seq t_Authority) (ix: int) : t_Option_Authority = if 0 <= ix
-    /\ ix < Seq.length self then
-      Some'2 (Seq.get self ix)
-    else
-      None'2
-  
+  type t_Option_ref_Authority = None'2 | Some'2 t_Authority
   
   function ward_PCell_MaybeUninit_T (self: t_Perm_PCell_MaybeUninit_T) : t_PCell_MaybeUninit_T
   
@@ -636,9 +629,9 @@ module M_impl_Queue_T__new (* Queue<T> *)
     [ return (result: t_Perm_PCell_MaybeUninit_T) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
   
-  let push_back_ghost_Option_Perm_PCell_MaybeUninit_T (self: MutBorrow.t (Seq.seq t_Option_Perm_PCell_MaybeUninit_T))
+  let push_back_Option_Perm_PCell_MaybeUninit_T (self: MutBorrow.t (Seq.seq t_Option_Perm_PCell_MaybeUninit_T))
     (x: t_Option_Perm_PCell_MaybeUninit_T) (return (x'0: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:push_back_ghost ensures] self.final = Seq.snoc self.current x}
+    [ return (result: ()) -> {[@stop_split] [@expl:push_back ensures] self.final = Seq.snoc self.current x}
       (! return {result}) ]
   
   predicate resolve_refmut_Seq_Option_Perm_PCell_MaybeUninit_T [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_Option_Perm_PCell_MaybeUninit_T)) =
@@ -656,9 +649,9 @@ module M_impl_Queue_T__new (* Queue<T> *)
     [ return (result: t_Perm_AtomicUsize) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
   
-  let push_back_ghost_Perm_AtomicUsize (self: MutBorrow.t (Seq.seq t_Perm_AtomicUsize)) (x: t_Perm_AtomicUsize)
+  let push_back_Perm_AtomicUsize (self: MutBorrow.t (Seq.seq t_Perm_AtomicUsize)) (x: t_Perm_AtomicUsize)
     (return (x'0: ())) = any
-    [ return (result: ()) -> {[@stop_split] [@expl:push_back_ghost ensures] self.final = Seq.snoc self.current x}
+    [ return (result: ()) -> {[@stop_split] [@expl:push_back ensures] self.final = Seq.snoc self.current x}
       (! return {result}) ]
   
   predicate resolve_refmut_Seq_Perm_AtomicUsize [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_Perm_AtomicUsize)) =
@@ -717,11 +710,11 @@ module M_impl_Queue_T__new (* Queue<T> *)
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
-  let push_back_ghost_Authority (self: MutBorrow.t (Seq.seq t_Authority)) (x: t_Authority) (return (x'0: ())) =
-  {[@stop_split] [@expl:push_back_ghost_Authority requires] ([@stop_split] [@expl:push_back_ghost 'self' type invariant] inv_refmut_Seq_Authority self)
-    /\ ([@stop_split] [@expl:push_back_ghost 'x' type invariant] inv_Authority x)}
+  let push_back_Authority (self: MutBorrow.t (Seq.seq t_Authority)) (x: t_Authority) (return (x'0: ())) =
+  {[@stop_split] [@expl:push_back_Authority requires] ([@stop_split] [@expl:push_back 'self' type invariant] inv_refmut_Seq_Authority self)
+    /\ ([@stop_split] [@expl:push_back 'x' type invariant] inv_Authority x)}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:push_back_ghost ensures] self.final = Seq.snoc self.current x}
+    [ return (result: ()) -> {[@stop_split] [@expl:push_back ensures] self.final = Seq.snoc self.current x}
       (! return {result}) ]
   
   predicate resolve_refmut_Seq_Authority [@inline:trivial] (_1: MutBorrow.t (Seq.seq t_Authority)) =
@@ -1144,7 +1137,12 @@ module M_impl_Queue_T__new (* Queue<T> *)
             | None'0 -> false
             end}
         {[@expl:loop invariant #5] forall i'0: int. Seq.length produced <= i'0
-          -> get_Authority statuses_mono_auth'0 i'0 = None'2}
+          -> (if 0 <= i'0 /\ i'0 < Seq.length statuses_mono_auth'0 then
+              Some'2 (Seq.get statuses_mono_auth'0 i'0)
+            else
+              None'2
+            )
+          = None'2}
         {[@expl:loop invariant #6] forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length produced
           -> ward_AtomicUsize (Seq.get statuses_own'0 i'0) = (Seq.get (view_Vec_QueueCell_T_Global cells'1) i'0).status}
         {[@expl:loop invariant #7] forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length produced
@@ -1187,7 +1185,7 @@ module M_impl_Queue_T__new (* Queue<T> *)
               {MutBorrow.get_id _87}
               (fun (_bor: MutBorrow.t (Seq.seq t_Option_Perm_PCell_MaybeUninit_T)) ->
                 [ &_86 <- _bor ] [ &_87 <- { _87 with current = _bor.final } ] s17)
-          | s17 = push_back_ghost_Option_Perm_PCell_MaybeUninit_T {_86} {_89} (fun (_x: ()) -> [ &_85 <- _x ] s18)
+          | s17 = push_back_Option_Perm_PCell_MaybeUninit_T {_86} {_89} (fun (_x: ()) -> [ &_85 <- _x ] s18)
           | s18 = -{resolve_refmut_Seq_Option_Perm_PCell_MaybeUninit_T _87}- s19
           | s19 = MutBorrow.borrow_mut <Seq.seq t_Perm_AtomicUsize> {statuses_own'0}
               (fun (_bor: MutBorrow.t (Seq.seq t_Perm_AtomicUsize)) ->
@@ -1198,7 +1196,7 @@ module M_impl_Queue_T__new (* Queue<T> *)
           | s22 = MutBorrow.borrow_final <Seq.seq t_Perm_AtomicUsize> {_94.current} {MutBorrow.get_id _94}
               (fun (_bor: MutBorrow.t (Seq.seq t_Perm_AtomicUsize)) ->
                 [ &_93 <- _bor ] [ &_94 <- { _94 with current = _bor.final } ] s23)
-          | s23 = push_back_ghost_Perm_AtomicUsize {_93} {_96} (fun (_x: ()) -> [ &_92 <- _x ] s24)
+          | s23 = push_back_Perm_AtomicUsize {_93} {_96} (fun (_x: ()) -> [ &_92 <- _x ] s24)
           | s24 = -{resolve_refmut_Seq_Perm_AtomicUsize _94}- s25
           | s25 = [ &status'1 <- 2 * UInt64.t'int i ] s26
           | s26 = MutBorrow.borrow_mut <Seq.seq t_Authority> {statuses_mono_auth'0}
@@ -1215,7 +1213,7 @@ module M_impl_Queue_T__new (* Queue<T> *)
                 [ &_102 <- _bor ] -{inv_Seq_Authority _bor.final}-
                 [ &_103 <- { _103 with current = _bor.final } ] s31)
             [ _ck -> (! {[@expl:type invariant] inv_Seq_Authority _103.current} any) ]
-          | s31 = push_back_ghost_Authority {_102} {_105} (fun (_x: ()) -> [ &_101 <- _x ] s32)
+          | s31 = push_back_Authority {_102} {_105} (fun (_x: ()) -> [ &_101 <- _x ] s32)
           | s32 = s33 [ _ck -> (! {[@expl:type invariant] inv_refmut_Seq_Authority _103} any) ]
           | s33 = -{resolve_refmut_Seq_Authority _103}- s34
           | s34 = new_unit {_84} (fun (_x: ()) -> [ &_83 <- _x ] s35)
@@ -2625,8 +2623,6 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   function tail_T'0 (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
   
-  function pop_front_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T'0 self
-  
   predicate precondition_F (self: t_F) (args: MutBorrow.t t_QueueCommitter_T)
   
   predicate postcondition_once_F (self: t_F) (args: MutBorrow.t t_QueueCommitter_T) (result: ())
@@ -2687,7 +2683,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       <= val''0 witness)
     /\ ([@stop_split] [@expl:try_dequeue_cas_inv requires #7] forall c'0: MutBorrow.t t_QueueCommitter_T. not c'0.current.shot
       -> c'0.current.ward = self
-      -> gt_log_Int (Seq.length c'0.current.old_seq) 0 /\ c'0.current.new_seq = pop_front_T c'0.current.old_seq
+      -> gt_log_Int (Seq.length c'0.current.old_seq) 0 /\ c'0.current.new_seq = tail_T'0 c'0.current.old_seq
       -> precondition_F f c'0 /\ (postcondition_once_F f c'0 () -> c'0.final.shot /\ hist_inv_T c'0.current c'0.final))}
     any
     [ return (result: tup2_TokenR_T_Perm_PCell_MaybeUninit_T) ->
@@ -2706,7 +2702,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       /\ ([@stop_split] [@expl:try_dequeue_cas_inv ensures #7] exists c'0: MutBorrow.t t_QueueCommitter_T. not c'0.current.shot
           /\ c'0.current.ward = self
           /\ gt_log_Int (Seq.length c'0.current.old_seq) 0
-          /\ c'0.current.new_seq = pop_front_T c'0.current.old_seq
+          /\ c'0.current.new_seq = tail_T'0 c'0.current.old_seq
           /\ postcondition_once_F f c'0 ()
           /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T result.f1'4) = Some'2 (Seq.get c'0.current.old_seq 0))
       /\ ([@stop_split] [@expl:try_dequeue_cas_inv ensures #8] 2
@@ -3663,7 +3659,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     /\ ([@stop_split] [@expl:try_dequeue requires #0] contains tokens (Namespace_BOUNDED_MPMC_QUEUE 0))
     /\ ([@stop_split] [@expl:try_dequeue requires #1] forall c: MutBorrow.t t_QueueCommitter_T. not c.current.shot
       -> c.current.ward = self
-      -> gt_log_Int (Seq.length c.current.old_seq) 0 /\ c.current.new_seq = pop_front_T c.current.old_seq
+      -> gt_log_Int (Seq.length c.current.old_seq) 0 /\ c.current.new_seq = tail_T'0 c.current.old_seq
       -> precondition_F f c /\ (postcondition_once_F f c () -> c.final.shot /\ hist_inv_T c.current c.final))}
     (! bb0
     [ bb0 = s0
@@ -3856,7 +3852,7 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
         | Some'2 result'0 -> exists c: MutBorrow.t t_QueueCommitter_T. not c.current.shot
           /\ c.current.ward = self
           /\ gt_log_Int (Seq.length c.current.old_seq) 0
-          /\ c.current.new_seq = pop_front_T c.current.old_seq
+          /\ c.current.new_seq = tail_T'0 c.current.old_seq
           /\ postcondition_once_F f c () /\ result'0 = Seq.get c.current.old_seq 0
         | None'2 -> resolve_Ghost_F'0 f
         end)}
@@ -4161,8 +4157,6 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   function seq_T'0 (self: t_QueueInv_T) : Seq.seq t_T = seq_T self.values_auth
   
   function tail_T'0 (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
-  
-  function pop_front_T (self: Seq.seq t_T) : Seq.seq t_T = tail_T'0 self
   
   function budget_T (self: t_Authority_T) : int
   
@@ -4623,7 +4617,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
       <= val' witness)
     /\ ([@stop_split] [@expl:try_dequeue_cas_inv requires #7] forall c'0: MutBorrow.t t_QueueCommitter_T. not c'0.current.shot
       -> c'0.current.ward = self
-      -> gt_log_Int (Seq.length c'0.current.old_seq) 0 /\ c'0.current.new_seq = pop_front_T c'0.current.old_seq
+      -> gt_log_Int (Seq.length c'0.current.old_seq) 0 /\ c'0.current.new_seq = tail_T'0 c'0.current.old_seq
       -> precondition_F f c'0 /\ (postcondition_once_F f c'0 () -> c'0.final.shot /\ hist_inv_T c'0.current c'0.final))}
     (! bb0
     [ bb0 = s0
@@ -4684,7 +4678,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
       | s29 = {[@expl:assertion] val_T inv'1.current.tokens_auth tail = None'0} s30
       | s30 = {[@expl:assertion] tail < head_T inv'1.current} s31
       | s31 = [ &old_seq'0 <- seq_T'0 inv'1.current ] s32
-      | s32 = [ &new_seq'0 <- pop_front_T old_seq'0 ] s33
+      | s32 = [ &new_seq'0 <- tail_T'0 old_seq'0 ] s33
       | s33 = [ &_118 <- budget_T inv'1.current.values_auth ] s34
       | s34 = into_ghost_Int {_118} (fun (_x: int) -> [ &_117 <- _x ] s35)
       | s35 = deref_Ghost_Int {_117} (fun (_x: int) -> [ &_115 <- _x ] s36)
@@ -4845,7 +4839,7 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
       /\ ([@stop_split] [@expl:try_dequeue_cas_inv ensures #7] exists c'0: MutBorrow.t t_QueueCommitter_T. not c'0.current.shot
           /\ c'0.current.ward = self
           /\ gt_log_Int (Seq.length c'0.current.old_seq) 0
-          /\ c'0.current.new_seq = pop_front_T c'0.current.old_seq
+          /\ c'0.current.new_seq = tail_T'0 c'0.current.old_seq
           /\ postcondition_once_F f c'0 ()
           /\ view_MaybeUninit_T (val_PCell_MaybeUninit_T result.f1'0) = Some'1 (Seq.get c'0.current.old_seq 0))
       /\ ([@stop_split] [@expl:try_dequeue_cas_inv ensures #8] 2
@@ -11232,21 +11226,21 @@ module M_tokens__impl_Authority_T__alloc (* tokens::Authority<T> *)
     forall a: t_Option_Excl_Option_T, b: t_Option_Excl_Option_T. op_Option_Excl_Option_T a b
       = op_Option_Excl_Option_T b a
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) : t_Option_Excl_Option_T =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) : t_Option_Excl_Option_T =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
   function total_op_Int (self: t_FMap_Int_Excl_Option_T) (other: t_FMap_Int_Excl_Option_T) : t_FMap_Int_Excl_Option_T
   
   axiom total_op_Int_spec:
-    forall self: t_FMap_Int_Excl_Option_T, other: t_FMap_Int_Excl_Option_T [total_op_Int self other]. (forall k: int. op_Option_Excl_Option_T (get_Int self k) (get_Int other k)
+    forall self: t_FMap_Int_Excl_Option_T, other: t_FMap_Int_Excl_Option_T [total_op_Int self other]. (forall k: int. op_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k)
           <> None'2)
-      -> (forall k: int. Some'2 (get_Int (total_op_Int self other) k)
-        = op_Option_Excl_Option_T (get_Int self k) (get_Int other k))
+      -> (forall k: int. Some'2 (lookup_Int (total_op_Int self other) k)
+        = op_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k))
   
   function op_FMap_Int_Excl_Option_T (self: t_FMap_Int_Excl_Option_T) (other: t_FMap_Int_Excl_Option_T) : t_Option_FMap_Int_Excl_Option_T
-   = if forall k: int. op_Option_Excl_Option_T (get_Int self k) (get_Int other k) <> None'2 then
+   = if forall k: int. op_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k) <> None'2 then
       Some'1 (total_op_Int self other)
     else
       None'1
@@ -11317,7 +11311,7 @@ module M_tokens__impl_Authority_T__alloc (* tokens::Authority<T> *)
       = (exists factor: t_Option_Excl_Option_T. op_Option_Excl_Option_T self factor = Some'2 other)
   
   predicate incl_FMap_Int_Excl_Option_T (self: t_FMap_Int_Excl_Option_T) (other: t_FMap_Int_Excl_Option_T) =
-    let r = forall k: int. incl_Option_Excl_Option_T (get_Int self k) (get_Int other k) in r
+    let r = forall k: int. incl_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k) in r
   
   axiom incl_FMap_Int_Excl_Option_T_spec:
     forall self: t_FMap_Int_Excl_Option_T, other: t_FMap_Int_Excl_Option_T [incl_FMap_Int_Excl_Option_T self other]. incl_FMap_Int_Excl_Option_T self other
@@ -11476,7 +11470,7 @@ module M_tokens__impl_Authority_T__alloc (* tokens::Authority<T> *)
   type t_State_T = R'3 | W'3 t_T | None'3
   
   function val_T (self: t_Authority_T) (idx: int) : t_State_T =
-    match get_Int (view_Authority_FMap_Int_Excl_Option_T self.f0'2) idx with
+    match lookup_Int (view_Authority_FMap_Int_Excl_Option_T self.f0'2) idx with
       | None'0 -> None'3
       | Some'0 {f0 = None} -> R'3
       | Some'0 {f0 = Some data} -> W'3 data
@@ -11608,23 +11602,23 @@ module M_tokens__impl_TokenR_T__alloc (* tokens::TokenR<T> *)
   
   axiom len_Int_spec: forall self: t_FMap_Int_Excl_Option_T [len_Int self]. ge_log_Int (len_Int self) 0
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) : t_Option_Excl_Option_T =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) : t_Option_Excl_Option_T =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) = get_Int self k <> None'0
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) = lookup_Int self k <> None'0
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_Excl_Option_T) (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T
+  function add_Int (self: t_FMap_Int_Excl_Option_T) (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some'0 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   constant empty_Int : t_FMap_Int_Excl_Option_T
@@ -11633,7 +11627,7 @@ module M_tokens__impl_TokenR_T__alloc (* tokens::TokenR<T> *)
   
   axiom empty_Int_spec'0: to_mapping_Int empty_Int = Const.const (None'0)
   
-  function singleton_Int (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T = insert_Int empty_Int k v
+  function singleton_Int (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T = add_Int empty_Int k v
   
   type t_Fragment_FMap_Int_Excl_Option_T
   
@@ -11682,13 +11676,13 @@ module M_tokens__impl_TokenR_T__alloc (* tokens::TokenR<T> *)
   function total_op_Int (self: t_FMap_Int_Excl_Option_T) (other: t_FMap_Int_Excl_Option_T) : t_FMap_Int_Excl_Option_T
   
   axiom total_op_Int_spec:
-    forall self: t_FMap_Int_Excl_Option_T, other: t_FMap_Int_Excl_Option_T [total_op_Int self other]. (forall k: int. op_Option_Excl_Option_T (get_Int self k) (get_Int other k)
+    forall self: t_FMap_Int_Excl_Option_T, other: t_FMap_Int_Excl_Option_T [total_op_Int self other]. (forall k: int. op_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k)
           <> None'2)
-      -> (forall k: int. Some'2 (get_Int (total_op_Int self other) k)
-        = op_Option_Excl_Option_T (get_Int self k) (get_Int other k))
+      -> (forall k: int. Some'2 (lookup_Int (total_op_Int self other) k)
+        = op_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k))
   
   function op_FMap_Int_Excl_Option_T (self: t_FMap_Int_Excl_Option_T) (other: t_FMap_Int_Excl_Option_T) : t_Option_FMap_Int_Excl_Option_T
-   = if forall k: int. op_Option_Excl_Option_T (get_Int self k) (get_Int other k) <> None'2 then
+   = if forall k: int. op_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k) <> None'2 then
       Some'1 (total_op_Int self other)
     else
       None'1
@@ -11786,7 +11780,7 @@ module M_tokens__impl_TokenR_T__alloc (* tokens::TokenR<T> *)
   type t_State_T = R'3 | W'3 t_T | None'3
   
   function val_T (self: t_Authority_T) (idx: int) : t_State_T =
-    match get_Int (view_Authority_FMap_Int_Excl_Option_T self.f0) idx with
+    match lookup_Int (view_Authority_FMap_Int_Excl_Option_T self.f0) idx with
       | None'0 -> None'3
       | Some'0 {f0'0 = None} -> R'3
       | Some'0 {f0'0 = Some data} -> W'3 data
@@ -11884,23 +11878,23 @@ module M_tokens__impl_TokenR_T__discard (* tokens::TokenR<T> *)
   
   axiom len_Int_spec: forall self: t_FMap_Int_Excl_Option_T [len_Int self]. ge_log_Int (len_Int self) 0
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) : t_Option_Excl_Option_T =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) : t_Option_Excl_Option_T =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) = get_Int self k <> None'0
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) = lookup_Int self k <> None'0
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_Excl_Option_T) (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T
+  function add_Int (self: t_FMap_Int_Excl_Option_T) (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some'0 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   constant empty_Int : t_FMap_Int_Excl_Option_T
@@ -11909,7 +11903,7 @@ module M_tokens__impl_TokenR_T__discard (* tokens::TokenR<T> *)
   
   axiom empty_Int_spec'0: to_mapping_Int empty_Int = Const.const (None'0)
   
-  function singleton_Int (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T = insert_Int empty_Int k v
+  function singleton_Int (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T = add_Int empty_Int k v
   
   predicate invariant_TokenR_T [@inline:trivial] (self: t_TokenR_T) =
     view_Fragment_FMap_Int_Excl_Option_T self.f0 = singleton_Int self.f1 { f0'0 = None }
@@ -12065,13 +12059,13 @@ module M_tokens__impl_TokenR_T__discard (* tokens::TokenR<T> *)
   function total_op_Int (self: t_FMap_Int_Excl_Option_T) (other: t_FMap_Int_Excl_Option_T) : t_FMap_Int_Excl_Option_T
   
   axiom total_op_Int_spec:
-    forall self: t_FMap_Int_Excl_Option_T, other: t_FMap_Int_Excl_Option_T [total_op_Int self other]. (forall k: int. op_Option_Excl_Option_T (get_Int self k) (get_Int other k)
+    forall self: t_FMap_Int_Excl_Option_T, other: t_FMap_Int_Excl_Option_T [total_op_Int self other]. (forall k: int. op_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k)
           <> None'2)
-      -> (forall k: int. Some'2 (get_Int (total_op_Int self other) k)
-        = op_Option_Excl_Option_T (get_Int self k) (get_Int other k))
+      -> (forall k: int. Some'2 (lookup_Int (total_op_Int self other) k)
+        = op_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k))
   
   function op_FMap_Int_Excl_Option_T (self: t_FMap_Int_Excl_Option_T) (other: t_FMap_Int_Excl_Option_T) : t_Option_FMap_Int_Excl_Option_T
-   = if forall k: int. op_Option_Excl_Option_T (get_Int self k) (get_Int other k) <> None'2 then
+   = if forall k: int. op_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k) <> None'2 then
       Some'1 (total_op_Int self other)
     else
       None'1
@@ -12104,7 +12098,7 @@ module M_tokens__impl_TokenR_T__discard (* tokens::TokenR<T> *)
         -> op_Option_Excl_Option_T self x = op_Option_Excl_Option_T self y -> x = y)
   
   predicate cancelable_FMap_Int_Excl_Option_T (self: t_FMap_Int_Excl_Option_T) =
-    forall k: int. cancelable_Option_Excl_Option_T (get_Int self k)
+    forall k: int. cancelable_Option_Excl_Option_T (lookup_Int self k)
   
   axiom cancelable_FMap_Int_Excl_Option_T_spec:
     forall self: t_FMap_Int_Excl_Option_T [cancelable_FMap_Int_Excl_Option_T self]. cancelable_FMap_Int_Excl_Option_T self
@@ -12169,7 +12163,7 @@ module M_tokens__impl_TokenR_T__discard (* tokens::TokenR<T> *)
       = (exists factor: t_Option_Excl_Option_T. op_Option_Excl_Option_T self factor = Some'2 other)
   
   predicate incl_FMap_Int_Excl_Option_T (self: t_FMap_Int_Excl_Option_T) (other: t_FMap_Int_Excl_Option_T) =
-    let r = forall k: int. incl_Option_Excl_Option_T (get_Int self k) (get_Int other k) in r
+    let r = forall k: int. incl_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k) in r
   
   axiom incl_FMap_Int_Excl_Option_T_spec:
     forall self: t_FMap_Int_Excl_Option_T, other: t_FMap_Int_Excl_Option_T [incl_FMap_Int_Excl_Option_T self other]. incl_FMap_Int_Excl_Option_T self other
@@ -12256,7 +12250,7 @@ module M_tokens__impl_TokenR_T__discard (* tokens::TokenR<T> *)
   type t_State_T = R'3 | W'3 t_T | None'3
   
   function val_T (self: t_Authority_T) (idx: int) : t_State_T =
-    match get_Int (view_Authority_FMap_Int_Excl_Option_T self.f0'1) idx with
+    match lookup_Int (view_Authority_FMap_Int_Excl_Option_T self.f0'1) idx with
       | None'0 -> None'3
       | Some'0 {f0'0 = None} -> R'3
       | Some'0 {f0'0 = Some data} -> W'3 data
@@ -12424,23 +12418,23 @@ module M_tokens__impl_TokenW_T__alloc (* tokens::TokenW<T> *)
   
   axiom len_Int_spec: forall self: t_FMap_Int_Excl_Option_T [len_Int self]. ge_log_Int (len_Int self) 0
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) : t_Option_Excl_Option_T =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) : t_Option_Excl_Option_T =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) = get_Int self k <> None'0
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) = lookup_Int self k <> None'0
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_Excl_Option_T) (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T
+  function add_Int (self: t_FMap_Int_Excl_Option_T) (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some'0 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   constant empty_Int : t_FMap_Int_Excl_Option_T
@@ -12449,7 +12443,7 @@ module M_tokens__impl_TokenW_T__alloc (* tokens::TokenW<T> *)
   
   axiom empty_Int_spec'0: to_mapping_Int empty_Int = Const.const (None'0)
   
-  function singleton_Int (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T = insert_Int empty_Int k v
+  function singleton_Int (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T = add_Int empty_Int k v
   
   type t_Fragment_FMap_Int_Excl_Option_T
   
@@ -12498,13 +12492,13 @@ module M_tokens__impl_TokenW_T__alloc (* tokens::TokenW<T> *)
   function total_op_Int (self: t_FMap_Int_Excl_Option_T) (other: t_FMap_Int_Excl_Option_T) : t_FMap_Int_Excl_Option_T
   
   axiom total_op_Int_spec:
-    forall self: t_FMap_Int_Excl_Option_T, other: t_FMap_Int_Excl_Option_T [total_op_Int self other]. (forall k: int. op_Option_Excl_Option_T (get_Int self k) (get_Int other k)
+    forall self: t_FMap_Int_Excl_Option_T, other: t_FMap_Int_Excl_Option_T [total_op_Int self other]. (forall k: int. op_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k)
           <> None'2)
-      -> (forall k: int. Some'2 (get_Int (total_op_Int self other) k)
-        = op_Option_Excl_Option_T (get_Int self k) (get_Int other k))
+      -> (forall k: int. Some'2 (lookup_Int (total_op_Int self other) k)
+        = op_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k))
   
   function op_FMap_Int_Excl_Option_T (self: t_FMap_Int_Excl_Option_T) (other: t_FMap_Int_Excl_Option_T) : t_Option_FMap_Int_Excl_Option_T
-   = if forall k: int. op_Option_Excl_Option_T (get_Int self k) (get_Int other k) <> None'2 then
+   = if forall k: int. op_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k) <> None'2 then
       Some'1 (total_op_Int self other)
     else
       None'1
@@ -12602,7 +12596,7 @@ module M_tokens__impl_TokenW_T__alloc (* tokens::TokenW<T> *)
   type t_State_T = R'3 | W'3 t_T | None'3
   
   function val_T (self: t_Authority_T) (idx: int) : t_State_T =
-    match get_Int (view_Authority_FMap_Int_Excl_Option_T self.f0) idx with
+    match lookup_Int (view_Authority_FMap_Int_Excl_Option_T self.f0) idx with
       | None'0 -> None'3
       | Some'0 {f0'0 = None} -> R'3
       | Some'0 {f0'0 = Some data} -> W'3 data
@@ -12632,13 +12626,8 @@ module M_tokens__impl_TokenW_T__alloc (* tokens::TokenW<T> *)
       | None'0 -> any_Excl_Option_T
       end
   
-  function lookup_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) : t_Excl_Option_T =
-    unwrap_Option_Excl_Option_T (get_Int self k)
-  
-  meta "rewrite_def" function lookup_Int
-  
   function index_FMap_Int_Excl_Option_T [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (key: int) : t_Excl_Option_T
-   = lookup_Int self key
+   = unwrap_Option_Excl_Option_T (lookup_Int self key)
   
   meta "rewrite_def" function index_FMap_Int_Excl_Option_T
   
@@ -12729,23 +12718,23 @@ module M_tokens__impl_TokenW_T__discard (* tokens::TokenW<T> *)
   
   axiom len_Int_spec: forall self: t_FMap_Int_Excl_Option_T [len_Int self]. ge_log_Int (len_Int self) 0
   
-  function get_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) : t_Option_Excl_Option_T =
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) : t_Option_Excl_Option_T =
     Map.get (to_mapping_Int self) k
   
-  meta "rewrite_def" function get_Int
+  meta "rewrite_def" function lookup_Int
   
-  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) = get_Int self k <> None'0
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) = lookup_Int self k <> None'0
   
   meta "rewrite_def" predicate contains_Int
   
-  function insert_Int (self: t_FMap_Int_Excl_Option_T) (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T
+  function add_Int (self: t_FMap_Int_Excl_Option_T) (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T
   
-  axiom insert_Int_spec:
-    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [insert_Int self k v]. to_mapping_Int (insert_Int self k v)
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [add_Int self k v]. to_mapping_Int (add_Int self k v)
       = Map.set (to_mapping_Int self) k (Some'0 v)
   
-  axiom insert_Int_spec'0:
-    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [insert_Int self k v]. len_Int (insert_Int self k v)
+  axiom add_Int_spec'0:
+    forall self: t_FMap_Int_Excl_Option_T, k: int, v: t_Excl_Option_T [add_Int self k v]. len_Int (add_Int self k v)
       = (if contains_Int self k then len_Int self else len_Int self + 1)
   
   constant empty_Int : t_FMap_Int_Excl_Option_T
@@ -12754,7 +12743,7 @@ module M_tokens__impl_TokenW_T__discard (* tokens::TokenW<T> *)
   
   axiom empty_Int_spec'0: to_mapping_Int empty_Int = Const.const (None'0)
   
-  function singleton_Int (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T = insert_Int empty_Int k v
+  function singleton_Int (k: int) (v: t_Excl_Option_T) : t_FMap_Int_Excl_Option_T = add_Int empty_Int k v
   
   predicate invariant_TokenW_T [@inline:trivial] (self: t_TokenW_T) =
     exists value: t_T. view_Fragment_FMap_Int_Excl_Option_T self.f0 = singleton_Int self.f1 { f0'0 = Some value }
@@ -12910,13 +12899,13 @@ module M_tokens__impl_TokenW_T__discard (* tokens::TokenW<T> *)
   function total_op_Int (self: t_FMap_Int_Excl_Option_T) (other: t_FMap_Int_Excl_Option_T) : t_FMap_Int_Excl_Option_T
   
   axiom total_op_Int_spec:
-    forall self: t_FMap_Int_Excl_Option_T, other: t_FMap_Int_Excl_Option_T [total_op_Int self other]. (forall k: int. op_Option_Excl_Option_T (get_Int self k) (get_Int other k)
+    forall self: t_FMap_Int_Excl_Option_T, other: t_FMap_Int_Excl_Option_T [total_op_Int self other]. (forall k: int. op_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k)
           <> None'2)
-      -> (forall k: int. Some'2 (get_Int (total_op_Int self other) k)
-        = op_Option_Excl_Option_T (get_Int self k) (get_Int other k))
+      -> (forall k: int. Some'2 (lookup_Int (total_op_Int self other) k)
+        = op_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k))
   
   function op_FMap_Int_Excl_Option_T (self: t_FMap_Int_Excl_Option_T) (other: t_FMap_Int_Excl_Option_T) : t_Option_FMap_Int_Excl_Option_T
-   = if forall k: int. op_Option_Excl_Option_T (get_Int self k) (get_Int other k) <> None'2 then
+   = if forall k: int. op_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k) <> None'2 then
       Some'1 (total_op_Int self other)
     else
       None'1
@@ -12949,7 +12938,7 @@ module M_tokens__impl_TokenW_T__discard (* tokens::TokenW<T> *)
         -> op_Option_Excl_Option_T self x = op_Option_Excl_Option_T self y -> x = y)
   
   predicate cancelable_FMap_Int_Excl_Option_T (self: t_FMap_Int_Excl_Option_T) =
-    forall k: int. cancelable_Option_Excl_Option_T (get_Int self k)
+    forall k: int. cancelable_Option_Excl_Option_T (lookup_Int self k)
   
   axiom cancelable_FMap_Int_Excl_Option_T_spec:
     forall self: t_FMap_Int_Excl_Option_T [cancelable_FMap_Int_Excl_Option_T self]. cancelable_FMap_Int_Excl_Option_T self
@@ -13014,7 +13003,7 @@ module M_tokens__impl_TokenW_T__discard (* tokens::TokenW<T> *)
       = (exists factor: t_Option_Excl_Option_T. op_Option_Excl_Option_T self factor = Some'2 other)
   
   predicate incl_FMap_Int_Excl_Option_T (self: t_FMap_Int_Excl_Option_T) (other: t_FMap_Int_Excl_Option_T) =
-    let r = forall k: int. incl_Option_Excl_Option_T (get_Int self k) (get_Int other k) in r
+    let r = forall k: int. incl_Option_Excl_Option_T (lookup_Int self k) (lookup_Int other k) in r
   
   axiom incl_FMap_Int_Excl_Option_T_spec:
     forall self: t_FMap_Int_Excl_Option_T, other: t_FMap_Int_Excl_Option_T [incl_FMap_Int_Excl_Option_T self other]. incl_FMap_Int_Excl_Option_T self other
@@ -13101,7 +13090,7 @@ module M_tokens__impl_TokenW_T__discard (* tokens::TokenW<T> *)
   type t_State_T = R'3 | W'3 t_T | None'3
   
   function val_T (self: t_Authority_T) (idx: int) : t_State_T =
-    match get_Int (view_Authority_FMap_Int_Excl_Option_T self.f0'1) idx with
+    match lookup_Int (view_Authority_FMap_Int_Excl_Option_T self.f0'1) idx with
       | None'0 -> None'3
       | Some'0 {f0'0 = None} -> R'3
       | Some'0 {f0'0 = Some data} -> W'3 data
@@ -13123,13 +13112,8 @@ module M_tokens__impl_TokenW_T__discard (* tokens::TokenW<T> *)
       | None'0 -> any_Excl_Option_T
       end
   
-  function lookup_Int [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (k: int) : t_Excl_Option_T =
-    unwrap_Option_Excl_Option_T (get_Int self k)
-  
-  meta "rewrite_def" function lookup_Int
-  
   function index_FMap_Int_Excl_Option_T [@inline:trivial] (self: t_FMap_Int_Excl_Option_T) (key: int) : t_Excl_Option_T
-   = lookup_Int self key
+   = unwrap_Option_Excl_Option_T (lookup_Int self key)
   
   meta "rewrite_def" function index_FMap_Int_Excl_Option_T
   

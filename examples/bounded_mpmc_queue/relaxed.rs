@@ -285,7 +285,7 @@ mod tokens {
 
         #[logic]
         pub fn val(self, idx: Int) -> State<T> {
-            match self.0.view().get(idx) {
+            match self.0.view().lookup(idx) {
                 None => State::None,
                 Some(Excl(None)) => State::R,
                 Some(Excl(Some(data))) => State::W(data),
@@ -540,22 +540,22 @@ impl<T> Protocol for QueueInv<T> {
             (0 <= self.tail() && self.tail() <= self.head() && self.head() <= self.tail() + self.len()) &&
 
             // head ~> (h, H)
-            (forall<ts> #[trigger(self.head_own.val().get(ts))]
-                match self.head_own.val().get(ts) {
+            (forall<ts> #[trigger(self.head_own.val().lookup(ts))]
+                match self.head_own.val().lookup(ts) {
                     Some((h, _)) =>
                         ts == self.head_last_ts ||
-                        self.head_own.val().contains(ts + 1) &&
+                        self.head_own.val().contains_logic(ts + 1) &&
                         h@ < self.head(),
                     None => true
                 }
             ) &&
 
             // tail ~> (t, T)
-            (forall<ts> #[trigger(self.tail_own.val().get(ts))]
-                match self.tail_own.val().get(ts) {
+            (forall<ts> #[trigger(self.tail_own.val().lookup(ts))]
+                match self.tail_own.val().lookup(ts) {
                     Some((t, _)) =>
                         ts == self.tail_last_ts ||
-                        self.tail_own.val().contains(ts + 1) &&
+                        self.tail_own.val().contains_logic(ts + 1) &&
                         t@ < self.tail(),
                     None => true
                 }
@@ -563,9 +563,9 @@ impl<T> Protocol for QueueInv<T> {
 
             // statuses ~>* [(s_0, S_0), ..., (s_len - 1, S_len - 1)]
             // { i -> •(s_i, S_i) | 0 <= i < len }
-            (forall<i: Int, ts: Int> #[trigger(self.statuses_own[i].val().get(ts))]
+            (forall<i: Int, ts: Int> #[trigger(self.statuses_own[i].val().lookup(ts))]
                  0 <= i && i < self.len() ==>
-                 match self.statuses_own[i].val().get(ts) {
+                 match self.statuses_own[i].val().lookup(ts) {
                      Some((status, view)) => StatusWithView { status: status@, view } <= self.statuses_mono_auth[i].val(),
                      _ => true
                  }) &&
@@ -688,7 +688,7 @@ impl<T> Queue<T> {
         #[invariant(forall<i> 0 <= i && i < produced.len() ==> *statuses_own[i].ward() == cells@[i].status)]
         #[invariant(forall<i> 0 <= i && i < produced.len() ==>
              forall<ts>
-             match statuses_own[i].val().get(ts) {
+             match statuses_own[i].val().lookup(ts) {
                  Some((status, view)) => StatusWithView { status: status@, view } <= statuses_mono_auth[i].val(),
                  _ => true
              }
@@ -712,20 +712,20 @@ impl<T> Queue<T> {
             let (status, status_own) = AtomicUsize::new(2 * i, view.borrow_mut());
 
             ghost! {
-                cells_own.push_back_ghost(Some(at_view.into_inner()));
-                statuses_own.push_back_ghost(status_own.into_inner());
+                cells_own.push_back(Some(at_view.into_inner()));
+                statuses_own.push_back(status_own.into_inner());
 
                 let status = snapshot!(StatusWithView { status: 2 * i@, view: *view });
-                statuses_mono_auth.push_back_ghost(statuses::Authority::alloc(status).into_inner());
+                statuses_mono_auth.push_back(statuses::Authority::alloc(status).into_inner());
             };
 
             cells.push(QueueCell { item, status })
         }
 
         let (head, head_own) = AtomicUsize::new(0, SyncView::new().borrow_mut());
-        let head_ts = snapshot!(such_that(|t| head_own.val().contains(t)));
+        let head_ts = snapshot!(such_that(|t| head_own.val().contains(&t)));
         let (tail, tail_own) = AtomicUsize::new(0, SyncView::new().borrow_mut());
-        let tail_ts = snapshot!(such_that(|t| tail_own.val().contains(t)));
+        let tail_ts = snapshot!(such_that(|t| tail_own.val().contains(&t)));
 
         let statuses_mono_auth_wards =
             snapshot!(statuses_mono_auth.map(|x: statuses::Authority| x.id()));
@@ -788,12 +788,12 @@ impl<T> Queue<T> {
     // User committer
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
-        *c.new_seq == c.old_seq.push_back(*item) ==>
+        *c.new_seq == c.old_seq.snoc(*item) ==>
             f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(exists<c: &mut QueueCommitter<T>>
         !c.shot && *c.ward == *self &&
-        *c.new_seq == c.old_seq.push_back(*item) && f.postcondition_once((c,),())
+        *c.new_seq == c.old_seq.snoc(*item) && f.postcondition_once((c,),())
     )]
     fn try_enqueue_cas_inv<F>(
         &self,
@@ -829,7 +829,7 @@ impl<T> Queue<T> {
             proof_assert!(*head < inv.tail() + inv.len());
 
             let old_seq = snapshot!(inv.seq());
-            let new_seq = snapshot!(old_seq.push_back(*item));
+            let new_seq = snapshot!(old_seq.snoc(*item));
             let budget = *snapshot!(inv.values_auth.budget()).into_ghost();
             f.into_inner()(&mut QueueCommitter {
                 auth: &mut inv.values_auth,
@@ -908,12 +908,12 @@ impl<T> Queue<T> {
     #[requires(tokens.contains(BOUNDED_MPMC_QUEUE()))]
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
-        *c.new_seq == c.old_seq.push_back(item) ==>
+        *c.new_seq == c.old_seq.snoc(item) ==>
         f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(result ==> exists<c: &mut QueueCommitter<T>>
         !c.shot && *c.ward == *self &&
-        *c.new_seq == c.old_seq.push_back(item) && f.postcondition_once((c,),())
+        *c.new_seq == c.old_seq.snoc(item) && f.postcondition_once((c,),())
     )]
     #[ensures(!result ==> resolve(f))]
     pub fn try_enqueue<F>(&self, item: T, mut tokens: Ghost<Tokens>, f: Ghost<F>) -> bool
@@ -1021,12 +1021,12 @@ impl<T> Queue<T> {
     // User committer
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
-        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_front() ==>
+        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.tail() ==>
         f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(exists<c: &mut QueueCommitter<T>>
         !c.shot && *c.ward == *self &&
-        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_front() &&
+        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.tail() &&
         f.postcondition_once((c,),()) &&
         result.1.val()@ == Some(c.old_seq[0])
     )]
@@ -1065,7 +1065,7 @@ impl<T> Queue<T> {
             proof_assert!(*tail < inv.head());
 
             let old_seq = snapshot!(inv.seq());
-            let new_seq = snapshot!(old_seq.pop_front());
+            let new_seq = snapshot!(old_seq.tail());
             let budget = *snapshot!(inv.values_auth.budget()).into_ghost();
             f.into_inner()(&mut QueueCommitter {
                 auth: &mut inv.values_auth,
@@ -1141,13 +1141,13 @@ impl<T> Queue<T> {
     #[requires(tokens.contains(BOUNDED_MPMC_QUEUE()))]
     #[requires(forall<c: &mut QueueCommitter<T>>
         !c.shot ==> *c.ward == *self ==>
-        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_front() ==>
+        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.tail() ==>
         f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
     #[ensures(match result {
         Some(result) => exists<c: &mut QueueCommitter<T>>
             !c.shot && *c.ward == *self &&
-            c.old_seq.len() > 0 && *c.new_seq == c.old_seq.pop_front() &&
+            c.old_seq.len() > 0 && *c.new_seq == c.old_seq.tail() &&
             f.postcondition_once((c,),()) &&
             result == c.old_seq[0],
         None => resolve(f)

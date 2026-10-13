@@ -131,21 +131,21 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone (* <implementat
   
   function to_mapping_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) : Map.map t_PCell_Inner_T t_Option_Ag_Seq_T
   
-  function get_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Option_Ag_Seq_T
+  function lookup_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Option_Ag_Seq_T
    = Map.get (to_mapping_PCell_Inner_T self) k
   
-  meta "rewrite_def" function get_PCell_Inner_T
+  meta "rewrite_def" function lookup_PCell_Inner_T
   
   function total_op_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (other: t_FMap_PCell_Inner_T_Ag_Seq_T) : t_FMap_PCell_Inner_T_Ag_Seq_T
   
   axiom total_op_PCell_Inner_T_spec:
-    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, other: t_FMap_PCell_Inner_T_Ag_Seq_T [total_op_PCell_Inner_T self other]. (forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k)
+    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, other: t_FMap_PCell_Inner_T_Ag_Seq_T [total_op_PCell_Inner_T self other]. (forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k)
           <> None'1)
-      -> (forall k: t_PCell_Inner_T. Some'1 (get_PCell_Inner_T (total_op_PCell_Inner_T self other) k)
-        = op_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k))
+      -> (forall k: t_PCell_Inner_T. Some'1 (lookup_PCell_Inner_T (total_op_PCell_Inner_T self other) k)
+        = op_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k))
   
   function op_FMap_PCell_Inner_T_Ag_Seq_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (other: t_FMap_PCell_Inner_T_Ag_Seq_T) : t_Option_FMap_PCell_Inner_T_Ag_Seq_T
-   = if forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k)
+   = if forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k)
       <> None'1 then
       Some (total_op_PCell_Inner_T self other)
     else
@@ -168,8 +168,8 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone (* <implementat
   function filter_map_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (f: Map.map tup2_PCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T) : t_FMap_PCell_Inner_T_Ag_Seq_T
   
   axiom filter_map_PCell_Inner_T_spec:
-    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, f: Map.map tup2_PCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T [filter_map_PCell_Inner_T self f]. forall k: t_PCell_Inner_T [get_PCell_Inner_T (filter_map_PCell_Inner_T self f) k]. get_PCell_Inner_T (filter_map_PCell_Inner_T self f) k
-        = match get_PCell_Inner_T self k with
+    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, f: Map.map tup2_PCell_Inner_T_Ag_Seq_T t_Option_Ag_Seq_T [filter_map_PCell_Inner_T self f]. forall k: t_PCell_Inner_T [lookup_PCell_Inner_T (filter_map_PCell_Inner_T self f) k]. lookup_PCell_Inner_T (filter_map_PCell_Inner_T self f) k
+        = match lookup_PCell_Inner_T self k with
           | None'0 -> None'0
           | Some'0 v -> index_Mapping_tup2_PCell_Inner_T_Ag_Seq_T_Option_Ag_Seq_T f { f0'1 = k; f1'1 = v }
           end
@@ -221,7 +221,7 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone (* <implementat
   
   predicate invariant_PersistentArray_T (self: t_PersistentArray_T) =
     id_FMap_PCell_Inner_T_Ag_Seq_T self.frag = public_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv)
-    /\ get_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
+    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
       <> None'0
     /\ namespace_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv) = Namespace_PARRAY 0
   
@@ -274,7 +274,7 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone (* <implementat
       end
   
   function view_PersistentArray_T [@inline:trivial] (self: t_PersistentArray_T) : Seq.seq t_T =
-    (unwrap_Option_Ag_Seq_T (get_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0
+    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0
   
   meta "rewrite_def" function view_PersistentArray_T
   
@@ -348,10 +348,10 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone__refines (* <im
   
   function to_mapping_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) : Map.map t_PCell_Inner_T t_Option_Ag_Seq_T
   
-  function get_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Option_Ag_Seq_T
+  function lookup_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Option_Ag_Seq_T
    = Map.get (to_mapping_PCell_Inner_T self) k
   
-  meta "rewrite_def" function get_PCell_Inner_T
+  meta "rewrite_def" function lookup_PCell_Inner_T
   
   function view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T (self: t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T) : t_FMap_PCell_Inner_T_Ag_Seq_T
   
@@ -361,7 +361,7 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone__refines (* <im
   
   predicate invariant_PersistentArray_T (self: t_PersistentArray_T) =
     id_FMap_PCell_Inner_T_Ag_Seq_T self.frag = public_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv)
-    /\ get_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
+    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
       <> None
     /\ namespace_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv) = Namespace_PARRAY 0
   
@@ -428,7 +428,7 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone__refines (* <im
       end
   
   function view_PersistentArray_T [@inline:trivial] (self: t_PersistentArray_T) : Seq.seq t_T =
-    (unwrap_Option_Ag_Seq_T (get_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0
+    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0
   
   meta "rewrite_def" function view_PersistentArray_T
   
@@ -577,13 +577,13 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   
   function to_mapping_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) : Map.map t_PCell_Inner_T t_Option_Ag_Seq_T
   
-  function get_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Option_Ag_Seq_T
+  function lookup_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Option_Ag_Seq_T
    = Map.get (to_mapping_PCell_Inner_T self) k
   
-  meta "rewrite_def" function get_PCell_Inner_T
+  meta "rewrite_def" function lookup_PCell_Inner_T
   
   predicate contains_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) =
-    get_PCell_Inner_T self k <> None
+    lookup_PCell_Inner_T self k <> None
   
   meta "rewrite_def" predicate contains_PCell_Inner_T
   
@@ -595,13 +595,13 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   
   function to_mapping_Snapshot_PCell_Inner_T (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) : Map.map t_PCell_Inner_T t_Option_Perm_PCell_Inner_T
   
-  function get_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Option_Perm_PCell_Inner_T
+  function lookup_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Option_Perm_PCell_Inner_T
    = Map.get (to_mapping_Snapshot_PCell_Inner_T self) k
   
-  meta "rewrite_def" function get_Snapshot_PCell_Inner_T
+  meta "rewrite_def" function lookup_Snapshot_PCell_Inner_T
   
   predicate contains_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) =
-    get_Snapshot_PCell_Inner_T self k <> None'0
+    lookup_Snapshot_PCell_Inner_T self k <> None'0
   
   meta "rewrite_def" predicate contains_Snapshot_PCell_Inner_T
   
@@ -614,13 +614,8 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       | None'0 -> any_Perm_PCell_Inner_T
       end
   
-  function lookup_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Perm_PCell_Inner_T
-   = unwrap_Option_Perm_PCell_Inner_T (get_Snapshot_PCell_Inner_T self k)
-  
-  meta "rewrite_def" function lookup_Snapshot_PCell_Inner_T
-  
   function index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (key: t_PCell_Inner_T) : t_Perm_PCell_Inner_T
-   = lookup_Snapshot_PCell_Inner_T self key
+   = unwrap_Option_Perm_PCell_Inner_T (lookup_Snapshot_PCell_Inner_T self key)
   
   meta "rewrite_def" function index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T
   
@@ -641,13 +636,8 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       | None -> any_Ag_Seq_T
       end
   
-  function lookup_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Ag_Seq_T
-   = unwrap_Option_Ag_Seq_T (get_PCell_Inner_T self k)
-  
-  meta "rewrite_def" function lookup_PCell_Inner_T
-  
   function index_FMap_PCell_Inner_T_Ag_Seq_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (key: t_PCell_Inner_T) : t_Ag_Seq_T
-   = lookup_PCell_Inner_T self key
+   = unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T self key)
   
   meta "rewrite_def" function index_FMap_PCell_Inner_T_Ag_Seq_T
   
@@ -881,13 +871,13 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   function total_op_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (other: t_FMap_PCell_Inner_T_Ag_Seq_T) : t_FMap_PCell_Inner_T_Ag_Seq_T
   
   axiom total_op_PCell_Inner_T_spec:
-    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, other: t_FMap_PCell_Inner_T_Ag_Seq_T [total_op_PCell_Inner_T self other]. (forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k)
+    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, other: t_FMap_PCell_Inner_T_Ag_Seq_T [total_op_PCell_Inner_T self other]. (forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k)
           <> None'2)
-      -> (forall k: t_PCell_Inner_T. Some'2 (get_PCell_Inner_T (total_op_PCell_Inner_T self other) k)
-        = op_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k))
+      -> (forall k: t_PCell_Inner_T. Some'2 (lookup_PCell_Inner_T (total_op_PCell_Inner_T self other) k)
+        = op_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k))
   
   function op_FMap_PCell_Inner_T_Ag_Seq_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (other: t_FMap_PCell_Inner_T_Ag_Seq_T) : t_Option_FMap_PCell_Inner_T_Ag_Seq_T
-   = if forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k)
+   = if forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k)
       <> None'2 then
       Some'1 (total_op_PCell_Inner_T self other)
     else
@@ -949,7 +939,7 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       = (exists factor: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T self factor = Some'2 other)
   
   predicate incl_FMap_PCell_Inner_T_Ag_Seq_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (other: t_FMap_PCell_Inner_T_Ag_Seq_T) =
-    let r = forall k: t_PCell_Inner_T. incl_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k) in r
+    let r = forall k: t_PCell_Inner_T. incl_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k) in r
   
   axiom incl_FMap_PCell_Inner_T_Ag_Seq_T_spec:
     forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, other: t_FMap_PCell_Inner_T_Ag_Seq_T [incl_FMap_PCell_Inner_T_Ag_Seq_T self other]. incl_FMap_PCell_Inner_T_Ag_Seq_T self other
@@ -1038,8 +1028,8 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
     {[@stop_split] [@expl:reroot_T ensures] ([@stop_split] [@expl:reroot ensures #0] partial_invariant_T (fin_Ghost_refmut_PA_T pa))
       /\ ([@stop_split] [@expl:reroot ensures #1] (fin_Ghost_refmut_PA_T pa).auth = pa.current.auth)
       /\ ([@stop_split] [@expl:reroot ensures #2] forall id: t_PCell_Inner_T. gt_log_Int (index_Mapping_PCell_Inner_T_Int pa.current.depth id) (index_Mapping_PCell_Inner_T_Int pa.current.depth (view_Rc_PCell_Inner_T_Global cur))
-          -> get_Snapshot_PCell_Inner_T pa.current.perms id
-            = get_Snapshot_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
+          -> lookup_Snapshot_PCell_Inner_T pa.current.perms id
+            = lookup_Snapshot_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
           /\ index_Mapping_PCell_Inner_T_Int pa.current.depth id
           = index_Mapping_PCell_Inner_T_Int (fin_Ghost_refmut_PA_T pa).depth id)
       /\ ([@stop_split] [@expl:reroot ensures #3] forall id: t_PCell_Inner_T. contains_Snapshot_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
@@ -1066,10 +1056,10 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       | Some'0 x -> Some'3 (Map.get f x)
       end
   
-  let get_ghost_Snapshot_PCell_Inner_T (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (key: t_PCell_Inner_T)
+  let get_Snapshot_PCell_Inner_T (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (key: t_PCell_Inner_T)
     (return (x: t_Option_ref_Perm_PCell_Inner_T)) = any
-    [ return (result: t_Option_ref_Perm_PCell_Inner_T) -> {[@stop_split] [@expl:get_ghost ensures] result
-      = map_Option_Perm_PCell_Inner_T (get_Snapshot_PCell_Inner_T self key) (fun (v: t_Perm_PCell_Inner_T) -> v)}
+    [ return (result: t_Option_ref_Perm_PCell_Inner_T) -> {[@stop_split] [@expl:get ensures] result
+      = map_Option_Perm_PCell_Inner_T (lookup_Snapshot_PCell_Inner_T self key) (fun (v: t_Perm_PCell_Inner_T) -> v)}
       (! return {result}) ]
   
   let unwrap_ref_Perm_PCell_Inner_T (self: t_Option_ref_Perm_PCell_Inner_T) (return (x: t_Perm_PCell_Inner_T)) =
@@ -1206,7 +1196,7 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   
   predicate invariant_PersistentArray_T (self: t_PersistentArray_T) =
     id_FMap_PCell_Inner_T_Ag_Seq_T'0 self.frag = public_PA_T'0 (view_GhostShared_NonAtomicInvariant_PA_T self.inv)
-    /\ get_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
+    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
       <> None
     /\ namespace_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv) = Namespace_PARRAY 0
   
@@ -1226,7 +1216,7 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   meta "rewrite_def" predicate inv_ref_PersistentArray_T
   
   function view_PersistentArray_T [@inline:trivial] (self: t_PersistentArray_T) : Seq.seq t_T =
-    (unwrap_Option_Ag_Seq_T (get_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0'0
+    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0'0
   
   meta "rewrite_def" function view_PersistentArray_T
   
@@ -1299,7 +1289,7 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       | s31 = -{resolve_refmut_PA_T _50}- s32
       | s32 = [ &_54 <- view_Rc_PCell_Inner_T_Global self.permcell ] s33
       | s33 = [ &_53 <- _54 ] s34
-      | s34 = get_ghost_Snapshot_PCell_Inner_T {_50.current.perms} {_53}
+      | s34 = get_Snapshot_PCell_Inner_T {_50.current.perms} {_53}
           (fun (_x: t_Option_ref_Perm_PCell_Inner_T) -> [ &_48 <- _x ] s35)
       | s35 = unwrap_ref_Perm_PCell_Inner_T {_48} (fun (_x: t_Perm_PCell_Inner_T) -> [ &_47 <- _x ] s36)
       | s36 = new_ref_Perm_PCell_Inner_T {_47} (fun (_x: t_Perm_PCell_Inner_T) -> [ &perm <- _x ] s37)
@@ -1507,13 +1497,13 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
   
   function to_mapping_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) : Map.map t_PCell_Inner_T t_Option_Ag_Seq_T
   
-  function get_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Option_Ag_Seq_T
+  function lookup_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Option_Ag_Seq_T
    = Map.get (to_mapping_PCell_Inner_T self) k
   
-  meta "rewrite_def" function get_PCell_Inner_T
+  meta "rewrite_def" function lookup_PCell_Inner_T
   
   predicate contains_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) =
-    get_PCell_Inner_T self k <> None
+    lookup_PCell_Inner_T self k <> None
   
   meta "rewrite_def" predicate contains_PCell_Inner_T
   
@@ -1525,13 +1515,13 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
   
   function to_mapping_Snapshot_PCell_Inner_T (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) : Map.map t_PCell_Inner_T t_Option_Perm_PCell_Inner_T
   
-  function get_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Option_Perm_PCell_Inner_T
+  function lookup_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Option_Perm_PCell_Inner_T
    = Map.get (to_mapping_Snapshot_PCell_Inner_T self) k
   
-  meta "rewrite_def" function get_Snapshot_PCell_Inner_T
+  meta "rewrite_def" function lookup_Snapshot_PCell_Inner_T
   
   predicate contains_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) =
-    get_Snapshot_PCell_Inner_T self k <> None'0
+    lookup_Snapshot_PCell_Inner_T self k <> None'0
   
   meta "rewrite_def" predicate contains_Snapshot_PCell_Inner_T
   
@@ -1544,13 +1534,8 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
       | None'0 -> any_Perm_PCell_Inner_T
       end
   
-  function lookup_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Perm_PCell_Inner_T
-   = unwrap_Option_Perm_PCell_Inner_T (get_Snapshot_PCell_Inner_T self k)
-  
-  meta "rewrite_def" function lookup_Snapshot_PCell_Inner_T
-  
   function index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (key: t_PCell_Inner_T) : t_Perm_PCell_Inner_T
-   = lookup_Snapshot_PCell_Inner_T self key
+   = unwrap_Option_Perm_PCell_Inner_T (lookup_Snapshot_PCell_Inner_T self key)
   
   meta "rewrite_def" function index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T
   
@@ -1571,13 +1556,8 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
       | None -> any_Ag_Seq_T
       end
   
-  function lookup_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Ag_Seq_T
-   = unwrap_Option_Ag_Seq_T (get_PCell_Inner_T self k)
-  
-  meta "rewrite_def" function lookup_PCell_Inner_T
-  
   function index_FMap_PCell_Inner_T_Ag_Seq_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (key: t_PCell_Inner_T) : t_Ag_Seq_T
-   = lookup_PCell_Inner_T self key
+   = unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T self key)
   
   meta "rewrite_def" function index_FMap_PCell_Inner_T_Ag_Seq_T
   
@@ -1760,13 +1740,13 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
   function total_op_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (other: t_FMap_PCell_Inner_T_Ag_Seq_T) : t_FMap_PCell_Inner_T_Ag_Seq_T
   
   axiom total_op_PCell_Inner_T_spec:
-    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, other: t_FMap_PCell_Inner_T_Ag_Seq_T [total_op_PCell_Inner_T self other]. (forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k)
+    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, other: t_FMap_PCell_Inner_T_Ag_Seq_T [total_op_PCell_Inner_T self other]. (forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k)
           <> None'2)
-      -> (forall k: t_PCell_Inner_T. Some'2 (get_PCell_Inner_T (total_op_PCell_Inner_T self other) k)
-        = op_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k))
+      -> (forall k: t_PCell_Inner_T. Some'2 (lookup_PCell_Inner_T (total_op_PCell_Inner_T self other) k)
+        = op_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k))
   
   function op_FMap_PCell_Inner_T_Ag_Seq_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (other: t_FMap_PCell_Inner_T_Ag_Seq_T) : t_Option_FMap_PCell_Inner_T_Ag_Seq_T
-   = if forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k)
+   = if forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k)
       <> None'2 then
       Some'1 (total_op_PCell_Inner_T self other)
     else
@@ -1828,7 +1808,7 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
       = (exists factor: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T self factor = Some'2 other)
   
   predicate incl_FMap_PCell_Inner_T_Ag_Seq_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (other: t_FMap_PCell_Inner_T_Ag_Seq_T) =
-    let r = forall k: t_PCell_Inner_T. incl_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k) in r
+    let r = forall k: t_PCell_Inner_T. incl_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k) in r
   
   axiom incl_FMap_PCell_Inner_T_Ag_Seq_T_spec:
     forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, other: t_FMap_PCell_Inner_T_Ag_Seq_T [incl_FMap_PCell_Inner_T_Ag_Seq_T self other]. incl_FMap_PCell_Inner_T_Ag_Seq_T self other
@@ -1893,7 +1873,7 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
   
   predicate invariant_PersistentArray_T (self: t_PersistentArray_T) =
     id_FMap_PCell_Inner_T_Ag_Seq_T'0 self.frag = public_PA_T'0 (view_GhostShared_NonAtomicInvariant_PA_T self.inv)
-    /\ get_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
+    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
       <> None
     /\ namespace_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv) = Namespace_PARRAY 0
   
@@ -1913,7 +1893,7 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
   meta "rewrite_def" predicate inv_ref_PersistentArray_T
   
   function view_PersistentArray_T [@inline:trivial] (self: t_PersistentArray_T) : Seq.seq t_T =
-    (unwrap_Option_Ag_Seq_T (get_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0
+    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0
   
   meta "rewrite_def" function view_PersistentArray_T
   
@@ -2072,15 +2052,15 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
   
   function to_mapping_Snapshot_PCell_Inner_T (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) : Map.map t_PCell_Inner_T t_Option_Perm_PCell_Inner_T
   
-  function get_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Option_Perm_PCell_Inner_T
+  function lookup_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Option_Perm_PCell_Inner_T
    = Map.get (to_mapping_Snapshot_PCell_Inner_T self) k
   
-  meta "rewrite_def" function get_Snapshot_PCell_Inner_T
+  meta "rewrite_def" function lookup_Snapshot_PCell_Inner_T
   
-  let get_ghost_Snapshot_PCell_Inner_T (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (key: t_PCell_Inner_T)
+  let get_Snapshot_PCell_Inner_T (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (key: t_PCell_Inner_T)
     (return (x: t_Option_ref_Perm_PCell_Inner_T)) = any
-    [ return (result: t_Option_ref_Perm_PCell_Inner_T) -> {[@stop_split] [@expl:get_ghost ensures] result
-      = map_Option_Perm_PCell_Inner_T (get_Snapshot_PCell_Inner_T self key) (fun (v: t_Perm_PCell_Inner_T) -> v)}
+    [ return (result: t_Option_ref_Perm_PCell_Inner_T) -> {[@stop_split] [@expl:get ensures] result
+      = map_Option_Perm_PCell_Inner_T (lookup_Snapshot_PCell_Inner_T self key) (fun (v: t_Perm_PCell_Inner_T) -> v)}
       (! return {result}) ]
   
   let unwrap_ref_Perm_PCell_Inner_T (self: t_Option_ref_Perm_PCell_Inner_T) (return (x: t_Perm_PCell_Inner_T)) =
@@ -2175,20 +2155,20 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
   
   function to_mapping_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) : Map.map t_PCell_Inner_T t_Option_Ag_Seq_T
   
-  function get_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Option_Ag_Seq_T
+  function lookup_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Option_Ag_Seq_T
    = Map.get (to_mapping_PCell_Inner_T self) k
   
-  meta "rewrite_def" function get_PCell_Inner_T
+  meta "rewrite_def" function lookup_PCell_Inner_T
   
   predicate contains_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) =
-    get_PCell_Inner_T self k <> None'1
+    lookup_PCell_Inner_T self k <> None'1
   
   meta "rewrite_def" predicate contains_PCell_Inner_T
   
   function view_Authority_FMap_PCell_Inner_T_Ag_Seq_T (self: t_Authority_FMap_PCell_Inner_T_Ag_Seq_T) : t_FMap_PCell_Inner_T_Ag_Seq_T
   
   predicate contains_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) =
-    get_Snapshot_PCell_Inner_T self k <> None'0
+    lookup_Snapshot_PCell_Inner_T self k <> None'0
   
   meta "rewrite_def" predicate contains_Snapshot_PCell_Inner_T
   
@@ -2199,13 +2179,8 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
       | None'0 -> any_Perm_PCell_Inner_T
       end
   
-  function lookup_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Perm_PCell_Inner_T
-   = unwrap_Option_Perm_PCell_Inner_T (get_Snapshot_PCell_Inner_T self k)
-  
-  meta "rewrite_def" function lookup_Snapshot_PCell_Inner_T
-  
   function index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (key: t_PCell_Inner_T) : t_Perm_PCell_Inner_T
-   = lookup_Snapshot_PCell_Inner_T self key
+   = unwrap_Option_Perm_PCell_Inner_T (lookup_Snapshot_PCell_Inner_T self key)
   
   meta "rewrite_def" function index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T
   
@@ -2220,13 +2195,8 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
       | None'1 -> any_Ag_Seq_T
       end
   
-  function lookup_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Ag_Seq_T
-   = unwrap_Option_Ag_Seq_T (get_PCell_Inner_T self k)
-  
-  meta "rewrite_def" function lookup_PCell_Inner_T
-  
   function index_FMap_PCell_Inner_T_Ag_Seq_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (key: t_PCell_Inner_T) : t_Ag_Seq_T
-   = lookup_PCell_Inner_T self key
+   = unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T self key)
   
   meta "rewrite_def" function index_FMap_PCell_Inner_T_Ag_Seq_T
   
@@ -2326,9 +2296,9 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
     [ bb0 = s0
       [ s0 = deref_Rc_PCell_Inner_T_Global {inner} (fun (_x: t_PCell_Inner_T) -> [ &_20 <- _x ] s1)
       | s1 = deref_Ghost_ref_PA_T {pa} (fun (_x: t_PA_T) -> [ &_27 <- _x ] s2)
-      | s2 = [ &_31 <- view_Rc_PCell_Inner_T_Global inner ] s3
-      | s3 = [ &_30 <- _31 ] s4
-      | s4 = get_ghost_Snapshot_PCell_Inner_T {_27.perms} {_30}
+      | s2 = [ &_32 <- view_Rc_PCell_Inner_T_Global inner ] s3
+      | s3 = [ &_30 <- _32 ] s4
+      | s4 = get_Snapshot_PCell_Inner_T {_27.perms} {_30}
           (fun (_x: t_Option_ref_Perm_PCell_Inner_T) -> [ &_25 <- _x ] s5)
       | s5 = unwrap_ref_Perm_PCell_Inner_T {_25} (fun (_x: t_Perm_PCell_Inner_T) -> [ &_24 <- _x ] s6)
       | s6 = new_ref_Perm_PCell_Inner_T {_24} (fun (_x: t_Perm_PCell_Inner_T) -> [ &_22 <- _x ] s7)
@@ -2342,21 +2312,21 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
       | s1 = [ &index'0 <- index ] s2
       | s2 = elim_Link {_18}
           (fun (rindex: UInt64.t) (rvalue: t_T) (rnext: t_Rc_PCell_Inner_T_Global) -> [ &value <- rvalue ] s3)
-      | s3 = [ &_46 <- i = index'0 ] s4
-      | s4 = any [ br0 -> {_46 = false} (! bb11) | br1 -> {_46} (! bb15) ] ]
+      | s3 = [ &_47 <- i = index'0 ] s4
+      | s4 = any [ br0 -> {_47 = false} (! bb11) | br1 -> {_47} (! bb15) ] ]
     | bb15 = s0 [ s0 = [ &_17 <- value ] s1 | s1 = bb18 ]
     | bb11 = s0
       [ s0 = elim_Link {_18}
           (fun (rindex: UInt64.t) (rvalue: t_T) (rnext: t_Rc_PCell_Inner_T_Global) -> [ &next <- rnext ] s1)
-      | s1 = get_inner_immut_T {next} {i} {pa} (fun (_x: t_T) -> [ &_51 <- _x ] s2)
-      | s2 = [ &_50 <- _51 ] s3
-      | s3 = [ &_17 <- _50 ] s4
+      | s1 = get_inner_immut_T {next} {i} {pa} (fun (_x: t_T) -> [ &_52 <- _x ] s2)
+      | s2 = [ &_51 <- _52 ] s3
+      | s3 = [ &_17 <- _51 ] s4
       | s4 = bb18 ]
     | bb13 = s0
       [ s0 = elim_Direct {_18} (fun (r0: t_Vec_T_Global) -> [ &v <- r0 ] s1)
-      | s1 = index_Vec_T_Global {v} {i} (fun (_x: t_T) -> [ &_39 <- _x ] s2)
-      | s2 = [ &_38 <- _39 ] s3
-      | s3 = [ &_17 <- _38 ] s4
+      | s1 = index_Vec_T_Global {v} {i} (fun (_x: t_T) -> [ &_40 <- _x ] s2)
+      | s2 = [ &_39 <- _40 ] s3
+      | s3 = [ &_17 <- _39 ] s4
       | s4 = bb18 ]
     | bb18 = s0 [ s0 = [ &_ret <- _17 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
@@ -2371,17 +2341,17 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
     | & _25: t_Option_ref_Perm_PCell_Inner_T = Any.any_l ()
     | & _27: t_PA_T = Any.any_l ()
     | & _30: t_PCell_Inner_T = Any.any_l ()
-    | & _31: t_PCell_Inner_T = Any.any_l ()
+    | & _32: t_PCell_Inner_T = Any.any_l ()
     | & v: t_Vec_T_Global = Any.any_l ()
-    | & _38: t_T = Any.any_l ()
     | & _39: t_T = Any.any_l ()
+    | & _40: t_T = Any.any_l ()
     | & index: UInt64.t = Any.any_l ()
     | & index'0: UInt64.t = Any.any_l ()
     | & value: t_T = Any.any_l ()
-    | & _46: bool = Any.any_l ()
+    | & _47: bool = Any.any_l ()
     | & next: t_Rc_PCell_Inner_T_Global = Any.any_l ()
-    | & _50: t_T = Any.any_l ()
-    | & _51: t_T = Any.any_l () ])
+    | & _51: t_T = Any.any_l ()
+    | & _52: t_T = Any.any_l () ])
     [ return (result: t_T) ->
     {[@stop_split] [@expl:get_inner_immut_T ensures] ([@stop_split] [@expl:get_inner_immut result type invariant] inv_ref_T result)
       /\ ([@stop_split] [@expl:get_inner_immut ensures] result
@@ -2538,21 +2508,21 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
   
   function to_mapping_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) : Map.map t_PCell_Inner_T t_Option_Ag_Seq_T
   
-  function get_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Option_Ag_Seq_T
+  function lookup_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Option_Ag_Seq_T
    = Map.get (to_mapping_PCell_Inner_T self) k
   
-  meta "rewrite_def" function get_PCell_Inner_T
+  meta "rewrite_def" function lookup_PCell_Inner_T
   
   function total_op_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (other: t_FMap_PCell_Inner_T_Ag_Seq_T) : t_FMap_PCell_Inner_T_Ag_Seq_T
   
   axiom total_op_PCell_Inner_T_spec:
-    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, other: t_FMap_PCell_Inner_T_Ag_Seq_T [total_op_PCell_Inner_T self other]. (forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k)
+    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, other: t_FMap_PCell_Inner_T_Ag_Seq_T [total_op_PCell_Inner_T self other]. (forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k)
           <> None'1)
-      -> (forall k: t_PCell_Inner_T. Some'1 (get_PCell_Inner_T (total_op_PCell_Inner_T self other) k)
-        = op_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k))
+      -> (forall k: t_PCell_Inner_T. Some'1 (lookup_PCell_Inner_T (total_op_PCell_Inner_T self other) k)
+        = op_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k))
   
   function op_FMap_PCell_Inner_T_Ag_Seq_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (other: t_FMap_PCell_Inner_T_Ag_Seq_T) : t_Option_FMap_PCell_Inner_T_Ag_Seq_T
-   = if forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k)
+   = if forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k)
       <> None'1 then
       Some (total_op_PCell_Inner_T self other)
     else
@@ -2626,10 +2596,10 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
   
   function id_FMap_PCell_Inner_T_Ag_Seq_T (self: t_Authority_FMap_PCell_Inner_T_Ag_Seq_T) : t_Id
   
-  let id_ghost_FMap_PCell_Inner_T_Ag_Seq_T (self: t_Authority_FMap_PCell_Inner_T_Ag_Seq_T) (return (x: t_Id)) =
-  {[@stop_split] [@expl:id_ghost 'self' type invariant] inv_ref_Authority_FMap_PCell_Inner_T_Ag_Seq_T self}
+  let id_FMap_PCell_Inner_T_Ag_Seq_T'0 (self: t_Authority_FMap_PCell_Inner_T_Ag_Seq_T) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Authority_FMap_PCell_Inner_T_Ag_Seq_T self}
     any
-    [ return (result: t_Id) -> {[@stop_split] [@expl:id_ghost ensures] result = id_FMap_PCell_Inner_T_Ag_Seq_T self}
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_FMap_PCell_Inner_T_Ag_Seq_T self}
       (! return {result}) ]
   
   type t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T
@@ -2638,14 +2608,14 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
   
   function view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T (self: t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T) : t_FMap_PCell_Inner_T_Ag_Seq_T
   
-  function id_FMap_PCell_Inner_T_Ag_Seq_T'0 (self: t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T) : t_Id
+  function id_FMap_PCell_Inner_T_Ag_Seq_T'1 (self: t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T) : t_Id
   
   let new_unit_FMap_PCell_Inner_T_Ag_Seq_T (id: t_Id) (return (x: t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T)) = any
     [ return (result: t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T) ->
     {[@stop_split] [@expl:new_unit_FMap_PCell_Inner_T_Ag_Seq_T ensures] ([@stop_split] [@expl:new_unit result type invariant] inv_Fragment_FMap_PCell_Inner_T_Ag_Seq_T result)
       /\ ([@stop_split] [@expl:new_unit ensures] view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T result
         = unit_FMap_PCell_Inner_T_Ag_Seq_T
-      /\ id_FMap_PCell_Inner_T_Ag_Seq_T'0 result = id)}
+      /\ id_FMap_PCell_Inner_T_Ag_Seq_T'1 result = id)}
       (! return {result}) ]
   
   predicate invariant_Ghost_Fragment_FMap_PCell_Inner_T_Ag_Seq_T [@inline:trivial] (self: t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T) =
@@ -2730,7 +2700,7 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
   type t_FMapInsertLocalUpdate_PCell_Inner_T_Ag_Seq_T = { f0'2: t_PCell_Inner_T; f1'2: t_Ag_Seq_T }
   
   predicate premise_FMapInsertLocalUpdate_PCell_Inner_T_Ag_Seq_T [@inline:trivial] (self: t_FMapInsertLocalUpdate_PCell_Inner_T_Ag_Seq_T) (from_auth: t_FMap_PCell_Inner_T_Ag_Seq_T) (_3: t_FMap_PCell_Inner_T_Ag_Seq_T) =
-    get_PCell_Inner_T from_auth self.f0'2 = None'0
+    lookup_PCell_Inner_T from_auth self.f0'2 = None'0
   
   meta "rewrite_def" predicate premise_FMapInsertLocalUpdate_PCell_Inner_T_Ag_Seq_T
   
@@ -2783,7 +2753,7 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
       = (exists factor: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T self factor = Some'1 other)
   
   predicate incl_FMap_PCell_Inner_T_Ag_Seq_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (other: t_FMap_PCell_Inner_T_Ag_Seq_T) =
-    let r = forall k: t_PCell_Inner_T. incl_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k) in r
+    let r = forall k: t_PCell_Inner_T. incl_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k) in r
   
   axiom incl_FMap_PCell_Inner_T_Ag_Seq_T_spec:
     forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, other: t_FMap_PCell_Inner_T_Ag_Seq_T [incl_FMap_PCell_Inner_T_Ag_Seq_T self other]. incl_FMap_PCell_Inner_T_Ag_Seq_T self other
@@ -2794,23 +2764,22 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
     f1'3: t_FMap_PCell_Inner_T_Ag_Seq_T }
   
   predicate contains_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) =
-    get_PCell_Inner_T self k <> None'0
+    lookup_PCell_Inner_T self k <> None'0
   
   meta "rewrite_def" predicate contains_PCell_Inner_T
   
-  function insert_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) (v: t_Ag_Seq_T) : t_FMap_PCell_Inner_T_Ag_Seq_T
+  function add_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) (v: t_Ag_Seq_T) : t_FMap_PCell_Inner_T_Ag_Seq_T
   
-  axiom insert_PCell_Inner_T_spec:
-    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, k: t_PCell_Inner_T, v: t_Ag_Seq_T [insert_PCell_Inner_T self k v]. to_mapping_PCell_Inner_T (insert_PCell_Inner_T self k v)
+  axiom add_PCell_Inner_T_spec:
+    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, k: t_PCell_Inner_T, v: t_Ag_Seq_T [add_PCell_Inner_T self k v]. to_mapping_PCell_Inner_T (add_PCell_Inner_T self k v)
       = Map.set (to_mapping_PCell_Inner_T self) k (Some'0 v)
   
-  axiom insert_PCell_Inner_T_spec'0:
-    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, k: t_PCell_Inner_T, v: t_Ag_Seq_T [insert_PCell_Inner_T self k v]. len_PCell_Inner_T (insert_PCell_Inner_T self k v)
+  axiom add_PCell_Inner_T_spec'0:
+    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, k: t_PCell_Inner_T, v: t_Ag_Seq_T [add_PCell_Inner_T self k v]. len_PCell_Inner_T (add_PCell_Inner_T self k v)
       = (if contains_PCell_Inner_T self k then len_PCell_Inner_T self else len_PCell_Inner_T self + 1)
   
   function update_FMapInsertLocalUpdate_PCell_Inner_T_Ag_Seq_T [@inline:trivial] (self: t_FMapInsertLocalUpdate_PCell_Inner_T_Ag_Seq_T) (from_auth: t_FMap_PCell_Inner_T_Ag_Seq_T) (from_frag: t_FMap_PCell_Inner_T_Ag_Seq_T) : tup2_FMap_PCell_Inner_T_Ag_Seq_T_FMap_PCell_Inner_T_Ag_Seq_T
-   = { f0'3 = insert_PCell_Inner_T from_auth self.f0'2 self.f1'2;
-       f1'3 = insert_PCell_Inner_T from_frag self.f0'2 self.f1'2 }
+   = { f0'3 = add_PCell_Inner_T from_auth self.f0'2 self.f1'2; f1'3 = add_PCell_Inner_T from_frag self.f0'2 self.f1'2 }
   
   meta "rewrite_def" function update_FMapInsertLocalUpdate_PCell_Inner_T_Ag_Seq_T
   
@@ -2820,14 +2789,14 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
   {[@stop_split] [@expl:update_FMap_PCell_Inner_T_Ag_Seq_T requires] ([@stop_split] [@expl:update 'self' type invariant] inv_refmut_Authority_FMap_PCell_Inner_T_Ag_Seq_T self)
     /\ ([@stop_split] [@expl:update 'frag' type invariant] inv_refmut_Fragment_FMap_PCell_Inner_T_Ag_Seq_T frag)
     /\ ([@stop_split] [@expl:update requires #0] id_FMap_PCell_Inner_T_Ag_Seq_T self.current
-      = id_FMap_PCell_Inner_T_Ag_Seq_T'0 frag.current)
+      = id_FMap_PCell_Inner_T_Ag_Seq_T'1 frag.current)
     /\ ([@stop_split] [@expl:update requires #1] premise_FMapInsertLocalUpdate_PCell_Inner_T_Ag_Seq_T upd (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.current) (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T frag.current))}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:update_FMap_PCell_Inner_T_Ag_Seq_T ensures] ([@stop_split] [@expl:update ensures #0] id_FMap_PCell_Inner_T_Ag_Seq_T self.current
         = id_FMap_PCell_Inner_T_Ag_Seq_T self.final)
-      /\ ([@stop_split] [@expl:update ensures #1] id_FMap_PCell_Inner_T_Ag_Seq_T'0 frag.current
-        = id_FMap_PCell_Inner_T_Ag_Seq_T'0 frag.final)
+      /\ ([@stop_split] [@expl:update ensures #1] id_FMap_PCell_Inner_T_Ag_Seq_T'1 frag.current
+        = id_FMap_PCell_Inner_T_Ag_Seq_T'1 frag.final)
       /\ ([@stop_split] [@expl:update ensures #2] incl_FMap_PCell_Inner_T_Ag_Seq_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T frag.current) (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.current))
       /\ ([@stop_split] [@expl:update ensures #3] view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.final
         = (update_FMapInsertLocalUpdate_PCell_Inner_T_Ag_Seq_T upd (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.current) (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T frag.current)).f0'3)
@@ -2864,13 +2833,13 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
   
   function to_mapping_Snapshot_PCell_Inner_T (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) : Map.map t_PCell_Inner_T t_Option_Perm_PCell_Inner_T
   
-  function get_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Option_Perm_PCell_Inner_T
+  function lookup_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Option_Perm_PCell_Inner_T
    = Map.get (to_mapping_Snapshot_PCell_Inner_T self) k
   
-  meta "rewrite_def" function get_Snapshot_PCell_Inner_T
+  meta "rewrite_def" function lookup_Snapshot_PCell_Inner_T
   
   predicate ext_eq_Snapshot_PCell_Inner_T (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (other: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) =
-    forall k: t_PCell_Inner_T. get_Snapshot_PCell_Inner_T self k = get_Snapshot_PCell_Inner_T other k
+    forall k: t_PCell_Inner_T. lookup_Snapshot_PCell_Inner_T self k = lookup_Snapshot_PCell_Inner_T other k
   
   axiom ext_eq_Snapshot_PCell_Inner_T_spec:
     forall self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T, other: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T [self
@@ -2907,30 +2876,30 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
       (! return {result}) ]
   
   predicate contains_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) =
-    get_Snapshot_PCell_Inner_T self k <> None'2
+    lookup_Snapshot_PCell_Inner_T self k <> None'2
   
   meta "rewrite_def" predicate contains_Snapshot_PCell_Inner_T
   
-  function insert_Snapshot_PCell_Inner_T (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) (v: t_Perm_PCell_Inner_T) : t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T
+  function add_Snapshot_PCell_Inner_T (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) (v: t_Perm_PCell_Inner_T) : t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T
   
-  axiom insert_Snapshot_PCell_Inner_T_spec:
-    forall self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T, k: t_PCell_Inner_T, v: t_Perm_PCell_Inner_T [insert_Snapshot_PCell_Inner_T self k v]. to_mapping_Snapshot_PCell_Inner_T (insert_Snapshot_PCell_Inner_T self k v)
+  axiom add_Snapshot_PCell_Inner_T_spec:
+    forall self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T, k: t_PCell_Inner_T, v: t_Perm_PCell_Inner_T [add_Snapshot_PCell_Inner_T self k v]. to_mapping_Snapshot_PCell_Inner_T (add_Snapshot_PCell_Inner_T self k v)
       = Map.set (to_mapping_Snapshot_PCell_Inner_T self) k (Some'2 v)
   
-  axiom insert_Snapshot_PCell_Inner_T_spec'0:
-    forall self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T, k: t_PCell_Inner_T, v: t_Perm_PCell_Inner_T [insert_Snapshot_PCell_Inner_T self k v]. len_Snapshot_PCell_Inner_T (insert_Snapshot_PCell_Inner_T self k v)
+  axiom add_Snapshot_PCell_Inner_T_spec'0:
+    forall self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T, k: t_PCell_Inner_T, v: t_Perm_PCell_Inner_T [add_Snapshot_PCell_Inner_T self k v]. len_Snapshot_PCell_Inner_T (add_Snapshot_PCell_Inner_T self k v)
       = (if contains_Snapshot_PCell_Inner_T self k then
         len_Snapshot_PCell_Inner_T self
       else
         len_Snapshot_PCell_Inner_T self + 1
       )
   
-  let insert_ghost_Snapshot_PCell_Inner_T (self: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T)
+  let insert_Snapshot_PCell_Inner_T (self: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T)
     (key: t_PCell_Inner_T) (value: t_Perm_PCell_Inner_T) (return (x: t_Option_Perm_PCell_Inner_T)) = any
     [ return (result: t_Option_Perm_PCell_Inner_T) ->
-    {[@stop_split] [@expl:insert_ghost_Snapshot_PCell_Inner_T ensures] ([@stop_split] [@expl:insert_ghost ensures #0] self.final
-        = insert_Snapshot_PCell_Inner_T self.current key value)
-      /\ ([@stop_split] [@expl:insert_ghost ensures #1] result = get_Snapshot_PCell_Inner_T self.current key)}
+    {[@stop_split] [@expl:insert_Snapshot_PCell_Inner_T ensures] ([@stop_split] [@expl:insert ensures #0] self.final
+        = add_Snapshot_PCell_Inner_T self.current key value)
+      /\ ([@stop_split] [@expl:insert ensures #1] result = lookup_Snapshot_PCell_Inner_T self.current key)}
       (! return {result}) ]
   
   predicate resolve_refmut_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T [@inline:trivial] (_1: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) =
@@ -2987,13 +2956,8 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
       | None'2 -> any_Perm_PCell_Inner_T
       end
   
-  function lookup_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Perm_PCell_Inner_T
-   = unwrap_Option_Perm_PCell_Inner_T (get_Snapshot_PCell_Inner_T self k)
-  
-  meta "rewrite_def" function lookup_Snapshot_PCell_Inner_T
-  
   function index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (key: t_PCell_Inner_T) : t_Perm_PCell_Inner_T
-   = lookup_Snapshot_PCell_Inner_T self key
+   = unwrap_Option_Perm_PCell_Inner_T (lookup_Snapshot_PCell_Inner_T self key)
   
   meta "rewrite_def" function index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T
   
@@ -3004,13 +2968,8 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
       | None'0 -> any_Ag_Seq_T
       end
   
-  function lookup_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Ag_Seq_T
-   = unwrap_Option_Ag_Seq_T (get_PCell_Inner_T self k)
-  
-  meta "rewrite_def" function lookup_PCell_Inner_T
-  
   function index_FMap_PCell_Inner_T_Ag_Seq_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (key: t_PCell_Inner_T) : t_Ag_Seq_T
-   = lookup_PCell_Inner_T self key
+   = unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T self key)
   
   meta "rewrite_def" function index_FMap_PCell_Inner_T_Ag_Seq_T
   
@@ -3121,8 +3080,8 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
     inv: t_NonAtomicInvariant_PA_T }
   
   predicate invariant_PersistentArray_T (self: t_PersistentArray_T) =
-    id_FMap_PCell_Inner_T_Ag_Seq_T'0 self.frag = public_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv)
-    /\ get_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
+    id_FMap_PCell_Inner_T_Ag_Seq_T'1 self.frag = public_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv)
+    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
       <> None'0
     /\ namespace_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv) = Namespace_PARRAY 0
   
@@ -3134,7 +3093,7 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
       /\ inv_Ghost_Fragment_FMap_PCell_Inner_T_Ag_Seq_T _1.frag /\ inv_Ghost_GhostShared_NonAtomicInvariant_PA_T _1.inv)
   
   function view_PersistentArray_T [@inline:trivial] (self: t_PersistentArray_T) : Seq.seq t_T =
-    (unwrap_Option_Ag_Seq_T (get_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0
+    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0
   
   meta "rewrite_def" function view_PersistentArray_T
   
@@ -3159,7 +3118,7 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
           (fun (_x: t_Authority_FMap_PCell_Inner_T_Ag_Seq_T) -> [ &auth'0 <- _x ] s6)
       | s6 = deref_Ghost_Authority_FMap_PCell_Inner_T_Ag_Seq_T {auth'0}
           (fun (_x: t_Authority_FMap_PCell_Inner_T_Ag_Seq_T) -> [ &_17 <- _x ] s7)
-      | s7 = id_ghost_FMap_PCell_Inner_T_Ag_Seq_T {_17} (fun (_x: t_Id) -> [ &_15 <- _x ] s8)
+      | s7 = id_FMap_PCell_Inner_T_Ag_Seq_T'0 {_17} (fun (_x: t_Id) -> [ &_15 <- _x ] s8)
       | s8 = new_unit_FMap_PCell_Inner_T_Ag_Seq_T {_15}
           (fun (_x: t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T) -> [ &_14 <- _x ] s9)
       | s9 = new_Fragment_FMap_PCell_Inner_T_Ag_Seq_T {_14}
@@ -3216,7 +3175,7 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
           {MutBorrow.get_id _39}
           (fun (_bor: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) ->
             [ &_38 <- _bor ] [ &_39 <- { _39 with current = _bor.final } ] s33)
-      | s33 = insert_ghost_Snapshot_PCell_Inner_T {_38} {_41} {_44}
+      | s33 = insert_Snapshot_PCell_Inner_T {_38} {_41} {_44}
           (fun (_x: t_Option_Perm_PCell_Inner_T) -> [ &_37 <- _x ] s34)
       | s34 = -{resolve_refmut_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T _39}- s35
       | s35 = into_inner_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T {perms'0}
@@ -3378,13 +3337,13 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
   axiom len_Snapshot_PCell_Inner_T_spec:
     forall self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T [len_Snapshot_PCell_Inner_T self]. ge_log_Int (len_Snapshot_PCell_Inner_T self) 0
   
-  function get_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Option_Perm_PCell_Inner_T
+  function lookup_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Option_Perm_PCell_Inner_T
    = Map.get (to_mapping_Snapshot_PCell_Inner_T self) k
   
-  meta "rewrite_def" function get_Snapshot_PCell_Inner_T
+  meta "rewrite_def" function lookup_Snapshot_PCell_Inner_T
   
   predicate contains_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) =
-    get_Snapshot_PCell_Inner_T self k <> None
+    lookup_Snapshot_PCell_Inner_T self k <> None
   
   meta "rewrite_def" predicate contains_Snapshot_PCell_Inner_T
   
@@ -3402,12 +3361,12 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
         len_Snapshot_PCell_Inner_T self
       )
   
-  let remove_ghost_Snapshot_PCell_Inner_T (self: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T)
+  let delete_Snapshot_PCell_Inner_T (self: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T)
     (key: t_PCell_Inner_T) (return (x: t_Option_Perm_PCell_Inner_T)) = any
     [ return (result: t_Option_Perm_PCell_Inner_T) ->
-    {[@stop_split] [@expl:remove_ghost_Snapshot_PCell_Inner_T ensures] ([@stop_split] [@expl:remove_ghost ensures #0] self.final
+    {[@stop_split] [@expl:delete_Snapshot_PCell_Inner_T ensures] ([@stop_split] [@expl:delete ensures #0] self.final
         = remove_Snapshot_PCell_Inner_T self.current key)
-      /\ ([@stop_split] [@expl:remove_ghost ensures #1] result = get_Snapshot_PCell_Inner_T self.current key)}
+      /\ ([@stop_split] [@expl:delete ensures #1] result = lookup_Snapshot_PCell_Inner_T self.current key)}
       (! return {result}) ]
   
   predicate resolve_refmut_refmut_PA_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t t_PA_T)) = _1.final = _1.current
@@ -3547,26 +3506,26 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
     [ return (result: t_Perm_PCell_Inner_T) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
   
-  function insert_Snapshot_PCell_Inner_T (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) (v: t_Perm_PCell_Inner_T) : t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T
+  function add_Snapshot_PCell_Inner_T (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) (v: t_Perm_PCell_Inner_T) : t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T
   
-  axiom insert_Snapshot_PCell_Inner_T_spec:
-    forall self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T, k: t_PCell_Inner_T, v: t_Perm_PCell_Inner_T [insert_Snapshot_PCell_Inner_T self k v]. to_mapping_Snapshot_PCell_Inner_T (insert_Snapshot_PCell_Inner_T self k v)
+  axiom add_Snapshot_PCell_Inner_T_spec:
+    forall self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T, k: t_PCell_Inner_T, v: t_Perm_PCell_Inner_T [add_Snapshot_PCell_Inner_T self k v]. to_mapping_Snapshot_PCell_Inner_T (add_Snapshot_PCell_Inner_T self k v)
       = Map.set (to_mapping_Snapshot_PCell_Inner_T self) k (Some v)
   
-  axiom insert_Snapshot_PCell_Inner_T_spec'0:
-    forall self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T, k: t_PCell_Inner_T, v: t_Perm_PCell_Inner_T [insert_Snapshot_PCell_Inner_T self k v]. len_Snapshot_PCell_Inner_T (insert_Snapshot_PCell_Inner_T self k v)
+  axiom add_Snapshot_PCell_Inner_T_spec'0:
+    forall self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T, k: t_PCell_Inner_T, v: t_Perm_PCell_Inner_T [add_Snapshot_PCell_Inner_T self k v]. len_Snapshot_PCell_Inner_T (add_Snapshot_PCell_Inner_T self k v)
       = (if contains_Snapshot_PCell_Inner_T self k then
         len_Snapshot_PCell_Inner_T self
       else
         len_Snapshot_PCell_Inner_T self + 1
       )
   
-  let insert_ghost_Snapshot_PCell_Inner_T (self: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T)
+  let insert_Snapshot_PCell_Inner_T (self: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T)
     (key: t_PCell_Inner_T) (value: t_Perm_PCell_Inner_T) (return (x: t_Option_Perm_PCell_Inner_T)) = any
     [ return (result: t_Option_Perm_PCell_Inner_T) ->
-    {[@stop_split] [@expl:insert_ghost_Snapshot_PCell_Inner_T ensures] ([@stop_split] [@expl:insert_ghost ensures #0] self.final
-        = insert_Snapshot_PCell_Inner_T self.current key value)
-      /\ ([@stop_split] [@expl:insert_ghost ensures #1] result = get_Snapshot_PCell_Inner_T self.current key)}
+    {[@stop_split] [@expl:insert_Snapshot_PCell_Inner_T ensures] ([@stop_split] [@expl:insert ensures #0] self.final
+        = add_Snapshot_PCell_Inner_T self.current key value)
+      /\ ([@stop_split] [@expl:insert ensures #1] result = lookup_Snapshot_PCell_Inner_T self.current key)}
       (! return {result}) ]
   
   predicate resolve_refmut_PA_T [@inline:trivial] (_1: MutBorrow.t t_PA_T) = _1.final = _1.current
@@ -3610,13 +3569,13 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
   
   function to_mapping_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) : Map.map t_PCell_Inner_T t_Option_Ag_Seq_T
   
-  function get_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Option_Ag_Seq_T
+  function lookup_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Option_Ag_Seq_T
    = Map.get (to_mapping_PCell_Inner_T self) k
   
-  meta "rewrite_def" function get_PCell_Inner_T
+  meta "rewrite_def" function lookup_PCell_Inner_T
   
   predicate contains_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) =
-    get_PCell_Inner_T self k <> None'0
+    lookup_PCell_Inner_T self k <> None'0
   
   meta "rewrite_def" predicate contains_PCell_Inner_T
   
@@ -3629,13 +3588,8 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
       | None -> any_Perm_PCell_Inner_T
       end
   
-  function lookup_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Perm_PCell_Inner_T
-   = unwrap_Option_Perm_PCell_Inner_T (get_Snapshot_PCell_Inner_T self k)
-  
-  meta "rewrite_def" function lookup_Snapshot_PCell_Inner_T
-  
   function index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (key: t_PCell_Inner_T) : t_Perm_PCell_Inner_T
-   = lookup_Snapshot_PCell_Inner_T self key
+   = unwrap_Option_Perm_PCell_Inner_T (lookup_Snapshot_PCell_Inner_T self key)
   
   meta "rewrite_def" function index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T
   
@@ -3650,13 +3604,8 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
       | None'0 -> any_Ag_Seq_T
       end
   
-  function lookup_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Ag_Seq_T
-   = unwrap_Option_Ag_Seq_T (get_PCell_Inner_T self k)
-  
-  meta "rewrite_def" function lookup_PCell_Inner_T
-  
   function index_FMap_PCell_Inner_T_Ag_Seq_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (key: t_PCell_Inner_T) : t_Ag_Seq_T
-   = lookup_PCell_Inner_T self key
+   = unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T self key)
   
   meta "rewrite_def" function index_FMap_PCell_Inner_T_Ag_Seq_T
   
@@ -3704,8 +3653,8 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
     {[@stop_split] [@expl:reroot_T ensures] ([@stop_split] [@expl:reroot ensures #0] partial_invariant_T (fin_Ghost_refmut_PA_T pa))
       /\ ([@stop_split] [@expl:reroot ensures #1] (fin_Ghost_refmut_PA_T pa).auth = pa.current.auth)
       /\ ([@stop_split] [@expl:reroot ensures #2] forall id: t_PCell_Inner_T. gt_log_Int (index_Mapping_PCell_Inner_T_Int pa.current.depth id) (index_Mapping_PCell_Inner_T_Int pa.current.depth (view_Rc_PCell_Inner_T_Global cur))
-          -> get_Snapshot_PCell_Inner_T pa.current.perms id
-            = get_Snapshot_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
+          -> lookup_Snapshot_PCell_Inner_T pa.current.perms id
+            = lookup_Snapshot_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
           /\ index_Mapping_PCell_Inner_T_Int pa.current.depth id
           = index_Mapping_PCell_Inner_T_Int (fin_Ghost_refmut_PA_T pa).depth id)
       /\ ([@stop_split] [@expl:reroot ensures #3] forall id: t_PCell_Inner_T. contains_Snapshot_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
@@ -3752,10 +3701,10 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
   
   type t_Option_refmut_Perm_PCell_Inner_T = None'1 | Some'1 (MutBorrow.t t_Perm_PCell_Inner_T)
   
-  let get_mut_ghost_Snapshot_PCell_Inner_T (self: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T)
+  let get_mut_Snapshot_PCell_Inner_T (self: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T)
     (key: t_PCell_Inner_T) (return (x: t_Option_refmut_Perm_PCell_Inner_T)) = any
     [ return (result: t_Option_refmut_Perm_PCell_Inner_T) ->
-    {[@stop_split] [@expl:get_mut_ghost_Snapshot_PCell_Inner_T ensures] ([@stop_split] [@expl:get_mut_ghost ensures #0] if contains_Snapshot_PCell_Inner_T self.current key then
+    {[@stop_split] [@expl:get_mut_Snapshot_PCell_Inner_T ensures] ([@stop_split] [@expl:get_mut ensures #0] if contains_Snapshot_PCell_Inner_T self.current key then
           match result with
             | None'1 -> false
             | Some'1 r -> contains_Snapshot_PCell_Inner_T self.final key
@@ -3765,9 +3714,9 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
         else
           result = None'1 /\ self.current = self.final
         )
-      /\ ([@stop_split] [@expl:get_mut_ghost ensures #1] forall k: t_PCell_Inner_T. k <> key
-          -> get_Snapshot_PCell_Inner_T self.current k = get_Snapshot_PCell_Inner_T self.final k)
-      /\ ([@stop_split] [@expl:get_mut_ghost ensures #2] len_Snapshot_PCell_Inner_T self.current
+      /\ ([@stop_split] [@expl:get_mut ensures #1] forall k: t_PCell_Inner_T. k <> key
+          -> lookup_Snapshot_PCell_Inner_T self.current k = lookup_Snapshot_PCell_Inner_T self.final k)
+      /\ ([@stop_split] [@expl:get_mut ensures #2] len_Snapshot_PCell_Inner_T self.current
       = len_Snapshot_PCell_Inner_T self.final)}
       (! return {result}) ]
   
@@ -3892,8 +3841,7 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
             [ &_26 <- _bor ]
             [ &_27 <- { _27 with current = { _27.current with current = { _27.current.current with perms = _bor.final } } } ]
             s5)
-      | s5 = remove_ghost_Snapshot_PCell_Inner_T {_26} {_30}
-          (fun (_x: t_Option_Perm_PCell_Inner_T) -> [ &_25 <- _x ] s6)
+      | s5 = delete_Snapshot_PCell_Inner_T {_26} {_30} (fun (_x: t_Option_Perm_PCell_Inner_T) -> [ &_25 <- _x ] s6)
       | s6 = s7 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _27} any) ]
       | s7 = -{resolve_refmut_refmut_PA_T _27}- s8
       | s8 = unwrap_Perm_PCell_Inner_T {_25} (fun (_x: t_Perm_PCell_Inner_T) -> [ &_24 <- _x ] s9)
@@ -3946,7 +3894,7 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
             [ &_49 <- _bor ]
             [ &_50 <- { _50 with current = { _50.current with current = { _50.current.current with perms = _bor.final } } } ]
             s7)
-      | s7 = insert_ghost_Snapshot_PCell_Inner_T {_49} {_52} {_55}
+      | s7 = insert_Snapshot_PCell_Inner_T {_49} {_52} {_55}
           (fun (_x: t_Option_Perm_PCell_Inner_T) -> [ &_48 <- _x ] s8)
       | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _50} any) ]
       | s9 = -{resolve_refmut_refmut_PA_T _50}- s10
@@ -4031,7 +3979,7 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
             [ &_81 <- _bor ]
             [ &_82 <- { _82 with current = { _82.current with current = { _82.current.current with perms = _bor.final } } } ]
             s30)
-      | s30 = get_mut_ghost_Snapshot_PCell_Inner_T {_81} {_85}
+      | s30 = get_mut_Snapshot_PCell_Inner_T {_81} {_85}
           (fun (_x: t_Option_refmut_Perm_PCell_Inner_T) -> [ &_80 <- _x ] s31)
       | s31 = unwrap_refmut_Perm_PCell_Inner_T {_80} (fun (_x: MutBorrow.t t_Perm_PCell_Inner_T) -> [ &_79 <- _x ] s32)
       | s32 = MutBorrow.borrow_final <t_Perm_PCell_Inner_T> {_79.current} {MutBorrow.get_id _79}
@@ -4142,7 +4090,7 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
             [ &_111 <- _bor ]
             [ &_112 <- { _112 with current = { _112.current with current = { _112.current.current with perms = _bor.final } } } ]
             s28)
-      | s28 = insert_ghost_Snapshot_PCell_Inner_T {_111} {_114} {_117}
+      | s28 = insert_Snapshot_PCell_Inner_T {_111} {_114} {_117}
           (fun (_x: t_Option_Perm_PCell_Inner_T) -> [ &_110 <- _x ] s29)
       | s29 = s30 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _112} any) ]
       | s30 = -{resolve_refmut_refmut_PA_T _112}- s31
@@ -4247,8 +4195,8 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
     {[@stop_split] [@expl:reroot_T ensures] ([@stop_split] [@expl:reroot ensures #0] partial_invariant_T (fin_Ghost_refmut_PA_T pa))
       /\ ([@stop_split] [@expl:reroot ensures #1] (fin_Ghost_refmut_PA_T pa).auth = pa.current.auth)
       /\ ([@stop_split] [@expl:reroot ensures #2] forall id: t_PCell_Inner_T. gt_log_Int (index_Mapping_PCell_Inner_T_Int pa.current.depth id) (index_Mapping_PCell_Inner_T_Int pa.current.depth (view_Rc_PCell_Inner_T_Global cur))
-          -> get_Snapshot_PCell_Inner_T pa.current.perms id
-            = get_Snapshot_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
+          -> lookup_Snapshot_PCell_Inner_T pa.current.perms id
+            = lookup_Snapshot_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
           /\ index_Mapping_PCell_Inner_T_Int pa.current.depth id
           = index_Mapping_PCell_Inner_T_Int (fin_Ghost_refmut_PA_T pa).depth id)
       /\ ([@stop_split] [@expl:reroot ensures #3] forall id: t_PCell_Inner_T. contains_Snapshot_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
@@ -4303,17 +4251,17 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   
   function to_mapping_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) : Map.map t_PCell_Inner_T t_Option_Ag_Seq_T
   
-  function get_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Option_Ag_Seq_T
+  function lookup_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Option_Ag_Seq_T
    = Map.get (to_mapping_PCell_Inner_T self) k
   
-  meta "rewrite_def" function get_PCell_Inner_T
+  meta "rewrite_def" function lookup_PCell_Inner_T
   
   function view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T (self: t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T) : t_FMap_PCell_Inner_T_Ag_Seq_T
   
   function view_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
   
   function view_PersistentArray_T [@inline:trivial] (self: t_PersistentArray_T) : Seq.seq t_T =
-    (unwrap_Option_Ag_Seq_T (get_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0
+    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0
   
   meta "rewrite_def" function view_PersistentArray_T
   
@@ -4502,7 +4450,7 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   function public_PA_T (self: t_PA_T) : t_Id = id_FMap_PCell_Inner_T_Ag_Seq_T self.auth
   
   predicate contains_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) =
-    get_PCell_Inner_T self k <> None
+    lookup_PCell_Inner_T self k <> None
   
   meta "rewrite_def" predicate contains_PCell_Inner_T
   
@@ -4512,13 +4460,13 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   
   function to_mapping_Snapshot_PCell_Inner_T (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) : Map.map t_PCell_Inner_T t_Option_Perm_PCell_Inner_T
   
-  function get_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Option_Perm_PCell_Inner_T
+  function lookup_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Option_Perm_PCell_Inner_T
    = Map.get (to_mapping_Snapshot_PCell_Inner_T self) k
   
-  meta "rewrite_def" function get_Snapshot_PCell_Inner_T
+  meta "rewrite_def" function lookup_Snapshot_PCell_Inner_T
   
   predicate contains_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) =
-    get_Snapshot_PCell_Inner_T self k <> None'0
+    lookup_Snapshot_PCell_Inner_T self k <> None'0
   
   meta "rewrite_def" predicate contains_Snapshot_PCell_Inner_T
   
@@ -4529,23 +4477,13 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
       | None'0 -> any_Perm_PCell_Inner_T
       end
   
-  function lookup_Snapshot_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) : t_Perm_PCell_Inner_T
-   = unwrap_Option_Perm_PCell_Inner_T (get_Snapshot_PCell_Inner_T self k)
-  
-  meta "rewrite_def" function lookup_Snapshot_PCell_Inner_T
-  
   function index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T [@inline:trivial] (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (key: t_PCell_Inner_T) : t_Perm_PCell_Inner_T
-   = lookup_Snapshot_PCell_Inner_T self key
+   = unwrap_Option_Perm_PCell_Inner_T (lookup_Snapshot_PCell_Inner_T self key)
   
   meta "rewrite_def" function index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T
   
-  function lookup_PCell_Inner_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) : t_Ag_Seq_T
-   = unwrap_Option_Ag_Seq_T (get_PCell_Inner_T self k)
-  
-  meta "rewrite_def" function lookup_PCell_Inner_T
-  
   function index_FMap_PCell_Inner_T_Ag_Seq_T [@inline:trivial] (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (key: t_PCell_Inner_T) : t_Ag_Seq_T
-   = lookup_PCell_Inner_T self key
+   = unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T self key)
   
   meta "rewrite_def" function index_FMap_PCell_Inner_T_Ag_Seq_T
   
@@ -4730,13 +4668,13 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   function total_op_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (other: t_FMap_PCell_Inner_T_Ag_Seq_T) : t_FMap_PCell_Inner_T_Ag_Seq_T
   
   axiom total_op_PCell_Inner_T_spec:
-    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, other: t_FMap_PCell_Inner_T_Ag_Seq_T [total_op_PCell_Inner_T self other]. (forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k)
+    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, other: t_FMap_PCell_Inner_T_Ag_Seq_T [total_op_PCell_Inner_T self other]. (forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k)
           <> None'2)
-      -> (forall k: t_PCell_Inner_T. Some'2 (get_PCell_Inner_T (total_op_PCell_Inner_T self other) k)
-        = op_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k))
+      -> (forall k: t_PCell_Inner_T. Some'2 (lookup_PCell_Inner_T (total_op_PCell_Inner_T self other) k)
+        = op_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k))
   
   function op_FMap_PCell_Inner_T_Ag_Seq_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (other: t_FMap_PCell_Inner_T_Ag_Seq_T) : t_Option_FMap_PCell_Inner_T_Ag_Seq_T
-   = if forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k)
+   = if forall k: t_PCell_Inner_T. op_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k)
       <> None'2 then
       Some'1 (total_op_PCell_Inner_T self other)
     else
@@ -4798,7 +4736,7 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
       = (exists factor: t_Option_Ag_Seq_T. op_Option_Ag_Seq_T self factor = Some'2 other)
   
   predicate incl_FMap_PCell_Inner_T_Ag_Seq_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (other: t_FMap_PCell_Inner_T_Ag_Seq_T) =
-    let r = forall k: t_PCell_Inner_T. incl_Option_Ag_Seq_T (get_PCell_Inner_T self k) (get_PCell_Inner_T other k) in r
+    let r = forall k: t_PCell_Inner_T. incl_Option_Ag_Seq_T (lookup_PCell_Inner_T self k) (lookup_PCell_Inner_T other k) in r
   
   axiom incl_FMap_PCell_Inner_T_Ag_Seq_T_spec:
     forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, other: t_FMap_PCell_Inner_T_Ag_Seq_T [incl_FMap_PCell_Inner_T_Ag_Seq_T self other]. incl_FMap_PCell_Inner_T_Ag_Seq_T self other
@@ -4826,10 +4764,10 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   axiom len_Snapshot_PCell_Inner_T_spec:
     forall self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T [len_Snapshot_PCell_Inner_T self]. ge_log_Int (len_Snapshot_PCell_Inner_T self) 0
   
-  let get_mut_ghost_Snapshot_PCell_Inner_T (self: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T)
+  let get_mut_Snapshot_PCell_Inner_T (self: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T)
     (key: t_PCell_Inner_T) (return (x: t_Option_refmut_Perm_PCell_Inner_T)) = any
     [ return (result: t_Option_refmut_Perm_PCell_Inner_T) ->
-    {[@stop_split] [@expl:get_mut_ghost_Snapshot_PCell_Inner_T ensures] ([@stop_split] [@expl:get_mut_ghost ensures #0] if contains_Snapshot_PCell_Inner_T self.current key then
+    {[@stop_split] [@expl:get_mut_Snapshot_PCell_Inner_T ensures] ([@stop_split] [@expl:get_mut ensures #0] if contains_Snapshot_PCell_Inner_T self.current key then
           match result with
             | None'3 -> false
             | Some'3 r -> contains_Snapshot_PCell_Inner_T self.final key
@@ -4839,9 +4777,9 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
         else
           result = None'3 /\ self.current = self.final
         )
-      /\ ([@stop_split] [@expl:get_mut_ghost ensures #1] forall k: t_PCell_Inner_T. k <> key
-          -> get_Snapshot_PCell_Inner_T self.current k = get_Snapshot_PCell_Inner_T self.final k)
-      /\ ([@stop_split] [@expl:get_mut_ghost ensures #2] len_Snapshot_PCell_Inner_T self.current
+      /\ ([@stop_split] [@expl:get_mut ensures #1] forall k: t_PCell_Inner_T. k <> key
+          -> lookup_Snapshot_PCell_Inner_T self.current k = lookup_Snapshot_PCell_Inner_T self.final k)
+      /\ ([@stop_split] [@expl:get_mut ensures #2] len_Snapshot_PCell_Inner_T self.current
       = len_Snapshot_PCell_Inner_T self.final)}
       (! return {result}) ]
   
@@ -4877,32 +4815,32 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
     [ return (result: t_Perm_PCell_Inner_T) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
   
-  function insert_Snapshot_PCell_Inner_T (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) (v: t_Perm_PCell_Inner_T) : t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T
+  function add_Snapshot_PCell_Inner_T (self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) (k: t_PCell_Inner_T) (v: t_Perm_PCell_Inner_T) : t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T
   
-  axiom insert_Snapshot_PCell_Inner_T_spec:
-    forall self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T, k: t_PCell_Inner_T, v: t_Perm_PCell_Inner_T [insert_Snapshot_PCell_Inner_T self k v]. to_mapping_Snapshot_PCell_Inner_T (insert_Snapshot_PCell_Inner_T self k v)
+  axiom add_Snapshot_PCell_Inner_T_spec:
+    forall self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T, k: t_PCell_Inner_T, v: t_Perm_PCell_Inner_T [add_Snapshot_PCell_Inner_T self k v]. to_mapping_Snapshot_PCell_Inner_T (add_Snapshot_PCell_Inner_T self k v)
       = Map.set (to_mapping_Snapshot_PCell_Inner_T self) k (Some'0 v)
   
-  axiom insert_Snapshot_PCell_Inner_T_spec'0:
-    forall self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T, k: t_PCell_Inner_T, v: t_Perm_PCell_Inner_T [insert_Snapshot_PCell_Inner_T self k v]. len_Snapshot_PCell_Inner_T (insert_Snapshot_PCell_Inner_T self k v)
+  axiom add_Snapshot_PCell_Inner_T_spec'0:
+    forall self: t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T, k: t_PCell_Inner_T, v: t_Perm_PCell_Inner_T [add_Snapshot_PCell_Inner_T self k v]. len_Snapshot_PCell_Inner_T (add_Snapshot_PCell_Inner_T self k v)
       = (if contains_Snapshot_PCell_Inner_T self k then
         len_Snapshot_PCell_Inner_T self
       else
         len_Snapshot_PCell_Inner_T self + 1
       )
   
-  let insert_ghost_Snapshot_PCell_Inner_T (self: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T)
+  let insert_Snapshot_PCell_Inner_T (self: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T)
     (key: t_PCell_Inner_T) (value: t_Perm_PCell_Inner_T) (return (x: t_Option_Perm_PCell_Inner_T)) = any
     [ return (result: t_Option_Perm_PCell_Inner_T) ->
-    {[@stop_split] [@expl:insert_ghost_Snapshot_PCell_Inner_T ensures] ([@stop_split] [@expl:insert_ghost ensures #0] self.final
-        = insert_Snapshot_PCell_Inner_T self.current key value)
-      /\ ([@stop_split] [@expl:insert_ghost ensures #1] result = get_Snapshot_PCell_Inner_T self.current key)}
+    {[@stop_split] [@expl:insert_Snapshot_PCell_Inner_T ensures] ([@stop_split] [@expl:insert ensures #0] self.final
+        = add_Snapshot_PCell_Inner_T self.current key value)
+      /\ ([@stop_split] [@expl:insert ensures #1] result = lookup_Snapshot_PCell_Inner_T self.current key)}
       (! return {result}) ]
   
-  let id_ghost_FMap_PCell_Inner_T_Ag_Seq_T (self: t_Authority_FMap_PCell_Inner_T_Ag_Seq_T) (return (x: t_Id)) =
-  {[@stop_split] [@expl:id_ghost 'self' type invariant] inv_ref_Authority_FMap_PCell_Inner_T_Ag_Seq_T self}
+  let id_FMap_PCell_Inner_T_Ag_Seq_T'1 (self: t_Authority_FMap_PCell_Inner_T_Ag_Seq_T) (return (x: t_Id)) =
+  {[@stop_split] [@expl:id 'self' type invariant] inv_ref_Authority_FMap_PCell_Inner_T_Ag_Seq_T self}
     any
-    [ return (result: t_Id) -> {[@stop_split] [@expl:id_ghost ensures] result = id_FMap_PCell_Inner_T_Ag_Seq_T self}
+    [ return (result: t_Id) -> {[@stop_split] [@expl:id ensures] result = id_FMap_PCell_Inner_T_Ag_Seq_T self}
       (! return {result}) ]
   
   function len_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) : int
@@ -4953,7 +4891,7 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   meta "rewrite_def" predicate inv_refmut_Fragment_FMap_PCell_Inner_T_Ag_Seq_T
   
   predicate premise_FMapInsertLocalUpdate_PCell_Inner_T_Ag_Seq_T [@inline:trivial] (self: t_FMapInsertLocalUpdate_PCell_Inner_T_Ag_Seq_T) (from_auth: t_FMap_PCell_Inner_T_Ag_Seq_T) (_3: t_FMap_PCell_Inner_T_Ag_Seq_T) =
-    get_PCell_Inner_T from_auth self.f0'3 = None
+    lookup_PCell_Inner_T from_auth self.f0'3 = None
   
   meta "rewrite_def" predicate premise_FMapInsertLocalUpdate_PCell_Inner_T_Ag_Seq_T
   
@@ -4961,19 +4899,18 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
     f0'4: t_FMap_PCell_Inner_T_Ag_Seq_T;
     f1'4: t_FMap_PCell_Inner_T_Ag_Seq_T }
   
-  function insert_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) (v: t_Ag_Seq_T) : t_FMap_PCell_Inner_T_Ag_Seq_T
+  function add_PCell_Inner_T (self: t_FMap_PCell_Inner_T_Ag_Seq_T) (k: t_PCell_Inner_T) (v: t_Ag_Seq_T) : t_FMap_PCell_Inner_T_Ag_Seq_T
   
-  axiom insert_PCell_Inner_T_spec:
-    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, k: t_PCell_Inner_T, v: t_Ag_Seq_T [insert_PCell_Inner_T self k v]. to_mapping_PCell_Inner_T (insert_PCell_Inner_T self k v)
+  axiom add_PCell_Inner_T_spec:
+    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, k: t_PCell_Inner_T, v: t_Ag_Seq_T [add_PCell_Inner_T self k v]. to_mapping_PCell_Inner_T (add_PCell_Inner_T self k v)
       = Map.set (to_mapping_PCell_Inner_T self) k (Some v)
   
-  axiom insert_PCell_Inner_T_spec'0:
-    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, k: t_PCell_Inner_T, v: t_Ag_Seq_T [insert_PCell_Inner_T self k v]. len_PCell_Inner_T (insert_PCell_Inner_T self k v)
+  axiom add_PCell_Inner_T_spec'0:
+    forall self: t_FMap_PCell_Inner_T_Ag_Seq_T, k: t_PCell_Inner_T, v: t_Ag_Seq_T [add_PCell_Inner_T self k v]. len_PCell_Inner_T (add_PCell_Inner_T self k v)
       = (if contains_PCell_Inner_T self k then len_PCell_Inner_T self else len_PCell_Inner_T self + 1)
   
   function update_FMapInsertLocalUpdate_PCell_Inner_T_Ag_Seq_T [@inline:trivial] (self: t_FMapInsertLocalUpdate_PCell_Inner_T_Ag_Seq_T) (from_auth: t_FMap_PCell_Inner_T_Ag_Seq_T) (from_frag: t_FMap_PCell_Inner_T_Ag_Seq_T) : tup2_FMap_PCell_Inner_T_Ag_Seq_T_FMap_PCell_Inner_T_Ag_Seq_T
-   = { f0'4 = insert_PCell_Inner_T from_auth self.f0'3 self.f1'3;
-       f1'4 = insert_PCell_Inner_T from_frag self.f0'3 self.f1'3 }
+   = { f0'4 = add_PCell_Inner_T from_auth self.f0'3 self.f1'3; f1'4 = add_PCell_Inner_T from_frag self.f0'3 self.f1'3 }
   
   meta "rewrite_def" function update_FMapInsertLocalUpdate_PCell_Inner_T_Ag_Seq_T
   
@@ -5035,7 +4972,7 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   
   predicate invariant_PersistentArray_T (self: t_PersistentArray_T) =
     id_FMap_PCell_Inner_T_Ag_Seq_T'0 self.frag = public_PA_T'0 (view_GhostShared_NonAtomicInvariant_PA_T self.inv)
-    /\ get_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
+    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
       <> None
     /\ namespace_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv) = Namespace_PARRAY 0
   
@@ -5091,7 +5028,7 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
       | s16 = MutBorrow.borrow_mut <t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T> {pa'0.current.perms}
           (fun (_bor: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) ->
             [ &_46 <- _bor ] [ &pa'0 <- { pa'0 with current = { pa'0.current with perms = _bor.final } } ] s17)
-      | s17 = get_mut_ghost_Snapshot_PCell_Inner_T {_46} {_48}
+      | s17 = get_mut_Snapshot_PCell_Inner_T {_46} {_48}
           (fun (_x: t_Option_refmut_Perm_PCell_Inner_T) -> [ &_45 <- _x ] s18)
       | s18 = any
         [ br0 -> {_45 = None'3} (! bb19) | br1 (x0: MutBorrow.t t_Perm_PCell_Inner_T) -> {_45 = Some'3 x0} (! bb16) ] ]
@@ -5120,13 +5057,13 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
           {MutBorrow.inherit_id (MutBorrow.get_id pa'0) 0}
           (fun (_bor: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) ->
             [ &_62 <- _bor ] [ &pa'0 <- { pa'0 with current = { pa'0.current with perms = _bor.final } } ] s3)
-      | s3 = insert_ghost_Snapshot_PCell_Inner_T {_62} {_63} {_66}
+      | s3 = insert_Snapshot_PCell_Inner_T {_62} {_63} {_66}
           (fun (_x: t_Option_Perm_PCell_Inner_T) -> [ &_61 <- _x ] s4)
       | s4 =
         [ &_68 <- Map.set pa'0.current.depth permcell'0 (index_Mapping_PCell_Inner_T_Int pa'0.current.depth (view_Rc_PCell_Inner_T_Global self.permcell)
         + 1) ] s5
       | s5 = [ &pa'0 <- { pa'0 with current = { pa'0.current with depth = _68 } } ] s6
-      | s6 = id_ghost_FMap_PCell_Inner_T_Ag_Seq_T {pa'0.current.auth} (fun (_x: t_Id) -> [ &_74 <- _x ] s7)
+      | s6 = id_FMap_PCell_Inner_T_Ag_Seq_T'1 {pa'0.current.auth} (fun (_x: t_Id) -> [ &_74 <- _x ] s7)
       | s7 = new_unit_FMap_PCell_Inner_T_Ag_Seq_T {_74}
           (fun (_x: t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T) -> [ &frag'1 <- _x ] s8)
       | s8 = MutBorrow.borrow_mut <t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T> {frag'1}

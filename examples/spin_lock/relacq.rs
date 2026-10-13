@@ -42,8 +42,8 @@ impl<T> Protocol for SpinLockInv<T> {
     #[logic]
     fn protocol(self) -> bool {
         pearlite! {
-            (forall<t, view> self.perm_atomic.val().get(t) == Some((false, view)) ==>
-                Some(t) == self.ts || self.perm_atomic.val().get(t + 1) != None) &&
+            (forall<t, view> self.perm_atomic.val().lookup(t) == Some((false, view)) ==>
+                Some(t) == self.ts || self.perm_atomic.val().lookup(t + 1) != None) &&
             match (self.perm, self.ts, self.excl.val()) {
                 (None, None, None) => true,
                 (Some(bor), Some(ts), Some(_)) =>

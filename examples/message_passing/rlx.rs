@@ -50,11 +50,11 @@ impl Protocol for MessagePassingAtomicInv {
         pearlite! {
             let (perm, excl_write, excl_read) = *self.public_data;
             match self.state {
-                State::NotWrittenYet => forall<t> match self.atomic_own.val().get(t) {
+                State::NotWrittenYet => forall<t> match self.atomic_own.val().lookup(t) {
                     Some((b, _)) => !b,
                     None => true
                 },
-                State::Synchronisation(data_own, tok_write) => excl_write == tok_write.id() && forall<t> match self.atomic_own.val().get(t) {
+                State::Synchronisation(data_own, tok_write) => excl_write == tok_write.id() && forall<t> match self.atomic_own.val().lookup(t) {
                     Some((b, view)) => !b || (b && perm == *data_own.val().ward() && data_own.val().val()@ == 1 && data_own.view() <= view),
                     None => true
                 },
