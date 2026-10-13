@@ -43,10 +43,26 @@ impl<C: PermTarget, T, Load, Store> Committer<C, T, Load, Store> {
         dead
     }
 
+    /// Value read from the atomic operation.
+    #[check(ghost)]
+    #[trusted]
+    #[ensures(result == self.val_load())]
+    pub fn val_load_ghost(&self) -> T {
+        panic!("Should not be called outside ghost code")
+    }
+
     /// Value written by the atomic operation.
     #[logic(opaque)]
     pub fn val_store(self) -> T {
         dead
+    }
+
+    /// Value written by the atomic operation.
+    #[check(ghost)]
+    #[trusted]
+    #[ensures(result == self.val_store())]
+    pub fn val_store_ghost(&self) -> T {
+        panic!("Should not be called outside ghost code")
     }
 
     /// Status of the committer
