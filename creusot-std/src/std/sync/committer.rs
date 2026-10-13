@@ -51,7 +51,6 @@ impl<C: PermTarget, T, Load, Store> Committer<C, T, Load, Store> {
         panic!("Should not be called outside ghost code")
     }
 
-
     /// Value written by the atomic operation.
     #[logic(opaque)]
     pub fn val_store_log(self) -> T {
