@@ -71,7 +71,6 @@ extern_spec! {
         #[ensures(
             *self == None || exists<r: &T> result == Some(r) && *self == Some(*r)
         )]
-        #[logic_alias(self.as_ref_logic())]
         fn as_ref(&self) -> Option<&T> {
             match *self {
                 Some(ref t) => Some(t),
@@ -847,12 +846,6 @@ pub trait OptionExt<T> {
     /// Same as [`Option::map`], but in logic.
     #[logic]
     fn map_logic<U>(self, f: Mapping<T, U>) -> Option<U>;
-
-    /// Same as [`Option::as_ref`], but in logic.
-    #[logic(opaque)]
-    fn as_ref_logic(&self) -> Option<&T> {
-        self.map_logic(|v| &v)
-    }
 }
 
 impl<T> OptionExt<T> for Option<T> {

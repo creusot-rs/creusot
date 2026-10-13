@@ -88,7 +88,10 @@ axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_ref_V [inv_Option_ref_V _1]. i
       | Some f0 -> inv_ref_V f0
       end
 
-function as_ref_Option_V (self: t_Option_V) : t_Option_ref_V
+function map_Option_V (self: t_Option_V) (f: Map.map t_V t_V) : t_Option_ref_V = match self with
+    | None'0 -> None
+    | Some'0 x -> Some (Map.get f x)
+    end
 
 let get_K (self: t_FMap_K_V) (key: t_K) (return (x: t_Option_ref_V)) =
 {[@stop_split] [@expl:get_K requires] ([@stop_split] [@expl:get 'self' type invariant] inv_ref_FMap_K_V self)
@@ -96,7 +99,7 @@ let get_K (self: t_FMap_K_V) (key: t_K) (return (x: t_Option_ref_V)) =
   any
   [ return (result: t_Option_ref_V) ->
   {[@stop_split] [@expl:get_K ensures] ([@stop_split] [@expl:get result type invariant] inv_Option_ref_V result)
-    /\ ([@stop_split] [@expl:get ensures] result = as_ref_Option_V (lookup_K self key))}
+    /\ ([@stop_split] [@expl:get ensures] result = map_Option_V (lookup_K self key) (fun (v: t_V) -> v))}
     (! return {result}) ]
 
 predicate invariant_ref_Option_ref_V [@inline:trivial] (self: t_Option_ref_V) = inv_Option_ref_V self

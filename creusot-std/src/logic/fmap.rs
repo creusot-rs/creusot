@@ -321,7 +321,7 @@ impl<K, V> FMap<K, V> {
     /// ```
     #[trusted]
     #[check(ghost)]
-    #[ensures(result == self.lookup(*key).as_ref())]
+    #[ensures(result == self.lookup(*key).map_logic(|v| &v))]
     pub fn get(&self, key: &K) -> Option<&V> {
         let _ = key;
         panic!()
