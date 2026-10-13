@@ -212,17 +212,16 @@ module M_message_passing
   
   function ward_AtomicBool'0 (self: t_Committer_AtomicBool_bool_None_Relaxed) : t_AtomicBool
   
-  predicate val_load_log_AtomicBool (self: t_Committer_AtomicBool_bool_None_Relaxed)
+  predicate val_load_AtomicBool (self: t_Committer_AtomicBool_bool_None_Relaxed)
   
-  predicate val_store_log_AtomicBool (self: t_Committer_AtomicBool_bool_None_Relaxed)
+  predicate val_store_AtomicBool (self: t_Committer_AtomicBool_bool_None_Relaxed)
   
   function timestamp_AtomicBool (self: t_Committer_AtomicBool_bool_None_Relaxed) : int
   
   predicate hist_inv_AtomicBool [@inline:trivial] (self: t_Committer_AtomicBool_bool_None_Relaxed) (other: t_Committer_AtomicBool_bool_None_Relaxed) =
     ward_AtomicBool'0 self = ward_AtomicBool'0 other
-    /\ val_load_log_AtomicBool self = val_load_log_AtomicBool other
-    /\ val_store_log_AtomicBool self = val_store_log_AtomicBool other
-    /\ timestamp_AtomicBool self = timestamp_AtomicBool other
+    /\ val_load_AtomicBool self = val_load_AtomicBool other
+    /\ val_store_AtomicBool self = val_store_AtomicBool other /\ timestamp_AtomicBool self = timestamp_AtomicBool other
   
   meta "rewrite_def" predicate hist_inv_AtomicBool
   
@@ -248,7 +247,7 @@ module M_message_passing
         = None)
       /\ ([@stop_split] [@expl:shoot_store ensures #7] val_AtomicBool own.final
       = add_Int (val_AtomicBool own.current) (timestamp_AtomicBool self.current
-      + 1) { f0'0 = val_store_log_AtomicBool self.current; f1'0 = view_ReleaseSyncView rel_view })}
+      + 1) { f0'0 = val_store_AtomicBool self.current; f1'0 = view_ReleaseSyncView rel_view })}
       (! return {result}) ]
   
   predicate resolve_refmut_SyncView [@inline:trivial] (_1: MutBorrow.t t_SyncView) = _1.final = _1.current
@@ -468,14 +467,14 @@ module M_message_passing
   {[@stop_split] [@expl:store_FnGhostWrapper_closure0 requires] ([@stop_split] [@expl:store 'self' type invariant] inv_ref_AtomicBool self)
     /\ ([@stop_split] [@expl:store requires] forall c: MutBorrow.t t_Committer_AtomicBool_bool_None_Relaxed. not shot_store_AtomicBool c.current
       -> ward_AtomicBool'0 c.current = self
-      -> val_store_log_AtomicBool c.current = val'
+      -> val_store_AtomicBool c.current = val'
       -> precondition_FnGhostWrapper_closure0'0 f c
       /\ (postcondition_once_FnGhostWrapper_closure0'0 f c () -> shot_store_AtomicBool c.final))}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:store ensures] exists c: MutBorrow.t t_Committer_AtomicBool_bool_None_Relaxed. not shot_store_AtomicBool c.current
         /\ ward_AtomicBool'0 c.current = self
-        /\ val_store_log_AtomicBool c.current = val' /\ postcondition_once_FnGhostWrapper_closure0'0 f c ()}
+        /\ val_store_AtomicBool c.current = val' /\ postcondition_once_FnGhostWrapper_closure0'0 f c ()}
       (! return {result}) ]
   
   predicate inv_closure0 [@inline:trivial] (_1: closure0'0) =
@@ -571,10 +570,10 @@ module M_message_passing
   
   type closure0'3 = { c0'5: t_Committer_AtomicBool_bool_Relaxed_None; c1'5: MutBorrow.t t_SyncView }
   
-  predicate val_load_log_AtomicBool'0 (self: t_Committer_AtomicBool_bool_Relaxed_None)
+  predicate val_load_AtomicBool'0 (self: t_Committer_AtomicBool_bool_Relaxed_None)
   
-  let val_load_AtomicBool (self: t_Committer_AtomicBool_bool_Relaxed_None) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:val_load ensures] result = val_load_log_AtomicBool'0 self}
+  let val_load_AtomicBool'1 (self: t_Committer_AtomicBool_bool_Relaxed_None) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:val_load ensures] result = val_load_AtomicBool'0 self}
       (! return {result}) ]
   
   type t_AcquireSyncView
@@ -599,7 +598,7 @@ module M_message_passing
       /\ ([@stop_split] [@expl:shoot_load ensures #2] timestamp_AtomicBool'0 self
         <= get_timestamp_AtomicBool (ward_AtomicBool'1 self) sync_view.final)
       /\ ([@stop_split] [@expl:shoot_load ensures #3] lookup_Int (val_AtomicBool own) (timestamp_AtomicBool'0 self)
-      = Some { f0'0 = val_load_log_AtomicBool'0 self; f1'0 = view_AcquireSyncView result })}
+      = Some { f0'0 = val_load_AtomicBool'0 self; f1'0 = view_AcquireSyncView result })}
       (! return {result}) ]
   
   predicate resolve_refmut_closure0'0 [@inline:trivial] (_1: MutBorrow.t closure0'3) = _1.final = _1.current
@@ -611,7 +610,7 @@ module M_message_passing
   
   let closure0'2 [@coma:extspec] (self: MutBorrow.t closure0'3) (inv: MutBorrow.t t_MPInv) (return (x: ())) = bb0
     [ bb0 = s0
-      [ s0 = val_load_AtomicBool {self.current.c0'5} (fun (_x: bool) -> [ &_4 <- _x ] s1)
+      [ s0 = val_load_AtomicBool'1 {self.current.c0'5} (fun (_x: bool) -> [ &_4 <- _x ] s1)
       | s1 = any [ br0 -> {_4 = false} (! bb3) | br1 -> {_4} (! bb2) ] ]
     | bb2 = s0
       [ s0 = [ &_8 <- self.current.c0'5 ] s1
@@ -802,7 +801,7 @@ module M_message_passing
     [ return (result: bool) ->
     {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicBool_bool_Relaxed_None. not shot_store_AtomicBool'0 c
         /\ ward_AtomicBool'1 c = self
-        /\ val_load_log_AtomicBool'0 c = result /\ postcondition_once_FnGhostWrapper_closure3 f c ()}
+        /\ val_load_AtomicBool'0 c = result /\ postcondition_once_FnGhostWrapper_closure3 f c ()}
       (! return {result}) ]
   
   predicate inv_closure1 [@inline:trivial] (_1: closure1) =
@@ -1000,7 +999,7 @@ module M_message_passing
     [ return (result: bool) ->
     {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicBool_bool_Relaxed_None. not shot_store_AtomicBool'0 c
         /\ ward_AtomicBool'1 c = self
-        /\ val_load_log_AtomicBool'0 c = result /\ postcondition_once_FnGhostWrapper_closure4 f c ()}
+        /\ val_load_AtomicBool'0 c = result /\ postcondition_once_FnGhostWrapper_closure4 f c ()}
       (! return {result}) ]
   
   let closure1 [@coma:extspec] (self: closure1) (tokens: t_Tokens) (return (x: ())) =
