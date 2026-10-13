@@ -51,6 +51,18 @@ pub(crate) fn subst_call<'tcx, Args>(
 where
     Args: IntoIterator<Item = Term<'tcx>>,
 {
+    // Beware: one could be tempted to remove the following test,
+    // as the call to `ctx::sig` gives us the exact same information.
+    // However this can cause infinite recursion, e.g:
+    //      subst_call ->
+    //      ctx.sig ->
+    //      specification::pre_sig_of ->
+    //      specification::contract_of ->
+    //      ContractClauses::get_pre ->
+    //      ctx.term ->
+    //      pearlite::normalize ->
+    //      subst_call ->
+    //      <...>
     if !ctx.is_aliased(prog_id) {
         return None;
     }
