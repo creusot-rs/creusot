@@ -119,7 +119,7 @@ pub fn message_passing() {
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
             while !atomic.load(ghost! { |c: &Committer<_, bool, Acquire, _>| {
             inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                if !c.val_load_ghost() {
+                if !c.val_load() {
                     return
                 }
                 let mut sync_view = *SyncView::new();

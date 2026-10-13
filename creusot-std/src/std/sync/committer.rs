@@ -39,7 +39,22 @@ impl<C: PermTarget, T, Load, Store> Committer<C, T, Load, Store> {
 
     /// Value read from the atomic operation.
     #[logic(opaque)]
-    pub fn val_load(self) -> T {
+    pub fn val_load_log(self) -> T {
+        dead
+    }
+
+    /// Value read from the atomic operation.
+    #[check(ghost)]
+    #[trusted]
+    #[logic_alias(self.val_load_log())]
+    pub fn val_load(&self) -> T {
+        panic!("Should not be called outside ghost code")
+    }
+
+
+    /// Value written by the atomic operation.
+    #[logic(opaque)]
+    pub fn val_store_log(self) -> T {
         dead
     }
 
@@ -52,16 +67,10 @@ impl<C: PermTarget, T, Load, Store> Committer<C, T, Load, Store> {
     }
 
     /// Value written by the atomic operation.
-    #[logic(opaque)]
-    pub fn val_store(self) -> T {
-        dead
-    }
-
-    /// Value written by the atomic operation.
     #[check(ghost)]
     #[trusted]
-    #[ensures(result == self.val_store())]
-    pub fn val_store_ghost(&self) -> T {
+    #[logic_alias(self.val_store_log())]
+    pub fn val_store(&self) -> T {
         panic!("Should not be called outside ghost code")
     }
 

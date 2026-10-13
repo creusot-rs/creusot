@@ -207,7 +207,7 @@ impl<T> TicketLock<T> {
         #[invariant(token.id() == self.inner_inv.public().2 )]
         while self.now_serving.load(ghost!(|c: &Committer<_, _, Acquire, _>| {
             self.inner_inv.open(tokens.reborrow(), |inv: &mut TicketLockInv<T>| {
-                if *snapshot!(c.val_load() != ticket).into_ghost() {
+                if c.val_load() != ticket {
                     return;
                 }
                 let mut view = SyncView::new();

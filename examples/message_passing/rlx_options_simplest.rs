@@ -79,7 +79,7 @@ pub fn message_passing() {
             #[invariant(*t_initial <= flag.get_timestamp(*sync_view))]
             while !flag.load(ghost! { |c: &LoadCommitter| {
             inv.open(tokens.reborrow(), |inv: &mut MPInv| {
-                if !*snapshot!(c.val_load()).into_ghost() {
+                if !c.val_load() {
                     return
                 }
 

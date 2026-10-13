@@ -200,16 +200,17 @@ module M_message_passing
   
   function ward_AtomicBool'0 (self: t_Committer_AtomicBool_bool_None_SeqCst) : t_AtomicBool
   
-  predicate val_load_AtomicBool (self: t_Committer_AtomicBool_bool_None_SeqCst)
+  predicate val_load_log_AtomicBool (self: t_Committer_AtomicBool_bool_None_SeqCst)
   
-  predicate val_store_AtomicBool (self: t_Committer_AtomicBool_bool_None_SeqCst)
+  predicate val_store_log_AtomicBool (self: t_Committer_AtomicBool_bool_None_SeqCst)
   
   function timestamp_AtomicBool (self: t_Committer_AtomicBool_bool_None_SeqCst) : int
   
   predicate hist_inv_AtomicBool [@inline:trivial] (self: t_Committer_AtomicBool_bool_None_SeqCst) (other: t_Committer_AtomicBool_bool_None_SeqCst) =
     ward_AtomicBool'0 self = ward_AtomicBool'0 other
-    /\ val_load_AtomicBool self = val_load_AtomicBool other
-    /\ val_store_AtomicBool self = val_store_AtomicBool other /\ timestamp_AtomicBool self = timestamp_AtomicBool other
+    /\ val_load_log_AtomicBool self = val_load_log_AtomicBool other
+    /\ val_store_log_AtomicBool self = val_store_log_AtomicBool other
+    /\ timestamp_AtomicBool self = timestamp_AtomicBool other
   
   meta "rewrite_def" predicate hist_inv_AtomicBool
   
@@ -222,7 +223,8 @@ module M_message_passing
     {[@stop_split] [@expl:shoot_store_AtomicBool ensures] ([@stop_split] [@expl:shoot_store ensures #0] hist_inv_AtomicBool self.current self.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #1] shot_store_AtomicBool self.final)
       /\ ([@stop_split] [@expl:shoot_store ensures #2] ward_AtomicBool own.current = ward_AtomicBool own.final)
-      /\ ([@stop_split] [@expl:shoot_store ensures #3] val_AtomicBool own.final = val_store_AtomicBool self.current)}
+      /\ ([@stop_split] [@expl:shoot_store ensures #3] val_AtomicBool own.final
+      = val_store_log_AtomicBool self.current)}
       (! return {result}) ]
   
   predicate resolve_refmut_Perm_AtomicBool [@inline:trivial] (_1: MutBorrow.t t_Perm_AtomicBool) = _1.final = _1.current
@@ -404,14 +406,14 @@ module M_message_passing
   {[@stop_split] [@expl:store_FnGhostWrapper_closure0 requires] ([@stop_split] [@expl:store 'self' type invariant] inv_ref_AtomicBool self)
     /\ ([@stop_split] [@expl:store requires] forall c: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst. not shot_store_AtomicBool c.current
       -> ward_AtomicBool'0 c.current = self
-      -> val_store_AtomicBool c.current = val'
+      -> val_store_log_AtomicBool c.current = val'
       -> precondition_FnGhostWrapper_closure0'0 f c
       /\ (postcondition_once_FnGhostWrapper_closure0'0 f c () -> shot_store_AtomicBool c.final))}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:store ensures] exists c: MutBorrow.t t_Committer_AtomicBool_bool_None_SeqCst. not shot_store_AtomicBool c.current
         /\ ward_AtomicBool'0 c.current = self
-        /\ val_store_AtomicBool c.current = val' /\ postcondition_once_FnGhostWrapper_closure0'0 f c ()}
+        /\ val_store_log_AtomicBool c.current = val' /\ postcondition_once_FnGhostWrapper_closure0'0 f c ()}
       (! return {result}) ]
   
   predicate inv_closure0 [@inline:trivial] (_1: closure0'0) =
@@ -554,10 +556,10 @@ module M_message_passing
     c1'5: MutBorrow.t t_Option_Resource_Excl_unit;
     c2'5: MutBorrow.t t_Option_Perm_PCell_i32 }
   
-  predicate val_load_AtomicBool'0 (self: t_Committer_AtomicBool_bool_SeqCst_None)
+  predicate val_load_log_AtomicBool'0 (self: t_Committer_AtomicBool_bool_SeqCst_None)
   
-  let val_load_ghost_AtomicBool (self: t_Committer_AtomicBool_bool_SeqCst_None) (return (x: bool)) = any
-    [ return (result: bool) -> {[@stop_split] [@expl:val_load_ghost ensures] result = val_load_AtomicBool'0 self}
+  let val_load_AtomicBool (self: t_Committer_AtomicBool_bool_SeqCst_None) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:val_load ensures] result = val_load_log_AtomicBool'0 self}
       (! return {result}) ]
   
   predicate shot_store_AtomicBool'0 (self: t_Committer_AtomicBool_bool_SeqCst_None)
@@ -568,7 +570,8 @@ module M_message_passing
   {[@stop_split] [@expl:shoot_load_AtomicBool requires] ([@stop_split] [@expl:shoot_load requires #0] not shot_store_AtomicBool'0 self)
     /\ ([@stop_split] [@expl:shoot_load requires #1] ward_AtomicBool'1 self = ward_AtomicBool own)}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:shoot_load ensures] val_load_AtomicBool'0 self = val_AtomicBool own}
+    [ return (result: ()) -> {[@stop_split] [@expl:shoot_load ensures] val_load_log_AtomicBool'0 self
+      = val_AtomicBool own}
       (! return {result}) ]
   
   let elim_Readable (_x: t_State) (return (f0'6: t_Resource_Excl_unit)) = any
@@ -682,7 +685,7 @@ module M_message_passing
   let closure0'2 [@coma:extspec] (self: MutBorrow.t closure0'3) (inv: MutBorrow.t t_MessagePassingAtomicInv)
     (return (x: ())) = bb0
     [ bb0 = s0
-      [ s0 = val_load_ghost_AtomicBool {self.current.c0'5} (fun (_x: bool) -> [ &_4 <- _x ] s1)
+      [ s0 = val_load_AtomicBool {self.current.c0'5} (fun (_x: bool) -> [ &_4 <- _x ] s1)
       | s1 = any [ br0 -> {_4 = false} (! bb3) | br1 -> {_4} (! bb2) ] ]
     | bb2 = s0
       [ s0 = [ &_10 <- inv.current.atomic_own ] s1
@@ -966,7 +969,7 @@ module M_message_passing
     [ return (result: bool) ->
     {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicBool_bool_SeqCst_None. not shot_store_AtomicBool'0 c
         /\ ward_AtomicBool'1 c = self
-        /\ val_load_AtomicBool'0 c = result /\ postcondition_once_FnGhostWrapper_closure4 f c ()}
+        /\ val_load_log_AtomicBool'0 c = result /\ postcondition_once_FnGhostWrapper_closure4 f c ()}
       (! return {result}) ]
   
   let deref_Ghost_Option_Perm_PCell_i32 (self: t_Option_Perm_PCell_i32) (return (x: t_Option_Perm_PCell_i32)) = any

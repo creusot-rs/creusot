@@ -91,7 +91,7 @@ pub fn message_passing() {
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
             while !flag.load(ghost! { |c: &LoadCommitter| {
                 inv.open(tokens.reborrow(), |inv: &mut MPInv| {
-                    if !c.val_load_ghost() {
+                    if !c.val_load() {
                         return
                     }
                     c.shoot_load(&mut inv.flag_perm);
