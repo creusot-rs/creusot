@@ -17,6 +17,7 @@ use creusot_std::{
         thread::{self, JoinHandleExt},
     },
 };
+use std::mem::replace;
 
 declare_namespace! { MESSAGE_PASSING }
 
@@ -46,7 +47,7 @@ impl Protocol for MessagePassingAtomicInv {
         pearlite! {
             match self.state {
                 State::NotWrittenYet => !self.atomic_own.val(),
-                State::Synchronisation(data_own) => self.public_data.0 == *data_own.ward() && self.atomic_own.val() && data_own.val()@ == 1,
+                State::Synchronisation(data_perm) => self.public_data.0 == *data_perm.ward() && self.atomic_own.val() && data_perm.val()@ == 1,
                 State::Readable(tok) => self.public_data.1 == tok.id()
             }
         }
@@ -55,7 +56,7 @@ impl Protocol for MessagePassingAtomicInv {
 
 pub fn message_passing() {
     let (atomic, atomic_own) = AtomicBool::new(false);
-    let (data, mut data_own) = PCell::new(0i32);
+    let (data, mut data_perm) = PCell::new(0i32);
     let excl = Resource::alloc(snapshot!(Excl(())));
 
     let inv = AtomicInvariantSC::new(
@@ -73,13 +74,13 @@ pub fn message_passing() {
         let atomic = &atomic;
 
         let t1 = s.spawn(move |tokens: Ghost<Tokens>| {
-            unsafe { *data.borrow_mut(ghost!(&mut *data_own)) = 1 }
+            unsafe { *data.borrow_mut(ghost!(&mut *data_perm)) = 1 }
 
             atomic.store(
                 true,
                 ghost! { |c: &mut Committer<_, _, _, SeqCst>| {
                     inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
-                        inv.state = State::Synchronisation(data_own.into_inner());
+                        inv.state = State::Synchronisation(data_perm.into_inner());
                         c.shoot_store(&mut inv.atomic_own);
                     })
                 }},
@@ -89,31 +90,30 @@ pub fn message_passing() {
         let t2 = s.spawn(move |mut tokens: Ghost<Tokens>| {
             let mut excl = ghost!(Some(excl.into_inner()));
             let excl_snap = snapshot!(excl);
-            let mut data_own = ghost!(None);
+            let mut data_perm = ghost!(None);
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
             while !atomic.load(ghost! { |c: &Committer<_, bool, SeqCst, _>| {
             inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                if !*snapshot!{ c.val_load() }.into_ghost() {
+                if !c.val_load_ghost() {
                     return
                 }
+                c.shoot_load(&inv.atomic_own);
 
                 if let State::Readable(excl_state) = &inv.state {
                     excl.as_mut().unwrap().valid_op_lemma(excl_state)
                 }
 
-                c.shoot_load(&inv.atomic_own);
-
                 let State::Synchronisation(d_own) =
-                    std::mem::replace(&mut inv.state, State::Readable(excl.take().unwrap()))
+                    replace(&mut inv.state, State::Readable(excl.take().unwrap()))
                 else {
                     unreachable!();
                 };
-                data_own = Ghost::new(Some(d_own));
+                *data_perm = Some(d_own);
             })}}) {}
 
-            let res = unsafe { data.get(ghost! { data_own.as_ref().unwrap() }) };
+            let res = unsafe { data.get(ghost! { data_perm.as_ref().unwrap() }) };
             proof_assert!(res == 1i32)
         });
 

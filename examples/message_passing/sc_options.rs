@@ -94,11 +94,11 @@ pub fn message_passing() {
                     if !c.val_load_ghost() {
                         return
                     }
+                    c.shoot_load(&mut inv.flag_perm);
 
                     excl.valid_op_lemma(&inv.tok);
-                    swap(&mut inv.tok, &mut *excl);
 
-                    c.shoot_load(&mut inv.flag_perm);
+                    swap(&mut inv.tok, &mut *excl);
                     *data_perm = inv.data_perm.take()
                 })
             }}) {}
