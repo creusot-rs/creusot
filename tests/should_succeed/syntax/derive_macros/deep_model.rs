@@ -57,3 +57,33 @@ where
     T(T),
     U { u: U },
 }
+
+// Regression tests for visibility
+mod visibility_regression {
+    use creusot_std::prelude::*;
+
+    #[derive(DeepModel)]
+    pub(crate) enum CrateVisibleEnum {
+        A,
+    }
+
+    #[derive(DeepModel)]
+    pub(super) enum ParentVisibleEnum {
+        A,
+    }
+
+    #[derive(DeepModel)]
+    pub(self) enum SelfVisibleEnum {
+        A,
+    }
+
+    #[derive(DeepModel)]
+    pub(crate) struct CrateVisibleStruct;
+
+    mod nested {
+        use creusot_std::prelude::*;
+
+        #[derive(DeepModel)]
+        pub(in crate::visibility_regression) struct AncestorVisibleStruct {}
+    }
+}
