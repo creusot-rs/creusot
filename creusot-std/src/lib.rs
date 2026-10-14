@@ -678,7 +678,7 @@ mod base_prelude {
     #[cfg(creusot)]
     pub use crate::{invariant::inv, resolve::resolve};
 }
-/// Re-exports available under the `creusot_std` namespace
+/// Basic features to get started with Creusot.
 pub mod prelude {
     pub use crate::{base_prelude::*, macros::*};
 }
