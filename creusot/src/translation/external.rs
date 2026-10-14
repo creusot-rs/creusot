@@ -95,9 +95,9 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
                 ctx.def_span(def_id),
                 "could not derive original instance from external specification",
             );
-
             err.span_warn(ctx.def_span(def_id), "the bounds on an external specification must be at least as strong as the original impl bounds");
-            err.emit()
+            err.emit();
+            unreachable!()
         });
 
     // The following computes a substitution `subst` that we can apply to the contract of
