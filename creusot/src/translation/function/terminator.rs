@@ -11,7 +11,6 @@ use crate::{
     },
 };
 use itertools::Itertools;
-use rustc_infer::traits::TraitErrors;
 use rustc_middle::{
     mir::{
         self, AssertKind, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo,

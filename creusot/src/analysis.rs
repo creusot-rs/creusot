@@ -782,7 +782,8 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                 // If this is a snapshot, check that it doesn't use uninitialized or borrowed variables
                 let &TyKind::FnDef(_fun_def_id, subst) = func.ty(self.body(), self.tcx()).kind()
                 else {
-                    self.fatal_error(fn_span, "unsupported function call type").emit()
+                    self.fatal_error(fn_span, "unsupported function call type").emit();
+                    unreachable!()
                 };
                 if let Some(ty) = subst.no_bound_vars().unwrap().get(1)
                     && let ty::GenericArgKind::Type(ty) = ty.kind()
