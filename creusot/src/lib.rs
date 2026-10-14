@@ -1,6 +1,6 @@
 #![feature(rustc_private)]
-#![feature(box_patterns)]
-#![feature(never_type, try_blocks)]
+#![feature(deref_patterns)]
+#![feature(try_blocks)]
 #![feature(alloc_slice_into_array)]
 #![feature(iter_intersperse, map_try_insert)]
 
