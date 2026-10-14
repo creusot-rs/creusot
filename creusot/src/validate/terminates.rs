@@ -59,15 +59,15 @@ use rustc_infer::{infer::TyCtxtInferExt as _, traits::ImplSource};
 use rustc_middle::{
     thir::{self, visit::Visitor},
     ty::{
-        self, ClauseKind, Clauses, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, ParamEnv,
-        PredicateKind, TraitRef, TyCtxt, TyKind, TypingEnv, TypingMode,
+        self, ClauseKind, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, ParamEnv, PredicateKind,
+        TraitRef, TyCtxt, TyKind, TypingEnv, TypingMode,
     },
 };
 use rustc_span::Span;
 use rustc_trait_selection::traits::{
     normalize_param_env_or_error, specialization_graph, translate_args,
 };
-use rustc_type_ir::{Binder, PredicatePolarity, TraitPredicate};
+use rustc_type_ir::Binder;
 use std::collections::{HashMap, HashSet};
 
 pub(crate) type RecursiveCalls = IndexMap<DefId, IndexSet<DefId>>;
@@ -369,13 +369,9 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                 // specialized default node
                 let (node, bnds) = self.visit_specialized_default_function(ctx, impl_ldid, fun_id);
                 called_node = Some(node);
-                bounds =
-                    EarlyBinder::bind(ctx.tcx, bnds.clone())
-                        .instantiate(
-                            ctx.tcx,
-                            subst.rebase_onto(ctx.tcx, ctx.parent(fun_id), impl_args),
-                        )
-                        .skip_normalization();
+                bounds = EarlyBinder::bind(ctx.tcx, bnds.clone())
+                    .instantiate(ctx.tcx, subst.rebase_onto(ctx.tcx, ctx.parent(fun_id), impl_args))
+                    .skip_normalization();
             }
             TraitResolved::Instance { .. } | TraitResolved::NotATraitItem => {
                 called_node = Some(self.insert_node(GraphNode::function(fun_id)))
@@ -388,7 +384,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
                 let clause = ctx
                     .tcx
                     .mk_predicate(Binder::dummy(PredicateKind::Clause(ClauseKind::Trait(
-                        TraitPredicate { trait_ref, polarity: PredicatePolarity::Positive },
+                        ty::TraitClause { trait_ref, polarity: ty::ClausePolarity::Positive },
                     ))))
                     .expect_clause();
                 bounds = vec![clause];
@@ -473,26 +469,26 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         let func_impl_args = func_impl_args.rebase_onto(ctx.tcx, spec_node_def.def_id(), impl_args);
 
         let item_bounds = ctx.param_env(item_id).caller_bounds();
-        let defimpl_bounds = ctx.param_env(spec_node_def.def_id()).caller_bounds().collect::<HashSet<_>>();
+        let defimpl_bounds =
+            ctx.param_env(spec_node_def.def_id()).caller_bounds().collect::<HashSet<_>>();
         // Before instantiating the bounds, keep only those that are not inherited from the defining
         // impl. After instantiation, they will be implied by the bounds of the inheriting
         // impl.
         let typing_env_for_bounds = TypingEnv::new(impl_param_env, TypingMode::non_body_analysis());
-        let bounds =
-            impl_param_env.caller_bounds().chain(item_bounds.filter_map(|b| {
-                if defimpl_bounds.contains(&b) {
-                    return None;
-                }
-                if let Ok(res) = ctx.tcx.try_normalize_erasing_regions(
-                    typing_env_for_bounds,
-                    EarlyBinder::bind(ctx.tcx, b).instantiate(ctx.tcx, func_impl_args),
-                ) {
-                    Some(res)
-                } else {
-                    ctx.dcx().delayed_bug("failed to normalize bounds");
-                    None
-                }
-            }));
+        let bounds = impl_param_env.caller_bounds().chain(item_bounds.filter_map(|b| {
+            if defimpl_bounds.contains(&b) {
+                return None;
+            }
+            if let Ok(res) = ctx.tcx.try_normalize_erasing_regions(
+                typing_env_for_bounds,
+                EarlyBinder::bind(ctx.tcx, b).instantiate(ctx.tcx, func_impl_args),
+            ) {
+                Some(res)
+            } else {
+                ctx.dcx().delayed_bug("failed to normalize bounds");
+                None
+            }
+        }));
 
         // data for when we call this function
         let param_env = ParamEnv::new(ctx.tcx, ctx.mk_clauses_from_iter(bounds));
@@ -631,7 +627,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for FunctionDeps<'a, 'tcx> {
                 // Don't visit `fun` recursively, to avoid flagging it as a non-call
                 return;
             }
-            Closure(box thir::ClosureExpr { closure_id, .. }) => {
+            Closure(thir::ClosureExpr { closure_id, .. }) => {
                 let (thir, expr) = self.ctx.thir_body(closure_id);
                 let thir = &thir.borrow();
                 FunctionDeps { thir, deps: self.deps, ..*self }.visit_expr(&thir[expr]);
@@ -706,7 +702,7 @@ impl<'thir, 'tcx> Visitor<'thir, 'tcx> for GhostLoops<'thir, 'tcx> {
 
     fn visit_expr(&mut self, expr: &'thir thir::Expr<'tcx>) {
         match expr.kind {
-            thir::ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
+            thir::ExprKind::Closure(thir::ClosureExpr { closure_id, .. }) => {
                 let (thir, expr) = self.ctx.thir_body(closure_id);
                 let thir = &thir.borrow();
                 GhostLoops { thir, ..*self }.visit_expr(&thir[expr]);
@@ -900,7 +896,7 @@ fn trait_refs_of_clauses<'tcx>(
     clauses.into_iter().filter_map(move |clause| {
         // WARNING: `clause` is not normalized (but we don't seem to use the fact that it should be)
         let clause = clause.as_trait_clause()?;
-        let ty::PredicatePolarity::Positive = clause.polarity() else { return None };
+        let ty::ClausePolarity::Positive = clause.polarity() else { return None };
         let trait_ref = tcx.instantiate_bound_regions_with_erased(clause).trait_ref;
         if !matches!(tcx.def_kind(trait_ref.def_id), DefKind::Trait) {
             // Some bounds can be trait aliases and we skip them.
@@ -934,10 +930,9 @@ pub(crate) fn proof_tree_nodes<'tcx>(
             ImplSource::UserDefined(source) => {
                 nodes.push(source.impl_def_id);
                 let clauses = tcx.param_env(source.impl_def_id).caller_bounds().collect::<Vec<_>>();
-                let bounds =
-                    EarlyBinder::bind(tcx, clauses)
-                        .instantiate(tcx, source.args)
-                        .skip_normalization();
+                let bounds = EarlyBinder::bind(tcx, clauses)
+                    .instantiate(tcx, source.args)
+                    .skip_normalization();
                 predicates.extend(trait_refs_of_clauses(tcx, bounds));
             }
             ImplSource::Param(_) => (),
