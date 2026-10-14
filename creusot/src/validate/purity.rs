@@ -155,22 +155,20 @@ pub(crate) fn validate_purity<'tcx>(
         if is_logic(ctx.tcx, def_id) {
             let name = if is_prophetic { "prophetic_alias" } else { "logic_alias" };
             ctx.dcx()
-                .struct_span_err(
+                .struct_span_fatal(
                     ctx.def_ident_span(def_id).unwrap_or_default(),
                     format!("Only program functions can use `#[{name}]`"),
                 )
                 .with_span_label(span, "alias defined here")
-                .emit()
-                .raise_fatal();
+                .emit();
         }
         if let Some(logic_id) = logic_alias::get_logic_id(ctx, def_id)
             && !is_logic(ctx.tcx, logic_id)
         {
             ctx.dcx()
-                .struct_span_err(span, "Only logic functions can be aliased")
+                .struct_span_fatal(span, "Only logic functions can be aliased")
                 .with_note(format!("`{}` is not a logic function", ctx.def_path_str(logic_id)))
-                .emit()
-                .raise_fatal();
+                .emit();
         }
 
         if let Some(local_id) = alias_id.as_local() {
@@ -242,7 +240,7 @@ impl PurityVisitor<'_, '_> {
                     }
                     expr = block.expr?;
                 }
-                ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
+                ExprKind::Closure(ClosureExpr { closure_id, .. }) => {
                     if is_spec(self.ctx.tcx, closure_id.to_def_id()) {
                         return Some(ClosureKind::Spec(closure_id));
                     } else if is_erasure(self.ctx.tcx, closure_id.to_def_id()) {
@@ -387,7 +385,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                             self.ctx.dcx().span_fatal(
                                 expr.span,
                                 "expected a spec closure as argument to `snapshot_from_fn`",
-                            );
+                            )
                         };
                         self.validate_spec_purity(closure_id, false, self.from_alias);
                         return;
@@ -397,7 +395,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                     self.ctx.dcx().span_fatal(expr.span, "non function call in logical context")
                 }
             }
-            ExprKind::Closure(box ClosureExpr { closure_id, .. }) => {
+            ExprKind::Closure(ClosureExpr { closure_id, .. }) => {
                 if is_spec(self.ctx.tcx, closure_id.into()) {
                     self.ctx.dcx().span_fatal(
                         expr.span,
