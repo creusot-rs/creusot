@@ -66,6 +66,22 @@ Here is a sample `flake.nix` that provides a shell with Creusot as a dependency,
 
 ## Manual installation
 
+Creusot stores its files in a data directory, which is:
+
+- `$CREUSOT_DATA_HOME` if that environment variable is set;
+- otherwise, on Linux, `$XDG_DATA_HOME/creusot`, which defaults to `~/.local/share/creusot`
+  when `XDG_DATA_HOME` is unset;
+- on macOS, a directory under `~/Library/Application Support/`.
+
+On Linux, set `CREUSOT_DATA_HOME` before running the commands below:
+
+```sh
+export CREUSOT_DATA_HOME="${CREUSOT_DATA_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/creusot}"
+```
+
+To use a non-default location, set and export `CREUSOT_DATA_HOME` in your shell profile;
+`cargo creusot` reads it at runtime.
+
 1. You can install the core files from the Creusot repository with Cargo alone:
 
     ```sh
@@ -74,23 +90,35 @@ Here is a sample `flake.nix` that provides a shell with Creusot as a dependency,
 
     # Install creusot-rustc
     TOOLCHAIN=$(grep "nightly-[0-9-]*" --only-matching rust-toolchain)
-    cargo install --path cargo-creusot --root $XDG_DATA_HOME/creusot/toolchain/$TOOLCHAIN/bin
+    cargo install --path creusot-rustc --root $CREUSOT_DATA_HOME/toolchains/$TOOLCHAIN
 
     # Install the Creusot prelude
     cargo run --bin prelude-generator
-    mkdir -p $XDG_DATA_HOME/share/why3find
-    cp -rT target/creusot/packages $XDG_DATA_HOME/share/why3find/packages
+    mkdir -p $CREUSOT_DATA_HOME/share/why3find
+    cp -rT target/creusot/packages $CREUSOT_DATA_HOME/share/why3find/packages
 
     # Install config files
-    cp why3find.json $XDG_DATA_HOME/creusot/why3find.json
-    cp creusot-install/creusot_why3.conf $XDG_DATA_HOME/creusot/creusot_why3.conf
+    cp why3find.json $CREUSOT_DATA_HOME/why3find.json
+    cp creusot-install/creusot_why3.conf $CREUSOT_DATA_HOME/creusot_why3.conf
     ```
 
-2. The following binaries must then be put in `$XDG_DATA_HOME/creusot/bin`, refer to their respective
-    project pages for how to get them:
+2. Install [`why3`](https://www.why3.org/) and [`why3find`](https://github.com/creusot-rs/why3find).
+    Creusot requires the specific versions pinned in `creusot-deps.opam`,
+    you can install them using a dedicated Opam switch:
 
-    - [`why3`](https://www.why3.org/) (available on Opam)
-    - [`why3find`](https://git.frama-c.com/pub/why3find) (available on Opam)
+    ```sh
+    cp creusot-deps.opam $CREUSOT_DATA_HOME/
+    opam switch create -y $CREUSOT_DATA_HOME
+    mkdir -p $CREUSOT_DATA_HOME/bin
+    ln -sf $CREUSOT_DATA_HOME/_opam/bin/why3 $CREUSOT_DATA_HOME/bin/why3
+    ln -sf $CREUSOT_DATA_HOME/_opam/bin/why3find $CREUSOT_DATA_HOME/bin/why3find
+    ```
+
+3. The following provers must then be put in `$CREUSOT_DATA_HOME/bin`.
+    The recommended versions are listed in
+    `creusot-setup/src/tools_versions_urls.rs` (other versions may work but are not tested).
+    Refer to their respective project pages for how to get them:
+
     - [`alt-ergo`](https://alt-ergo.ocamlpro.com/) (downloadable binaries, also on Opam)
     - [`z3`](https://github.com/Z3Prover/z3) (downloadable binaries, also on Opam)
     - [`cvc5`](https://cvc5.github.io/) (downloadable binaries)
@@ -102,9 +130,10 @@ Everything Creusot needs to run.
 
 - `cargo-creusot` in `PATH`. This is the entry point of Creusot.
 
-- `$XDG_DATA_HOME/creusot/` (default on Linux: `~/.local/share/creusot`), a directory containing:
+- `$XDG_DATA_HOME/creusot/` (default on Linux: `~/.local/share/creusot`, overridden by
+    `$CREUSOT_DATA_HOME` if set), a directory containing:
 
-    - `toolchain/$TOOLCHAIN/bin/creusot-rustc`, the Creusot compiler, where `$TOOLCHAIN`
+    - `toolchains/$TOOLCHAIN/bin/creusot-rustc`, the Creusot compiler, where `$TOOLCHAIN`
         is the toolchain used to build Creusot (set by the file `rust-toolchain` in the Creusot repository).
 
     - `bin/` containing binaries.
