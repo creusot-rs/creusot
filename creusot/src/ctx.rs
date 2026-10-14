@@ -34,7 +34,7 @@ use rustc_ast::{
 };
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
 use rustc_data_structures::steal::Steal;
-use rustc_errors::{Diag, DiagMessage, FatalAbort};
+use rustc_errors::{Diag, DiagMessage};
 use rustc_hir::{
     def::{CtorKind, DefKind},
     def_id::{CrateNum, DefId, LOCAL_CRATE, LocalDefId, ModId},
@@ -134,16 +134,12 @@ pub trait HasTyCtxt<'tcx> {
         self.tcx().dcx().span_fatal(span, msg)
     }
 
-    fn fatal_error(&self, span: Span, msg: impl Into<DiagMessage>) -> Diag<'tcx, FatalAbort> {
+    fn fatal_error(&self, span: Span, msg: impl Into<DiagMessage>) -> Diag<'tcx> {
         // TODO: try to add a code back in
         self.tcx().dcx().struct_span_fatal(span, msg)
     }
 
-    fn error(
-        &self,
-        span: Span,
-        msg: impl Into<DiagMessage>,
-    ) -> Diag<'tcx, rustc_errors::ErrorGuaranteed> {
+    fn error(&self, span: Span, msg: impl Into<DiagMessage>) -> Diag<'tcx> {
         self.tcx().dcx().struct_span_err(span, msg)
     }
 
@@ -151,7 +147,7 @@ pub trait HasTyCtxt<'tcx> {
         self.tcx().dcx().span_warn(span, msg)
     }
 
-    fn struct_error(&self, span: Span, msg: impl Into<DiagMessage>) -> Diag<'tcx, FatalAbort> {
+    fn struct_error(&self, span: Span, msg: impl Into<DiagMessage>) -> Diag<'tcx> {
         self.tcx().dcx().struct_span_fatal(span, msg)
     }
 
