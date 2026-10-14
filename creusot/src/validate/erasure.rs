@@ -995,7 +995,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                     .collect::<Result<_, _>>()?;
                 AnfValue::Ctor(Ctor::Array, fields)
             }
-            Adt(box AdtExpr { adt_def, variant_index, fields, .. }) => {
+            Adt(AdtExpr { adt_def, variant_index, fields, .. }) => {
                 let fields = fields
                     .iter()
                     .map(|field| self.a_normal_form_expr(field.expr, stmts))
@@ -1006,7 +1006,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
             PointerCoercion { cast: MutToConstPointer, source, .. } => {
                 self.a_normal_form_expr(*source, stmts)?.0
             }
-            Use { source } => self.a_normal_form_expr(*source, stmts)?.0,
+            ValueExpr { source } => self.a_normal_form_expr(*source, stmts)?.0,
             Cast { source } => {
                 use rustc_type_ir::TyKind::{RawPtr, Slice};
                 let value = self.a_normal_form_expr(*source, stmts)?.0;

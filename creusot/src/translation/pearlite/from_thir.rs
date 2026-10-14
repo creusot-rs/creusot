@@ -677,7 +677,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                 let fields = fields.iter().map(|f| self.expr_term(*f)).collect::<Result<_, _>>()?;
                 Ok(Term { ty, span, kind: TermKind::Tuple { fields } })
             }
-            ExprKind::Use { source } => self.expr_term(source),
+            ExprKind::ValueExpr { source } => self.expr_term(source),
             ExprKind::ValueTypeAscription { source, .. } => self.expr_term(source),
             ExprKind::NonHirLiteral { .. } => {
                 Err(self.ctx.dcx().span_err(span, "unhandled literal expression"))
@@ -1104,7 +1104,7 @@ fn print_thir_expr(fmt: &mut Formatter, thir: &Thir, expr_id: ExprId) -> std::fm
 
             write!(fmt, "{}", lit.node)?;
         }
-        ExprKind::Use { source } => print_thir_expr(fmt, thir, *source)?,
+        ExprKind::ValueExpr { source } => print_thir_expr(fmt, thir, *source)?,
         ExprKind::VarRef { id } => write!(fmt, "{:?}", id.0)?,
         ExprKind::Scope { value, .. } => print_thir_expr(fmt, thir, *value)?,
         _ => write!(fmt, "{:?}", thir[expr_id])?,

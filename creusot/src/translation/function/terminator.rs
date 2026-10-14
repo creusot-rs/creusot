@@ -35,7 +35,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         self.resolve_at(loc, span);
         self.activate_two_phases(loc, span);
         let mut term = match &terminator.kind {
-            Goto { target } => Terminator::Goto(*target),
+            Goto { target, .. } => Terminator::Goto(*target),
             SwitchInt { discr, targets, .. } => {
                 let real_discr = discriminator_for_switch(&self.body.basic_blocks[loc.block])
                     .map(Operand::Move)
@@ -50,7 +50,8 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             &Call { ref func, ref args, destination, mut target, fn_span, .. } => {
                 let &TyKind::FnDef(fun_def_id, subst) = func.ty(self.body, self.tcx()).kind()
                 else {
-                    self.fatal_error(fn_span, "unsupported function call type").emit()
+                    self.fatal_error(fn_span, "unsupported function call type");
+                    unreachable!()
                 };
                 let subst = subst.skip_binder();
                 if Intrinsic::SnapshotFromFn.is(self.ctx, fun_def_id) {
@@ -70,7 +71,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         let [arg] = *func_args.into_array().unwrap();
                         self.emit_assignment(destination, RValue::Operand(arg), span);
                     } else {
-                        if let TraitErrors::HasErrors(err) = self.ctx.check_additional_predicates(
+                        if let Err(err) = self.ctx.check_additional_predicates(
                             fun_def_id,
                             subst,
                             self.typing_env().param_env,
@@ -228,7 +229,7 @@ pub(crate) fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Opti
         return None;
     };
 
-    if let StatementKind::Assign(box (pl, Rvalue::Discriminant(real_discr))) =
+    if let StatementKind::Assign((pl, Rvalue::Discriminant(real_discr))) =
         bbd.statements.last()?.kind
     {
         if discr.place() == Some(pl) { Some(real_discr) } else { None }
