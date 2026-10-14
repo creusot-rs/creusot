@@ -576,7 +576,7 @@ impl<'tcx> TranslationCtx<'tcx> {
             let additional_predicates = es.predicates_for(self.tcx, subst).into_iter();
             let clauses =
                 base_predicates.chain(additional_predicates).map(Predicate::expect_clause);
-            let res = ParamEnv::new(self.mk_clauses_from_iter(clauses));
+            let res = ParamEnv::new(self.tcx, self.mk_clauses_from_iter(clauses));
             normalize_param_env_or_error(self.tcx, res, ObligationCause::dummy())
         } else {
             self.tcx.param_env(def_id)

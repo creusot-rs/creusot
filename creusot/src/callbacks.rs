@@ -151,7 +151,7 @@ fn copy_mir_bodies<'tcx>(tcx: TyCtxt<'tcx>, def_id: LocalDefId) {
             for bbd in body.body.basic_blocks_mut().iter_mut() {
                 let term = bbd.terminator_mut();
                 if let mir::TerminatorKind::FalseEdge { real_target, .. } = term.kind {
-                    term.kind = mir::TerminatorKind::Goto { target: real_target };
+                    term.kind = mir::TerminatorKind::Goto { target: real_target, loop_hint_attrs: Default::default() };
                 }
             }
             assert!(map.insert(def_id, body).is_none());

@@ -6,7 +6,7 @@ use rustc_abi::Size;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::{self, ConstOperand, ConstValue, TerminatorKind, interpret::AllocRange},
-    ty::{self, AliasConstKind, ConstKind, Ty, TyCtxt, TypingEnv},
+    ty::{self, AliasConstKind, ConstKind, Ty, TyCtxt, TypingEnv, consts::ConstExt},
 };
 use rustc_span::Span;
 
@@ -90,7 +90,7 @@ fn get_u8_slice_len<'tcx>(tcx: ty::TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Size> {
     if !matches!(ety.kind(), ty::TyKind::Uint(ty::UintTy::U8)) {
         return None;
     }
-    n.try_to_target_usize(tcx).map(|n| Size::from_bytes(n))
+    n.try_to_value()?.try_to_target_usize(tcx).map(|n| Size::from_bytes(n))
 }
 
 fn scalar_to_literal<'tcx>(
