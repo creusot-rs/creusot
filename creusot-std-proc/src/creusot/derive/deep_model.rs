@@ -40,7 +40,11 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
 
     let open = match vis {
         syn::Visibility::Public(_) => quote!(open),
-        syn::Visibility::Restricted(res) => quote!(open(#res)),
+        syn::Visibility::Restricted(res) => {
+            let in_token = &res.in_token;
+            let path = &res.path;
+            quote!(open(#in_token #path))
+        }
         syn::Visibility::Inherited => quote!(open(self)),
     };
 
