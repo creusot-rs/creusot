@@ -177,7 +177,13 @@ pub fn try_const_to_term<'tcx>(
         let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
         let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
         let span = ctx.def_span(def_id);
-        let kind = ty::AliasConstKind::new_from_def_id(ctx.tcx, def_id);
+        let kind = match kind {
+            DefKind::Const => ty::AliasConstKind::Free { def_id },
+            DefKind::AssocConst => if let DefKind::Impl { of_trait: false } = ctx.tcx.def_kind(ctx.tcx.parent(def_id)) {
+                ty::AliasConstKind::InherentImpl { def_id }
+            } else { ty::AliasConstKind::Projection { def_id }},
+            _ => unreachable!(),
+        };
         let uneval = ty::AliasConst::new(ctx.tcx, kind, subst);
         if let Ok(Ok(val)) = ctx.const_eval_resolve_for_typeck(typing_env, uneval, span) {
             return valtree_to_term(val, ctx, ty, typing_env, span);
@@ -206,7 +212,8 @@ pub fn try_const_to_term<'tcx>(
         ConstKind::Alias(_, u)
             if let AliasConstKind::Projection { def_id }
             | AliasConstKind::Free { def_id }
-            | AliasConstKind::Inherent { def_id } = u.kind =>
+            | AliasConstKind::InherentSelf { def_id }
+            | AliasConstKind::InherentImpl { def_id } = u.kind =>
         {
             let (u, ty) = ctx.tcx.normalize_erasing_regions(
                 typing_env,
