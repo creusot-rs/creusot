@@ -605,7 +605,12 @@ pub(crate) fn tyconst_to_term_final<'tcx>(
     match c.kind() {
         Value(ty::Value { ty, valtree }) => valtree_to_term(valtree, ctx, ty, env, span),
         Alias(_, ty::AliasConst { kind, args, .. }) => {
-            Some(Term::const_item(kind.opt_def_id().unwrap(), args, ty))
+            use rustc_type_ir::AliasConstKind::*;
+            let def_id = match kind {
+                Projection { def_id } | InherentSelf { def_id } | Free { def_id } | Anon { def_id } => def_id,
+                _ => unreachable!(),
+            };
+            Some(Term::const_item(def_id, args, ty))
         }
         Param(p) => {
             let tcx = ctx.tcx;

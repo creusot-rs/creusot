@@ -10,7 +10,6 @@ use crate::{
         pearlite::{Term, TermKind, UnOp},
     },
 };
-use rustc_infer::traits::TraitErrors;
 use rustc_middle::{
     mir::{
         self, AssertKind, Location, Operand, Rvalue, SourceInfo, StatementKind, SwitchTargets,
