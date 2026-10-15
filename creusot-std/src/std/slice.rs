@@ -369,6 +369,15 @@ extern_spec! {
         fn split_at(&self, mid: usize) -> (&[T], &[T]);
 
         #[check(ghost)]
+        #[ensures(
+            <[T]>::split_at.precondition((self, mid))
+            ==> exists<l, r> result == Some((l, r)) &&
+                <[T]>::split_at.postcondition((self, mid), (l, r))
+        )]
+        #[ensures(<[T]>::split_at.precondition((self, mid)) || result == None)]
+        fn split_at_checked(&self, mid: usize) -> Option<(&[T], &[T])>;
+
+        #[check(ghost)]
         #[requires(mid@ <= self@.len())]
         #[ensures((^self)@.len() == self@.len())]
         #[ensures(self@.subsequence(0, mid@) == result.0@)]
@@ -376,6 +385,15 @@ extern_spec! {
         #[ensures((^self)@.subsequence(0, mid@) == (^result.0)@)]
         #[ensures((^self)@.subsequence(mid@, self@.len()) == (^result.1)@)]
         fn split_at_mut(&mut self, mid: usize) -> (&mut [T], &mut [T]);
+
+        #[check(ghost)]
+        #[ensures(
+            <[T]>::split_at_mut.precondition((self, mid))
+            ==> exists<l, r> result == Some((l, r)) &&
+                <[T]>::split_at_mut.postcondition((self, mid), (l, r))
+        )]
+        #[ensures(<[T]>::split_at_mut.precondition((self, mid)) || result == None)]
+        fn split_at_mut_checked(&mut self, mid: usize) -> Option<(&mut [T], &mut [T])>;
 
         #[check(ghost)]
         #[ensures(match result {
