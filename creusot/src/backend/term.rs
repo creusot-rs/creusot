@@ -178,7 +178,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 Exp::qvar(name::seq_create())
                     .app([Exp::int(elts.len() as i128), Exp::FunLiteral(elts)])
             }
-            TermKind::Cast { box arg } => {
+            TermKind::Cast { arg } => {
                 let argty = arg.ty;
                 let arg = self.lower_term(arg);
                 match argty.kind() {
@@ -226,7 +226,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 term.span,
             )),
             TermKind::Var(v) => Exp::var(v.0),
-            TermKind::Binary { op, box lhs, box rhs } => {
+            TermKind::Binary { op, lhs, rhs } => {
                 let lhs = self.lower_term(lhs);
                 let rhs = self.lower_term(rhs);
 
@@ -237,11 +237,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
                 Exp::BinaryOp(binop_to_binop(*op), lhs.boxed(), rhs.boxed())
             }
-            TermKind::Unary { op: UnOp::Neg, box arg } => {
+            TermKind::Unary { op: UnOp::Neg, arg } => {
                 self.names.import_prelude_module(PreMod::Int);
                 Exp::UnaryOp(WUnOp::Neg, self.lower_term(arg).boxed())
             }
-            TermKind::Unary { op: UnOp::Not, box arg } => {
+            TermKind::Unary { op: UnOp::Not, arg } => {
                 Exp::UnaryOp(WUnOp::Not, self.lower_term(arg).boxed())
             }
             TermKind::Call { id, .. } if is_new_namespace(self.ctx.tcx, *id) => {
@@ -299,22 +299,22 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let fields = fields.into_iter().map(|f| self.lower_term(f)).collect();
                 constructor(self.names, fields, adt.variant(*variant).def_id, subst)
             }
-            TermKind::Cur { box term } => {
+            TermKind::Cur { term } => {
                 assert!(term.ty.is_mutable_ptr() && term.ty.is_ref());
                 self.names.import_prelude_module(PreMod::MutBor);
                 self.lower_term(term).field(Name::Global(name::current()))
             }
-            TermKind::Fin { box term } => {
+            TermKind::Fin { term } => {
                 self.names.import_prelude_module(PreMod::MutBor);
                 self.lower_term(term).field(Name::Global(name::final_()))
             }
-            TermKind::Impl { box lhs, box rhs } => {
+            TermKind::Impl { lhs, rhs } => {
                 self.lower_term(lhs).implies(self.lower_term(rhs))
             }
             TermKind::Old { .. } => {
                 self.ctx.crash_and_error(term.span, "`old` is not allowed here")
             }
-            TermKind::Match { box scrutinee, arms } => {
+            TermKind::Match { scrutinee, arms } => {
                 // Pearlite matches are non-empty.
                 if let PatternKind::Bool(b0) = arms[0].0.kind {
                     let (true_br, false_br) =
@@ -331,7 +331,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     )
                 }
             }
-            TermKind::Let { pattern, box arg, box body } => {
+            TermKind::Let { pattern, arg, body } => {
                 let pattern = self.lower_pat(pattern);
                 let arg = self.lower_term(arg).boxed();
                 let body = self.lower_term(body);
@@ -358,7 +358,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                         .collect(),
                 }
             }
-            TermKind::Projection { box lhs, idx } => {
+            TermKind::Projection { lhs, idx } => {
                 let lhs_low = self.lower_term(lhs);
 
                 match lhs.ty.kind() {
@@ -474,7 +474,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
             }
             PatternKind::Wildcard => WPattern::Wildcard,
-            PatternKind::Binder(name, box Pattern { kind: PatternKind::Wildcard, .. }) => {
+            PatternKind::Binder(name, Pattern { kind: PatternKind::Wildcard, .. }) => {
                 WPattern::VarP(name.0)
             }
             PatternKind::Binder(name, pat) => WPattern::As(Box::new(self.lower_pat(pat)), name.0),

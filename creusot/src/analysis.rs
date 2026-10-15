@@ -697,7 +697,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
         self.update_final_two_phases(loc);
         use mir::StatementKind::*;
         match statement.kind {
-            Assign(box (pl, ref rvalue)) => {
+            Assign((pl, ref rvalue)) => {
                 self.analyze_assign(rvalue, loc, statement.source_info);
 
                 // We first evaluate the RHS and resolve places that need to be resolved after RHS eval.
@@ -747,7 +747,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
         {
             self.check_final(pl, loc)
         }
-        if let mir::Rvalue::Aggregate(box mir::AggregateKind::Closure(def_id, _), _) = rvalue
+        if let mir::Rvalue::Aggregate(mir::AggregateKind::Closure(def_id, _), _) = rvalue
             && let Some(term) = self
                 .body_specs
                 .invariant_assertions

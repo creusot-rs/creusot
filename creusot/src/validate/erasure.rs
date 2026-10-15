@@ -1345,7 +1345,7 @@ fn is_erasable(tcx: TyCtxt, thir: &Thir, expr: ExprId) -> bool {
     loop {
         match expr.kind {
             ExprKind::Scope { value, .. } => expr = &thir[value],
-            ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
+            ExprKind::Closure(thir::ClosureExpr { closure_id, .. }) => {
                 let closure_id = closure_id.to_def_id();
                 return is_spec(tcx, closure_id)
                     || is_erasure(tcx, closure_id)

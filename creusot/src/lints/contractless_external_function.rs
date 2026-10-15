@@ -1,4 +1,4 @@
-use rustc_session::declare_tool_lint;
+use rustc_lint_defs::declare_tool_lint;
 
 declare_tool_lint! {
     /// The `contractless_external_function` lint warns when calling a function from
