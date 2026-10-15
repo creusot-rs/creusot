@@ -12,7 +12,33 @@ pub fn indirect_trig(x: Int) -> Int {
 }
 
 #[logic]
-#[ensures(result == 3)]
+#[ensures(result == 9)]
 pub fn use_indirect() -> Int {
-    indirect() + indirect_trig(0)
+    indirect()
+        + indirect_trig(0)
+        + <() as Trait>::indirect()
+        + <() as Trait>::indirect_trig(0)
+        + <() as Trait>::decl(())
+}
+
+pub trait Trait {
+    #[logic(indirect)]
+    fn indirect() -> Int {
+        3
+    }
+
+    #[logic(#[trigger(x + 1)] indirect)]
+    fn indirect_trig(x: Int) -> Int {
+        x
+    }
+
+    #[logic]
+    fn decl(self) -> Int;
+}
+
+impl Trait for () {
+    #[logic(#[trigger(self)]indirect)]
+    fn decl(self) -> Int {
+        3
+    }
 }

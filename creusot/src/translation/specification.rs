@@ -361,15 +361,11 @@ pub(crate) fn contract_clauses_of(
         ProgramPurity::Impure
     };
 
-<<<<<<< HEAD
-    Ok(ContractClauses { requires, ensures, alias, variant, purity })
-=======
     let indirect_trig = creusot_clause_attrs(ctx.tcx, def_id, "indirect")
         .map(get_creusot_item)
         .next()
         .transpose()?;
-    Ok(ContractClauses { requires, ensures, variant, purity, indirect_trig })
->>>>>>> 65d340122 (improve indirect trigger implementation)
+    Ok(ContractClauses { requires, ensures, variant, purity, alias, indirect_trig })
 }
 
 pub(crate) fn inherited_extern_spec<'tcx, 'a>(

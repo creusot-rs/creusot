@@ -15,7 +15,7 @@ use syn::{
     Attribute, Error, Ident, Item, Result, Signature, Token, VisRestricted, Visibility, braced,
     parenthesized,
     parse::{Parse, ParseStream},
-    parse_macro_input, parse_quote,
+    parse_macro_input,
     punctuated::Punctuated,
     spanned::Spanned as _,
 };
@@ -112,7 +112,7 @@ pub fn logic(in_tags: TS1, tokens: TS1) -> TS1 {
             if let Some(open_toks) = open_toks {
                 body.stmts.insert(0, pearlite_syn::TermStmt::Item(Item::Verbatim(open_toks)));
             }
-            let mut companion = TokenStream::new();
+
             if let Some((name, term_with_trig)) = term_with_trig {
                 let term = pretyping::encode_term_with_triggers(&term_with_trig);
                 let toks = super::specs::fn_spec_item(
@@ -120,30 +120,12 @@ pub fn logic(in_tags: TS1, tokens: TS1) -> TS1 {
                     super::specs::FnSpecResultKind::NoResult,
                     term,
                 );
-
-                let mut trigger_sig = sig.clone();
-                trigger_sig.ident = name;
-                trigger_sig.output = match trigger_sig.output {
-                    syn::ReturnType::Default => parse_quote!(-> ::core::marker::PhantomData<()>),
-                    syn::ReturnType::Type(rarrow, ty) => {
-                        parse_quote!(#rarrow ::core::marker::PhantomData<#ty>)
-                    }
-                };
-                companion = quote! {
-                    #[creusot::no_translate]
-                    #[doc(hidden)]
-                    #[allow(unused)]
-                    #trigger_sig {
-                        #toks
-                        ::core::marker::PhantomData
-                    }
-                };
+                body.stmts.insert(0, pearlite_syn::TermStmt::Item(Item::Verbatim(toks)));
             }
+
             let req_body = pretyping::encode_block(&body);
 
             TS1::from(quote_spanned! {span =>
-                #companion
-
                 #tags_toks
                 #(#attrs)*
                 #documentation
