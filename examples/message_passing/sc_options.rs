@@ -11,10 +11,7 @@ use creusot_std::{
     prelude::*,
     std::{
         sync::{
-            atomic_sc::{
-                AtomicBool,
-                ordering::{self, SeqCst},
-            },
+            atomic_sc::{AtomicBool, ordering::SeqCst},
             committer::Committer,
         },
         thread,
@@ -24,8 +21,8 @@ use std::mem::swap;
 
 declare_namespace! { MESSAGE_PASSING }
 
-type LoadCommitter = Committer<AtomicBool, bool, SeqCst, ordering::None>;
-type StoreCommitter = Committer<AtomicBool, bool, ordering::None, SeqCst>;
+type LoadCommitter = Committer<AtomicBool, bool, SeqCst, ()>;
+type StoreCommitter = Committer<AtomicBool, bool, (), SeqCst>;
 
 struct MPInv {
     flag_perm: Perm<AtomicBool>,

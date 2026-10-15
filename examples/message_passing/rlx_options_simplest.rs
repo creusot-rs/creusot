@@ -8,10 +8,7 @@ use creusot_std::{
     prelude::*,
     std::{
         sync::{
-            atomic::{
-                AtomicBool,
-                ordering::{self, Relaxed},
-            },
+            atomic::{AtomicBool, ordering::Relaxed},
             committer::Committer,
             view::{HasTimestamp, ReleaseSyncView, SyncView, Timestamp},
         },
@@ -21,8 +18,8 @@ use creusot_std::{
 
 declare_namespace! { MESSAGE_PASSING }
 
-type LoadCommitter = Committer<AtomicBool, bool, Relaxed, ordering::None>;
-type StoreCommitter = Committer<AtomicBool, bool, ordering::None, Relaxed>;
+type LoadCommitter = Committer<AtomicBool, bool, Relaxed, ()>;
+type StoreCommitter = Committer<AtomicBool, bool, (), Relaxed>;
 
 struct MPInv {
     flag_perm: Perm<AtomicBool>,

@@ -45,12 +45,16 @@ impl<T> JoinHandleExt<T> for ScopedJoinHandle<'_, T> {
 
 extern_spec! {
     impl<T> JoinHandle<T> {
-        #[ensures(true)] // no spec, but you can call this if you want
+        // We give no spec to this function, because it can return `true` if the thread has panicked.
+        // But you can call this if you want.
+        #[ensures(true)]
         fn is_finished(&self) -> bool;
     }
 
     impl<T> ScopedJoinHandle<'_, T> {
-        #[ensures(true)] // no spec, but you can call this if you want
+        // We give no spec to this function, because it can return `true` if the thread has panicked.
+        // But you can call this if you want.
+        #[ensures(true)]
         fn is_finished(&self) -> bool;
     }
 }

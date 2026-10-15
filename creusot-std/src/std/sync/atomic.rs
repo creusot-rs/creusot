@@ -24,8 +24,6 @@ pub mod ordering {
         type Store: StoreOrdering;
     }
 
-    pub struct None;
-
     macro_rules! impl_ordering {
         ( $order:ident, load = $load:ident, store = $store:ident ) => {
             pub struct $order;
@@ -163,7 +161,7 @@ macro_rules! impl_atomic {
             where
                 F: FnGhost + FnOnce(Result<
                     &mut Committer<Self, $type, Success::Load, Success::Store>,
-                    &Committer<Self, $type, Failure, ordering::None>
+                    &Committer<Self, $type, Failure, ()>
                 >,
             )
             {
@@ -178,7 +176,7 @@ macro_rules! impl_atomic {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::compare_exchange_weak`].")]
             #[doc = ""]
             #[doc = "The load and the store are always sequentially consistent."]
-            #[requires(forall<c: &mut Committer<Self, $type, _, _>> // TODO: [VL] Wrong permission here (Success == Ordering::RelAcq)
+            #[requires(forall<c: &mut Committer<Self, $type, _, _>>
                 !c.shot_store() ==> c.ward() == *self ==>
                 c.val_load().deep_model() == current.deep_model() ==>
                 c.val_store() == new ==>
@@ -208,7 +206,7 @@ macro_rules! impl_atomic {
             where
                 F: FnGhost + FnOnce(Result<
                     &mut Committer<Self, $type, Success::Load, Success::Store>,
-                    &Committer<Self, $type, Failure, ordering::None>
+                    &Committer<Self, $type, Failure, ()>
                 >,
             )
             {
@@ -221,10 +219,10 @@ macro_rules! impl_atomic {
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::load`].")]
-            #[requires(forall<c: &Committer<Self, $type, Load, ordering::None>>
+            #[requires(forall<c: &Committer<Self, $type, Load, ()>>
                 !c.shot_store() ==> c.ward() == *self ==> f.precondition((c,))
             )]
-            #[ensures(exists<c: &Committer<Self, $type, Load, ordering::None>>
+            #[ensures(exists<c: &Committer<Self, $type, Load, ()>>
                 !c.shot_store() && c.ward() == *self && c.val_load() == result && f.postcondition_once((c,), ())
             )]
             #[inline(always)]
@@ -232,18 +230,18 @@ macro_rules! impl_atomic {
             #[allow(unused_variables)]
             pub fn load<F, Load: LoadOrdering>(&self, f: Ghost<F>) -> $type
             where
-                F: FnGhost + FnOnce(&Committer<Self, $type, Load, ordering::None>),
+                F: FnGhost + FnOnce(&Committer<Self, $type, Load, ()>),
             {
                 // TODO: [VL] Do this check inside the macro_rules
                 self.0.load(if cfg!(feature = "sc-drf") { SEQ_CST } else { Load::ORDERING })
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::store`].")]
-            #[requires(forall<c: &mut Committer<Self, $type, ordering::None, Store>>
+            #[requires(forall<c: &mut Committer<Self, $type, (), Store>>
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val ==>
                 f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot_store())
             )]
-            #[ensures(exists<c: &mut Committer<Self, $type, ordering::None, Store>>
+            #[ensures(exists<c: &mut Committer<Self, $type, (), Store>>
                 !c.shot_store() && c.ward() == *self && c.val_store() == val &&
                 f.postcondition_once((c,), ())
             )]
@@ -252,7 +250,7 @@ macro_rules! impl_atomic {
             #[allow(unused_variables)]
             pub fn store<F, Store: StoreOrdering>(&self, val: $type, f: Ghost<F>)
             where
-                F: FnGhost + FnOnce(&mut Committer<Self, $type, ordering::None, Store>),
+                F: FnGhost + FnOnce(&mut Committer<Self, $type, (), Store>),
             {
                 self.0.store(
                     val,

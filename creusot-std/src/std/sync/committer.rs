@@ -29,9 +29,13 @@ impl<C: PermTarget, T, Load, Store> Committer<C, T, Load, Store> {
         dead
     }
 
-    /// Timestamp of the latest load, before any store.
+    /// Timestamp used for the atomic operation.
+    /// For a load operation, this is the timestamp of the value read.
+    /// For a store operation, this is the **predecessor** of the timestamp of the value written.
     ///
-    /// This is used for an update operation.
+    /// The use of the predecessor for store operations allows us to use the same logical function for
+    /// the timestamp for both the load and the store in a read-modify-write operation. Indeed, in the case of
+    /// a read-modify-write operation, the timestamp of the store is the successor of the timestamp of the load.
     #[logic(opaque)]
     pub fn timestamp(self) -> Timestamp {
         dead
@@ -88,7 +92,7 @@ where
     ///
     /// This does the read on the atomic in ghost code.
     #[requires(!self.shot_store())]
-    #[requires(self.ward() == *(*own).ward())]
+    #[requires(self.ward() == *own.ward())]
     #[ensures(*sync_view <= ^sync_view)]
     #[ensures(self.ward().get_timestamp(*sync_view) <= self.timestamp())]
     #[ensures(self.timestamp() <= self.ward().get_timestamp(^sync_view))]
@@ -109,7 +113,7 @@ where
     ///
     /// This does the read on the atomic in ghost code.
     #[requires(!self.shot_store())]
-    #[requires(self.ward() == *(*own).ward())]
+    #[requires(self.ward() == *own.ward())]
     #[ensures(*sync_view <= ^sync_view)]
     #[ensures(self.ward().get_timestamp(*sync_view) <= self.timestamp())]
     #[ensures(self.timestamp() <= self.ward().get_timestamp(^sync_view))]
@@ -135,7 +139,7 @@ where
     ///
     /// This does the read on the atomic in ghost code.
     #[requires(!self.shot_store())]
-    #[requires(self.ward() == *(*own).ward())]
+    #[requires(self.ward() == *own.ward())]
     #[ensures(self.val_load() == own.val())]
     #[check(ghost)]
     #[trusted]
