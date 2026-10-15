@@ -26,7 +26,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         self.resolve_at(loc, si.span);
         self.activate_two_phases(loc, si.span);
         match statement.kind {
-            StatementKind::Assign(box (pl, ref rv)) => {
+            StatementKind::Assign((pl, ref rv)) => {
                 self.translate_assign(si, pl, rv, loc);
             }
 
@@ -61,7 +61,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         let rval: RValue<'tcx> = match rvalue {
             Rvalue::Use(op, _) => match op {
                 Move(_pl) | Copy(_pl) => RValue::Operand(self.translate_operand(op, span)),
-                Constant(box c) => {
+                Constant(c) => {
                     if let TyKind::Closure(def_id, _) = c.const_.ty().peel_refs().kind()
                         && is_snapshot_closure(self.tcx(), *def_id)
                     {
@@ -101,11 +101,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                 }
             },
             Rvalue::Discriminant(_) => return,
-            Rvalue::BinaryOp(op, box (l, r)) => {
+            Rvalue::BinaryOp(op, (l, r)) => {
                 RValue::BinOp(*op, self.translate_operand(l, span), self.translate_operand(r, span))
             }
             Rvalue::UnaryOp(op, v) => RValue::UnaryOp(*op, self.translate_operand(v, span)),
-            Rvalue::Aggregate(box kind, ops) => {
+            Rvalue::Aggregate(kind, ops) => {
                 use rustc_middle::mir::AggregateKind::*;
                 let fields = ops.iter().map(|op| self.translate_operand(op, span)).collect();
 

@@ -1,4 +1,4 @@
-use rustc_session::declare_tool_lint;
+use rustc_lint_defs::declare_tool_lint;
 
 declare_tool_lint! {
     /// The `result_param` lint warns when a function parameter is named `result`.

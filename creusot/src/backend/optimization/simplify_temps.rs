@@ -303,7 +303,7 @@ impl<'tcx> BlockPropagator<'_, 'tcx> {
         for (_, st) in self.state.0.iter_mut() {
             if let LocalState::Op(op, _) = st {
                 let mut op = op;
-                while let Operand::ShrBorrow(box o) = op {
+                while let Operand::ShrBorrow(o) = op {
                     op = o
                 }
                 match op {

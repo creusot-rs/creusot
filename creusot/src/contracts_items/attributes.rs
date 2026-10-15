@@ -5,7 +5,8 @@ use rustc_ast::{
     token::TokenKind,
     tokenstream::{TokenStream, TokenTree},
 };
-use rustc_hir::{AttrArgs, Attribute, def::DefKind, def_id::DefId};
+use rustc_attr_ir::{AttrArgs, Attribute};
+use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::{Span, Symbol};
 use why3::{

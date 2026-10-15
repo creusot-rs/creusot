@@ -293,7 +293,7 @@ impl ChangedPlacesTree {
         match (self, t) {
             (Self::Changed, _) => (),
             (s, Self::Changed) => *s = Self::Changed,
-            (Self::Deref(box s), Self::Deref(box t)) => s.merge(t),
+            (Self::Deref(s), Self::Deref(t)) => s.merge(*t),
             (Self::Fields(flds), Self::Fields(fldt)) => {
                 for (s, t) in flds.iter_mut().zip_eq(fldt) {
                     match (s, t) {
@@ -394,7 +394,7 @@ impl TyInvPlacesTree {
             (Self::Top, _) | (_, Self::TyInv) => (),
             (s, Self::Top) => *s = Self::Top,
             (s @ Self::TyInv, other) => *s = other.clone(),
-            (Self::Deref(box s), Self::Deref(box o)) => s.join(o),
+            (Self::Deref(s), Self::Deref(o)) => s.join(o),
             (Self::Fields(flds), Self::Fields(fldo)) => {
                 for (s, o) in flds.iter_mut().zip_eq(fldo) {
                     s.join(o)
@@ -429,7 +429,7 @@ impl TyInvPlacesTree {
                     *self = Self::Deref(Box::new(Self::Top))
                 }
 
-                let Self::Deref(box s) = self else { unreachable!() };
+                let Self::Deref(s) = self else { unreachable!() };
                 s.write(ctx, it, leaf);
 
                 if let Self::TyInv = s {
@@ -595,7 +595,7 @@ impl TyInvPlacesTree {
             Self::Deref(s) => {
                 let changed = match changed {
                     ChangedPlacesTree::Changed => &ChangedPlacesTree::Changed,
-                    ChangedPlacesTree::Deref(box d) => d,
+                    ChangedPlacesTree::Deref(d) => d,
                     _ => unreachable!(),
                 };
                 projection.push(ProjectionElem::Deref);

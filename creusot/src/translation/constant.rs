@@ -281,7 +281,7 @@ fn simple_body_const<'tcx>(
     if block.statements.len() != 1 || !matches!(block.terminator().kind, TerminatorKind::Return) {
         return None;
     }
-    let mir::StatementKind::Assign(box (lhs, rhs)) = &block.statements[0].kind else { return None };
+    let mir::StatementKind::Assign((lhs, rhs)) = &block.statements[0].kind else { return None };
     if lhs.local != mir::Local::from_u32(0) || lhs.projection.len() != 0 {
         return None;
     }
