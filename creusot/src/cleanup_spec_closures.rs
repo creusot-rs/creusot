@@ -117,14 +117,14 @@ fn cleanup_statements<'tcx>(body: &mut Body<'tcx>, unused: &IndexSet<Local>) -> 
                 !unused.contains(local)
             }
             StatementKind::PlaceMention(place) => !unused.contains(&place.local),
-            StatementKind::Assign(box (place, rvalue)) => {
+            StatementKind::Assign((place, rvalue)) => {
                 let dropped = unused.contains(&place.local);
                 if dropped {
                     assigns.entry(place.local).or_insert(Vec::new()).push((*place, rvalue.clone()));
                 }
                 !dropped
             }
-            StatementKind::FakeRead(box (_, place)) => !unused.contains(&place.local),
+            StatementKind::FakeRead((_, place)) => !unused.contains(&place.local),
             _ => true,
         })
     }
@@ -136,7 +136,7 @@ fn restore_statements<'tcx>(body: &mut Body<'tcx>, mut removed: RemovedMir<'tcx>
         let old_statements = std::mem::take(&mut data.statements);
         for mut s in old_statements {
             if let Some((_, rvalue)) = s.kind.as_assign_mut()
-                && let Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), substs) = rvalue
+                && let Rvalue::Aggregate(AggregateKind::Closure(def_id, _), substs) = rvalue
                 && let Some(old_substs) = removed.closures.remove(def_id)
             {
                 *substs = old_substs;
@@ -199,7 +199,7 @@ impl<'tcx> MutVisitor<'tcx> for NoTranslateNoMoves<'tcx> {
 
     fn visit_rvalue(&mut self, rvalue: &mut Rvalue<'tcx>, l: Location) {
         match rvalue {
-            Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), substs) => {
+            Rvalue::Aggregate(AggregateKind::Closure(def_id, _), substs) => {
                 if is_no_translate(self.tcx, *def_id) {
                     for p in substs.iter() {
                         if p.is_move() {
@@ -232,8 +232,8 @@ pub fn remove_ghost_closures<'tcx>(tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
             statement: &mut rustc_middle::mir::Statement<'tcx>,
             _: Location,
         ) {
-            let StatementKind::Assign(box (_, rhs)) = &statement.kind else { return };
-            let Rvalue::Aggregate(box AggregateKind::Closure(def_id, _), _) = rhs else {
+            let StatementKind::Assign((_, rhs)) = &statement.kind else { return };
+            let Rvalue::Aggregate(AggregateKind::Closure(def_id, _), _) = rhs else {
                 return;
             };
             if is_no_translate(self.tcx, *def_id) {

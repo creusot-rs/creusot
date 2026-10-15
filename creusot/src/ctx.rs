@@ -44,10 +44,11 @@ use rustc_infer::traits::ObligationCause;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::Promoted,
+    middle::resolve::ResolverAstLowering,
     thir,
     ty::{
         self, Clause, FieldDef, GenericArg, GenericArgsRef, ParamEnv, Predicate,
-        ResolverAstLowering, Ty, TyCtxt, TypingEnv, TypingMode, Visibility,
+        Ty, TyCtxt, TypingEnv, TypingMode, Visibility,
     },
 };
 use rustc_span::{DUMMY_SP, Span, Symbol};

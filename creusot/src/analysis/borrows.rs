@@ -129,7 +129,7 @@ impl<'tcx> Analysis<'tcx> for Borrows<'_, '_, 'tcx> {
         self.kill_loans_out_of_scope_at_location(trans, location);
 
         match &stmt.kind {
-            mir::StatementKind::Assign(box (lhs, rhs)) => {
+            mir::StatementKind::Assign((lhs, rhs)) => {
                 if let mir::Rvalue::Ref(_, _, place) = rhs {
                     if !place.ignore_borrow(
                         self.tcx,
