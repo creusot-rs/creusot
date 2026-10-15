@@ -49,8 +49,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             &Call { ref func, ref args, destination, mut target, fn_span, .. } => {
                 let &TyKind::FnDef(fun_def_id, subst) = func.ty(self.body, self.tcx()).kind()
                 else {
-                    self.fatal_error(fn_span, "unsupported function call type");
-                    unreachable!()
+                    self.fatal_error(fn_span, "unsupported function call type").emit_fatal()
                 };
                 let subst = subst.skip_binder();
                 if Intrinsic::SnapshotFromFn.is(self.ctx, fun_def_id) {

@@ -6,7 +6,7 @@ use rustc_abi::Size;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::{self, ConstOperand, ConstValue, TerminatorKind, interpret::AllocRange},
-    ty::{self, AliasConstKind, ConstKind, Ty, TyCtxt, TypingEnv, consts::ConstExt},
+    ty::{self, AliasConstKind, ConstKind, Ty, TyCtxt, TypingEnv},
 };
 use rustc_span::Span;
 
