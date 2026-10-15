@@ -87,3 +87,16 @@ mod visibility_regression {
         pub(in crate::visibility_regression) struct AncestorVisibleStruct {}
     }
 }
+
+#[derive(DeepModel)]
+pub struct StructWithPrivField(u32);
+
+#[derive(DeepModel)]
+pub struct StructWithPubCrateField(pub(crate) u32);
+
+mod encapsulation {
+    use creusot_std::prelude::*;
+
+    #[derive(DeepModel)]
+    pub struct StructWithPubSuperField(pub(super) u32);
+}
