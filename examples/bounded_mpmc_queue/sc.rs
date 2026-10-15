@@ -14,10 +14,7 @@ use creusot_std::{
     logic::Id,
     prelude::*,
     std::sync::{
-        atomic_sc::{
-            AtomicUsize,
-            ordering::{self, SeqCst},
-        },
+        atomic_sc::{AtomicUsize, ordering::SeqCst},
         committer::Committer,
     },
 };
@@ -790,7 +787,7 @@ impl<T> Queue<T> {
     #[requires(*cell_own.ward() == inv.cells[inv.mod_len(token.index())].item)]
     fn try_enqueue_store_inv(
         mut inv: Ghost<&mut QueueInv<T>>,
-        mut c: Ghost<&mut Committer<AtomicUsize, usize, ordering::None, SeqCst>>,
+        mut c: Ghost<&mut Committer<AtomicUsize, usize, (), SeqCst>>,
         token: Ghost<tokens::TokenW<T>>,
         cell_own: Ghost<PermPCell<T>>,
     ) {
@@ -1008,7 +1005,7 @@ impl<T> Queue<T> {
     #[requires(*cell_own.ward() == inv.cells[inv.mod_len(token.index())].item)]
     fn try_dequeue_store_inv(
         mut inv: Ghost<&mut QueueInv<T>>,
-        mut c: Ghost<&mut Committer<AtomicUsize, usize, ordering::None, SeqCst>>,
+        mut c: Ghost<&mut Committer<AtomicUsize, usize, (), SeqCst>>,
         token: Ghost<tokens::TokenR<T>>,
         cell_own: Ghost<PermPCell<T>>,
     ) {

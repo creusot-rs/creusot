@@ -3,9 +3,9 @@ module M_fetch_add
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   
-  type t_Committer_AtomicI32_i32_SeqCst_None
+  type t_Committer_AtomicI32_i32_SeqCst_unit
   
-  let closure2 [@coma:extspec] (self: ()) (_0: t_Committer_AtomicI32_i32_SeqCst_None) (return (x: ())) = bb0
+  let closure2 [@coma:extspec] (self: ()) (_0: t_Committer_AtomicI32_i32_SeqCst_unit) (return (x: ())) = bb0
     [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure2'pre
@@ -33,39 +33,39 @@ module M_fetch_add
   
   meta "rewrite_def" predicate inv_ref_AtomicI32
   
-  predicate shot_store_AtomicI32 (self: t_Committer_AtomicI32_i32_SeqCst_None)
+  predicate shot_store_AtomicI32 (self: t_Committer_AtomicI32_i32_SeqCst_unit)
   
-  function ward_AtomicI32 (self: t_Committer_AtomicI32_i32_SeqCst_None) : t_AtomicI32
+  function ward_AtomicI32 (self: t_Committer_AtomicI32_i32_SeqCst_unit) : t_AtomicI32
   
-  predicate precondition_closure2 (self: ()) (args: t_Committer_AtomicI32_i32_SeqCst_None) =
+  predicate precondition_closure2 (self: ()) (args: t_Committer_AtomicI32_i32_SeqCst_unit) =
     let _0 = args in closure2'pre self _0
   
   meta "rewrite_def" predicate precondition_closure2
   
-  predicate precondition_FnGhostWrapper_closure2 (self: t_FnGhostWrapper_closure2) (args: t_Committer_AtomicI32_i32_SeqCst_None) =
+  predicate precondition_FnGhostWrapper_closure2 (self: t_FnGhostWrapper_closure2) (args: t_Committer_AtomicI32_i32_SeqCst_unit) =
     precondition_closure2 self.f0 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure2
   
-  function val_load_AtomicI32 (self: t_Committer_AtomicI32_i32_SeqCst_None) : Int32.t
+  function val_load_AtomicI32 (self: t_Committer_AtomicI32_i32_SeqCst_unit) : Int32.t
   
-  predicate postcondition_once_closure2 (self: ()) (args: t_Committer_AtomicI32_i32_SeqCst_None) (result: ()) =
+  predicate postcondition_once_closure2 (self: ()) (args: t_Committer_AtomicI32_i32_SeqCst_unit) (result: ()) =
     let _0 = args in closure2'post'return self _0 result
   
   meta "rewrite_def" predicate postcondition_once_closure2
   
-  predicate postcondition_once_FnGhostWrapper_closure2 (self: t_FnGhostWrapper_closure2) (args: t_Committer_AtomicI32_i32_SeqCst_None) (result: ()) =
+  predicate postcondition_once_FnGhostWrapper_closure2 (self: t_FnGhostWrapper_closure2) (args: t_Committer_AtomicI32_i32_SeqCst_unit) (result: ()) =
     postcondition_once_closure2 self.f0 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure2
   
   let load_FnGhostWrapper_closure2 (self: t_AtomicI32) (f: t_FnGhostWrapper_closure2) (return (x: Int32.t)) =
   {[@stop_split] [@expl:load_FnGhostWrapper_closure2 requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicI32 self)
-    /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicI32_i32_SeqCst_None. not shot_store_AtomicI32 c
+    /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicI32_i32_SeqCst_unit. not shot_store_AtomicI32 c
       -> ward_AtomicI32 c = self -> precondition_FnGhostWrapper_closure2 f c)}
     any
     [ return (result: Int32.t) ->
-    {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicI32_i32_SeqCst_None. not shot_store_AtomicI32 c
+    {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicI32_i32_SeqCst_unit. not shot_store_AtomicI32 c
         /\ ward_AtomicI32 c = self
         /\ val_load_AtomicI32 c = result /\ postcondition_once_FnGhostWrapper_closure2 f c ()}
       (! return {result}) ]
@@ -122,9 +122,9 @@ module M_fetch_add
   
   type t_Committer_AtomicI32_i32_SeqCst_SeqCst
   
-  type t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None =
+  type t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_unit =
     | Ok (MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst)
-    | Err t_Committer_AtomicI32_i32_SeqCst_None
+    | Err t_Committer_AtomicI32_i32_SeqCst_unit
   
   predicate resolve_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst [@inline:trivial] (_1: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) =
     _1.final = _1.current
@@ -160,7 +160,7 @@ module M_fetch_add
   
   meta "rewrite_def" predicate resolve_refmut_closure6
   
-  let elim_Ok (_x: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None)
+  let elim_Ok (_x: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_unit)
     (return (f0'0: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst)) = any
     [ _k (f0'0: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) -> {Ok f0'0 = _x} (! return {f0'0})
     | _chk -> (! {[@expl:elim Ok] match _x with
@@ -221,12 +221,12 @@ module M_fetch_add
   predicate hist_inv_closure6 (self: closure6) (result_state: closure6) = result_state.c0.final = self.c0.final
   
   let closure6 [@coma:extspec] (self: MutBorrow.t closure6)
-    (c: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None)
+    (c: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_unit)
     (return (x: ())) = {[@stop_split] [@expl:closure 'self' type invariant] inv_refmut_closure6 self}
     bb0
     [ bb0 = any
       [ br0 (x0: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst) -> {c = Ok x0} (! bb2)
-      | br1 (x0: t_Committer_AtomicI32_i32_SeqCst_None) -> {c = Err x0} (! bb7) ]
+      | br1 (x0: t_Committer_AtomicI32_i32_SeqCst_unit) -> {c = Err x0} (! bb7) ]
     | bb7 = s0
       [ s0 = -{match c with
           | Ok x -> resolve_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst x
@@ -264,7 +264,7 @@ module M_fetch_add
       | s14 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t closure6 = self
-    | & c: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None = c
+    | & c: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_unit = c
     | & c'0: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst = Any.any_l ()
     | & _5: t_F = Any.any_l ()
     | & _6: t_Option_F = Any.any_l ()
@@ -328,13 +328,13 @@ module M_fetch_add
   
   function val_store_AtomicI32 (self: t_Committer_AtomicI32_i32_SeqCst_SeqCst) : Int32.t
   
-  predicate precondition_closure6 (self: closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None) =
+  predicate precondition_closure6 (self: closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_unit) =
     let c = args in forall bor_self: MutBorrow.t closure6. bor_self.current = self /\ inv_closure6 bor_self.final
       -> closure6'pre bor_self c
   
   meta "rewrite_def" predicate precondition_closure6
   
-  predicate precondition_FnGhostWrapper_closure6 (self: t_FnGhostWrapper_closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None) =
+  predicate precondition_FnGhostWrapper_closure6 (self: t_FnGhostWrapper_closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_unit) =
     precondition_closure6 self.f0'0 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure6
@@ -347,14 +347,14 @@ module M_fetch_add
   
   meta "rewrite_def" predicate resolve_closure6
   
-  predicate postcondition_once_closure6 (self: closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None) (result: ()) =
+  predicate postcondition_once_closure6 (self: closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_unit) (result: ()) =
     let c = args in exists e: closure6. (exists bor_self: MutBorrow.t closure6. bor_self.current = self
           /\ bor_self.final = e /\ closure6'post'return bor_self c result /\ hist_inv_closure6 self e)
       /\ resolve_closure6 e
   
   meta "rewrite_def" predicate postcondition_once_closure6
   
-  predicate postcondition_once_FnGhostWrapper_closure6 (self: t_FnGhostWrapper_closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_None) (result: ()) =
+  predicate postcondition_once_FnGhostWrapper_closure6 (self: t_FnGhostWrapper_closure6) (args: t_Result_refmut_Committer_AtomicI32_i32_SeqCst_SeqCst_ref_Committer_AtomicI32_i32_SeqCst_unit) (result: ()) =
     postcondition_once_closure6 self.f0'0 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure6
@@ -369,7 +369,7 @@ module M_fetch_add
         -> val_store_AtomicI32 c.current = new
         -> precondition_FnGhostWrapper_closure6 f (Ok c)
         /\ (postcondition_once_FnGhostWrapper_closure6 f (Ok c) () -> shot_store_AtomicI32'0 c.final))
-    /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicI32_i32_SeqCst_None. not shot_store_AtomicI32 c
+    /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicI32_i32_SeqCst_unit. not shot_store_AtomicI32 c
       -> ward_AtomicI32 c = self -> precondition_FnGhostWrapper_closure6 f (Err c))}
     any
     [ return (result: t_Result_i32_i32) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
@@ -378,7 +378,7 @@ module M_fetch_add
           /\ deep_model_i32 (val_load_AtomicI32'0 c.current) = deep_model_i32 current'
           /\ val_store_AtomicI32 c.current = new
           /\ result'0 = val_load_AtomicI32'0 c.current /\ postcondition_once_FnGhostWrapper_closure6 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicI32_i32_SeqCst_None. not shot_store_AtomicI32 c
+        | Err'0 result'0 -> exists c: t_Committer_AtomicI32_i32_SeqCst_unit. not shot_store_AtomicI32 c
           /\ ward_AtomicI32 c = self
           /\ result'0 = val_load_AtomicI32 c /\ postcondition_once_FnGhostWrapper_closure6 f (Err c) ()
         end}
