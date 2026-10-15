@@ -1,3 +1,4 @@
+use super::visibility;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, quote_spanned};
 use syn::{
@@ -9,6 +10,9 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     let input = parse_macro_input!(input as DeriveInput);
 
     let name = input.ident;
+
+    let non_exhaustive_attr =
+        input.attrs.iter().find(|attr| attr.path().is_ident("non_exhaustive")).cloned();
 
     let generics = add_trait_bounds(input.generics);
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
@@ -30,7 +34,7 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
             Err(e) => return e.to_compile_error().into(),
         };
 
-        (ident.into(), Some(quote! { #vis #deep_model_ty }))
+        (ident.into(), Some(quote! { #non_exhaustive_attr #vis #deep_model_ty }))
     };
 
     let eq = match deep_model(&name, &deep_model_ty_name, &input.data) {
@@ -38,7 +42,22 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
         Err(e) => return e.into_compile_error().into(),
     };
 
-    let open = match vis {
+    let most_restrictive_vis_so_far = vis.clone();
+    let most_restrictive_vis = match input.data {
+        Data::Struct(data) => {
+            let most_restrictive_vis_so_far = if non_exhaustive_attr.is_some() {
+                visibility::intersection(most_restrictive_vis_so_far, &parse_quote!(pub(crate)))
+            } else {
+                most_restrictive_vis_so_far
+            };
+            data.fields.iter().fold(most_restrictive_vis_so_far, |acc, field| {
+                visibility::intersection(acc, &field.vis)
+            })
+        }
+        _ => most_restrictive_vis_so_far,
+    };
+
+    let open = match most_restrictive_vis {
         syn::Visibility::Public(_) => quote!(open),
         syn::Visibility::Restricted(res) => {
             let in_token = &res.in_token;
