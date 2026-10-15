@@ -2,6 +2,7 @@ mod clone;
 mod deep_model;
 mod default;
 mod partial_eq;
+pub(crate) mod visibility;
 
 pub use clone::derive_clone;
 pub use deep_model::derive_deep_model;
