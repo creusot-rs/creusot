@@ -396,6 +396,15 @@ extern_spec! {
         fn split_at_mut_checked(&mut self, mid: usize) -> Option<(&mut [T], &mut [T])>;
 
         #[check(ghost)]
+        #[ensures(
+            <[T]>::split_at.precondition((self, 1usize)) ==>
+                exists<l: &[T], r> result == Some((&l[0], r)) &&
+                    <[T]>::split_at.postcondition((self, 1usize), (l, r))
+        )]
+        #[ensures(<[T]>::split_at.precondition((self, 1usize)) || result == None)]
+        fn split_first(&self) -> Option<(&T, &[T])>;
+
+        #[check(ghost)]
         #[ensures(match result {
             Some((first, tail)) => {
                 *first == self[0] && ^first == (^self)[0] &&
@@ -406,6 +415,30 @@ extern_spec! {
             None => self@.len() == 0 && ^self == *self && self@ == Seq::empty()
         })]
         fn split_first_mut(&mut self) -> Option<(&mut T, &mut [T])>;
+
+        #[check(ghost)]
+        #[ensures(
+            forall <sl: usize> sl@ == self@.len() ==>
+            <[T]>::split_at.precondition((self, sl - 1usize)) ==>
+                exists<l, r: &[T]> result == Some((&r[0], l)) &&
+                    <[T]>::split_at.postcondition((self, sl - 1usize), (l, r))
+        )]
+        #[ensures(
+            forall <sl: usize> sl@ == self@.len() ==>
+            <[T]>::split_at.precondition((self, sl - 1usize)) || result == None)]
+        fn split_last(&self) -> Option<(&T, &[T])>;
+
+        #[check(ghost)]
+        #[ensures(
+            forall <sl: usize> sl@ == self@.len() ==>
+            <[T]>::split_at_mut.precondition((self, sl - 1usize)) ==>
+                exists<l, r: &mut [T]> result == Some((&mut r[0], l)) &&
+                    <[T]>::split_at_mut.postcondition((self, sl - 1usize), (l, r))
+        )]
+        #[ensures(
+            forall <sl: usize> sl@ == self@.len() ==>
+            <[T]>::split_at_mut.precondition((self, sl - 1usize)) || result == None)]
+        fn split_last_mut(&mut self) -> Option<(&mut T, &mut [T])>;
 
         #[check(ghost)]
         #[ensures((^*self)@.len() == (**self)@.len())]
