@@ -71,10 +71,17 @@ impl<T, A: Allocator> DerefMutLogic for Box<T, A> {
     }
 }
 
+#[logic]
+#[builtin("identity")]
+pub fn new_box_logic<T>(val: T) -> Box<T> {
+    let _ = val;
+    dead
+}
+
 extern_spec! {
     impl<T> Box<T> {
         #[check(ghost)]
-        #[ensures(*result == val)]
+        #[logic_alias(new_box_logic(val))]
         fn new(val: T) -> Self;
     }
 
