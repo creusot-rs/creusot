@@ -1,3 +1,5 @@
+#[cfg(feature = "nightly")]
+use crate::logic::ops::{DerefLogic, DerefMutLogic};
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{invariant::*, prelude::*};
@@ -49,6 +51,26 @@ impl<T: ?Sized, A: Allocator> Invariant for Box<T, A> {
     }
 }
 
+#[cfg(feature = "nightly")]
+impl<T, A: Allocator> DerefLogic for Box<T, A> {
+    #[trusted]
+    #[logic(opaque)]
+    fn deref_logic(&self) -> &T {
+        dead
+    }
+}
+
+#[cfg(feature = "nightly")]
+impl<T, A: Allocator> DerefMutLogic for Box<T, A> {
+    #[trusted]
+    #[logic(opaque)]
+    #[ensures(*result == **self)]
+    #[ensures(^result == *^self)]
+    fn deref_mut_logic(&mut self) -> &mut T {
+        dead
+    }
+}
+
 extern_spec! {
     impl<T> Box<T> {
         #[check(ghost)]
@@ -91,19 +113,14 @@ extern_spec! {
 
     impl<T, A: Allocator> Deref for Box<T, A> {
         #[check(ghost)]
-        #[ensures(*result == **self)]
-        fn deref(&self) -> &T {
-            &**self
-        }
+        #[logic_alias(self.deref_logic())]
+        fn deref(&self) -> &T;
     }
 
     impl<T, A: Allocator> DerefMut for Box<T, A> {
         #[check(ghost)]
-        #[ensures(*result == **self)]
-        #[ensures(^result == *^self)]
-        fn deref_mut(&mut self) -> &mut T {
-            &mut **self
-        }
+        #[logic_alias(self.deref_mut_logic())]
+        fn deref_mut(&mut self) -> &mut T;
     }
 
     impl<T, const N: usize> TryFrom<Box<[T]>> for Box<[T; N]> {

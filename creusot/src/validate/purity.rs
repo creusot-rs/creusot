@@ -322,10 +322,6 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                         && (
                             // These methods are allowed to cheat the purity restrictions
                             self.ctx.is_diagnostic_item(sym::box_new, func_did)
-                                || matches!(
-                                    self.ctx.intrinsic(func_did),
-                                    Intrinsic::GhostDeref | Intrinsic::GhostDerefMut
-                                )
                         )
                     {
                     } else if !self.context.can_call(fn_purity) {

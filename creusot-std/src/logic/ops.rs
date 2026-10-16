@@ -125,3 +125,13 @@ impl NotLogic for bool {
         dead
     }
 }
+
+pub trait DerefLogic: core::ops::Deref {
+    #[logic]
+    fn deref_logic(&self) -> &Self::Target;
+}
+
+pub trait DerefMutLogic: core::ops::DerefMut + DerefLogic {
+    #[logic]
+    fn deref_mut_logic(&mut self) -> &mut Self::Target;
+}
