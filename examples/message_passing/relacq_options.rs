@@ -27,49 +27,52 @@ use std::mem::swap;
 
 declare_namespace! { MESSAGE_PASSING }
 
-struct MessagePassingAtomicInv {
-    atomic_own: Perm<AtomicBool>,
+struct MPInv {
+    flag_perm: Perm<AtomicBool>,
     at_view: Option<AtView<Perm<PCell<i32>>>>,
     tok_write: Resource<Option<Excl<()>>>,
     tok_read: Resource<Option<Excl<()>>>,
     data: Snapshot<PCell<i32>>,
 }
 
-impl Protocol for MessagePassingAtomicInv {
+impl Protocol for MPInv {
     type Public = (AtomicBool, PCell<i32>, Id, Id);
 
     #[logic(inline)]
     fn public(self) -> Self::Public {
-        (*self.atomic_own.ward(), *self.data, self.tok_write.id(), self.tok_read.id())
+        (*self.flag_perm.ward(), *self.data, self.tok_write.id(), self.tok_read.id())
     }
 
     #[logic(inline)]
     fn protocol(self) -> bool {
         pearlite! {
-            forall<t> match self.atomic_own.val().lookup(t) {
-                Some((b, view)) =>
-                    !b ||
-                    b &&
+            forall<t> match self.flag_perm.val().lookup(t) {
+                Some((true, view)) => {
                     self.tok_write.val() == Some(Excl(())) &&
-                        match self.at_view {
-                            Some(at_view) => *self.data == *at_view.val().ward() && at_view.val().val()@ == 1 && at_view.view() <= view,
-                            None => self.tok_read.val() == Some(Excl(()))
+                    match self.at_view {
+                        Some(at_view) => {
+                            *self.data == *at_view.val().ward() &&
+                            at_view.val().val() == 42_i32 &&
+                            at_view.view() <= view
                         },
-                None => true
+                        None => self.tok_read.val() == Some(Excl(()))
+                    }
+                },
+                _ => true,
             }
         }
     }
 }
 
 pub fn message_passing() {
-    let (atomic, atomic_own) = AtomicBool::new(false, SyncView::new().borrow_mut());
-    let (data, mut data_own) = PCell::new(0i32);
+    let (flag, flag_perm) = AtomicBool::new(false, SyncView::new().borrow_mut());
+    let (data, mut data_perm) = PCell::new(0i32);
     let excl_write = Resource::alloc(snapshot!(Some(Excl(()))));
     let excl_read = Resource::alloc(snapshot!(Some(Excl(()))));
 
     let inv = AtomicInvariant::new(
-        ghost!(MessagePassingAtomicInv {
-            atomic_own: atomic_own.into_inner(),
+        ghost!(MPInv {
+            flag_perm: flag_perm.into_inner(),
             at_view: None,
             tok_write: Resource::new_unit(excl_write.id()),
             tok_read: Resource::new_unit(excl_read.id()),
@@ -81,23 +84,23 @@ pub fn message_passing() {
     thread::scope(|s| {
         let inv: Ghost<&_> = inv.borrow();
         let data = &data;
-        let atomic = &atomic;
+        let flag = &flag;
 
         let t1 = s.spawn(move |tokens: Ghost<Tokens>| {
             let mut excl = ghost!(excl_write.into_inner());
 
-            unsafe { *data.borrow_mut(ghost!(&mut *data_own)) = 1 }
+            unsafe { *data.borrow_mut(ghost!(&mut *data_perm)) = 1 }
 
-            atomic.store(
+            flag.store(
                 true,
                 ghost! { |c: &mut Committer<_, _, _, Release>| {
-                    inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
+                    inv.open(tokens.into_inner(), |inv: &mut MPInv| {
                         excl.valid_op_lemma(&inv.tok_write);
                         std::mem::swap(&mut inv.tok_write, &mut *excl);
 
-                        let (mut sync_view, at_view) = AtView::new(ghost!(data_own.into_inner())).into_inner();
+                        let (mut sync_view, at_view) = AtView::new(ghost!(data_perm.into_inner())).into_inner();
                         inv.at_view = Some(at_view);
-                        c.shoot_store(&mut inv.atomic_own, &mut sync_view);
+                        c.shoot_store(&mut inv.flag_perm, &mut sync_view);
                     })
                 }},
             );
@@ -106,25 +109,25 @@ pub fn message_passing() {
         let t2 = s.spawn(move |mut tokens: Ghost<Tokens>| {
             let mut excl = ghost!(excl_read.into_inner());
             let excl_snap = snapshot!(excl);
-            let mut data_own = ghost!(None);
+            let mut data_perm = ghost!(None);
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            while !atomic.load(ghost! { |c: &Committer<_, bool, Acquire, _>| {
-            inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
+            while !flag.load(ghost! { |c: &Committer<_, bool, Acquire, _>| {
+            inv.open(tokens.reborrow(), |inv: &mut MPInv| {
                 if !c.val_load() {
                     return
                 }
                 let mut sync_view = *SyncView::new();
-                c.shoot_load(&inv.atomic_own, &mut sync_view);
+                c.shoot_load(&inv.flag_perm, &mut sync_view);
 
                 excl.valid_op_lemma(&inv.tok_read);
 
                 swap(&mut inv.tok_read, &mut *excl);
-                *data_own = Some(inv.at_view.take().unwrap().sync(sync_view))
+                *data_perm = Some(inv.at_view.take().unwrap().sync(sync_view))
             })}}) {}
 
-            let res = unsafe { data.get(ghost! { data_own.as_ref().unwrap() }) };
+            let res = unsafe { data.get(ghost! { data_perm.as_ref().unwrap() }) };
             proof_assert!(res == 1i32)
         });
 
