@@ -69,7 +69,7 @@ module M_split_at_checked
       | s4 = {[@expl:assertion] match split with
           | Some {f0 = l; f1 = r} -> Slice64.view l = Slice64.view expected_l
           /\ Slice64.view r = Slice64.view expected_r
-          | None -> true
+          | None -> false
           end}
         s5
       | s5 = split_at_checked_i32 {numbers} {(5: UInt64.t)}
@@ -206,7 +206,7 @@ module M_split_at_mut_checked
       | s6 = {[@expl:assertion] match split with
           | Some {f0 = l; f1 = r} -> Slice64.view l.current = Slice64.view expected_l
           /\ Slice64.view r.current = Slice64.view expected_r
-          | None -> true
+          | None -> false
           end}
         s7
       | s7 = MutBorrow.borrow_mut <Slice64.array Int32.t> {numbers}
@@ -226,4 +226,512 @@ module M_split_at_mut_checked
     | & expected_r: Slice64.array Int32.t = Any.any_l ()
     | & split'0: t_Option_tup2_refmut_slice_i32_refmut_slice_i32 = Any.any_l ()
     | & _14: MutBorrow.t (Slice64.array Int32.t) = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_split_first
+  use creusot.slice.Slice64
+  use creusot.int.Int32
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.prelude.Any
+  use int.Int
+  
+  type tup2_ref_i32_ref_slice_i32 = { f0: Int32.t; f1: Slice64.slice Int32.t }
+  
+  type t_Option_tup2_ref_i32_ref_slice_i32 = None | Some tup2_ref_i32_ref_slice_i32
+  
+  type tup2_ref_slice_i32_usize = { f0'0: Slice64.slice Int32.t; f1'0: UInt64.t }
+  
+  predicate precondition_split_at (self: ()) (args: tup2_ref_slice_i32_usize) =
+    let {f0'0 = self'0; f1'0 = mid} = args in UInt64.t'int mid <= Seq.length (Slice64.view self'0)
+  
+  meta "rewrite_def" predicate precondition_split_at
+  
+  type tup2_ref_slice_i32_ref_slice_i32 = { f0'1: Slice64.slice Int32.t; f1'1: Slice64.slice Int32.t }
+  
+  let split_at_i32 (self: Slice64.slice Int32.t) (mid: UInt64.t) (return (x: tup2_ref_slice_i32_ref_slice_i32)) =
+  {[@stop_split] [@expl:split_at requires] UInt64.t'int mid <= Seq.length (Slice64.view self)}
+    any
+    [ return (result: tup2_ref_slice_i32_ref_slice_i32) ->
+    {[@stop_split] [@expl:split_at ensures] let {f0'1 = l; f1'1 = r} = result in let sl = Seq.length (Slice64.view self) in Seq.([..]) (Slice64.view self) 0 (UInt64.t'int mid)
+        = Slice64.view l
+      /\ Seq.([..]) (Slice64.view self) (UInt64.t'int mid) sl = Slice64.view r}
+      (! return {result}) ]
+  
+  function index_slice_i32 [@inline:trivial] (self: Slice64.slice Int32.t) (ix: int) : Int32.t =
+    Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_slice_i32
+  
+  predicate postcondition_split_at (self: ()) (args: tup2_ref_slice_i32_usize) (result: tup2_ref_slice_i32_ref_slice_i32) =
+    let {f0'0 = self'0; f1'0 = mid} = args in let {f0'1 = l; f1'1 = r} = result in let sl = Seq.length (Slice64.view self'0) in Seq.([..]) (Slice64.view self'0) 0 (UInt64.t'int mid)
+      = Slice64.view l
+    /\ Seq.([..]) (Slice64.view self'0) (UInt64.t'int mid) sl = Slice64.view r
+  
+  meta "rewrite_def" predicate postcondition_split_at
+  
+  let split_first_i32 (self: Slice64.slice Int32.t) (return (x: t_Option_tup2_ref_i32_ref_slice_i32)) = any
+    [ return (result: t_Option_tup2_ref_i32_ref_slice_i32) ->
+    {[@stop_split] [@expl:split_first_i32 ensures] ([@stop_split] [@expl:split_first ensures #0] precondition_split_at () { f0'0 = self;
+                                                                                                                            f1'0 = (1: UInt64.t) }
+        -> (exists l: Slice64.slice Int32.t, r: Slice64.slice Int32.t. result
+            = Some { f0 = index_slice_i32 l 0; f1 = r }
+          /\ postcondition_split_at () { f0'0 = self; f1'0 = (1: UInt64.t) } { f0'1 = l; f1'1 = r }))
+      /\ ([@stop_split] [@expl:split_first ensures #1] precondition_split_at () { f0'0 = self; f1'0 = (1: UInt64.t) }
+      \/ result = None)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let split_first (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = any
+        [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 1 = (2: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 2 = (3: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 3 = (4: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 4}-
+          [ &numbers <- __arr_temp ] s1) ]
+      | s1 = split_first_i32 {numbers} (fun (_x: t_Option_tup2_ref_i32_ref_slice_i32) -> [ &split <- _x ] s2)
+      | s2 = any
+        [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (2: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 1 = (3: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 2 = (4: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 3}-
+          [ &rest <- __arr_temp ] s3) ]
+      | s3 = {[@expl:assertion] match split with
+          | Some {f0 = h; f1 = r} -> Int32.to_int h = 1 /\ Slice64.view r = Slice64.view rest
+          | None -> false
+          end}
+        s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & numbers: Slice64.array Int32.t = Any.any_l ()
+    | & split: t_Option_tup2_ref_i32_ref_slice_i32 = Any.any_l ()
+    | & rest: Slice64.array Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_split_last_1
+  use creusot.slice.Slice64
+  use creusot.int.Int32
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.prelude.Any
+  use int.Int
+  
+  type tup2_ref_i32_ref_slice_i32 = { f0: Int32.t; f1: Slice64.slice Int32.t }
+  
+  type t_Option_tup2_ref_i32_ref_slice_i32 = None | Some tup2_ref_i32_ref_slice_i32
+  
+  type tup2_ref_slice_i32_usize = { f0'0: Slice64.slice Int32.t; f1'0: UInt64.t }
+  
+  predicate precondition_split_at (self: ()) (args: tup2_ref_slice_i32_usize) =
+    let {f0'0 = self'0; f1'0 = mid} = args in UInt64.t'int mid <= Seq.length (Slice64.view self'0)
+  
+  meta "rewrite_def" predicate precondition_split_at
+  
+  type tup2_ref_slice_i32_ref_slice_i32 = { f0'1: Slice64.slice Int32.t; f1'1: Slice64.slice Int32.t }
+  
+  let split_at_i32 (self: Slice64.slice Int32.t) (mid: UInt64.t) (return (x: tup2_ref_slice_i32_ref_slice_i32)) =
+  {[@stop_split] [@expl:split_at requires] UInt64.t'int mid <= Seq.length (Slice64.view self)}
+    any
+    [ return (result: tup2_ref_slice_i32_ref_slice_i32) ->
+    {[@stop_split] [@expl:split_at ensures] let {f0'1 = l; f1'1 = r} = result in let sl = Seq.length (Slice64.view self) in Seq.([..]) (Slice64.view self) 0 (UInt64.t'int mid)
+        = Slice64.view l
+      /\ Seq.([..]) (Slice64.view self) (UInt64.t'int mid) sl = Slice64.view r}
+      (! return {result}) ]
+  
+  function index_slice_i32 [@inline:trivial] (self: Slice64.slice Int32.t) (ix: int) : Int32.t =
+    Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_slice_i32
+  
+  predicate postcondition_split_at (self: ()) (args: tup2_ref_slice_i32_usize) (result: tup2_ref_slice_i32_ref_slice_i32) =
+    let {f0'0 = self'0; f1'0 = mid} = args in let {f0'1 = l; f1'1 = r} = result in let sl = Seq.length (Slice64.view self'0) in Seq.([..]) (Slice64.view self'0) 0 (UInt64.t'int mid)
+      = Slice64.view l
+    /\ Seq.([..]) (Slice64.view self'0) (UInt64.t'int mid) sl = Slice64.view r
+  
+  meta "rewrite_def" predicate postcondition_split_at
+  
+  let split_last_i32 (self: Slice64.slice Int32.t) (return (x: t_Option_tup2_ref_i32_ref_slice_i32)) = any
+    [ return (result: t_Option_tup2_ref_i32_ref_slice_i32) ->
+    {[@stop_split] [@expl:split_last_i32 ensures] ([@stop_split] [@expl:split_last ensures #0] forall sl: UInt64.t. UInt64.t'int sl
+            = Seq.length (Slice64.view self)
+          -> precondition_split_at () { f0'0 = self; f1'0 = UInt64.sub sl (1: UInt64.t) }
+          -> (exists l: Slice64.slice Int32.t, r: Slice64.slice Int32.t. result
+              = Some { f0 = index_slice_i32 r 0; f1 = l }
+            /\ postcondition_split_at () { f0'0 = self; f1'0 = UInt64.sub sl (1: UInt64.t) } { f0'1 = l; f1'1 = r }))
+      /\ ([@stop_split] [@expl:split_last ensures #1] forall sl: UInt64.t. UInt64.t'int sl
+          = Seq.length (Slice64.view self)
+        -> precondition_split_at () { f0'0 = self; f1'0 = UInt64.sub sl (1: UInt64.t) } \/ result = None)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let split_last_1 (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = any
+        [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 1 = (2: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 2 = (3: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 3 = (4: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 4}-
+          [ &numbers <- __arr_temp ] s1) ]
+      | s1 = split_last_i32 {numbers} (fun (_x: t_Option_tup2_ref_i32_ref_slice_i32) -> [ &split <- _x ] s2)
+      | s2 = any
+        [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 1 = (2: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 2 = (3: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 3}-
+          [ &rest <- __arr_temp ] s3) ]
+      | s3 = {[@expl:assertion] match split with
+          | Some {f0 = t; f1 = r} -> Int32.to_int t = 4 /\ Slice64.view r = Slice64.view rest
+          | None -> false
+          end}
+        s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & numbers: Slice64.array Int32.t = Any.any_l ()
+    | & split: t_Option_tup2_ref_i32_ref_slice_i32 = Any.any_l ()
+    | & rest: Slice64.array Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_split_last_2
+  use creusot.slice.Slice64
+  use creusot.int.Int32
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.prelude.Any
+  use int.Int
+  
+  type tup2_ref_i32_ref_slice_i32 = { f0: Int32.t; f1: Slice64.slice Int32.t }
+  
+  type t_Option_tup2_ref_i32_ref_slice_i32 = None | Some tup2_ref_i32_ref_slice_i32
+  
+  type tup2_ref_slice_i32_usize = { f0'0: Slice64.slice Int32.t; f1'0: UInt64.t }
+  
+  predicate precondition_split_at (self: ()) (args: tup2_ref_slice_i32_usize) =
+    let {f0'0 = self'0; f1'0 = mid} = args in UInt64.t'int mid <= Seq.length (Slice64.view self'0)
+  
+  meta "rewrite_def" predicate precondition_split_at
+  
+  type tup2_ref_slice_i32_ref_slice_i32 = { f0'1: Slice64.slice Int32.t; f1'1: Slice64.slice Int32.t }
+  
+  let split_at_i32 (self: Slice64.slice Int32.t) (mid: UInt64.t) (return (x: tup2_ref_slice_i32_ref_slice_i32)) =
+  {[@stop_split] [@expl:split_at requires] UInt64.t'int mid <= Seq.length (Slice64.view self)}
+    any
+    [ return (result: tup2_ref_slice_i32_ref_slice_i32) ->
+    {[@stop_split] [@expl:split_at ensures] let {f0'1 = l; f1'1 = r} = result in let sl = Seq.length (Slice64.view self) in Seq.([..]) (Slice64.view self) 0 (UInt64.t'int mid)
+        = Slice64.view l
+      /\ Seq.([..]) (Slice64.view self) (UInt64.t'int mid) sl = Slice64.view r}
+      (! return {result}) ]
+  
+  function index_slice_i32 [@inline:trivial] (self: Slice64.slice Int32.t) (ix: int) : Int32.t =
+    Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_slice_i32
+  
+  predicate postcondition_split_at (self: ()) (args: tup2_ref_slice_i32_usize) (result: tup2_ref_slice_i32_ref_slice_i32) =
+    let {f0'0 = self'0; f1'0 = mid} = args in let {f0'1 = l; f1'1 = r} = result in let sl = Seq.length (Slice64.view self'0) in Seq.([..]) (Slice64.view self'0) 0 (UInt64.t'int mid)
+      = Slice64.view l
+    /\ Seq.([..]) (Slice64.view self'0) (UInt64.t'int mid) sl = Slice64.view r
+  
+  meta "rewrite_def" predicate postcondition_split_at
+  
+  let split_last_i32 (self: Slice64.slice Int32.t) (return (x: t_Option_tup2_ref_i32_ref_slice_i32)) = any
+    [ return (result: t_Option_tup2_ref_i32_ref_slice_i32) ->
+    {[@stop_split] [@expl:split_last_i32 ensures] ([@stop_split] [@expl:split_last ensures #0] forall sl: UInt64.t. UInt64.t'int sl
+            = Seq.length (Slice64.view self)
+          -> precondition_split_at () { f0'0 = self; f1'0 = UInt64.sub sl (1: UInt64.t) }
+          -> (exists l: Slice64.slice Int32.t, r: Slice64.slice Int32.t. result
+              = Some { f0 = index_slice_i32 r 0; f1 = l }
+            /\ postcondition_split_at () { f0'0 = self; f1'0 = UInt64.sub sl (1: UInt64.t) } { f0'1 = l; f1'1 = r }))
+      /\ ([@stop_split] [@expl:split_last ensures #1] forall sl: UInt64.t. UInt64.t'int sl
+          = Seq.length (Slice64.view self)
+        -> precondition_split_at () { f0'0 = self; f1'0 = UInt64.sub sl (1: UInt64.t) } \/ result = None)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let split_last_2 (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = any
+        [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.length __arr_temp.Slice64.elts = 0}-
+          [ &numbers <- __arr_temp ] s1) ]
+      | s1 = split_last_i32 {numbers} (fun (_x: t_Option_tup2_ref_i32_ref_slice_i32) -> [ &split <- _x ] s2)
+      | s2 = {[@expl:assertion] split = None} s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & numbers: Slice64.array Int32.t = Any.any_l ()
+    | & split: t_Option_tup2_ref_i32_ref_slice_i32 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_split_last_mut_1
+  use creusot.slice.Slice64
+  use creusot.int.Int32
+  use seq.Seq
+  use creusot.int.UInt64
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_i32
+  
+  predicate invariant_array_i32_4 (self: Slice64.array Int32.t) =
+    inv_Seq_i32 (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (4: UInt64.t)
+  
+  predicate inv_array_i32_4 [@inline:trivial] (_1: Slice64.array Int32.t) = invariant_array_i32_4 _1
+  
+  meta "rewrite_def" predicate inv_array_i32_4
+  
+  type tup2_refmut_i32_refmut_slice_i32 = { f0: MutBorrow.t Int32.t; f1: MutBorrow.t (Slice64.slice Int32.t) }
+  
+  type t_Option_tup2_refmut_i32_refmut_slice_i32 = None | Some tup2_refmut_i32_refmut_slice_i32
+  
+  type tup2_refmut_slice_i32_usize = { f0'0: MutBorrow.t (Slice64.slice Int32.t); f1'0: UInt64.t }
+  
+  predicate precondition_split_at_mut (self: ()) (args: tup2_refmut_slice_i32_usize) =
+    let {f0'0 = self'0; f1'0 = mid} = args in UInt64.t'int mid <= Seq.length (Slice64.view self'0.current)
+  
+  meta "rewrite_def" predicate precondition_split_at_mut
+  
+  type tup2_refmut_slice_i32_refmut_slice_i32 = {
+    f0'1: MutBorrow.t (Slice64.slice Int32.t);
+    f1'1: MutBorrow.t (Slice64.slice Int32.t) }
+  
+  let split_at_mut_i32 (self: MutBorrow.t (Slice64.slice Int32.t)) (mid: UInt64.t)
+    (return (x: tup2_refmut_slice_i32_refmut_slice_i32)) = {[@stop_split] [@expl:split_at_mut requires] UInt64.t'int mid
+    <= Seq.length (Slice64.view self.current)}
+    any
+    [ return (result: tup2_refmut_slice_i32_refmut_slice_i32) ->
+    {[@stop_split] [@expl:split_at_mut_i32 ensures] ([@stop_split] [@expl:split_at_mut ensures #0] Seq.length (Slice64.view self.final)
+        = Seq.length (Slice64.view self.current))
+      /\ ([@stop_split] [@expl:split_at_mut ensures #1] Seq.([..]) (Slice64.view self.current) 0 (UInt64.t'int mid)
+        = Slice64.view result.f0'1.current)
+      /\ ([@stop_split] [@expl:split_at_mut ensures #2] Seq.([..]) (Slice64.view self.current) (UInt64.t'int mid) (Seq.length (Slice64.view self.current))
+        = Slice64.view result.f1'1.current)
+      /\ ([@stop_split] [@expl:split_at_mut ensures #3] Seq.([..]) (Slice64.view self.final) 0 (UInt64.t'int mid)
+        = Slice64.view result.f0'1.final)
+      /\ ([@stop_split] [@expl:split_at_mut ensures #4] Seq.([..]) (Slice64.view self.final) (UInt64.t'int mid) (Seq.length (Slice64.view self.current))
+      = Slice64.view result.f1'1.final)}
+      (! return {result}) ]
+  
+  function index_slice_i32 [@inline:trivial] (self: Slice64.slice Int32.t) (ix: int) : Int32.t =
+    Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_slice_i32
+  
+  predicate postcondition_split_at_mut (self: ()) (args: tup2_refmut_slice_i32_usize) (result: tup2_refmut_slice_i32_refmut_slice_i32) =
+    let {f0'0 = self'0; f1'0 = mid} = args in Seq.length (Slice64.view self'0.final)
+      = Seq.length (Slice64.view self'0.current)
+    /\ Seq.([..]) (Slice64.view self'0.current) 0 (UInt64.t'int mid) = Slice64.view result.f0'1.current
+    /\ Seq.([..]) (Slice64.view self'0.current) (UInt64.t'int mid) (Seq.length (Slice64.view self'0.current))
+      = Slice64.view result.f1'1.current
+    /\ Seq.([..]) (Slice64.view self'0.final) 0 (UInt64.t'int mid) = Slice64.view result.f0'1.final
+    /\ Seq.([..]) (Slice64.view self'0.final) (UInt64.t'int mid) (Seq.length (Slice64.view self'0.current))
+    = Slice64.view result.f1'1.final
+  
+  meta "rewrite_def" predicate postcondition_split_at_mut
+  
+  let split_last_mut_i32 (self: MutBorrow.t (Slice64.slice Int32.t))
+    (return (x: t_Option_tup2_refmut_i32_refmut_slice_i32)) = any
+    [ return (result: t_Option_tup2_refmut_i32_refmut_slice_i32) ->
+    {[@stop_split] [@expl:split_last_mut_i32 ensures] ([@stop_split] [@expl:split_last_mut ensures #0] forall sl: UInt64.t. UInt64.t'int sl
+            = Seq.length (Slice64.view self.current)
+          -> precondition_split_at_mut () { f0'0 = self; f1'0 = UInt64.sub sl (1: UInt64.t) }
+          -> (exists l: MutBorrow.t (Slice64.slice Int32.t), r: MutBorrow.t (Slice64.slice Int32.t). result
+              = Some { f0 = MutBorrow.borrow_logic (index_slice_i32 r.current 0) (index_slice_i32 r.final 0) (MutBorrow.inherit_id (MutBorrow.get_id r) 0);
+                       f1 = l }
+            /\ postcondition_split_at_mut () { f0'0 = self; f1'0 = UInt64.sub sl (1: UInt64.t) } { f0'1 = l;
+                                                                                                   f1'1 = r }))
+      /\ ([@stop_split] [@expl:split_last_mut ensures #1] forall sl: UInt64.t. UInt64.t'int sl
+          = Seq.length (Slice64.view self.current)
+        -> precondition_split_at_mut () { f0'0 = self; f1'0 = UInt64.sub sl (1: UInt64.t) } \/ result = None)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_i32
+  
+  predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_slice_i32
+  
+  predicate resolve_tup2_refmut_i32_refmut_slice_i32 [@inline:trivial] (_1: tup2_refmut_i32_refmut_slice_i32) =
+    resolve_refmut_i32 _1.f0 /\ resolve_refmut_slice_i32 _1.f1
+  
+  meta "rewrite_def" predicate resolve_tup2_refmut_i32_refmut_slice_i32
+  
+  predicate resolve_Option_tup2_refmut_i32_refmut_slice_i32 (_1: t_Option_tup2_refmut_i32_refmut_slice_i32)
+  
+  axiom resolve_axiom [@rewrite]:
+    forall _1: t_Option_tup2_refmut_i32_refmut_slice_i32 [resolve_Option_tup2_refmut_i32_refmut_slice_i32 _1]. resolve_Option_tup2_refmut_i32_refmut_slice_i32 _1
+      = match _1 with
+        | None -> true
+        | Some x0 -> resolve_tup2_refmut_i32_refmut_slice_i32 x0
+        end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let split_last_mut_1 (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = any
+        [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 1 = (2: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 2 = (3: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 3 = (4: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 4}-
+          [ &numbers <- __arr_temp ] s1) ]
+      | s1 = MutBorrow.borrow_mut <Slice64.array Int32.t> {numbers}
+          (fun (_bor: MutBorrow.t (Slice64.array Int32.t)) ->
+            [ &_4 <- _bor ] -{inv_array_i32_4 _bor.final}-
+            [ &numbers <- _bor.final ] s2) [ _ck -> (! {[@expl:type invariant] inv_array_i32_4 numbers} any) ]
+      | s2 = split_last_mut_i32 {_4} (fun (_x: t_Option_tup2_refmut_i32_refmut_slice_i32) -> [ &split <- _x ] s3)
+      | s3 = -{resolve_Option_tup2_refmut_i32_refmut_slice_i32 split}- s4
+      | s4 = any
+        [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 1 = (2: Int32.t)
+          /\ Seq.get __arr_temp.Slice64.elts 2 = (3: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 3}-
+          [ &rest <- __arr_temp ] s5) ]
+      | s5 = {[@expl:assertion] match split with
+          | Some {f0 = t; f1 = r} -> Int32.to_int t.current = 4 /\ Slice64.view r.current = Slice64.view rest
+          | None -> false
+          end}
+        s6
+      | s6 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & numbers: Slice64.array Int32.t = Any.any_l ()
+    | & split: t_Option_tup2_refmut_i32_refmut_slice_i32 = Any.any_l ()
+    | & _4: MutBorrow.t (Slice64.array Int32.t) = Any.any_l ()
+    | & rest: Slice64.array Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_split_last_mut_2
+  use creusot.slice.Slice64
+  use creusot.int.Int32
+  use seq.Seq
+  use creusot.int.UInt64
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_i32
+  
+  predicate invariant_array_i32_0 (self: Slice64.array Int32.t) =
+    inv_Seq_i32 (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (0: UInt64.t)
+  
+  predicate inv_array_i32_0 [@inline:trivial] (_1: Slice64.array Int32.t) = invariant_array_i32_0 _1
+  
+  meta "rewrite_def" predicate inv_array_i32_0
+  
+  type tup2_refmut_i32_refmut_slice_i32 = { f0: MutBorrow.t Int32.t; f1: MutBorrow.t (Slice64.slice Int32.t) }
+  
+  type t_Option_tup2_refmut_i32_refmut_slice_i32 = None | Some tup2_refmut_i32_refmut_slice_i32
+  
+  type tup2_refmut_slice_i32_usize = { f0'0: MutBorrow.t (Slice64.slice Int32.t); f1'0: UInt64.t }
+  
+  predicate precondition_split_at_mut (self: ()) (args: tup2_refmut_slice_i32_usize) =
+    let {f0'0 = self'0; f1'0 = mid} = args in UInt64.t'int mid <= Seq.length (Slice64.view self'0.current)
+  
+  meta "rewrite_def" predicate precondition_split_at_mut
+  
+  type tup2_refmut_slice_i32_refmut_slice_i32 = {
+    f0'1: MutBorrow.t (Slice64.slice Int32.t);
+    f1'1: MutBorrow.t (Slice64.slice Int32.t) }
+  
+  let split_at_mut_i32 (self: MutBorrow.t (Slice64.slice Int32.t)) (mid: UInt64.t)
+    (return (x: tup2_refmut_slice_i32_refmut_slice_i32)) = {[@stop_split] [@expl:split_at_mut requires] UInt64.t'int mid
+    <= Seq.length (Slice64.view self.current)}
+    any
+    [ return (result: tup2_refmut_slice_i32_refmut_slice_i32) ->
+    {[@stop_split] [@expl:split_at_mut_i32 ensures] ([@stop_split] [@expl:split_at_mut ensures #0] Seq.length (Slice64.view self.final)
+        = Seq.length (Slice64.view self.current))
+      /\ ([@stop_split] [@expl:split_at_mut ensures #1] Seq.([..]) (Slice64.view self.current) 0 (UInt64.t'int mid)
+        = Slice64.view result.f0'1.current)
+      /\ ([@stop_split] [@expl:split_at_mut ensures #2] Seq.([..]) (Slice64.view self.current) (UInt64.t'int mid) (Seq.length (Slice64.view self.current))
+        = Slice64.view result.f1'1.current)
+      /\ ([@stop_split] [@expl:split_at_mut ensures #3] Seq.([..]) (Slice64.view self.final) 0 (UInt64.t'int mid)
+        = Slice64.view result.f0'1.final)
+      /\ ([@stop_split] [@expl:split_at_mut ensures #4] Seq.([..]) (Slice64.view self.final) (UInt64.t'int mid) (Seq.length (Slice64.view self.current))
+      = Slice64.view result.f1'1.final)}
+      (! return {result}) ]
+  
+  function index_slice_i32 [@inline:trivial] (self: Slice64.slice Int32.t) (ix: int) : Int32.t =
+    Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_slice_i32
+  
+  predicate postcondition_split_at_mut (self: ()) (args: tup2_refmut_slice_i32_usize) (result: tup2_refmut_slice_i32_refmut_slice_i32) =
+    let {f0'0 = self'0; f1'0 = mid} = args in Seq.length (Slice64.view self'0.final)
+      = Seq.length (Slice64.view self'0.current)
+    /\ Seq.([..]) (Slice64.view self'0.current) 0 (UInt64.t'int mid) = Slice64.view result.f0'1.current
+    /\ Seq.([..]) (Slice64.view self'0.current) (UInt64.t'int mid) (Seq.length (Slice64.view self'0.current))
+      = Slice64.view result.f1'1.current
+    /\ Seq.([..]) (Slice64.view self'0.final) 0 (UInt64.t'int mid) = Slice64.view result.f0'1.final
+    /\ Seq.([..]) (Slice64.view self'0.final) (UInt64.t'int mid) (Seq.length (Slice64.view self'0.current))
+    = Slice64.view result.f1'1.final
+  
+  meta "rewrite_def" predicate postcondition_split_at_mut
+  
+  let split_last_mut_i32 (self: MutBorrow.t (Slice64.slice Int32.t))
+    (return (x: t_Option_tup2_refmut_i32_refmut_slice_i32)) = any
+    [ return (result: t_Option_tup2_refmut_i32_refmut_slice_i32) ->
+    {[@stop_split] [@expl:split_last_mut_i32 ensures] ([@stop_split] [@expl:split_last_mut ensures #0] forall sl: UInt64.t. UInt64.t'int sl
+            = Seq.length (Slice64.view self.current)
+          -> precondition_split_at_mut () { f0'0 = self; f1'0 = UInt64.sub sl (1: UInt64.t) }
+          -> (exists l: MutBorrow.t (Slice64.slice Int32.t), r: MutBorrow.t (Slice64.slice Int32.t). result
+              = Some { f0 = MutBorrow.borrow_logic (index_slice_i32 r.current 0) (index_slice_i32 r.final 0) (MutBorrow.inherit_id (MutBorrow.get_id r) 0);
+                       f1 = l }
+            /\ postcondition_split_at_mut () { f0'0 = self; f1'0 = UInt64.sub sl (1: UInt64.t) } { f0'1 = l;
+                                                                                                   f1'1 = r }))
+      /\ ([@stop_split] [@expl:split_last_mut ensures #1] forall sl: UInt64.t. UInt64.t'int sl
+          = Seq.length (Slice64.view self.current)
+        -> precondition_split_at_mut () { f0'0 = self; f1'0 = UInt64.sub sl (1: UInt64.t) } \/ result = None)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_i32 [@inline:trivial] (_1: MutBorrow.t Int32.t) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_i32
+  
+  predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_slice_i32
+  
+  predicate resolve_tup2_refmut_i32_refmut_slice_i32 [@inline:trivial] (_1: tup2_refmut_i32_refmut_slice_i32) =
+    resolve_refmut_i32 _1.f0 /\ resolve_refmut_slice_i32 _1.f1
+  
+  meta "rewrite_def" predicate resolve_tup2_refmut_i32_refmut_slice_i32
+  
+  predicate resolve_Option_tup2_refmut_i32_refmut_slice_i32 (_1: t_Option_tup2_refmut_i32_refmut_slice_i32)
+  
+  axiom resolve_axiom [@rewrite]:
+    forall _1: t_Option_tup2_refmut_i32_refmut_slice_i32 [resolve_Option_tup2_refmut_i32_refmut_slice_i32 _1]. resolve_Option_tup2_refmut_i32_refmut_slice_i32 _1
+      = match _1 with
+        | None -> true
+        | Some x0 -> resolve_tup2_refmut_i32_refmut_slice_i32 x0
+        end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let split_last_mut_2 (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = any
+        [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.length __arr_temp.Slice64.elts = 0}-
+          [ &numbers <- __arr_temp ] s1) ]
+      | s1 = MutBorrow.borrow_mut <Slice64.array Int32.t> {numbers}
+          (fun (_bor: MutBorrow.t (Slice64.array Int32.t)) ->
+            [ &_4 <- _bor ] -{inv_array_i32_0 _bor.final}-
+            [ &numbers <- _bor.final ] s2) [ _ck -> (! {[@expl:type invariant] inv_array_i32_0 numbers} any) ]
+      | s2 = split_last_mut_i32 {_4} (fun (_x: t_Option_tup2_refmut_i32_refmut_slice_i32) -> [ &split <- _x ] s3)
+      | s3 = -{resolve_Option_tup2_refmut_i32_refmut_slice_i32 split}- s4
+      | s4 = {[@expl:assertion] split = None} s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & numbers: Slice64.array Int32.t = Any.any_l ()
+    | & split: t_Option_tup2_refmut_i32_refmut_slice_i32 = Any.any_l ()
+    | & _4: MutBorrow.t (Slice64.array Int32.t) = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
