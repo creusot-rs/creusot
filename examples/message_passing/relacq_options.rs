@@ -29,7 +29,7 @@ declare_namespace! { MESSAGE_PASSING }
 
 struct MessagePassingAtomicInv {
     atomic_own: Perm<AtomicBool>,
-    at_view: Option<AtView<Perm<PCell<i32>>>>,
+    data_perm: Option<AtView<Perm<PCell<i32>>>>,
     tok_write: Resource<Option<Excl<()>>>,
     tok_read: Resource<Option<Excl<()>>>,
     data: Snapshot<PCell<i32>>,
@@ -51,8 +51,8 @@ impl Protocol for MessagePassingAtomicInv {
                     !b ||
                     b &&
                     self.tok_write.val() == Some(Excl(())) &&
-                        match self.at_view {
-                            Some(at_view) => *self.data == *at_view.val().ward() && at_view.val().val()@ == 1 && at_view.view() <= view,
+                        match self.data_perm {
+                            Some(data_perm) => *self.data == *data_perm.val().ward() && data_perm.val().val()@ == 1 && data_perm.view() <= view,
                             None => self.tok_read.val() == Some(Excl(()))
                         },
                 None => true
@@ -70,7 +70,7 @@ pub fn message_passing() {
     let inv = AtomicInvariant::new(
         ghost!(MessagePassingAtomicInv {
             atomic_own: atomic_own.into_inner(),
-            at_view: None,
+            data_perm: None,
             tok_write: Resource::new_unit(excl_write.id()),
             tok_read: Resource::new_unit(excl_read.id()),
             data: snapshot!(data),
@@ -95,8 +95,8 @@ pub fn message_passing() {
                         excl.valid_op_lemma(&inv.tok_write);
                         std::mem::swap(&mut inv.tok_write, &mut *excl);
 
-                        let (mut sync_view, at_view) = AtView::new(ghost!(data_own.into_inner())).into_inner();
-                        inv.at_view = Some(at_view);
+                        let (mut sync_view, data_perm) = AtView::new(ghost!(data_own.into_inner())).into_inner();
+                        inv.data_perm = Some(data_perm);
                         c.shoot_store(&mut inv.atomic_own, &mut sync_view);
                     })
                 }},
@@ -121,7 +121,7 @@ pub fn message_passing() {
                 excl.valid_op_lemma(&inv.tok_read);
 
                 swap(&mut inv.tok_read, &mut *excl);
-                *data_own = Some(inv.at_view.take().unwrap().sync(sync_view))
+                *data_own = Some(inv.data_perm.take().unwrap().sync(sync_view))
             })}}) {}
 
             let res = unsafe { data.get(ghost! { data_own.as_ref().unwrap() }) };
