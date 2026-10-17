@@ -229,7 +229,7 @@ module M_message_passing
   
   type t_MessagePassingAtomicInv = {
     atomic_own: t_Perm_AtomicBool;
-    at_view: t_Option_AtView_Perm_PCell_i32;
+    data_perm: t_Option_AtView_Perm_PCell_i32;
     tok_write: t_Resource_Option_Excl_unit;
     tok_read: t_Resource_Option_Excl_unit;
     data: t_PCell_i32 }
@@ -249,7 +249,7 @@ module M_message_passing
   
   axiom inv_axiom'0 [@rewrite]:
     forall _1: t_MessagePassingAtomicInv [inv_MessagePassingAtomicInv _1]. inv_MessagePassingAtomicInv _1
-      = inv_Option_AtView_Perm_PCell_i32 _1.at_view
+      = inv_Option_AtView_Perm_PCell_i32 _1.data_perm
   
   predicate invariant_Ghost_MessagePassingAtomicInv [@inline:trivial] (self: t_MessagePassingAtomicInv) =
     inv_MessagePassingAtomicInv self
@@ -280,10 +280,10 @@ module M_message_passing
         | Some {f0'0 = b; f1'0 = view} -> not b
         \/ b
         /\ val_Option_Excl_unit self.tok_write = Some'0 { f0'2 = () }
-        /\ match self.at_view with
-          | Some'1 at_view'0 -> self.data = ward_PCell_i32 (val_Perm_PCell_i32 at_view'0)
-          /\ Int32.to_int (val_PCell_i32 (val_Perm_PCell_i32 at_view'0)) = 1
-          /\ le_log_SyncView (view_Perm_PCell_i32 at_view'0) view
+        /\ match self.data_perm with
+          | Some'1 data_perm'0 -> self.data = ward_PCell_i32 (val_Perm_PCell_i32 data_perm'0)
+          /\ Int32.to_int (val_PCell_i32 (val_Perm_PCell_i32 data_perm'0)) = 1
+          /\ le_log_SyncView (view_Perm_PCell_i32 data_perm'0) view
           | None'1 -> val_Option_Excl_unit self.tok_read = Some'0 { f0'2 = () }
           end
         | None -> true
@@ -599,11 +599,11 @@ module M_message_passing
       | s19 = into_inner_tup2_SyncView_AtView_Perm_PCell_i32 {_19}
           (fun (_x: tup2_SyncView_AtView_Perm_PCell_i32) -> [ &_18 <- _x ] s20)
       | s20 = [ &sync_view <- _18.f0'5 ] s21
-      | s21 = [ &at_view'0 <- _18.f1'5 ] s22
-      | s22 = [ &_23 <- Some'1 at_view'0 ] s23
-      | s23 = s24 [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Perm_PCell_i32 inv.current.at_view} any) ]
-      | s24 = -{resolve_Option_AtView_Perm_PCell_i32 inv.current.at_view}- s25
-      | s25 = [ &inv <- { inv with current = { inv.current with at_view = _23 } } ] s26
+      | s21 = [ &data_perm'0 <- _18.f1'5 ] s22
+      | s22 = [ &_23 <- Some'1 data_perm'0 ] s23
+      | s23 = s24 [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Perm_PCell_i32 inv.current.data_perm} any) ]
+      | s24 = -{resolve_Option_AtView_Perm_PCell_i32 inv.current.data_perm}- s25
+      | s25 = [ &inv <- { inv with current = { inv.current with data_perm = _23 } } ] s26
       | s26 = MutBorrow.borrow_final <t_Perm_AtomicBool> {inv.current.atomic_own}
           {MutBorrow.inherit_id (MutBorrow.get_id inv) 0}
           (fun (_bor: MutBorrow.t t_Perm_AtomicBool) ->
@@ -651,7 +651,7 @@ module M_message_passing
     | & _14: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
     | & _15: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
     | & sync_view: t_SyncView = Any.any_l ()
-    | & at_view'0: t_AtView_Perm_PCell_i32 = Any.any_l ()
+    | & data_perm'0: t_AtView_Perm_PCell_i32 = Any.any_l ()
     | & _18: tup2_SyncView_AtView_Perm_PCell_i32 = Any.any_l ()
     | & _19: tup2_SyncView_AtView_Perm_PCell_i32 = Any.any_l ()
     | & _20: t_Perm_PCell_i32 = Any.any_l ()
@@ -1090,12 +1090,12 @@ module M_message_passing
       | s21 = -{resolve_refmut_Resource_Option_Excl_unit _28}- s22
       | s22 = -{resolve_refmut_Resource_Option_Excl_unit _27}- s23
       | s23 = -{resolve_refmut_Resource_Option_Excl_unit _25}- s24
-      | s24 = MutBorrow.borrow_final <t_Option_AtView_Perm_PCell_i32> {inv.current.at_view}
+      | s24 = MutBorrow.borrow_final <t_Option_AtView_Perm_PCell_i32> {inv.current.data_perm}
           {MutBorrow.inherit_id (MutBorrow.get_id inv) 1}
           (fun (_bor: MutBorrow.t t_Option_AtView_Perm_PCell_i32) ->
             [ &_34 <- _bor ] -{inv_Option_AtView_Perm_PCell_i32 _bor.final}-
-            [ &inv <- { inv with current = { inv.current with at_view = _bor.final } } ] s25)
-        [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Perm_PCell_i32 inv.current.at_view} any) ]
+            [ &inv <- { inv with current = { inv.current with data_perm = _bor.final } } ] s25)
+        [ _ck -> (! {[@expl:type invariant] inv_Option_AtView_Perm_PCell_i32 inv.current.data_perm} any) ]
       | s25 = take_AtView_Perm_PCell_i32 {_34} (fun (_x: t_Option_AtView_Perm_PCell_i32) -> [ &_33 <- _x ] s26)
       | s26 = s27 [ _ck -> (! {[@expl:type invariant] inv_refmut_MessagePassingAtomicInv inv} any) ]
       | s27 = -{resolve_refmut_MessagePassingAtomicInv inv}- s28
@@ -1549,7 +1549,7 @@ module M_message_passing
       | s19 = id_Option_Excl_unit'0 {_30} (fun (_x: t_Id) -> [ &_28 <- _x ] s20)
       | s20 = new_unit_Option_Excl_unit {_28} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_27 <- _x ] s21)
       | s21 = [ &_32 <- data'0 ] s22
-      | s22 = [ &_18 <- { atomic_own = _19; at_view = _21; tok_write = _22; tok_read = _27; data = _32 } ] s23
+      | s22 = [ &_18 <- { atomic_own = _19; data_perm = _21; tok_write = _22; tok_read = _27; data = _32 } ] s23
       | s23 = new_MessagePassingAtomicInv {_18} (fun (_x: t_MessagePassingAtomicInv) -> [ &_17 <- _x ] s24)
       | s24 = [ &_35 <- Namespace_MESSAGE_PASSING 0 ] s25
       | s25 = new_MessagePassingAtomicInv'0 {_17} {_35}
