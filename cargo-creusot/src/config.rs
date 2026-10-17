@@ -31,8 +31,11 @@ pub fn config(args: ConfigArgs) -> Result<()> {
     } else {
         args.creusot_path.or_else(|| Some(creusot_source_path()))
     };
-    let home = PathBuf::from(std::env::var_os("HOME").unwrap());
-    let cargo_config = home.join(".cargo/config.toml");
+    let cargo_config = match std::env::var_os("CARGO_HOME") {
+        None => PathBuf::from(std::env::var_os("HOME").unwrap()).join(".cargo"),
+        Some(p) => PathBuf::from(p),
+    }
+    .join("config.toml");
     let mut config_does_not_exist = false;
     let mut config = fs::read_to_string(&cargo_config)
         .or_else(|e| {
