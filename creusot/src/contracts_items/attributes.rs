@@ -62,7 +62,6 @@ attribute_functions! {
     [creusot::decl::logic::sealed]              => is_sealed
     [creusot::decl::logic::law]                 => is_law
     [creusot::decl::logic::inline]              => is_inline
-    [creusot::decl::logic::indirect]            => is_indirect
     [creusot::decl::opaque]                     => is_opaque
     [creusot::decl::trusted]                    => is_trusted
     [creusot::decl::trusted_ghost]              => is_trusted_ghost
@@ -124,6 +123,11 @@ pub(crate) fn get_intrinsic(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
 pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     get_attr(tcx, def_id, &["creusot", "clause", "open"])
         .map(|a| a.value_str().expect("invalid creusot::clause::open"))
+}
+
+pub(crate) fn indirect_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
+    get_attr(tcx, def_id, &["creusot", "clause", "indirect"])
+        .map(|a| a.value_str().expect("invalid creusot::clause::indirect"))
 }
 
 pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<WAttribute> {
