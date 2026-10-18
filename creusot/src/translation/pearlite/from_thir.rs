@@ -3,8 +3,8 @@ use crate::{
     ctx::TranslationCtx,
     naming::{lowercase_prefix, name},
     translation::pearlite::{
-        BinOp, Ident, Literal, PIdent, Pattern, PatternKind, QuantKind, Term, TermKind, TermSort,
-        TermWithTriggers, Trigger, UnOp,
+        BinOp, Ident, Literal, PIdent, Pattern, PatternKind, QuantKind, Substable, Term, TermKind,
+        TermSort, TermWithTriggers, Trigger, UnOp,
     },
 };
 use rustc_abi::{FieldIdx, VariantIdx};
@@ -110,24 +110,40 @@ pub(crate) fn from_thir<'tcx>(
         Other => [].into(),
     };
 
-    let (triggers, body) = lower.body_term(expr)?;
-    let term = patterns
-        .into_iter()
-        .rev()
-        .fold(body, |body: Term<'tcx>, (ident, pattern)| {
-            use PatternKind::*;
-            match pattern.kind {
-                Binder(v, box Pattern { kind: Wildcard, .. }) if v.0 == ident => body,
-                Wildcard | Tuple(box []) => body,
-                _ => {
-                    let span = body.span;
-                    let ty = pattern.ty;
-                    Term::let_(pattern, Term::var(ident, ty), body, span)
-                }
+    let (mut triggers, body) = lower.body_term(expr)?;
+
+    let mut subst = HashMap::new();
+    for (ident, pattern) in patterns.iter().rev() {
+        let mut pattern = pattern;
+        while let PatternKind::Binder(pat_ident, subpat) = &pattern.kind {
+            if pat_ident.0 != *ident {
+                subst.insert(pat_ident.0, TermKind::Var(PIdent(*ident)));
             }
-        })
-        .into();
-    Ok(TermWithTriggers { term, triggers })
+            pattern = subpat;
+        }
+    }
+
+    if !subst.is_empty() {
+        for trigger in &mut triggers {
+            for term in &mut trigger.0 {
+                term.subst_mut(&subst);
+            }
+        }
+    }
+
+    let term = patterns.into_iter().rev().fold(body, |body: Term<'tcx>, (ident, pattern)| {
+        use PatternKind::*;
+        match pattern.kind {
+            Binder(v, box Pattern { kind: Wildcard, .. }) if v.0 == ident => body,
+            Wildcard | Tuple(box []) => body,
+            _ => {
+                let ty = pattern.ty;
+                let span = body.span;
+                Term::let_(pattern, Term::var(ident, ty), body, span)
+            }
+        }
+    });
+    Ok(TermWithTriggers { term: Box::new(term), triggers })
 }
 
 struct ThirTerm<'a, 'tcx> {

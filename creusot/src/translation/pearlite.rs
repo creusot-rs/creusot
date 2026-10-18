@@ -804,7 +804,11 @@ impl<'tcx> Term<'tcx> {
             TermKind::PrivateInv { term } => term.subst_(bound, subst),
             TermKind::PrivateResolve { term } => term.subst_(bound, subst),
             TermKind::Spanned(term) => term.subst_(bound, subst),
-            TermKind::HirId(id) => self.kind = subst.subst_hirid(*id).unwrap(),
+            TermKind::HirId(id) => {
+                if let Some(id) = subst.subst_hirid(*id) {
+                    self.kind = id
+                }
+            }
         }
     }
 
