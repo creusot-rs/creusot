@@ -313,7 +313,7 @@ impl From<f64> for Float {
 pub enum Literal {
     Char(char),
     Bool(bool),
-    // TODO: Find a way to make this a BigInt type
+    IntDigits10(rustc_span::Symbol),
     Integer(i128),
     UInteger(u128),
     MachSigned(i128, IntTy),

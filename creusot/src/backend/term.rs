@@ -522,6 +522,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
     pub(crate) fn lower_literal(&self, lit: &Literal, ty: Ty<'tcx>) -> Exp {
         match *lit {
+            Literal::IntDigits10(i) => Constant::IntDigits10(i.as_str().to_string(), None).into(),
             Literal::Integer(i) => Constant::Int(i, None).into(),
             Literal::UInteger(i) => Constant::Uint(i, None).into(),
             Literal::MachSigned(mut i, ity) => {

@@ -20,7 +20,7 @@ use rustc_middle::{
     },
     ty::{CapturedPlace, Ty, TyKind, TypingEnv, adjustment::PointerCoercion},
 };
-use rustc_span::{ErrorGuaranteed, Span, Symbol, sym};
+use rustc_span::{ErrorGuaranteed, Span, Spanned, Symbol, sym};
 use std::{
     assert_matches,
     collections::HashMap,
@@ -399,6 +399,34 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                             }
                         };
                         Ok(Term { kind: TermKind::SeqLiteral(items), ty, span })
+                    }
+                    Intrinsic::IntLiteral => {
+                        // A call must look like `int_literal!("{base 10 digits}")`.
+                        let mut term = args[0];
+                        // Peel off everything to get to the int literal
+                        let int = loop {
+                            match &head(self.thir, term).kind {
+                                ExprKind::PointerCoercion { source, .. } => term = *source,
+                                ExprKind::Borrow { arg, .. } => term = *arg,
+                                ExprKind::Deref { arg, .. } => term = *arg,
+                                ExprKind::Literal {
+                                    lit: Spanned {
+                                        node: LitKind::Str(sym, ..),
+                                        ..
+                                    },
+                                    ..
+                                } => {
+                                    break *sym
+                                }
+                                _ => {
+                                    return Err(self.ctx.dcx().span_err(
+                                        span,
+                                        "Bad int! This should not happen.",
+                                    ));
+                                }
+                            }
+                        };
+                        Ok(Term { kind: TermKind::Lit(Literal::IntDigits10(int)), ty, span })
                     }
                     Intrinsic::IndexLogicStub => {
                         let term = self.expr_term(args[0])?;

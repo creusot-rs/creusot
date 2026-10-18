@@ -1126,6 +1126,10 @@ impl Print for Constant {
                 let c = *c as u32;
                 alloc.as_string(c).append(": ").append(t.pretty(alloc, scope)).parens()
             }
+            Constant::IntDigits10(i, Some(t)) => {
+                alloc.text(i).append(": ").append(t.pretty(alloc, scope)).parens()
+            }
+            Constant::IntDigits10(i, None) => alloc.text(i),
             Constant::Int(i, Some(t)) => {
                 alloc.as_string(i).append(": ").append(t.pretty(alloc, scope)).parens()
             }

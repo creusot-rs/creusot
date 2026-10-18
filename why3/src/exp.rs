@@ -840,6 +840,7 @@ impl Exp {
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Constant {
+    IntDigits10(String, Option<Type>),
     Int(i128, Option<Type>),
     Uint(u128, Option<Type>),
     Float(f64, Option<Type>),

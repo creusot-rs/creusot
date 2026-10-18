@@ -121,3 +121,9 @@ impl<T: ?Sized + View> ViewStub for T {
         dead
     }
 }
+
+#[logic(opaque)]
+#[intrinsic("int_literal")]
+pub fn int_literal(_: &str) -> crate::logic::Int {
+    dead
+}
