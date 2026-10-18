@@ -2,7 +2,16 @@ module M_ex
   use seq.Seq
   use int.Int
   
-  function tail_Int (self: Seq.seq int) : Seq.seq int = Seq.([..]) self 1 (Seq.length self)
+  type t_RangeFrom_Int = { start: int }
+  
+  function index_Seq_Int [@inline:trivial] (self: Seq.seq int) (range: t_RangeFrom_Int) : Seq.seq int =
+    Seq.([..]) self range.start (Seq.length self)
+  
+  meta "rewrite_def" function index_Seq_Int
+  
+  function tail_Int [@inline:trivial] (self: Seq.seq int) : Seq.seq int = index_Seq_Int self { start = 1 }
+  
+  meta "rewrite_def" function tail_Int
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
   

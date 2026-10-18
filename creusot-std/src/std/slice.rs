@@ -361,33 +361,105 @@ extern_spec! {
 
         #[check(ghost)]
         #[requires(mid@ <= self@.len())]
-        #[ensures({
-            let (l,r) = result;  let sl = self@.len();
-            self@.subsequence(0, mid@) == l@ &&
-            self@.subsequence(mid@, sl) == r@
-        })]
+        #[ensures(result.0@ == self@[..mid@])]
+        #[ensures(result.1@ == self@[mid@..])]
         fn split_at(&self, mid: usize) -> (&[T], &[T]);
+
+        #[check(ghost)]
+        #[ensures(match result {
+            Some((l, r)) => mid@ <= self@.len() && l@ == self@[..mid@] && r@ == self@[mid@..],
+            None => mid@ > self@.len()
+        })]
+        fn split_at_checked(&self, mid: usize) -> Option<(&[T], &[T])> {
+            if mid > self.len() {
+                None
+            } else {
+                Some(self.split_at(mid))
+            }
+        }
 
         #[check(ghost)]
         #[requires(mid@ <= self@.len())]
         #[ensures((^self)@.len() == self@.len())]
-        #[ensures(self@.subsequence(0, mid@) == result.0@)]
-        #[ensures(self@.subsequence(mid@, self@.len()) == result.1@)]
-        #[ensures((^self)@.subsequence(0, mid@) == (^result.0)@)]
-        #[ensures((^self)@.subsequence(mid@, self@.len()) == (^result.1)@)]
+        #[ensures(result.0@ == self@[..mid@])]
+        #[ensures(result.1@ == self@[mid@..])]
+        #[ensures((^result.0)@ == (^self)@[..mid@])]
+        #[ensures((^result.1)@ == (^self)@[mid@..])]
         fn split_at_mut(&mut self, mid: usize) -> (&mut [T], &mut [T]);
 
         #[check(ghost)]
+        #[ensures((^self)@.len() == self@.len())]
         #[ensures(match result {
-            Some((first, tail)) => {
-                *first == self[0] && ^first == (^self)[0] &&
-                (*self)@.len() > 0 && (^self)@.len() > 0 &&
-                (*tail)@ == (*self)@.tail() &&
-                (^tail)@ == (^self)@.tail()
+            Some((l, r)) => {
+                mid@ <= self@.len() &&
+                l@ == self@[..mid@] && r@ == self@[mid@..] &&
+                (^l)@ == (^self)@[..mid@] && (^r)@ == (^self)@[mid@..]
             }
-            None => self@.len() == 0 && ^self == *self && self@ == Seq::empty()
+            None => mid@ > self@.len() && *self == ^self
         })]
-        fn split_first_mut(&mut self) -> Option<(&mut T, &mut [T])>;
+        fn split_at_mut_checked(&mut self, mid: usize) -> Option<(&mut [T], &mut [T])> {
+            if mid > self.len() {
+                None
+            } else {
+                Some(self.split_at_mut(mid))
+            }
+        }
+
+        #[check(ghost)]
+        #[ensures(match result {
+            Some((l, r)) => 1 <= self@.len() && l == &self[0] && r@ == self@[1..],
+            None => self@ == Seq::empty()
+        })]
+        fn split_first(&self) -> Option<(&T, &[T])> {
+            let (l, r) = self.split_at_checked(1)?;
+            Some((&l[0], r))
+        }
+
+        #[check(ghost)]
+        #[ensures((^self)@.len() == self@.len())]
+        #[ensures(match result {
+            Some((l, r)) => {
+                1 <= self@.len() &&
+                *l == self[0] && ^l == (^self)[0] && r@ == self@[1..] && (^r)@ == (^self)@[1..]
+            }
+            None => self@ == Seq::empty() && *self == ^self
+        })]
+        fn split_first_mut(&mut self) -> Option<(&mut T, &mut [T])> {
+            let (l, r) = self.split_at_mut_checked(1)?;
+            Some((&mut l[0], r))
+        }
+
+        #[check(ghost)]
+        #[ensures(match result {
+            Some((l, r)) => 1 <= self@.len() && l == &self[self@.len() - 1] && r@ == self@.init(),
+            None => self@ == Seq::empty()
+        })]
+        fn split_last(&self) -> Option<(&T, &[T])> {
+            if self.len() == 0 {
+                return None
+            }
+            let (l, r) = self.split_at(self.len() - 1);
+            Some((&r[0], l))
+        }
+
+        #[check(ghost)]
+        #[ensures((^self)@.len() == self@.len())]
+        #[ensures(match result {
+            Some((l, r)) => {
+                1 <= self@.len() &&
+                *l == self[self@.len() - 1] && ^l == (^self)[self@.len() - 1] &&
+                r@ == self@.init() && (^r)@ == (^self)@.init()
+            }
+            None => self@ == Seq::empty() && *self == ^self
+        })]
+        fn split_last_mut(&mut self) -> Option<(&mut T, &mut [T])> {
+            if self.len() == 0 {
+                return None
+            }
+            let (l, r) = self.split_at_mut(self.len() - 1);
+            Some((&mut r[0], l))
+        }
+
 
         #[check(ghost)]
         #[ensures((^*self)@.len() == (**self)@.len())]
@@ -409,7 +481,7 @@ extern_spec! {
             Some(r) => {
                 (**self)@.len() > 0 &&
                 r == &mut (**self)[(**self)@.len()-1] &&
-                (^self).to_mut_seq() == (*self).to_mut_seq().subsequence(0, (*self).to_mut_seq().len()-1)
+                (^self).to_mut_seq() == (*self).to_mut_seq().init()
             }
             None => resolve(self) && (^*self)@ == Seq::empty() && (**self)@ == Seq::empty()
         })]

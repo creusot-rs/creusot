@@ -1,0 +1,128 @@
+use creusot.slice.Slice64
+use creusot.int.UInt64
+use seq.Seq
+use creusot.prelude.Any
+use int.Int
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_T
+
+predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+
+meta "rewrite_def" predicate inv_Seq_T
+
+predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
+
+predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
+
+meta "rewrite_def" predicate inv_slice_T
+
+predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+
+meta "rewrite_def" predicate invariant_ref_slice_T
+
+predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
+
+meta "rewrite_def" predicate inv_ref_slice_T
+
+let len_T (self: Slice64.slice t_T) (return (x: UInt64.t)) =
+{[@stop_split] [@expl:len 'self' type invariant] inv_ref_slice_T self}
+  any
+  [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
+    = UInt64.t'int result}
+    (! return {result}) ]
+
+type tup2_ref_slice_T_ref_slice_T = { f0: Slice64.slice t_T; f1: Slice64.slice t_T }
+
+type t_Option_tup2_ref_slice_T_ref_slice_T = None | Some tup2_ref_slice_T_ref_slice_T
+
+predicate inv_tup2_ref_slice_T_ref_slice_T [@inline:trivial] (_1: tup2_ref_slice_T_ref_slice_T) =
+  inv_ref_slice_T _1.f0 /\ inv_ref_slice_T _1.f1
+
+meta "rewrite_def" predicate inv_tup2_ref_slice_T_ref_slice_T
+
+type t_RangeTo_Int = { end': int }
+
+function index_Seq_T [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeTo_Int) : Seq.seq t_T =
+  Seq.([..]) self 0 range.end'
+
+meta "rewrite_def" function index_Seq_T
+
+type t_RangeFrom_Int = { start: int }
+
+function index_Seq_T'0 [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeFrom_Int) : Seq.seq t_T =
+  Seq.([..]) self range.start (Seq.length self)
+
+meta "rewrite_def" function index_Seq_T'0
+
+let split_at_T (self: Slice64.slice t_T) (mid: UInt64.t) (return (x: tup2_ref_slice_T_ref_slice_T)) =
+{[@stop_split] [@expl:split_at_T requires] ([@stop_split] [@expl:split_at 'self' type invariant] inv_ref_slice_T self)
+  /\ ([@stop_split] [@expl:split_at requires] UInt64.t'int mid <= Seq.length (Slice64.view self))}
+  any
+  [ return (result: tup2_ref_slice_T_ref_slice_T) ->
+  {[@stop_split] [@expl:split_at_T ensures] ([@stop_split] [@expl:split_at result type invariant] inv_tup2_ref_slice_T_ref_slice_T result)
+    /\ ([@stop_split] [@expl:split_at ensures #0] Slice64.view result.f0
+      = index_Seq_T (Slice64.view self) { end' = UInt64.t'int mid })
+    /\ ([@stop_split] [@expl:split_at ensures #1] Slice64.view result.f1
+    = index_Seq_T'0 (Slice64.view self) { start = UInt64.t'int mid })}
+    (! return {result}) ]
+
+predicate inv_Option_tup2_ref_slice_T_ref_slice_T (_1: t_Option_tup2_ref_slice_T_ref_slice_T)
+
+axiom inv_axiom [@rewrite]:
+  forall _1: t_Option_tup2_ref_slice_T_ref_slice_T [inv_Option_tup2_ref_slice_T_ref_slice_T _1]. inv_Option_tup2_ref_slice_T_ref_slice_T _1
+    = match _1 with
+      | None -> true
+      | Some f0'0 -> inv_tup2_ref_slice_T_ref_slice_T f0'0
+      end
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T__slice_T_split_at_checked_body_T (self_: Slice64.slice t_T) (mid: UInt64.t)
+  (return (x: t_Option_tup2_ref_slice_T_ref_slice_T)) =
+{[@stop_split] [@expl:extern_spec_T__slice_T_split_at_checked_body 'self_' type invariant] inv_ref_slice_T self_}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = len_T {self_} (fun (_x: UInt64.t) -> [ &_8 <- _x ] s1)
+    | s1 = [ &_6 <- UInt64.gt mid _8 ] s2
+    | s2 = any [ br0 -> {_6 = false} (! bb3) | br1 -> {_6} (! bb2) ] ]
+  | bb2 = s0 [ s0 = [ &_ret <- None ] s1 | s1 = return {_ret} ]
+  | bb3 = s0
+    [ s0 = split_at_T {self_} {mid} (fun (_x: tup2_ref_slice_T_ref_slice_T) -> [ &_10 <- _x ] s1)
+    | s1 = [ &_ret <- Some _10 ] s2
+    | s2 = return {_ret} ] ]
+  [ & _ret: t_Option_tup2_ref_slice_T_ref_slice_T = Any.any_l ()
+  | & self_: Slice64.slice t_T = self_
+  | & mid: UInt64.t = mid
+  | & _6: bool = Any.any_l ()
+  | & _8: UInt64.t = Any.any_l ()
+  | & _10: tup2_ref_slice_T_ref_slice_T = Any.any_l () ])
+  [ return (result: t_Option_tup2_ref_slice_T_ref_slice_T) ->
+  {[@stop_split] [@expl:extern_spec_T__slice_T_split_at_checked_body_T ensures] ([@stop_split] [@expl:extern_spec_T__slice_T_split_at_checked_body result type invariant] inv_Option_tup2_ref_slice_T_ref_slice_T result)
+    /\ ([@stop_split] [@expl:extern_spec_T__slice_T_split_at_checked_body ensures] match result with
+      | Some {f0 = l; f1 = r} -> UInt64.t'int mid <= Seq.length (Slice64.view self_)
+      /\ Slice64.view l = index_Seq_T (Slice64.view self_) { end' = UInt64.t'int mid }
+      /\ Slice64.view r = index_Seq_T'0 (Slice64.view self_) { start = UInt64.t'int mid }
+      | None -> gt_log_Int (UInt64.t'int mid) (Seq.length (Slice64.view self_))
+      end)}
+    (! return {result}) ]

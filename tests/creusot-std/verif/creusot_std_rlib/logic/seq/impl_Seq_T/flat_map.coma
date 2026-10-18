@@ -8,7 +8,16 @@ type t_T
 
 type t_U
 
-function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+type t_RangeFrom_Int = { start: int }
+
+function index_Seq_T [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeFrom_Int) : Seq.seq t_T =
+  Seq.([..]) self range.start (Seq.length self)
+
+meta "rewrite_def" function index_Seq_T
+
+function tail_T [@inline:trivial] (self: Seq.seq t_T) : Seq.seq t_T = index_Seq_T self { start = 1 }
+
+meta "rewrite_def" function tail_T
 
 predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
 
