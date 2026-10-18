@@ -226,20 +226,21 @@ impl Parse for LogicTag {
         let result = match ident.to_string().as_str() {
             "open" => {
                 if input.is_empty() || input.peek(Token![,]) {
-                    return Ok(Self::Open(Visibility::Public(Default::default()), ident.span()));
+                    Ok(Self::Open(Visibility::Public(Default::default()), ident.span()))
+                } else {
+                    let vis;
+                    let paren_token = parenthesized!(vis in input);
+                    let span = ident.span().join(paren_token.span.span()).unwrap();
+                    Ok(Self::Open(
+                        Visibility::Restricted(VisRestricted {
+                            pub_token: Default::default(),
+                            paren_token,
+                            in_token: vis.parse()?,
+                            path: vis.parse()?,
+                        }),
+                        span,
+                    ))
                 }
-                let vis;
-                let paren_token = parenthesized!(vis in input);
-                let span = ident.span().join(paren_token.span.span()).unwrap();
-                Ok(Self::Open(
-                    Visibility::Restricted(VisRestricted {
-                        pub_token: Default::default(),
-                        paren_token,
-                        in_token: vis.parse()?,
-                        path: vis.parse()?,
-                    }),
-                    span,
-                ))
             }
             "opaque" => Ok(Self::Opaque(ident.span())),
             "law" => Ok(Self::Law(ident.span())),
@@ -247,11 +248,22 @@ impl Parse for LogicTag {
             "sealed" => Ok(Self::Sealed(ident.span())),
             "inline" => Ok(Self::Inline(ident.span())),
             "indirect" => Ok(Self::Indirect(trigger, ident.span())),
-            _ => Err(Error::new(
+            _ => {
+                return Err(Error::new(
+                    ident.span(),
+                    "unsupported modifier. The only supported modifiers are \
+                    `open`, `opaque`, `law`, `prophetic`, `sealed`, `inline` and `indirect`",
+                ));
+            }
+        };
+
+        if has_triggers && ident != "indirect" {
+            return Err(Error::new(
                 ident.span(),
-                "unsupported modifier. The only supported modifiers are `open`, `prophetic`, `law` and `sealed`",
-            )),
+                format!("modifier `{ident}` does not support trigger attributes"),
+            ));
         }
+        result
     }
 }
 
