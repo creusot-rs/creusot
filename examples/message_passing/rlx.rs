@@ -91,7 +91,7 @@ pub fn message_passing() {
 
             unsafe { *data.borrow_mut(ghost!(&mut *data_perm)) = 1 }
 
-            let (mut sync_view, at_view) = AtView::new(ghost!(data_perm.into_inner())).split();
+            let (mut sync_view, perm) = AtView::new(ghost!(data_perm.into_inner())).split();
             let rel_view = fence_release(sync_view);
 
             atomic.store(
@@ -102,7 +102,7 @@ pub fn message_passing() {
                             excl.valid_op_lemma(excl_state);
                         }
 
-                        inv.state = State::Synchronisation(at_view.into_inner(), excl.into_inner());
+                        inv.state = State::Synchronisation(perm.into_inner(), excl.into_inner());
                         c.shoot_store(&mut inv.atomic_own, &mut sync_view, *rel_view);
                     })
                 }},
@@ -113,7 +113,7 @@ pub fn message_passing() {
             let mut excl = ghost!(Some(excl_read.into_inner()));
             let excl_snap = snapshot!(excl);
             let mut acq_view = ghost!(None);
-            let mut data_perm_at_view = ghost!(None);
+            let mut data_perm = ghost!(None);
 
             #[invariant(excl == *excl_snap)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
@@ -129,17 +129,17 @@ pub fn message_passing() {
                     excl.as_mut().unwrap().valid_op_lemma(excl_state);
                 }
 
-                let State::Synchronisation(at_view, tok_write) =
+                let State::Synchronisation(perm, tok_write) =
                     replace(&mut inv.state, State::Invalid)
                 else {
                     unreachable!();
                 };
                 inv.state = State::Readable(tok_write, excl.take().unwrap());
-                *data_perm_at_view = Some(at_view)
+                *data_perm = Some(perm)
             })}}) {}
 
             let sync_view = fence_acquire(ghost!(acq_view.unwrap()));
-            let data_perm = ghost!(data_perm_at_view.into_inner().unwrap().sync(*sync_view));
+            let data_perm = ghost!(data_perm.into_inner().unwrap().sync(*sync_view));
 
             let res = unsafe { data.get(ghost!(&*data_perm)) };
             proof_assert!(res == 1i32)

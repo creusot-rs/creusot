@@ -98,12 +98,12 @@ pub fn message_passing() {
                 true,
                 ghost! { |c: &mut Committer<_, _, _, Release>| {
                     inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
-                        let (mut sync_view, at_view) = AtView::new(ghost!(data_perm.into_inner())).into_inner();
+                        let (mut sync_view, perm) = AtView::new(ghost!(data_perm.into_inner())).into_inner();
                         if let State::Synchronisation(_, excl_state) | State::Readable(excl_state, _) = &inv.state {
                             excl.valid_op_lemma(excl_state);
                         }
 
-                        inv.state = State::Synchronisation(at_view, excl.into_inner());
+                        inv.state = State::Synchronisation(perm, excl.into_inner());
                         c.shoot_store(&mut inv.atomic_own, &mut sync_view);
                     })
                 }},
@@ -129,13 +129,13 @@ pub fn message_passing() {
                     excl.as_mut().unwrap().valid_op_lemma(excl_state);
                 }
 
-                let State::Synchronisation(at_view, tok_write) =
+                let State::Synchronisation(perm, tok_write) =
                     replace(&mut inv.state, State::Invalid)
                 else {
                     unreachable!();
                 };
                 inv.state = State::Readable(tok_write, excl.take().unwrap());
-                *data_perm = Some(at_view.sync(sync_view))
+                *data_perm = Some(perm.sync(sync_view))
             })}}) {}
 
             let res = unsafe { data.get(ghost! { data_perm.as_ref().unwrap() }) };
