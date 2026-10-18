@@ -680,11 +680,13 @@ extern_spec! {
     }
 
     impl<T> Try for Option<T> {
+        #[check(ghost)]
         #[ensures(result == Some(output))]
         fn from_output(output: T) -> Self {
             Some(output)
         }
 
+        #[check(ghost)]
         #[ensures(match self {
             Some(v) => result == ControlFlow::Continue(v),
             None => result == ControlFlow::Break(None)
@@ -698,6 +700,7 @@ extern_spec! {
     }
 
     impl<T> FromResidual<Option<Infallible>> for Option<T> {
+        #[check(ghost)]
         #[ensures(result == None)]
         fn from_residual(residual: Option<Infallible>) -> Self {
             match residual {
@@ -707,11 +710,13 @@ extern_spec! {
     }
 
     impl<T, E> Try for Result<T, E> {
+        #[check(ghost)]
         #[ensures(result == Ok(output))]
         fn from_output(output: T) -> Self {
             Ok(output)
         }
 
+        #[check(ghost)]
         #[ensures(match self {
             Ok(v) => result == ControlFlow::Continue(v),
             Err(e) => result == ControlFlow::Break(Err(e))

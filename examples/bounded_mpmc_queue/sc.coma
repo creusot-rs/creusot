@@ -2621,7 +2621,16 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     new_seq: Seq.seq t_T;
     shot: bool }
   
-  function tail_T'0 (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+  type t_RangeFrom_Int = { start: int }
+  
+  function index_Seq_T [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeFrom_Int) : Seq.seq t_T =
+    Seq.([..]) self range.start (Seq.length self)
+  
+  meta "rewrite_def" function index_Seq_T
+  
+  function tail_T'0 [@inline:trivial] (self: Seq.seq t_T) : Seq.seq t_T = index_Seq_T self { start = 1 }
+  
+  meta "rewrite_def" function tail_T'0
   
   predicate precondition_F (self: t_F) (args: MutBorrow.t t_QueueCommitter_T)
   
@@ -4156,7 +4165,16 @@ module M_impl_Queue_T__try_dequeue_cas_inv (* Queue<T> *)
   
   function seq_T'0 (self: t_QueueInv_T) : Seq.seq t_T = seq_T self.values_auth
   
-  function tail_T'0 (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+  type t_RangeFrom_Int = { start: int }
+  
+  function index_Seq_T [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeFrom_Int) : Seq.seq t_T =
+    Seq.([..]) self range.start (Seq.length self)
+  
+  meta "rewrite_def" function index_Seq_T
+  
+  function tail_T'0 [@inline:trivial] (self: Seq.seq t_T) : Seq.seq t_T = index_Seq_T self { start = 1 }
+  
+  meta "rewrite_def" function tail_T'0
   
   function budget_T (self: t_Authority_T) : int
   

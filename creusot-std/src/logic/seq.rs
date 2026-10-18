@@ -155,9 +155,9 @@ impl<T> Seq<T> {
     /// proof_assert!(s.tail().tail() == Seq::singleton(15));
     /// proof_assert!(s.tail().tail().tail() == Seq::empty());
     /// ```
-    #[logic(open)]
+    #[logic(open, inline)]
     pub fn tail(self) -> Self {
-        self.subsequence(1, self.len())
+        self[1..]
     }
 
     /// Returns the sequence without its last element.
@@ -173,9 +173,9 @@ impl<T> Seq<T> {
     /// proof_assert!(s.init().init() == Seq::singleton(5));
     /// proof_assert!(s.init().init().init() == Seq::empty());
     /// ```
-    #[logic(open)]
+    #[logic(open, inline)]
     pub fn init(self) -> Self {
-        self.subsequence(0, self.len() - 1)
+        self[..self.len() - 1]
     }
 
     /// Returns the number of elements in the sequence, also referred to as its 'length'.
