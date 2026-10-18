@@ -251,14 +251,7 @@ impl Parse for LogicTag {
                 ident.span(),
                 "unsupported modifier. The only supported modifiers are `open`, `prophetic`, `law` and `sealed`",
             )),
-        };
-        if has_triggers && ident != "indirect" {
-            return Err(Error::new(
-                ident.span(),
-                format!("modifier `{ident}` does not support trigger attributes"),
-            ));
         }
-        result
     }
 }
 
