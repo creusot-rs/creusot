@@ -31,7 +31,16 @@ function singleton_Seq_T (x: Seq.seq t_T) : Fset.fset (Seq.seq t_T) = add_Seq_T 
 axiom singleton_Seq_T_spec:
   forall x: Seq.seq t_T [singleton_Seq_T x]. forall y: Seq.seq t_T. contains_Seq_T (singleton_Seq_T x) y = (x = y)
 
-function tail_T (self: Seq.seq t_T) : Seq.seq t_T = Seq.([..]) self 1 (Seq.length self)
+type t_RangeFrom_Int = { start: int }
+
+function index_Seq_T [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeFrom_Int) : Seq.seq t_T =
+  Seq.([..]) self range.start (Seq.length self)
+
+meta "rewrite_def" function index_Seq_T
+
+function tail_T [@inline:trivial] (self: Seq.seq t_T) : Seq.seq t_T = index_Seq_T self { start = 1 }
+
+meta "rewrite_def" function tail_T
 
 predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
 
