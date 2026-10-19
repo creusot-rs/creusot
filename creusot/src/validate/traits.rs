@@ -1,6 +1,6 @@
 use crate::{
     backend::is_trusted_item,
-    contracts_items::{Intrinsic, is_law, is_open_inv_result, is_trusted},
+    contracts_items::{is_law, is_open_inv_result, is_trusted},
     ctx::{HasTyCtxt as _, TranslationCtx},
     util::erased_identity_for_item,
 };
