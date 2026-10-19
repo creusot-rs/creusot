@@ -25,8 +25,6 @@ module M_dummy_swap
   
   meta "rewrite_def" predicate resolve_refmut_Box_T_Global
   
-  function deref_Box_T_Global (self: t_T) : t_T
-  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -34,7 +32,7 @@ module M_dummy_swap
   let dummy_swap_T (b1: MutBorrow.t t_T) (b2: MutBorrow.t t_T) (return (x: ())) =
   {[@stop_split] [@expl:dummy_swap_T requires] ([@stop_split] [@expl:dummy_swap 'b1' type invariant] inv_refmut_Box_T_Global b1)
     /\ ([@stop_split] [@expl:dummy_swap 'b2' type invariant] inv_refmut_Box_T_Global b2)
-    /\ ([@stop_split] [@expl:dummy_swap requires] deref_Box_T_Global b1.current <> deref_Box_T_Global b2.current)}
+    /\ ([@stop_split] [@expl:dummy_swap requires] b1.current <> b2.current)}
     (! bb0
     [ bb0 = s0
       [ s0 = [ &tmp <- b1.current ] s1
@@ -47,8 +45,7 @@ module M_dummy_swap
       | s7 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & b1: MutBorrow.t t_T = b1 | & b2: MutBorrow.t t_T = b2 | & tmp: t_T = Any.any_l () ])
     [ return (result: ()) ->
-    {[@stop_split] [@expl:dummy_swap_T ensures] ([@stop_split] [@expl:dummy_swap ensures #0] deref_Box_T_Global b1.current
-        = deref_Box_T_Global b2.final)
+    {[@stop_split] [@expl:dummy_swap_T ensures] ([@stop_split] [@expl:dummy_swap ensures #0] b1.current = b2.final)
       /\ ([@stop_split] [@expl:dummy_swap ensures #1] b2.current = b1.final)}
       (! return {result}) ]
 end

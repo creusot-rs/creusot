@@ -53,8 +53,8 @@ impl<T: ?Sized, A: Allocator> Invariant for Box<T, A> {
 
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> DerefLogic for Box<T, A> {
-    #[trusted]
-    #[logic(opaque)]
+    #[logic]
+    #[builtin("identity")]
     fn deref_logic(&self) -> &T {
         dead
     }
@@ -62,10 +62,8 @@ impl<T, A: Allocator> DerefLogic for Box<T, A> {
 
 #[cfg(feature = "nightly")]
 impl<T, A: Allocator> DerefMutLogic for Box<T, A> {
-    #[trusted]
-    #[logic(opaque)]
-    #[ensures(*result == **self)]
-    #[ensures(^result == *^self)]
+    #[logic]
+    #[builtin("identity")]
     fn deref_mut_logic(&mut self) -> &mut T {
         dead
     }
@@ -121,13 +119,17 @@ extern_spec! {
     impl<T, A: Allocator> Deref for Box<T, A> {
         #[check(ghost)]
         #[logic_alias(self.deref_logic())]
-        fn deref(&self) -> &T;
+        fn deref(&self) -> &T {
+            &**self
+        }
     }
 
     impl<T, A: Allocator> DerefMut for Box<T, A> {
         #[check(ghost)]
         #[logic_alias(self.deref_mut_logic())]
-        fn deref_mut(&mut self) -> &mut T;
+        fn deref_mut(&mut self) -> &mut T {
+            &mut **self
+        }
     }
 
     impl<T, const N: usize> TryFrom<Box<[T]>> for Box<[T; N]> {
