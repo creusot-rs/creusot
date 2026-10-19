@@ -1,5 +1,5 @@
 use crate::{
-    contracts_items::{Intrinsic, get_builtin},
+    contracts_items::get_builtin,
     ctx::{HasTyCtxt as _, TranslationCtx},
     logic_alias::subst_call as subst_alias,
     resolution::TraitResolved,
@@ -10,7 +10,6 @@ use crate::{
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, TypingEnv};
-use rustc_span::sym;
 
 pub(crate) fn normalize<'tcx>(
     ctx: &TranslationCtx<'tcx>,
