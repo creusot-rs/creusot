@@ -523,8 +523,6 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
     pub(crate) fn lower_literal(&self, lit: &Literal, ty: Ty<'tcx>) -> Exp {
         match *lit {
             Literal::IntDigits10(i) => Constant::IntDigits10(i.as_str().to_string(), None).into(),
-            Literal::Integer(i) => Constant::Int(i, None).into(),
-            Literal::UInteger(i) => Constant::Uint(i, None).into(),
             Literal::MachSigned(mut i, ity) => {
                 let why_ty =
                     Type::qconstructor(self.names.in_pre(ity_to_prelude(self.tcx(), ity), "t"));
@@ -534,20 +532,20 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                         let target_width = self.ctx.sess.target.pointer_width;
                         i += 1 << ity.normalize(target_width).bit_width().unwrap();
                     }
-                    Constant::Uint(i as u128, Some(why_ty)).into()
+                    Constant::IntDigits10((i as u128).to_string(), Some(why_ty)).into()
                 } else {
-                    Constant::Int(i, Some(why_ty)).into()
+                    Constant::IntDigits10(i.to_string(), Some(why_ty)).into()
                 }
             }
             Literal::MachUnsigned(u, uty) => {
                 let why_ty =
                     Type::qconstructor(self.names.in_pre(uty_to_prelude(self.tcx(), uty), "t"));
-                Constant::Uint(u, Some(why_ty)).into()
+                Constant::IntDigits10(u.to_string(), Some(why_ty)).into()
             }
             Literal::Bool(true) => Constant::const_true().into(),
             Literal::Bool(false) => Constant::const_false().into(),
             Literal::Char(c) => Exp::qvar(self.names.in_pre(PreMod::Char, "of_int"))
-                .app([Constant::Int(c as u32 as i128, None).into()]),
+                .app([Constant::IntDigits10((c as u32).to_string(), None).into()]),
             Literal::Float(ref f, fty) => {
                 let why_ty = Type::qconstructor(self.names.in_pre(floatty_to_prelude(fty), "t"));
                 Constant::Float(f.0, Some(why_ty)).into()

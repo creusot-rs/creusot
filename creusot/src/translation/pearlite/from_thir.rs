@@ -391,10 +391,10 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                                         .collect::<Result<_, ErrorGuaranteed>>()?;
                                 }
                                 _ => {
-                                    return Err(self.ctx.dcx().span_err(
+                                    self.ctx.dcx().span_bug(
                                         span,
                                         "Bad seq! This should not happen.",
-                                    ));
+                                    );
                                 }
                             }
                         };
@@ -419,10 +419,10 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                                     break *sym
                                 }
                                 _ => {
-                                    return Err(self.ctx.dcx().span_err(
+                                    self.ctx.dcx().span_bug(
                                         span,
                                         "Bad int! This should not happen.",
-                                    ));
+                                    );
                                 }
                             }
                         };

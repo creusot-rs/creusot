@@ -573,7 +573,7 @@ impl Exp {
     }
 
     pub fn int(i: i128) -> Self {
-        Exp::Const(Constant::Int(i, None))
+        Exp::Const(Constant::IntDigits10(i.to_string(), None))
     }
 
     pub fn let_pat(pattern: Pattern, arg: Exp, mut body: Exp) -> Exp {
@@ -602,7 +602,7 @@ impl Exp {
     }
 
     pub fn uint(value: u128) -> Self {
-        Exp::Const(Constant::Uint(value, None))
+        Exp::Const(Constant::IntDigits10(value.to_string(), None))
     }
 
     /// Reorder binary operations, so that the one that are associative are always evaluated left-to-right.
@@ -841,8 +841,6 @@ impl Exp {
 #[cfg_attr(feature = "serialize", derive(Serialize, Deserialize))]
 pub enum Constant {
     IntDigits10(String, Option<Type>),
-    Int(i128, Option<Type>),
-    Uint(u128, Option<Type>),
     Float(f64, Option<Type>),
     String(String),
     Other(String),

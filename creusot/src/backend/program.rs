@@ -870,12 +870,15 @@ impl<'tcx> RValue<'tcx> {
                     .enumerate()
                     .map(|(ix, f)| {
                         Exp::qvar(name::seq_get())
-                            .app([arr_elts.clone(), Exp::Const(Constant::Int(ix as i128, None))])
+                            .app([
+                                arr_elts.clone(),
+                                Exp::Const(Constant::IntDigits10(ix.to_string(), None)),
+                            ])
                             .eq(f.into_why(lower, istmts, span))
                     })
                     .chain([Exp::qvar(name::seq_length())
                         .app([arr_elts.clone()])
-                        .eq(Exp::Const(Constant::Int(len as i128, None)))])
+                        .eq(Exp::Const(Constant::IntDigits10(len.to_string(), None)))])
                     .reduce(Exp::log_and)
                     .expect("array literal missing assumption");
                 assumptions.reassociate();
@@ -998,9 +1001,12 @@ impl<'tcx> Branches<'tcx> {
                                 let target_width = ctx.tcx.sess.target.pointer_width;
                                 val += 1 << ity.normalize(target_width).bit_width().unwrap();
                             }
-                            Exp::Const(Constant::Uint(val as u128, Some(why_ty)))
+                            Exp::Const(Constant::IntDigits10(val.to_string(), Some(why_ty)))
                         } else {
-                            Exp::Const(Constant::Int(sign_extend(val, *ity), Some(why_ty)))
+                            Exp::Const(Constant::IntDigits10(
+                                sign_extend(val, *ity).to_string(),
+                                Some(why_ty),
+                            ))
                         };
                         (e, mk_goto(block_idents, tgt))
                     })
@@ -1027,7 +1033,7 @@ impl<'tcx> Branches<'tcx> {
                     .map(|(val, tgt)| {
                         let why_ty =
                             Type::qconstructor(names.in_pre(uty_to_prelude(ctx.tcx, *uty), "t"));
-                        let e = Exp::Const(Constant::Uint(val, Some(why_ty)));
+                        let e = Exp::Const(Constant::IntDigits10(val.to_string(), Some(why_ty)));
                         (e, mk_goto(block_idents, tgt))
                     })
                     .collect();

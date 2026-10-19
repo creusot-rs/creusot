@@ -10,7 +10,7 @@ use crate::{
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, TypingEnv};
-use rustc_span::sym;
+use rustc_span::{Symbol, sym};
 
 pub(crate) fn normalize<'tcx>(
     ctx: &TranslationCtx<'tcx>,
@@ -121,7 +121,7 @@ fn optimize_builtin<'tcx>(
             | "creusot.int.UInt64$BW$.t'int"
             | "creusot.int.UInt128$BW$.t'int",
         ) if let box [Term { kind: Lit(MachUnsigned(c, _)), .. }] = args => {
-            return Lit(UInteger(c));
+            return Lit(IntDigits10(Symbol::intern(&c.to_string())));
         }
         Some(
             "creusot.int.Int8$BW$.to_int"
@@ -129,7 +129,9 @@ fn optimize_builtin<'tcx>(
             | "creusot.int.Int32$BW$.to_int"
             | "creusot.int.Int64$BW$.to_int"
             | "creusot.int.Int128$BW$.to_int",
-        ) if let box [Term { kind: Lit(MachSigned(c, _)), .. }] = args => return Lit(Integer(c)),
+        ) if let box [Term { kind: Lit(MachSigned(c, _)), .. }] = args => {
+            return Lit(IntDigits10(Symbol::intern(&c.to_string())));
+        }
         _ => (),
     }
 
