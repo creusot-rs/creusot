@@ -86,6 +86,5 @@ pub trait NthBitLogic {
     /// In [`bitwise_proof`] mode, this is translated to [`nth`](https://www.why3.org/stdlib/bv.html#nth_188) in Why3.
     /// Otherwise this is an abstract function.
     #[logic]
-    #[requires(false)]
     fn nth_bit(self, n: Int) -> bool;
 }
