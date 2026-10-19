@@ -1,7 +1,25 @@
 module M_use_indirect
+  use int.Int
+  
   constant indirect : int
   
   axiom indirect_def: indirect = 3
+  
+  function indirect_trig (x: int) : int
+  
+  axiom indirect_trig_def: forall x: int [x + 1 | indirect_trig x]. indirect_trig x = x
+  
+  constant indirect_unit : int
+  
+  axiom indirect_unit_def: indirect_unit = 3
+  
+  function indirect_trig_unit (x: int) : int
+  
+  axiom indirect_trig_unit_def: forall x: int [x + 1 | indirect_trig_unit x]. indirect_trig_unit x = x
+  
+  function decl_unit (self: ()) : int
+  
+  axiom decl_unit_def: forall self: () [self | decl_unit self]. decl_unit self = 3
   
   meta "compute_max_steps" 1000000
   
@@ -9,5 +27,8 @@ module M_use_indirect
   
   function use_indirect : int
   
-  goal vc_use_indirect: [@stop_split] [@expl:use_indirect ensures] indirect = 3
+  goal vc_use_indirect: [@stop_split] [@expl:use_indirect ensures] indirect + indirect_trig 0 + indirect_unit
+        + indirect_trig_unit 0
+      + decl_unit ()
+    = 9
 end

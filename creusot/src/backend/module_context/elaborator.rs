@@ -20,7 +20,10 @@ use crate::{
     resolution::TraitResolved,
     translation::{
         constant::try_const_to_term,
-        pearlite::{BinOp, PIdent, Pattern, QuantKind, Substable as _, Term, Trigger, normalize},
+        pearlite::{
+            BinOp, PIdent, Pattern, QuantKind, Substable as _, Term, TermWithTriggers, Trigger,
+            normalize,
+        },
         specification::Condition,
     },
 };
@@ -360,7 +363,14 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         let mut decls = if !opaque
             && let Some(term) = term(ctx, &names, def_id, subst, &pre_sig.inputs)
         {
-            lower_logical_defn(ctx, &names, sig, kind, term, def_id)
+            lower_logical_defn(
+                ctx,
+                &names,
+                sig,
+                kind,
+                TermWithTriggers { term: Box::new(term), triggers: pre_sig.contract.indirect_trig },
+                def_id,
+            )
         } else {
             let mut decls = val(sig, kind);
 
@@ -504,7 +514,14 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         } else if let Some(term) =
             try_const_to_term(def_id, subst, ctx, typing_env, names.source_id())
         {
-            lower_logical_defn(ctx, &names, sig, DeclKind::Constant, term, def_id)
+            lower_logical_defn(
+                ctx,
+                &names,
+                sig,
+                DeclKind::Constant,
+                TermWithTriggers { term: Box::new(term), triggers: pre_sig.contract.indirect_trig },
+                def_id,
+            )
         } else {
             // Generate a constant setter.
             let value_name = Ident::fresh_local("_const");

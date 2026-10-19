@@ -282,7 +282,7 @@ pub trait RangeBoundsSpec<T: ?Sized + DeepModel<DeepModelTy: OrdLogic>>: RangeBo
 }
 
 /// Membership to an interval `(Bound<T>, Bound<T>)`.
-#[logic(open)]
+#[logic(open, inline)]
 pub fn between<T: OrdLogic>(lo: Bound<T>, item: T, hi: Bound<T>) -> bool {
     lower_bound(lo, item) && upper_bound(item, hi)
 }
@@ -305,7 +305,7 @@ pub fn upper_bound<T: OrdLogic>(item: T, hi: Bound<T>) -> bool {
     pearlite! {
         match hi {
             Bound::Included(hi) => item <= hi,
-            Bound::Excluded(lo) => lo < item,
+            Bound::Excluded(hi) => item < hi,
             Bound::Unbounded => true,
         }
     }
@@ -680,11 +680,13 @@ extern_spec! {
     }
 
     impl<T> Try for Option<T> {
+        #[check(ghost)]
         #[ensures(result == Some(output))]
         fn from_output(output: T) -> Self {
             Some(output)
         }
 
+        #[check(ghost)]
         #[ensures(match self {
             Some(v) => result == ControlFlow::Continue(v),
             None => result == ControlFlow::Break(None)
@@ -698,6 +700,7 @@ extern_spec! {
     }
 
     impl<T> FromResidual<Option<Infallible>> for Option<T> {
+        #[check(ghost)]
         #[ensures(result == None)]
         fn from_residual(residual: Option<Infallible>) -> Self {
             match residual {
@@ -707,11 +710,13 @@ extern_spec! {
     }
 
     impl<T, E> Try for Result<T, E> {
+        #[check(ghost)]
         #[ensures(result == Ok(output))]
         fn from_output(output: T) -> Self {
             Ok(output)
         }
 
+        #[check(ghost)]
         #[ensures(match self {
             Ok(v) => result == ControlFlow::Continue(v),
             Err(e) => result == ControlFlow::Break(Err(e))

@@ -525,6 +525,18 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__next_back (* <IterMut<'a, T> as
         -> Seq.get (to_mut_seq_slice_T self) i
         = MutBorrow.borrow_logic (index_slice_T self.current i) (index_slice_T self.final i) (MutBorrow.inherit_id (MutBorrow.get_id self) i)
   
+  type t_RangeTo_Int = { end': int }
+  
+  function index_Seq_refmut_T [@inline:trivial] (self: Seq.seq (MutBorrow.t t_T)) (range: t_RangeTo_Int) : Seq.seq (MutBorrow.t t_T)
+   = Seq.([..]) self 0 range.end'
+  
+  meta "rewrite_def" function index_Seq_refmut_T
+  
+  function init_refmut_T [@inline:trivial] (self: Seq.seq (MutBorrow.t t_T)) : Seq.seq (MutBorrow.t t_T) =
+    index_Seq_refmut_T self { end' = Seq.length self - 1 }
+  
+  meta "rewrite_def" function init_refmut_T
+  
   predicate resolve_refmut_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) =
     _1.final = _1.current
   
@@ -546,8 +558,7 @@ module M_impl_DoubleEndedIterator_for_IterMut_T__next_back (* <IterMut<'a, T> as
           - 1)) (index_slice_T self.current.final (Seq.length (Slice64.view self.current.current)
           - 1)) (MutBorrow.inherit_id (MutBorrow.get_id self.current) (Seq.length (Slice64.view self.current.current)
           - 1))
-        /\ to_mut_seq_slice_T self.final
-        = Seq.([..]) (to_mut_seq_slice_T self.current) 0 (Seq.length (to_mut_seq_slice_T self.current) - 1)
+        /\ to_mut_seq_slice_T self.final = init_refmut_T (to_mut_seq_slice_T self.current)
         | None -> resolve_refmut_refmut_slice_T self
         /\ Slice64.view self.current.final = (Seq.empty: Seq.seq t_T)
         /\ Slice64.view self.current.current = (Seq.empty: Seq.seq t_T)
@@ -1901,8 +1912,17 @@ module M_impl_Iterator_for_IterMut_T__next (* <IterMut<'a, T> as common::Iterato
         -> Seq.get (to_mut_seq_slice_T self) i
         = MutBorrow.borrow_logic (index_slice_T self.current i) (index_slice_T self.final i) (MutBorrow.inherit_id (MutBorrow.get_id self) i)
   
-  function tail_refmut_T (self: Seq.seq (MutBorrow.t t_T)) : Seq.seq (MutBorrow.t t_T) =
-    Seq.([..]) self 1 (Seq.length self)
+  type t_RangeFrom_Int = { start: int }
+  
+  function index_Seq_refmut_T [@inline:trivial] (self: Seq.seq (MutBorrow.t t_T)) (range: t_RangeFrom_Int) : Seq.seq (MutBorrow.t t_T)
+   = Seq.([..]) self range.start (Seq.length self)
+  
+  meta "rewrite_def" function index_Seq_refmut_T
+  
+  function tail_refmut_T [@inline:trivial] (self: Seq.seq (MutBorrow.t t_T)) : Seq.seq (MutBorrow.t t_T) =
+    index_Seq_refmut_T self { start = 1 }
+  
+  meta "rewrite_def" function tail_refmut_T
   
   predicate resolve_refmut_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (MutBorrow.t (Slice64.slice t_T))) =
     _1.final = _1.current
