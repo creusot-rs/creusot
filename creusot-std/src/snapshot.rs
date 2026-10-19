@@ -4,6 +4,8 @@ use crate::{ghost::Plain, logic::ops::Fin, prelude::*};
 
 #[cfg(creusot)]
 use crate::ghost::Objective;
+#[cfg(creusot)]
+use crate::logic::ops::{DerefLogic, DerefMutLogic};
 use core::marker::PhantomData;
 #[cfg(creusot)]
 use core::ops::{Deref, DerefMut};
@@ -35,20 +37,38 @@ pub struct Snapshot<T: ?Sized>(PhantomData<T>);
 impl<T: ?Sized> Deref for Snapshot<T> {
     type Target = T;
 
-    #[logic]
-    #[builtin("identity")]
-    #[intrinsic("snapshot_deref")]
+    #[check(ghost)]
+    #[requires(false)]
+    #[logic_alias(self.deref_logic())]
     fn deref(&self) -> &Self::Target {
-        dead
+        panic!("Snapshot values cannot be dereferenced in program")
     }
 }
 
 #[cfg(creusot)]
 impl<T: ?Sized> DerefMut for Snapshot<T> {
+    #[check(ghost)]
+    #[requires(false)]
+    #[logic_alias(self.deref_mut_logic())]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        panic!("Snapshot values cannot be dereferenced in program")
+    }
+}
+
+#[cfg(creusot)]
+impl<T: ?Sized> DerefLogic for Snapshot<T> {
     #[logic]
     #[builtin("identity")]
-    #[intrinsic("snapshot_deref_mut")]
-    fn deref_mut(&mut self) -> &mut Self::Target {
+    fn deref_logic(&self) -> &T {
+        dead
+    }
+}
+
+#[cfg(creusot)]
+impl<T: ?Sized> DerefMutLogic for Snapshot<T> {
+    #[logic]
+    #[builtin("identity")]
+    fn deref_mut_logic(&mut self) -> &mut T {
         dead
     }
 }

@@ -1,3 +1,5 @@
+#[cfg(feature = "nightly")]
+use crate::logic::ops::{DerefLogic, DerefMutLogic};
 #[cfg(creusot)]
 use crate::resolve::structural_resolve;
 use crate::{invariant::*, prelude::*};
@@ -49,10 +51,35 @@ impl<T: ?Sized, A: Allocator> Invariant for Box<T, A> {
     }
 }
 
+#[cfg(feature = "nightly")]
+impl<T, A: Allocator> DerefLogic for Box<T, A> {
+    #[logic]
+    #[builtin("identity")]
+    fn deref_logic(&self) -> &T {
+        dead
+    }
+}
+
+#[cfg(feature = "nightly")]
+impl<T, A: Allocator> DerefMutLogic for Box<T, A> {
+    #[logic]
+    #[builtin("identity")]
+    fn deref_mut_logic(&mut self) -> &mut T {
+        dead
+    }
+}
+
+#[logic]
+#[builtin("identity")]
+pub fn new_box_logic<T>(val: T) -> Box<T> {
+    let _ = val;
+    dead
+}
+
 extern_spec! {
     impl<T> Box<T> {
         #[check(ghost)]
-        #[ensures(*result == val)]
+        #[logic_alias(new_box_logic(val))]
         fn new(val: T) -> Self;
     }
 
@@ -91,7 +118,7 @@ extern_spec! {
 
     impl<T, A: Allocator> Deref for Box<T, A> {
         #[check(ghost)]
-        #[ensures(*result == **self)]
+        #[logic_alias(self.deref_logic())]
         fn deref(&self) -> &T {
             &**self
         }
@@ -99,8 +126,7 @@ extern_spec! {
 
     impl<T, A: Allocator> DerefMut for Box<T, A> {
         #[check(ghost)]
-        #[ensures(*result == **self)]
-        #[ensures(^result == *^self)]
+        #[logic_alias(self.deref_mut_logic())]
         fn deref_mut(&mut self) -> &mut T {
             &mut **self
         }

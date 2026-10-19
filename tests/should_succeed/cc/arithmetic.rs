@@ -1,5 +1,5 @@
 extern crate creusot_std;
-use creusot_std::{logic::ops::NthBitLogic as _, prelude::*};
+use creusot_std::{prelude::*, std::num::NthBitLogic};
 
 #[bitwise_proof]
 pub fn test() {

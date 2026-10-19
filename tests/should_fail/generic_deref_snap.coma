@@ -2,9 +2,16 @@ module M_bad
   use creusot.int.Int32
   use creusot.prelude.Any
   
-  predicate precondition_deref (self: ()) (args: Int32.t)
+  predicate precondition_deref (self: ()) (args: Int32.t) = let self'0 = args in false
   
-  predicate postcondition_deref (self: ()) (args: Int32.t) (result: Int32.t)
+  meta "rewrite_def" predicate precondition_deref
+  
+  let deref_Snapshot_i32 (self: Int32.t) (return (x: Int32.t)) = {[@stop_split] [@expl:deref requires] false}
+    any [ return (result: Int32.t) -> {[@stop_split] [@expl:deref ensures] result = self} (! return {result}) ]
+  
+  predicate postcondition_deref (self: ()) (args: Int32.t) (result: Int32.t) = let self'0 = args in result = self'0
+  
+  meta "rewrite_def" predicate postcondition_deref
   
   let deref_wrap_Snapshot_i32 (x: Int32.t) (return (x'0: Int32.t)) =
   {[@stop_split] [@expl:deref_wrap requires] precondition_deref () x}

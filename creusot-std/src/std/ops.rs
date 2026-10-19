@@ -282,7 +282,7 @@ pub trait RangeBoundsSpec<T: ?Sized + DeepModel<DeepModelTy: OrdLogic>>: RangeBo
 }
 
 /// Membership to an interval `(Bound<T>, Bound<T>)`.
-#[logic(open)]
+#[logic(open, inline)]
 pub fn between<T: OrdLogic>(lo: Bound<T>, item: T, hi: Bound<T>) -> bool {
     lower_bound(lo, item) && upper_bound(item, hi)
 }
@@ -305,7 +305,7 @@ pub fn upper_bound<T: OrdLogic>(item: T, hi: Bound<T>) -> bool {
     pearlite! {
         match hi {
             Bound::Included(hi) => item <= hi,
-            Bound::Excluded(lo) => lo < item,
+            Bound::Excluded(hi) => item < hi,
             Bound::Unbounded => true,
         }
     }

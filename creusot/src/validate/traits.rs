@@ -1,6 +1,6 @@
 use crate::{
     backend::is_trusted_item,
-    contracts_items::{Intrinsic, is_law, is_open_inv_result, is_trusted},
+    contracts_items::{is_law, is_open_inv_result, is_trusted},
     ctx::{HasTyCtxt as _, TranslationCtx},
     util::erased_identity_for_item,
 };
@@ -112,11 +112,6 @@ pub(crate) fn validate_impls<'tcx>(ctx: &TranslationCtx<'tcx>) {
                     ),
                 ).emit();
             }
-
-            if let Intrinsic::SnapshotDeref | Intrinsic::SnapshotDerefMut = ctx.intrinsic(impl_item)
-            {
-                continue;
-            };
 
             let item_type = ctx.item_type(impl_item);
             let trait_type = ctx.item_type(trait_item);

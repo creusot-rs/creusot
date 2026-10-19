@@ -248,7 +248,7 @@ pub(crate) fn to_why_body<'tcx>(
             );
         }
     } else if !recursive_calls.is_empty() {
-        ctx.dcx().span_bug(ctx.def_span(body_id.def_id), "missing variant for function");
+        ctx.dcx().span_fatal(ctx.def_span(body_id.def_id), "missing variant for function");
     }
 
     if let Some((exp, ty)) = std::mem::take(&mut sig.variant) {

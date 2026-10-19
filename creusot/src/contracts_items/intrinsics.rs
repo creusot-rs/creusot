@@ -175,8 +175,6 @@ contracts_items! {
     "size_of_val_logic_slice"   SizeOfValLogicSlice
     "size_of_val_logic_str"     SizeOfValLogicStr
     "snapshot"                  Snapshot
-    "snapshot_deref"            SnapshotDeref
-    "snapshot_deref_mut"        SnapshotDerefMut
     "snapshot_from_fn"          SnapshotFromFn
     "structural_resolve"        StructuralResolve
     "tokens_new"                TokensNew

@@ -1,7 +1,8 @@
 use crate::prelude::*;
+use core::ops::{Deref, DerefMut};
 mod arithmetic;
 
-pub use arithmetic::{AddLogic, DivLogic, MulLogic, NegLogic, NthBitLogic, RemLogic, SubLogic};
+pub use arithmetic::{AddLogic, DivLogic, MulLogic, NegLogic, RemLogic, SubLogic};
 
 /// Used for indexing operations (`container[index]`) in pearlite.
 #[diagnostic::on_unimplemented(
@@ -13,6 +14,7 @@ pub trait IndexLogic<I: ?Sized> {
 
     /// Performs the indexing (`container[index]`) operation.
     #[logic]
+    #[requires(false)]
     #[intrinsic("index_logic")]
     fn index_logic(self, idx: I) -> Self::Item;
 }
@@ -41,6 +43,7 @@ pub trait ShlLogic<Rhs = Self> {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn shl_logic(self, other: Rhs) -> Self::Output;
 }
 
@@ -50,6 +53,7 @@ pub trait ShrLogic<Rhs = Self> {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn shr_logic(self, other: Rhs) -> Self::Output;
 }
 
@@ -59,6 +63,7 @@ pub trait BitAndLogic<Rhs = Self> {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn bitand_logic(self, other: Rhs) -> Self::Output;
 }
 
@@ -77,6 +82,7 @@ pub trait BitOrLogic<Rhs = Self> {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn bitor_logic(self, other: Rhs) -> Self::Output;
 }
 
@@ -95,6 +101,7 @@ pub trait BitXorLogic<Rhs = Self> {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn bitxor_logic(self, other: Rhs) -> Self::Output;
 }
 
@@ -113,6 +120,7 @@ pub trait NotLogic {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn not_logic(self) -> Self::Output;
 }
 
@@ -124,4 +132,14 @@ impl NotLogic for bool {
     fn not_logic(self) -> Self::Output {
         dead
     }
+}
+
+pub trait DerefLogic: Deref {
+    #[logic]
+    fn deref_logic(&self) -> &Self::Target;
+}
+
+pub trait DerefMutLogic: DerefMut + DerefLogic {
+    #[logic]
+    fn deref_mut_logic(&mut self) -> &mut Self::Target;
 }

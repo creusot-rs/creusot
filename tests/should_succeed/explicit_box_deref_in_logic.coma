@@ -1,0 +1,51 @@
+module M_dummy_swap
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_Box_T_Global (self: t_T) = inv_T self
+  
+  predicate inv_Box_T_Global [@inline:trivial] (_1: t_T) = invariant_Box_T_Global _1
+  
+  meta "rewrite_def" predicate inv_Box_T_Global
+  
+  predicate invariant_refmut_Box_T_Global [@inline:trivial] (self: MutBorrow.t t_T) =
+    inv_Box_T_Global self.current /\ inv_Box_T_Global self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Box_T_Global
+  
+  predicate inv_refmut_Box_T_Global [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_Box_T_Global _1
+  
+  meta "rewrite_def" predicate inv_refmut_Box_T_Global
+  
+  predicate resolve_refmut_Box_T_Global [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Box_T_Global
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let dummy_swap_T (b1: MutBorrow.t t_T) (b2: MutBorrow.t t_T) (return (x: ())) =
+  {[@stop_split] [@expl:dummy_swap_T requires] ([@stop_split] [@expl:dummy_swap 'b1' type invariant] inv_refmut_Box_T_Global b1)
+    /\ ([@stop_split] [@expl:dummy_swap 'b2' type invariant] inv_refmut_Box_T_Global b2)
+    /\ ([@stop_split] [@expl:dummy_swap requires] b1.current <> b2.current)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &tmp <- b1.current ] s1
+      | s1 = [ &b1 <- { b1 with current = b2.current } ] s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Box_T_Global b1} any) ]
+      | s3 = -{resolve_refmut_Box_T_Global b1}- s4
+      | s4 = [ &b2 <- { b2 with current = tmp } ] s5
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_Box_T_Global b2} any) ]
+      | s6 = -{resolve_refmut_Box_T_Global b2}- s7
+      | s7 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & b1: MutBorrow.t t_T = b1 | & b2: MutBorrow.t t_T = b2 | & tmp: t_T = Any.any_l () ])
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:dummy_swap_T ensures] ([@stop_split] [@expl:dummy_swap ensures #0] b1.current = b2.final)
+      /\ ([@stop_split] [@expl:dummy_swap ensures #1] b2.current = b1.final)}
+      (! return {result}) ]
+end

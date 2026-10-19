@@ -1,0 +1,37 @@
+(* <snapshot::Snapshot<T> as std::ops::Deref> *)
+
+use creusot.prelude.Any
+
+type t_Arguments
+
+predicate inv_Arguments (_1: t_Arguments)
+
+let from_str (s: string) (return (x: t_Arguments)) = any
+  [ return (result: t_Arguments) -> {[@stop_split] [@expl:from_str result type invariant] inv_Arguments result}
+    (! return {result}) ]
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let deref_Snapshot_T (self: t_T) (return (x: t_T)) = {[@stop_split] [@expl:deref requires] false}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = from_str {"Snapshot values cannot be dereferenced in program"} (fun (_x: t_Arguments) -> [ &_7 <- _x ] s1)
+    | s1 = {false} any ] ] [ & _7: t_Arguments = Any.any_l () ])
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:deref_Snapshot_T ensures] ([@stop_split] [@expl:deref result type invariant] inv_ref_T result)
+    /\ ([@stop_split] [@expl:deref ensures] result = self)}
+    (! return {result}) ]

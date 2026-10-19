@@ -1,5 +1,5 @@
 use crate::{
-    contracts_items::{Intrinsic, get_builtin},
+    contracts_items::get_builtin,
     ctx::{HasTyCtxt as _, TranslationCtx},
     logic_alias::subst_call as subst_alias,
     resolution::TraitResolved,
@@ -10,7 +10,6 @@ use crate::{
 };
 use rustc_hir::def_id::DefId;
 use rustc_middle::ty::{EarlyBinder, GenericArgsRef, TypingEnv};
-use rustc_span::{Symbol, sym};
 
 pub(crate) fn normalize<'tcx>(
     ctx: &TranslationCtx<'tcx>,
@@ -92,12 +91,6 @@ fn optimize_builtin<'tcx>(
     }
 
     match builtin_str {
-        None if ctx.is_diagnostic_item(sym::box_new, id)
-            || matches!(ctx.intrinsic(id), Intrinsic::GhostDeref | Intrinsic::GhostDerefMut) =>
-        {
-            let [arg] = *args.into_array::<1>().unwrap();
-            return Coerce { arg: Box::new(arg) };
-        }
         Some("fin") => {
             let [arg] = *args.into_array::<1>().unwrap();
             return Fin { term: Box::new(arg) };
