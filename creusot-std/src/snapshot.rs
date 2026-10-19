@@ -59,7 +59,6 @@ impl<T: ?Sized> DerefMut for Snapshot<T> {
 impl<T: ?Sized> DerefLogic for Snapshot<T> {
     #[logic]
     #[builtin("identity")]
-    #[intrinsic("snapshot_deref")]
     fn deref_logic(&self) -> &T {
         dead
     }
@@ -69,7 +68,6 @@ impl<T: ?Sized> DerefLogic for Snapshot<T> {
 impl<T: ?Sized> DerefMutLogic for Snapshot<T> {
     #[logic]
     #[builtin("identity")]
-    #[intrinsic("snapshot_deref_mut")]
     fn deref_mut_logic(&mut self) -> &mut T {
         dead
     }
