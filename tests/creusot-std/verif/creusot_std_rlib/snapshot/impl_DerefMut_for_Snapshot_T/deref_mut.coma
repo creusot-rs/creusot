@@ -1,0 +1,44 @@
+(* <snapshot::Snapshot<T> as std::ops::DerefMut> *)
+
+use creusot.prelude.MutBorrow
+use creusot.prelude.Any
+
+type t_T
+
+predicate resolve_refmut_Snapshot_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Snapshot_T
+
+type t_Arguments
+
+predicate inv_Arguments (_1: t_Arguments)
+
+let from_str (s: string) (return (x: t_Arguments)) = any
+  [ return (result: t_Arguments) -> {[@stop_split] [@expl:from_str result type invariant] inv_Arguments result}
+    (! return {result}) ]
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_T
+
+predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+
+meta "rewrite_def" predicate inv_refmut_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let deref_mut_Snapshot_T (self: MutBorrow.t t_T) (return (x: MutBorrow.t t_T)) =
+{[@stop_split] [@expl:deref_mut requires] false}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = -{resolve_refmut_Snapshot_T self}- s1
+    | s1 = from_str {"Snapshot values cannot be dereferenced in program"} (fun (_x: t_Arguments) -> [ &_8 <- _x ] s2)
+    | s2 = {false} any ] ] [ & self: MutBorrow.t t_T = self | & _8: t_Arguments = Any.any_l () ])
+  [ return (result: MutBorrow.t t_T) ->
+  {[@stop_split] [@expl:deref_mut_Snapshot_T ensures] ([@stop_split] [@expl:deref_mut result type invariant] inv_refmut_T result)
+    /\ ([@stop_split] [@expl:deref_mut ensures] result = self)}
+    (! return {result}) ]

@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use core::ops::{Deref, DerefMut};
 mod arithmetic;
 
 pub use arithmetic::{AddLogic, DivLogic, MulLogic, NegLogic, NthBitLogic, RemLogic, SubLogic};
@@ -124,4 +125,14 @@ impl NotLogic for bool {
     fn not_logic(self) -> Self::Output {
         dead
     }
+}
+
+pub trait DerefLogic: Deref {
+    #[logic]
+    fn deref_logic(&self) -> &Self::Target;
+}
+
+pub trait DerefMutLogic: DerefMut + DerefLogic {
+    #[logic]
+    fn deref_mut_logic(&mut self) -> &mut Self::Target;
 }

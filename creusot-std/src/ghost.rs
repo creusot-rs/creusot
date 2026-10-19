@@ -31,7 +31,10 @@ pub use self::{
 
 #[cfg(creusot)]
 use crate::resolve::{resolve, structural_resolve};
-use crate::{logic::ops::Fin, prelude::*};
+use crate::{
+    logic::ops::{DerefLogic, DerefMutLogic, Fin},
+    prelude::*,
+};
 
 use core::{
     marker::PhantomData,
@@ -79,10 +82,10 @@ impl<T: ?Sized> Deref for Ghost<T> {
     #[trusted]
     #[check(ghost)]
     #[requires(false)] // If called from generic context, false precondition
-    #[ensures(result == &**self)]
     #[intrinsic("ghost_deref")]
+    #[logic_alias(self.deref_logic())]
     fn deref(&self) -> &Self::Target {
-        panic!()
+        panic!("Ghost values cannot be dereferenced in program context")
     }
 }
 impl<T: ?Sized> DerefMut for Ghost<T> {
@@ -90,10 +93,25 @@ impl<T: ?Sized> DerefMut for Ghost<T> {
     #[trusted]
     #[check(ghost)]
     #[requires(false)] // If called from generic context, false precondition
-    #[ensures(result == &mut **self)]
     #[intrinsic("ghost_deref_mut")]
+    #[logic_alias(self.deref_mut_logic())]
     fn deref_mut(&mut self) -> &mut Self::Target {
         panic!()
+    }
+}
+
+impl<T: ?Sized> DerefLogic for Ghost<T> {
+    #[logic]
+    #[builtin("identity")]
+    fn deref_logic(&self) -> &T {
+        dead
+    }
+}
+impl<T: ?Sized> DerefMutLogic for Ghost<T> {
+    #[logic]
+    #[builtin("identity")]
+    fn deref_mut_logic(&mut self) -> &mut T {
+        dead
     }
 }
 

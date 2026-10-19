@@ -15,7 +15,6 @@ use rustc_middle::{
     thir::{self, ClosureExpr, ExprId, ExprKind, Thir, visit::Visitor},
     ty::{FnDef, TyCtxt, TypingEnv},
 };
-use rustc_span::sym;
 use rustc_trait_selection::infer::InferCtxtExt;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -318,17 +317,7 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for PurityVisitor<'a, 'tcx> {
                         self.purity(func_did, args)
                     };
 
-                    if self.context.is_logic()
-                        && (
-                            // These methods are allowed to cheat the purity restrictions
-                            self.ctx.is_diagnostic_item(sym::box_new, func_did)
-                                || matches!(
-                                    self.ctx.intrinsic(func_did),
-                                    Intrinsic::GhostDeref | Intrinsic::GhostDerefMut
-                                )
-                        )
-                    {
-                    } else if !self.context.can_call(fn_purity) {
+                    if !self.context.can_call(fn_purity) {
                         // Emit a nicer error specifically for calls of ghost functions.
                         if fn_purity == Purity::Ghost && self.context.is_program() {
                             match self.ctx.intrinsic(func_did) {

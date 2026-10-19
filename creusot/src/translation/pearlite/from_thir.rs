@@ -498,15 +498,11 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             }
             ExprKind::Deref { arg }
                 if let ExprKind::Call { ty, ref args, .. } = head(self.thir, arg).kind
-                    && let &TyKind::FnDef(f_did, subst) = ty.kind()
+                    && let &TyKind::FnDef(f_did, _) = ty.kind()
                     && self.ctx.is_diagnostic_item(deref_mut_method(), f_did)
-                    && let ExprKind::Borrow { borrow_kind, arg } =
-                        head(self.thir, args[0]).kind =>
+                    && let ExprKind::Borrow { arg, .. } = head(self.thir, args[0]).kind =>
             {
-                // We have just detected `*deref_mut(&mut x)`, which can happen only for Ghost and Snapshot
-                assert_matches!(borrow_kind, BorrowKind::Mut { .. });
-                assert_matches!(subst.skip_binder().type_at(0).kind(),
-                    TyKind::Adt(adt, _) if matches!(self.ctx.intrinsic(adt.did()), Intrinsic::Snapshot | Intrinsic::Ghost));
+                // We have just detected `*deref_mut(&mut x)`
                 Ok(self.expr_term(arg)?.coerce(ty).span(span))
             }
             ExprKind::Deref { arg } => Ok(self.expr_term(arg)?.deref().span(span)),
