@@ -168,6 +168,7 @@ contracts_items! {
     "resolve"                   Resolve
     "resolve_method"            ResolveMethod
     "seq_literal"               SeqLiteral
+    "int_literal"               IntLiteral
     "size_of_logic"             SizeOfLogic
     "size_of_val_logic"         SizeOfValLogic
     "size_of_val_logic_sized"   SizeOfValLogicSized

@@ -11,7 +11,7 @@ use rustc_middle::{
     },
 };
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
-use rustc_span::{DUMMY_SP, Span};
+use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_type_ir::{FloatTy, IntTy, Interner, UintTy};
 use std::{
     assert_matches,
@@ -313,9 +313,7 @@ impl From<f64> for Float {
 pub enum Literal {
     Char(char),
     Bool(bool),
-    // TODO: Find a way to make this a BigInt type
-    Integer(i128),
-    UInteger(u128),
+    IntDigits10(rustc_span::Symbol),
     MachSigned(i128, IntTy),
     MachUnsigned(u128, UintTy),
     Float(Float, FloatTy),
@@ -690,7 +688,11 @@ impl<'tcx> Term<'tcx> {
     }
 
     pub(crate) fn int(int_ty: Ty<'tcx>, int: i128) -> Self {
-        Term { ty: int_ty, kind: TermKind::Lit(Literal::Integer(int)), span: DUMMY_SP }
+        Term {
+            ty: int_ty,
+            kind: TermKind::Lit(Literal::IntDigits10(Symbol::intern(&int.to_string()))),
+            span: DUMMY_SP,
+        }
     }
 
     pub(crate) fn const_item(id: DefId, subst: GenericArgsRef<'tcx>, ty: Ty<'tcx>) -> Self {

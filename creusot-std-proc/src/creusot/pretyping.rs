@@ -10,7 +10,7 @@ use proc_macro2::{Delimiter, Group, Span, TokenStream, TokenTree};
 use quote::{ToTokens, quote, quote_spanned};
 use std::collections::HashSet;
 use syn::{
-    Ident, Lit, LitInt, Pat, PatIdent, PatType, RangeLimits, UnOp,
+    Ident, Lit, Pat, PatIdent, PatType, RangeLimits, UnOp,
     spanned::Spanned,
     visit::{Visit, visit_pat},
 };
@@ -407,19 +407,11 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
         Term::Lit(TermLit { lit: lit @ Lit::Int(int) })
             if int.suffix() == "" || int.suffix() == "int" =>
         {
-            let tmp;
-            let int = if int.suffix() == "int" {
-                tmp = LitInt::new(int.base10_digits(), int.span());
-                &tmp
-            } else {
-                int
-            };
+            let digits = syn::LitStr::new(int.base10_digits(), int.span());
 
-            // FIXME: allow unbounded integers
-            let inner = quote_spanned! { span_after(int.span()) => #int as i128 };
             let stream = TokenStream::from_iter([
-                quote_spanned! { span_before(int.span()) => ::creusot_std::model::View::view },
-                quote_spanned! { int.span() => (#inner) },
+                quote_spanned! { span_before(int.span()) => ::creusot_std::__stubs::int_literal },
+                quote_spanned! { int.span() => (#digits) },
             ]);
             Ok(stream.into())
         }

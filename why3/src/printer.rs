@@ -1126,15 +1126,11 @@ impl Print for Constant {
                 let c = *c as u32;
                 alloc.as_string(c).append(": ").append(t.pretty(alloc, scope)).parens()
             }
-            Constant::Int(i, Some(t)) => {
-                alloc.as_string(i).append(": ").append(t.pretty(alloc, scope)).parens()
+            Constant::IntDigits10(i, Some(t)) => {
+                alloc.text(i).append(": ").append(t.pretty(alloc, scope)).parens()
             }
-            Constant::Int(i, None) => alloc.as_string(i),
-            Constant::Uint(i, Some(t)) => {
-                alloc.as_string(i).append(": ").append(t.pretty(alloc, scope)).parens()
-            }
+            Constant::IntDigits10(i, None) => alloc.text(i),
             Constant::String(s) => alloc.text(format!("{s:?}")),
-            Constant::Uint(i, None) => alloc.as_string(i),
             Constant::Float(f, None) => {
                 assert!(f.is_finite());
                 let mut doc = alloc.text(print_float(*f));
