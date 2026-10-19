@@ -2,7 +2,7 @@ use crate::prelude::*;
 use core::ops::{Deref, DerefMut};
 mod arithmetic;
 
-pub use arithmetic::{AddLogic, DivLogic, MulLogic, NegLogic, NthBitLogic, RemLogic, SubLogic};
+pub use arithmetic::{AddLogic, DivLogic, MulLogic, NegLogic, RemLogic, SubLogic};
 
 /// Used for indexing operations (`container[index]`) in pearlite.
 #[diagnostic::on_unimplemented(

@@ -1,8 +1,8 @@
 use crate::{
     ghost::Plain,
     logic::ops::{
-        AddLogic, BitAndLogic, BitOrLogic, BitXorLogic, MulLogic, NegLogic, NotLogic, NthBitLogic,
-        ShlLogic, ShrLogic, SubLogic,
+        AddLogic, BitAndLogic, BitOrLogic, BitXorLogic, MulLogic, NegLogic, NotLogic, ShlLogic,
+        ShrLogic, SubLogic,
     },
     prelude::*,
 };
@@ -13,6 +13,15 @@ use core::ops::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign,
     Mul, MulAssign, Neg, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
 };
+
+/// Trait for the nth bit of a bitvector in logic code.
+pub trait NthBitLogic {
+    /// The nth bit of a bitvector.
+    /// In [`bitwise_proof`] mode, this is translated to [`nth`](https://www.why3.org/stdlib/bv.html#nth_188) in Why3.
+    /// Otherwise this is an abstract function.
+    #[logic]
+    fn nth_bit(self, n: Int) -> bool;
+}
 
 macro_rules! mach_int {
     ($t:ty, $ty_nm:expr, $zero:expr, $to_int:literal) => {
