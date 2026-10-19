@@ -520,7 +520,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                 }
 
                 Array(_, _) | Slice(_) | Pat(_, _) => {
-                    self.span_bug(
+                    self.crash_and_error(
                         self.body().local_decls[pl.local].source_info.span,
                         format!("Unsupported type during resolution: {}", ty.ty),
                     );

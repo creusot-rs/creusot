@@ -318,7 +318,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         }
                     }
                     LitKind::Char(c) => Literal::Char(c),
-                    _ => self.ctx.dcx().span_bug(span, "Unsupported literal"),
+                    _ => self.ctx.dcx().span_fatal(span, "Unsupported literal"),
                 };
                 Ok(Term { ty, span, kind: TermKind::Lit(lit) })
             }
@@ -698,7 +698,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                     .collect::<Result<Box<[_]>, ErrorGuaranteed>>()?;
                 Ok(Pattern { ty: pat.ty, span: pat.span, kind: PatternKind::Or(pats) })
             }
-            ref pk => ctx.dcx().span_bug(pat.span, format!("Unsupported pattern kind {:?}", pk)),
+            ref pk => ctx.dcx().span_fatal(pat.span, format!("Unsupported pattern kind {:?}", pk)),
         }
     }
 
