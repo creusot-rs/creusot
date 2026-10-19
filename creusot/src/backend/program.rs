@@ -870,15 +870,12 @@ impl<'tcx> RValue<'tcx> {
                     .enumerate()
                     .map(|(ix, f)| {
                         Exp::qvar(name::seq_get())
-                            .app([
-                                arr_elts.clone(),
-                                Exp::Const(Constant::IntDigits10(ix.to_string(), None)),
-                            ])
+                            .app([arr_elts.clone(), Exp::uint(ix as u128)])
                             .eq(f.into_why(lower, istmts, span))
                     })
                     .chain([Exp::qvar(name::seq_length())
                         .app([arr_elts.clone()])
-                        .eq(Exp::Const(Constant::IntDigits10(len.to_string(), None)))])
+                        .eq(Exp::uint(len as u128))])
                     .reduce(Exp::log_and)
                     .expect("array literal missing assumption");
                 assumptions.reassociate();

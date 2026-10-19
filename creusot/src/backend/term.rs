@@ -522,7 +522,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
     pub(crate) fn lower_literal(&self, lit: &Literal, ty: Ty<'tcx>) -> Exp {
         match *lit {
-            Literal::IntDigits10(i) => Constant::IntDigits10(i.as_str().to_string(), None).into(),
+            Literal::IntDigits10(i) => Constant::IntDigits10(i.to_string(), None).into(),
             Literal::MachSigned(mut i, ity) => {
                 let why_ty =
                     Type::qconstructor(self.names.in_pre(ity_to_prelude(self.tcx(), ity), "t"));
@@ -545,7 +545,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             Literal::Bool(true) => Constant::const_true().into(),
             Literal::Bool(false) => Constant::const_false().into(),
             Literal::Char(c) => Exp::qvar(self.names.in_pre(PreMod::Char, "of_int"))
-                .app([Constant::IntDigits10((c as u32).to_string(), None).into()]),
+                .app([Exp::uint(c as u32 as u128).into()]),
             Literal::Float(ref f, fty) => {
                 let why_ty = Type::qconstructor(self.names.in_pre(floatty_to_prelude(fty), "t"));
                 Constant::Float(f.0, Some(why_ty)).into()

@@ -288,12 +288,10 @@ pub(crate) fn borrow_generated_id<'tcx, V: Debug>(
                     assert!(ty.ty.is_mutable_ptr()); // Cannot do a mutable reborrow under a shared borrow
                     // Note: this case cannot be triggered by programs or by pearlite terms. So this
                     // is dead code. But the theory says that we should do this.
-                    add_inherit_id(Exp::Const(Constant::IntDigits10("0".to_string(), None)))
+                    add_inherit_id(Exp::uint(0))
                 }
             }
-            ProjectionElem::Field(idx, _) => {
-                add_inherit_id(Exp::Const(Constant::IntDigits10(idx.as_u32().to_string(), None)))
-            }
+            ProjectionElem::Field(idx, _) => add_inherit_id(Exp::uint(idx.as_u32() as u128)),
             ProjectionElem::Index(idx) => {
                 let (mut idx, idxty) = translate_index(idx);
                 if idxty == ctx.types.usize {
