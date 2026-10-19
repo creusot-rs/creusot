@@ -92,12 +92,6 @@ fn optimize_builtin<'tcx>(
     }
 
     match builtin_str {
-        None if ctx.is_diagnostic_item(sym::box_new, id)
-            || matches!(ctx.intrinsic(id), Intrinsic::GhostDeref | Intrinsic::GhostDerefMut) =>
-        {
-            let [arg] = *args.into_array::<1>().unwrap();
-            return Coerce { arg: Box::new(arg) };
-        }
         Some("fin") => {
             let [arg] = *args.into_array::<1>().unwrap();
             return Fin { term: Box::new(arg) };

@@ -113,11 +113,6 @@ pub(crate) fn validate_impls<'tcx>(ctx: &TranslationCtx<'tcx>) {
                 ).emit();
             }
 
-            if let Intrinsic::SnapshotDeref | Intrinsic::SnapshotDerefMut = ctx.intrinsic(impl_item)
-            {
-                continue;
-            };
-
             let item_type = ctx.item_type(impl_item);
             let trait_type = ctx.item_type(trait_item);
             if !item_type.can_implement(trait_type) {
