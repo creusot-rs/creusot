@@ -1,0 +1,134 @@
+module M_impl_SubLogic_for_Nat__sub_logic (* <Nat as creusot_std::logic::ops::SubLogic> *)
+  use int.Int
+  
+  type t_Nat
+  
+  type t_Nat'0 = { inner: t_Nat }
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat [to_int self]. ge_log_Int (to_int self) 0
+  
+  predicate le_log_Nat (self: t_Nat) (other: t_Nat) = to_int self <= to_int other
+  
+  predicate lt_log_Nat (self: t_Nat) (other: t_Nat) = to_int self < to_int other
+  
+  function le_lt_log_Nat (self: t_Nat) (other: t_Nat) : ()
+  
+  axiom le_lt_log_Nat_spec: forall self: t_Nat, other: t_Nat. le_log_Nat self other
+      = (lt_log_Nat self other \/ self = other)
+  
+  predicate ge_log_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) = le_log_Nat other self
+  
+  meta "rewrite_def" predicate ge_log_Nat
+  
+  function new (n: int) : t_Nat
+  
+  axiom new_spec: forall n: int [new n]. ge_log_Int n 0 -> to_int (new n) = n
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant self : t_Nat'0
+  
+  constant other : t_Nat'0
+  
+  function sub_Nat (self: t_Nat'0) (other: t_Nat'0) : t_Nat'0
+  
+  goal vc_sub_Nat: ge_log_Nat self.inner other.inner
+    -> ([@stop_split] [@expl:to_int ensures] ge_log_Int (to_int self.inner) 0)
+    -> ([@stop_split] [@expl:to_int ensures] ge_log_Int (to_int other.inner) 0)
+    -> ([@stop_split] [@expl:new requires] ge_log_Int (to_int self.inner - to_int other.inner) 0)
+end
+module M_test_index
+  use seq.Seq
+  use int.Int
+  
+  type t_Seq = { inner: Seq.seq () }
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  type t_Nat
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat [to_int self]. ge_log_Int (to_int self) 0
+  
+  function new (n: int) : t_Nat
+  
+  axiom new_spec: forall n: int [new n]. ge_log_Int n 0 -> to_int (new n) = n
+  
+  type t_Nat'0 = { inner'0: t_Nat }
+  
+  function index_Seq (self: t_Seq) (idx: t_Nat'0) : () = Seq.get self.inner (to_int idx.inner'0)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant seq : t_Seq
+  
+  function test_index (seq: t_Seq) : ()
+  
+  goal vc_test_index: gt_log_Int (Seq.length seq.inner) 0
+    -> ([@stop_split] [@expl:new requires] ge_log_Int 0 0)
+    /\ (([@stop_split] [@expl:new ensures] to_int (new 0) = 0)
+    -> ([@stop_split] [@expl:index_logic requires] to_int { inner'0 = new 0 }.inner'0 < Seq.length seq.inner))
+end
+module M_test_sub
+  use int.Int
+  
+  type t_Nat
+  
+  type t_Nat'0 = { inner: t_Nat }
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  function to_int (self: t_Nat) : int
+  
+  axiom to_int_spec: forall self: t_Nat [to_int self]. ge_log_Int (to_int self) 0
+  
+  function new (n: int) : t_Nat
+  
+  axiom new_spec: forall n: int [new n]. ge_log_Int n 0 -> to_int (new n) = n
+  
+  predicate le_log_Nat (self: t_Nat) (other: t_Nat) = to_int self <= to_int other
+  
+  predicate lt_log_Nat (self: t_Nat) (other: t_Nat) = to_int self < to_int other
+  
+  function le_lt_log_Nat (self: t_Nat) (other: t_Nat) : ()
+  
+  axiom le_lt_log_Nat_spec: forall self: t_Nat, other: t_Nat. le_log_Nat self other
+      = (lt_log_Nat self other \/ self = other)
+  
+  predicate ge_log_Nat [@inline:trivial] (self: t_Nat) (other: t_Nat) = le_log_Nat other self
+  
+  meta "rewrite_def" predicate ge_log_Nat
+  
+  function sub_Nat (self: t_Nat'0) (other: t_Nat'0) : t_Nat'0 = { inner = new (to_int self.inner - to_int other.inner) }
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  function test_sub : t_Nat'0
+  
+  goal vc_test_sub: ([@stop_split] [@expl:new requires] ge_log_Int 1 0)
+    /\ (([@stop_split] [@expl:new ensures] to_int (new 1) = 1)
+    -> ([@stop_split] [@expl:new requires] ge_log_Int 0 0)
+    /\ (([@stop_split] [@expl:new ensures] to_int (new 0) = 0)
+    -> ([@stop_split] [@expl:sub_logic requires] ge_log_Nat { inner = new 1 }.inner { inner = new 0 }.inner)))
+end

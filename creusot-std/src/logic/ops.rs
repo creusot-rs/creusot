@@ -14,6 +14,7 @@ pub trait IndexLogic<I: ?Sized> {
 
     /// Performs the indexing (`container[index]`) operation.
     #[logic]
+    #[requires(false)]
     #[intrinsic("index_logic")]
     fn index_logic(self, idx: I) -> Self::Item;
 }
@@ -42,6 +43,7 @@ pub trait ShlLogic<Rhs = Self> {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn shl_logic(self, other: Rhs) -> Self::Output;
 }
 
@@ -51,6 +53,7 @@ pub trait ShrLogic<Rhs = Self> {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn shr_logic(self, other: Rhs) -> Self::Output;
 }
 
@@ -60,6 +63,7 @@ pub trait BitAndLogic<Rhs = Self> {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn bitand_logic(self, other: Rhs) -> Self::Output;
 }
 
@@ -78,6 +82,7 @@ pub trait BitOrLogic<Rhs = Self> {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn bitor_logic(self, other: Rhs) -> Self::Output;
 }
 
@@ -96,6 +101,7 @@ pub trait BitXorLogic<Rhs = Self> {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn bitxor_logic(self, other: Rhs) -> Self::Output;
 }
 
@@ -114,6 +120,7 @@ pub trait NotLogic {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn not_logic(self) -> Self::Output;
 }
 

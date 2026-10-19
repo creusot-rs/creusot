@@ -11,6 +11,7 @@ pub trait AddLogic<Rhs = Self> {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn add_logic(self, other: Rhs) -> Self::Output;
 }
 
@@ -23,6 +24,7 @@ pub trait SubLogic<Rhs = Self> {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn sub_logic(self, other: Rhs) -> Self::Output;
 }
 
@@ -35,6 +37,7 @@ pub trait MulLogic<Rhs = Self> {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn mul_logic(self, other: Rhs) -> Self::Output;
 }
 
@@ -47,6 +50,7 @@ pub trait DivLogic<Rhs = Self> {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn div_logic(self, other: Rhs) -> Self::Output;
 }
 
@@ -59,6 +63,7 @@ pub trait RemLogic<Rhs = Self> {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn rem_logic(self, other: Rhs) -> Self::Output;
 }
 
@@ -71,6 +76,7 @@ pub trait NegLogic {
     type Output;
 
     #[logic]
+    #[requires(false)]
     fn neg_logic(self) -> Self::Output;
 }
 
