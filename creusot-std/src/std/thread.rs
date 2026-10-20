@@ -56,6 +56,9 @@ extern_spec! {
         // But you can call this if you want.
         #[ensures(true)]
         fn is_finished(&self) -> bool;
+
+        #[ensures(exists<r> result == Ok(r) && self.valid_result(r))]
+        fn join(self) -> ::std::thread::Result<T>;
     }
 }
 
@@ -82,7 +85,8 @@ impl<'scope, 'env: 'scope> Scope<'scope, 'env> {
     #[requires(forall<t: Ghost<Tokens>> (forall<ns> t.contains(ns)) ==> f.precondition((t,)))]
     #[ensures(exists<t: Ghost<Tokens>> (forall<ns> t.contains(ns)) && forall<r> result.valid_result(r) ==> f.postcondition_once((t,), r))]
     #[trusted]
-    pub fn spawn<F, T>(&mut self, f: F) -> ScopedJoinHandle<'scope, T>
+    #[erasure(std::thread::Scope::spawn::<ErasedScope<F, T>, T>)]
+    pub fn spawn<F, T>(&self, f: F) -> ScopedJoinHandle<'scope, T>
     where
         F: FnOnce(Ghost<Tokens>) -> T + Send + 'scope,
         T: Send + 'scope,
@@ -95,9 +99,38 @@ impl<'scope, 'env: 'scope> Scope<'scope, 'env> {
 #[requires(forall<s> inv(s) ==> f.precondition((s,)))]
 #[ensures(exists<s> inv(s) && f.postcondition_once((s,),result))]
 #[trusted]
+#[erasure(std::thread::scope::<'env, ErasedScope<'env, F, T>,T>)]
 pub fn scope<'env, F, T>(f: F) -> T
 where
-    F: for<'scope> FnOnce(&mut Scope<'scope, 'env>) -> T,
+    F: for<'scope> FnOnce(&Scope<'scope, 'env>) -> T,
 {
-    ::std::thread::scope(|s| f(&mut Scope { inner: s }))
+    ::std::thread::scope(|s| f(&Scope { inner: s }))
+}
+
+#[cfg(creusot)]
+pub struct ErasedScope<'env, F, T>(std::marker::PhantomData<(&'env (), F, T)>);
+
+#[cfg(creusot)]
+#[trusted]
+unsafe impl<F: Send, T> Send for ErasedScope<'_, F, T> {}
+
+#[cfg(creusot)]
+impl<'scope, 'env, 'a, F: for<'scope2> FnOnce(&Scope<'scope2, 'env>) -> T, T>
+    FnOnce<(&'scope ::std::thread::Scope<'scope, 'a>,)> for ErasedScope<'env, F, T>
+{
+    type Output = T;
+    #[trusted]
+    extern "rust-call" fn call_once(self, args: (&'scope ::std::thread::Scope,)) -> T {
+        todo!() // self.0(args.0)
+    }
+}
+
+#[cfg(creusot)]
+impl<'scope, F: FnOnce(Ghost<Tokens>) -> T + 'scope, T> FnOnce<()> for ErasedScope<'_, F, T> {
+    type Output = T;
+
+    #[trusted]
+    extern "rust-call" fn call_once(self, args: ()) -> T {
+        todo!() // self.0(args.0)
+    }
 }

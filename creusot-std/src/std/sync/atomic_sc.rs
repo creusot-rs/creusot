@@ -28,6 +28,7 @@ macro_rules! impl_atomic {
             #[inline(always)]
             #[trusted]
             #[check(terminates)]
+            #[erasure(core::sync::atomic::$atomic_type$(::<$T>)?::new)]
             pub fn new(val: $type) -> (Self, Ghost<Perm<$atomic_type $(< $T >)?>>) {
                 (Self(::core::sync::atomic::$atomic_type::new(val)), Ghost::conjure())
             }
@@ -142,17 +143,19 @@ macro_rules! impl_atomic {
             #[requires(forall<c: &Committer<Self, $type, SeqCst, ()>>
                 !c.shot_store() ==> c.ward() == *self ==> f.precondition((c,))
             )]
+            #[requires(ord == OrderingTy::SeqCst)]
             #[ensures(exists<c: &Committer<Self, $type, SeqCst, ()>>
                 !c.shot_store() && c.ward() == *self && c.val_load() == result && f.postcondition_once((c,), ())
             )]
             #[inline(always)]
             #[trusted]
+            #[erasure(core::sync::atomic::$atomic_type$(::< $T >)?::load)]
             #[allow(unused_variables)]
-            pub fn load<F>(&self, f: Ghost<F>) -> $type
+            pub fn load<F>(&self, ord: OrderingTy, f: Ghost<F>) -> $type
             where
                 F: FnGhost + FnOnce(&Committer<Self, $type, SeqCst, ()>),
             {
-                self.0.load(OrderingTy::SeqCst)
+                self.0.load(ord)
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::store`].")]
@@ -162,18 +165,20 @@ macro_rules! impl_atomic {
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val ==>
                 f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot_store())
             )]
+            #[requires(ord == OrderingTy::SeqCst)]
             #[ensures(exists<c: &mut Committer<Self, $type, (), SeqCst>>
                 !c.shot_store() && c.ward() == *self && c.val_store() == val &&
                 f.postcondition_once((c,), ())
             )]
             #[inline(always)]
             #[trusted]
+            #[erasure(core::sync::atomic::$atomic_type$(::< $T >)?::store)]
             #[allow(unused_variables)]
-            pub fn store<F>(&self, val: $type, f: Ghost<F>)
+            pub fn store<F>(&self, val: $type, ord: OrderingTy, f: Ghost<F>)
             where
                 F: FnGhost + FnOnce(&mut Committer<Self, $type, (), SeqCst>),
             {
-                self.0.store(val, OrderingTy::SeqCst)
+                self.0.store(val, ord)
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::try_update`].")]
@@ -206,7 +211,7 @@ macro_rules! impl_atomic {
                 F: FnMut($type) -> Option<$type>,
                 G: FnGhost + FnOnce(&mut Committer<Self, $type, SeqCst, SeqCst>),
             {
-                let mut prev = self.load(ghost!(|_: &_| {}));
+                let mut prev = self.load(Ordering::SeqCst, ghost!(|_: &_| {}));
                 let f_snap = snapshot!(f);
                 let g_snap = snapshot!(*g);
                 let mut g = ghost!(Some(g.into_inner()));
@@ -216,6 +221,8 @@ macro_rules! impl_atomic {
                     match self.compare_exchange_weak(
                         prev,
                         next,
+                        Ordering::SeqCst,
+                        Ordering::SeqCst,
                         ghost!(|c: Result<&mut _, &_>| match c {
                             Ok(c) => {
                                 (g.take().unwrap())(c)
