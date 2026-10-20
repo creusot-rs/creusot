@@ -1,4 +1,4 @@
-extern crate creusot_std;
+use core::{mem::replace, sync::atomic::Ordering};
 
 use creusot_std::{
     cell::PCell,
@@ -14,15 +14,17 @@ use creusot_std::{
             atomic_sc::{AtomicBool, ordering::SeqCst},
             committer::Committer,
         },
-        thread::{self, JoinHandleExt},
+        thread,
     },
 };
-use std::mem::replace;
 
 declare_namespace! { MESSAGE_PASSING }
 
-struct MessagePassingAtomicInv {
-    atomic_own: Perm<AtomicBool>,
+type LoadCommitter = Committer<AtomicBool, bool, SeqCst, ()>;
+type StoreCommitter = Committer<AtomicBool, bool, (), SeqCst>;
+
+struct MPInv {
+    flag_perm: Perm<AtomicBool>,
     state: State,
     public_data: Snapshot<(PCell<i32>, Id)>,
 }
@@ -33,96 +35,97 @@ enum State {
     Readable(Resource<Excl<()>>),
 }
 
-impl Protocol for MessagePassingAtomicInv {
+impl Protocol for MPInv {
     type Public = (AtomicBool, PCell<i32>, Id);
 
     #[logic(inline)]
     fn public(self) -> Self::Public {
-        let (p, id) = *self.public_data;
-        (*self.atomic_own.ward(), p, id)
+        let (data, id) = *self.public_data;
+        (*self.flag_perm.ward(), data, id)
     }
 
     #[logic(inline)]
     fn protocol(self) -> bool {
         pearlite! {
+            let (_, data, read_excl) = self.public();
+
             match self.state {
-                State::NotWrittenYet => !self.atomic_own.val(),
-                State::Synchronisation(data_perm) => self.public_data.0 == *data_perm.ward() && self.atomic_own.val() && data_perm.val()@ == 1,
-                State::Readable(tok) => self.public_data.1 == tok.id()
+                State::NotWrittenYet => !self.flag_perm.val(),
+                State::Synchronisation(data_perm) => {
+                    data == *data_perm.ward() &&
+                    self.flag_perm.val() &&
+                    data_perm.val() == 42_i32
+                },
+                State::Readable(read_token) => read_excl == read_token.id()
             }
         }
     }
 }
 
 pub fn message_passing() {
-    let (atomic, atomic_own) = AtomicBool::new(false);
+    let (flag, flag_perm) = AtomicBool::new(false);
     let (data, mut data_perm) = PCell::new(0i32);
-    let excl = ghost!(Resource::alloc(snapshot!(Excl(()))));
+    let read_excl = ghost!(Resource::alloc(snapshot!(Excl(()))).into_inner());
 
     let inv = ghost!(AtomicInvariantSC::new(
-        ghost!(MessagePassingAtomicInv {
-            atomic_own: atomic_own.into_inner(),
+        ghost!(MPInv {
+            flag_perm: flag_perm.into_inner(),
             state: State::NotWrittenYet,
-            public_data: snapshot!((data, excl.id()))
+            public_data: snapshot!((data, read_excl.id())),
         }),
         snapshot!(MESSAGE_PASSING()),
     ));
 
     thread::scope(|s| {
-        let inv: Ghost<&_> = ghost!(inv.borrow().into_inner());
-        let data = &data;
-        let atomic = &atomic;
+        s.spawn(|tokens: Ghost<Tokens>| {
+            unsafe { *data.borrow_mut(ghost!(&mut *data_perm)) = 42 }
 
-        let t1 = s.spawn(move |tokens: Ghost<Tokens>| {
-            unsafe { *data.borrow_mut(ghost!(&mut *data_perm)) = 1 }
-
-            atomic.store(
+            flag.store(
                 true,
-                core::sync::atomic::Ordering::SeqCst,
-                ghost! { |c: &mut Committer<_, _, _, SeqCst>| {
-                    inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
+                Ordering::SeqCst,
+                ghost! { |c: &mut StoreCommitter| {
+                    inv.open(tokens.into_inner(), |inv: &mut MPInv| {
                         inv.state = State::Synchronisation(data_perm.into_inner());
-                        c.shoot_store(&mut inv.atomic_own);
+                        c.shoot_store(&mut inv.flag_perm);
                     })
                 }},
             );
         });
 
-        let t2 =
-            s.spawn(move |mut tokens: Ghost<Tokens>| {
-                let mut excl = ghost!(Some(excl.into_inner()));
-                let excl_snap = snapshot!(excl);
-                let mut data_perm = ghost!(None);
+        s.spawn(|mut tokens: Ghost<Tokens>| {
+            let mut read_excl = ghost!(Some(read_excl.into_inner()));
+            let old_read_excl = snapshot!(read_excl);
+            let mut data_perm = ghost!(None);
 
-                #[invariant(excl == *excl_snap)]
-                #[invariant(tokens.contains(MESSAGE_PASSING()))]
-                while !atomic.load(
-                    core::sync::atomic::Ordering::SeqCst,
-                    ghost! { |c: &Committer<_, bool, SeqCst, _>| {
-                        inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                            if !c.val_load() {
-                                return
-                            }
-                            c.shoot_load(&inv.atomic_own);
+            #[invariant(read_excl == *old_read_excl)]
+            #[invariant(tokens.contains(MESSAGE_PASSING()))]
+            while !flag.load(
+                Ordering::SeqCst,
+                ghost! { |c: &LoadCommitter| {
+                    inv.open(tokens.reborrow(), |inv: &mut MPInv| {
+                        if !c.val_load() {
+                            return
+                        }
 
-                            if let State::Readable(excl_state) = &inv.state {
-                                excl.as_mut().unwrap().valid_op_lemma(excl_state)
-                            }
+                        c.shoot_load(&inv.flag_perm);
 
-                            let State::Synchronisation(d_own) =
-                                replace(&mut inv.state, State::Readable(excl.take().unwrap().into_inner()))
-                            else {
-                                unreachable!();
-                            };
-                            *data_perm = Some(d_own);
-                        })}
-                    }) {}
+                        if let State::Readable(read_token) = &inv.state {
+                            read_excl.as_mut().unwrap().valid_op_lemma(read_token)
+                        }
 
-                    let res = unsafe { *data.borrow_mut(ghost! { data_perm.as_mut().unwrap() }) };
-                    assert!(res == 1);
-                });
+                        let State::Synchronisation(d_perm) =
+                            replace(&mut inv.state, State::Readable(read_excl.take().unwrap()))
+                        else {
+                            unreachable!();
+                        };
+                        *data_perm = Some(d_perm);
+                    })
+                }},
+            ) {}
 
-        let _ = t1.join().unwrap();
-        let _ = t2.join().unwrap();
+            let data_perm = ghost! { data_perm.as_mut().unwrap() };
+            let res = unsafe { *data.borrow_mut(data_perm) };
+            assert!(res == 42);
+        });
     });
 }
