@@ -11,7 +11,7 @@ use creusot_std::prelude::erasure;
 #[erasure(spec::message_passing)]
 pub fn message_passing() {
     let atomic = AtomicBool::new(false);
-    let data = SyncUnsafeCell::new(0);
+    let data = SyncUnsafeCell::new(0i32);
 
     thread::scope(|s| {
         let data = &data;
@@ -29,8 +29,8 @@ pub fn message_passing() {
             assert!(res == 1);
         });
 
-        let _ = t1.join();
-        let _ = t2.join();
+        let _ = t1.join().unwrap();
+        let _ = t2.join().unwrap();
     });
 }
 

@@ -78,6 +78,7 @@ pub fn message_passing() {
 
             atomic.store(
                 true,
+                core::sync::atomic::Ordering::SeqCst,
                 ghost! { |c: &mut Committer<_, _, _, SeqCst>| {
                     inv.open(tokens.into_inner(), |inv: &mut MessagePassingAtomicInv| {
                         inv.state = State::Synchronisation(data_perm.into_inner());
@@ -87,37 +88,41 @@ pub fn message_passing() {
             );
         });
 
-        let t2 = s.spawn(move |mut tokens: Ghost<Tokens>| {
-            let mut excl = ghost!(Some(excl.into_inner()));
-            let excl_snap = snapshot!(excl);
-            let mut data_perm = ghost!(None);
+        let t2 =
+            s.spawn(move |mut tokens: Ghost<Tokens>| {
+                let mut excl = ghost!(Some(excl.into_inner()));
+                let excl_snap = snapshot!(excl);
+                let mut data_perm = ghost!(None);
 
-            #[invariant(excl == *excl_snap)]
-            #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            while !atomic.load(ghost! { |c: &Committer<_, bool, SeqCst, _>| {
-            inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
-                if !c.val_load() {
-                    return
-                }
-                c.shoot_load(&inv.atomic_own);
+                #[invariant(excl == *excl_snap)]
+                #[invariant(tokens.contains(MESSAGE_PASSING()))]
+                while !atomic.load(
+                    core::sync::atomic::Ordering::SeqCst,
+                    ghost! { |c: &Committer<_, bool, SeqCst, _>| {
+                        inv.open(tokens.reborrow(), |inv: &mut MessagePassingAtomicInv| {
+                            if !c.val_load() {
+                                return
+                            }
+                            c.shoot_load(&inv.atomic_own);
 
-                if let State::Readable(excl_state) = &inv.state {
-                    excl.as_mut().unwrap().valid_op_lemma(excl_state)
-                }
+                            if let State::Readable(excl_state) = &inv.state {
+                                excl.as_mut().unwrap().valid_op_lemma(excl_state)
+                            }
 
-                let State::Synchronisation(d_own) =
-                    replace(&mut inv.state, State::Readable(excl.take().unwrap().into_inner()))
-                else {
-                    unreachable!();
-                };
-                *data_perm = Some(d_own);
-            })}}) {}
+                            let State::Synchronisation(d_own) =
+                                replace(&mut inv.state, State::Readable(excl.take().unwrap().into_inner()))
+                            else {
+                                unreachable!();
+                            };
+                            *data_perm = Some(d_own);
+                        })}
+                    }) {}
 
-            let res = unsafe { data.get(ghost! { data_perm.as_ref().unwrap() }) };
-            proof_assert!(res == 1i32)
-        });
+                    let res = unsafe { *data.borrow_mut(ghost! { data_perm.as_mut().unwrap() }) };
+                    assert!(res == 1);
+                });
 
-        let _ = t1.join_unwrap();
-        let _ = t2.join_unwrap();
+        let _ = t1.join().unwrap();
+        let _ = t2.join().unwrap();
     });
 }

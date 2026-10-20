@@ -179,7 +179,6 @@ impl<T: ?Sized> PCell<T> {
     #[check(terminates)]
     #[requires(self == perm.ward())]
     #[ensures(result == perm.val())]
-    #[erasure(std::cell::SyncUnsafeCell::<T>::into_inner)]
     pub unsafe fn get(&self, perm: Ghost<&Perm<PCell<T>>>) -> T
     where
         T: Copy + Sized,
