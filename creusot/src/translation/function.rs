@@ -456,20 +456,14 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
                     mir::ProjectionElem::Deref
                 }
                 Field(ix, ty) => Field(ix, ty),
-                Index(l) => {
-                    Index(PIdent(self.locals[&l]))
-                }
+                Index(l) => Index(PIdent(self.locals[&l])),
                 ConstantIndex { offset, min_length, from_end } => {
                     ConstantIndex { offset, min_length, from_end }
                 }
-                Subslice { from, to, from_end } => {
-                    Subslice { from, to, from_end }
-                }
+                Subslice { from, to, from_end } => Subslice { from, to, from_end },
                 Downcast(s, ix) => Downcast(s, ix),
                 OpaqueCast(ty) => OpaqueCast(ty),
-                UnwrapUnsafeBinder(ty) => {
-                    UnwrapUnsafeBinder(ty)
-                }
+                UnwrapUnsafeBinder(ty) => UnwrapUnsafeBinder(ty),
                 PhantomDeref => PhantomDeref,
             })
             .collect::<Box<[_]>>();

@@ -308,9 +308,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 self.names.import_prelude_module(PreMod::MutBor);
                 self.lower_term(term).field(Name::Global(name::final_()))
             }
-            TermKind::Impl { lhs, rhs } => {
-                self.lower_term(lhs).implies(self.lower_term(rhs))
-            }
+            TermKind::Impl { lhs, rhs } => self.lower_term(lhs).implies(self.lower_term(rhs)),
             TermKind::Old { .. } => {
                 self.ctx.crash_and_error(term.span, "`old` is not allowed here")
             }
@@ -607,7 +605,10 @@ pub(crate) fn tyconst_to_term_final<'tcx>(
         Alias(_, ty::AliasConst { kind, args, .. }) => {
             use rustc_type_ir::AliasConstKind::*;
             let def_id = match kind {
-                Projection { def_id } | InherentSelf { def_id } | Free { def_id } | Anon { def_id } => def_id,
+                Projection { def_id }
+                | InherentSelf { def_id }
+                | Free { def_id }
+                | Anon { def_id } => def_id,
                 _ => unreachable!(),
             };
             Some(Term::const_item(def_id, args, ty))

@@ -581,12 +581,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                 Ok(Term { ty, span, kind: self.logical_reborrow(arg)? })
             }
             ExprKind::Adt(AdtExpr {
-                adt_def,
-                variant_index,
-                ref fields,
-                ref base,
-                args,
-                ..
+                adt_def, variant_index, ref fields, ref base, args, ..
             }) => {
                 let mut fields: Vec<_> = fields
                     .iter()
