@@ -47,6 +47,13 @@ macro_rules! attribute_functions {
     (@negate $not:ident $has_attr:ident) => { ! $has_attr };
 }
 
+            #[doc = concat!("Detect if `def_id` has the attribute `", stringify!($($p)*), "`")]
+            pub(crate) fn is_logic(tcx: TyCtxt, def_id: DefId) -> bool {
+                let path = &["creusot", "decl", "logic"];
+                let has_attr = get_attr(tcx, def_id, path).is_some();
+                has_attr
+            }
+
 attribute_functions! {
     [creusot::no_translate]                     => is_no_translate
     [creusot::spec]                             => is_spec
@@ -58,7 +65,7 @@ attribute_functions! {
     [creusot::spec::assert]                     => is_assertion
     [creusot::spec::snapshot]                   => is_snapshot_closure
     [creusot::logic_closure]                    => is_logic_closure // marks `forall`, `exists`, and mappings
-    [creusot::decl::logic]                      => is_logic
+    // [creusot::decl::logic]                      => is_logic
     [creusot::decl::logic::prophetic]           => is_prophetic
     [creusot::decl::logic::sealed]              => is_sealed
     [creusot::decl::logic::law]                 => is_law
@@ -311,6 +318,13 @@ fn get_attrs<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, path: &[&str]) -> Vec<&'tcx
 
 fn get_attr<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, path: &[&str]) -> Option<&'tcx Attribute> {
     let matched = get_attrs(tcx, def_id, path);
+    if tcx.def_path_str(def_id).contains("IteratorSpec::produces_refl") && path.contains(&"logic") {
+    eprintln!("{def_id:?} {path:?} {matched:?}");
+    if let Some(did) = def_id.as_local() {
+        let hid = tcx.local_def_id_to_hir_id(did);
+ eprintln!("{:?}", tcx.hir_attrs(hid));
+ eprintln!("{:?}", tcx.hir_attr_map(hid.owner));
+    }}
     match matched.len() {
         0 => None,
         1 => Some(matched[0]),

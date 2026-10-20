@@ -157,7 +157,10 @@ impl<'thir, 'tcx> Visitor<'thir, 'tcx> for OpacityVisitor<'thir, 'tcx> {
         // Do not check the visibility of rhs in "let _ = rhs;" because it is only used
         // for proof hints (proof_assert and hack to load lemmas).
         if self.is_logic()
-            && matches!(stmt.kind, thir::StmtKind::Let { pattern: thir::Pat { kind: thir::PatKind::Wild, .. }, .. })
+            && matches!(
+                stmt.kind,
+                thir::StmtKind::Let { pattern: thir::Pat { kind: thir::PatKind::Wild, .. }, .. }
+            )
         {
             return;
         }

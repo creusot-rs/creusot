@@ -179,9 +179,14 @@ pub fn try_const_to_term<'tcx>(
         let span = ctx.def_span(def_id);
         let kind = match kind {
             DefKind::Const => ty::AliasConstKind::Free { def_id },
-            DefKind::AssocConst => if let DefKind::Impl { of_trait: false } = ctx.tcx.def_kind(ctx.tcx.parent(def_id)) {
-                ty::AliasConstKind::InherentImpl { def_id }
-            } else { ty::AliasConstKind::Projection { def_id }},
+            DefKind::AssocConst => {
+                if let DefKind::Impl { of_trait: false } = ctx.tcx.def_kind(ctx.tcx.parent(def_id))
+                {
+                    ty::AliasConstKind::InherentImpl { def_id }
+                } else {
+                    ty::AliasConstKind::Projection { def_id }
+                }
+            }
             _ => unreachable!(),
         };
         let uneval = ty::AliasConst::new(ctx.tcx, kind, subst);

@@ -1,8 +1,8 @@
 use super::Diagnostics;
 use rustc_hir::Expr;
 use rustc_lint::{LateContext, LateLintPass, LintContext};
-use rustc_middle::ty;
 use rustc_lint_defs::{declare_tool_lint, impl_lint_pass};
+use rustc_middle::ty;
 
 declare_tool_lint! {
     /// Warns against unsupported Rust features.
