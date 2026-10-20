@@ -3,7 +3,7 @@ use crate::{
     prelude::*,
     std::sync::committer::Committer,
 };
-use core::sync::atomic::Ordering as OrderingTy;
+use core::sync::atomic::Ordering;
 
 pub mod ordering {
     pub struct SeqCst;
@@ -47,6 +47,7 @@ macro_rules! impl_atomic {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::compare_exchange`].")]
             #[doc = ""]
             #[doc = "The load and the store are always sequentially consistent."]
+            #[requires(success == Ordering::SeqCst && failure == Ordering::SeqCst)]
             #[requires(forall<c: &mut Committer<Self, $type, SeqCst, SeqCst>>
                 !c.shot_store() ==> c.ward() == *self ==>
                 c.val_load().deep_model() == current.deep_model() ==>
@@ -83,7 +84,7 @@ macro_rules! impl_atomic {
             #[trusted]
             #[erasure(core::sync::atomic::$atomic_type$(::<$T>)?::compare_exchange)]
             #[allow(unused_variables)]
-            pub fn compare_exchange<F>(&self, current: $type, new: $type, f: Ghost<F>) -> Result<$type, $type>
+            pub fn compare_exchange<F>(&self, current: $type, new: $type, success: Ordering, failure: Ordering, f: Ghost<F>) -> Result<$type, $type>
             where
                 F: FnGhost + FnOnce(Result<
                     &mut Committer<Self, $type, SeqCst, SeqCst>,
@@ -91,12 +92,13 @@ macro_rules! impl_atomic {
                 >,
             )
             {
-                self.0.compare_exchange(current, new, OrderingTy::SeqCst, OrderingTy::SeqCst)
+                self.0.compare_exchange(current, new, success, failure)
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::compare_exchange_weak`].")]
             #[doc = ""]
             #[doc = "The load and the store are always sequentially consistent."]
+            #[requires(success == Ordering::SeqCst && failure == Ordering::SeqCst)]
             #[requires(forall<c: &mut Committer<Self, $type, SeqCst, SeqCst>>
                 !c.shot_store() ==> c.ward() == *self ==>
                 c.val_load().deep_model() == current.deep_model() ==>
@@ -129,7 +131,7 @@ macro_rules! impl_atomic {
             #[trusted]
             #[erasure(core::sync::atomic::$atomic_type$(::<$T>)?::compare_exchange_weak)]
             #[allow(unused_variables)]
-            pub fn compare_exchange_weak<F>(&self, current: $type, new: $type, f: Ghost<F>) -> Result<$type, $type>
+            pub fn compare_exchange_weak<F>(&self, current: $type, new: $type, success: Ordering, failure: Ordering, f: Ghost<F>) -> Result<$type, $type>
             where
                 F: FnGhost + FnOnce(Result<
                     &mut Committer<Self, $type, SeqCst, SeqCst>,
@@ -137,16 +139,16 @@ macro_rules! impl_atomic {
                 >,
             )
             {
-                self.0.compare_exchange_weak(current, new, OrderingTy::SeqCst, OrderingTy::SeqCst)
+                self.0.compare_exchange_weak(current, new, success, failure)
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::load`].")]
             #[doc = ""]
             #[doc = "The load is always sequentially consistent."]
+            #[requires(order == Ordering::SeqCst)]
             #[requires(forall<c: &Committer<Self, $type, SeqCst, ()>>
                 !c.shot_store() ==> c.ward() == *self ==> f.precondition((c,))
             )]
-            #[requires(ord == OrderingTy::SeqCst)]
             #[ensures(exists<c: &Committer<Self, $type, SeqCst, ()>>
                 !c.shot_store() && c.ward() == *self && c.val_load() == result && f.postcondition_once((c,), ())
             )]
@@ -154,21 +156,21 @@ macro_rules! impl_atomic {
             #[trusted]
             #[erasure(core::sync::atomic::$atomic_type$(::< $T >)?::load)]
             #[allow(unused_variables)]
-            pub fn load<F>(&self, ord: OrderingTy, f: Ghost<F>) -> $type
+            pub fn load<F>(&self, order: Ordering, f: Ghost<F>) -> $type
             where
                 F: FnGhost + FnOnce(&Committer<Self, $type, SeqCst, ()>),
             {
-                self.0.load(ord)
+                self.0.load(order)
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::store`].")]
             #[doc = ""]
             #[doc = "The store is always sequentially consistent."]
+            #[requires(order == Ordering::SeqCst)]
             #[requires(forall<c: &mut Committer<Self, $type, (), SeqCst>>
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val ==>
                 f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot_store())
             )]
-            #[requires(ord == OrderingTy::SeqCst)]
             #[ensures(exists<c: &mut Committer<Self, $type, (), SeqCst>>
                 !c.shot_store() && c.ward() == *self && c.val_store() == val &&
                 f.postcondition_once((c,), ())
@@ -177,11 +179,11 @@ macro_rules! impl_atomic {
             #[trusted]
             #[erasure(core::sync::atomic::$atomic_type$(::< $T >)?::store)]
             #[allow(unused_variables)]
-            pub fn store<F>(&self, val: $type, ord: OrderingTy, f: Ghost<F>)
+            pub fn store<F>(&self, val: $type, order: Ordering, f: Ghost<F>)
             where
                 F: FnGhost + FnOnce(&mut Committer<Self, $type, (), SeqCst>),
             {
-                self.0.store(val, ord)
+                self.0.store(val, order)
             }
         }
 
@@ -197,6 +199,7 @@ macro_rules! impl_atomic_int {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::fetch_add`].")]
             #[doc = ""]
             #[doc = "The load and the store are always sequentially consistent."]
+            #[requires(order == Ordering::SeqCst)]
             #[requires(forall<c: &mut Committer<Self, $int_type, SeqCst, SeqCst>>
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val + c.val_load() ==>
                 f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot_store())
@@ -209,11 +212,11 @@ macro_rules! impl_atomic_int {
             #[trusted]
             #[erasure(core::sync::atomic::$atomic_type::fetch_add)]
             #[allow(unused_variables)]
-            pub fn fetch_add<F>(&self, val: $int_type, f: Ghost<F>) -> $int_type
+            pub fn fetch_add<F>(&self, val: $int_type, order: Ordering, f: Ghost<F>) -> $int_type
             where
                 F: FnGhost + FnOnce(&mut Committer<Self, $int_type, SeqCst, SeqCst>),
             {
-                self.0.fetch_add(val, OrderingTy::SeqCst)
+                self.0.fetch_add(val, order)
             }
         }
 
