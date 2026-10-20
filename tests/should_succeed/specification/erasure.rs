@@ -108,7 +108,7 @@ pub unsafe fn test_ptr<'a, T>(x: *mut T) -> &'a T {
     unsafe { &*x }
 }
 
-#[erasure(test_ptr)]
+#[erasure(test_ptr::<T>)]
 #[requires(false)] // don't care about proofs
 pub unsafe fn test_ptr2<T>(x: *mut T, own: Ghost<&Perm<*const T>>) -> &T {
     unsafe { Perm::as_ref(x, own) }
@@ -119,7 +119,7 @@ pub unsafe fn test_ptr_mut<'a, T>(x: *mut T) -> &'a mut T {
     unsafe { &mut *x }
 }
 
-#[erasure(test_ptr_mut)]
+#[erasure(test_ptr_mut::<T>)]
 #[requires(false)]
 pub unsafe fn test_ptr_mut2<T>(x: *mut T, own: Ghost<&mut Perm<*const T>>) -> &mut T {
     unsafe { Perm::as_mut(x, own) }
@@ -169,7 +169,7 @@ pub fn slice_as_ptr<T>(s: &[T]) -> *const T {
     s.as_ptr()
 }
 
-#[erasure(slice_as_ptr)]
+#[erasure(slice_as_ptr::<T>)]
 pub fn slice_as_ptr_perm<T>(s: &[T]) -> (*const T, Ghost<&Perm<*const [T]>>) {
     s.as_ptr_perm()
 }
@@ -178,7 +178,7 @@ pub fn slice_as_mut_ptr<T>(s: &mut [T]) -> *mut T {
     s.as_mut_ptr()
 }
 
-#[erasure(slice_as_mut_ptr)]
+#[erasure(slice_as_mut_ptr::<T>)]
 pub fn slice_as_mut_ptr_perm<'a, T>(
     s: &'a mut [T],
 ) -> (*mut T, Ghost<Guarded<&'a mut Perm<*const [T]>, *const [T]>>) {
@@ -203,9 +203,23 @@ pub fn unsize<T, const N: usize>(t: &[T; N]) -> &[T] {
     t
 }
 
-#[erasure(unsize)]
+#[erasure(unsize::<T, N>)]
 pub fn unsize2<T, const N: usize>(t: &[T; N]) -> &[T] {
     let mut _k = ghost! {0};
     _k = ghost! {1};
     t
+}
+
+pub fn call_store_spec() {
+    store_spec(1, 2, ghost! {3})
+}
+
+#[erasure(store)]
+pub fn store_spec(x: usize, y: usize, z: Ghost<usize>) {}
+
+pub fn store(x: usize, y: usize) {}
+
+#[erasure(call_store_spec)]
+pub fn call_store() {
+    store(1, 2)
 }

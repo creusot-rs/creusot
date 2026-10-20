@@ -556,7 +556,7 @@ impl<T: ?Sized> Perm<*const T> {
     #[trusted]
     #[check(terminates)] // can overflow the number of available pointer adresses
     #[ensures(*result.1.ward() == result.0 && *result.1.val_unsized() == *val)]
-    #[erasure(Box::into_raw)]
+    #[erasure(Box::<T>::into_raw)]
     #[cfg(feature = "std")]
     pub fn from_box(val: Box<T>) -> (*mut T, Ghost<Perm<*const T>>) {
         (Box::into_raw(val), Ghost::conjure())
@@ -678,7 +678,7 @@ impl<T: ?Sized> Perm<*const T> {
     #[requires(ptr as *const T == *own.ward())]
     #[ensures(*result == *own.val_unsized())]
     #[allow(unused_variables)]
-    #[erasure(Box::from_raw)]
+    #[erasure(Box::<T>::from_raw)]
     #[cfg(feature = "std")]
     pub unsafe fn to_box(ptr: *mut T, own: Ghost<Perm<*const T>>) -> Box<T> {
         unsafe { Box::from_raw(ptr) }
