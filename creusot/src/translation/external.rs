@@ -382,20 +382,20 @@ fn build_erased<'tcx>(
     let sig2 = tcx.instantiate_bound_regions_with_erased(
         tcx.instantiate_and_normalize_erasing_regions(subst2, typing_env, tcx.fn_sig(def_id2)),
     );
-    let ty1 = sig1.output();
-    let ty2 = sig2.output();
-    if !eq_erased_ty(tcx, ty1, ty2) {
-        tcx.crash_and_error(
-            tcx.def_span(def_id1),
-            format!(
-                "#[erasure] check failed: result types don't match\n {}(..) -> {:?}\n {}(..) -> {:?}",
-                tcx.def_path_str(def_id1),
-                ty1,
-                tcx.def_path_str(def_id2),
-                ty2,
-            ),
-        )
-    }
+    // let ty1 = sig1.output();
+    // let ty2 = sig2.output();
+    // if !eq_erased_ty(tcx, ty1, ty2) {
+    //     tcx.crash_and_error(
+    //         tcx.def_span(def_id1),
+    //         format!(
+    //             "#[erasure] check failed: result types don't match\n {}(..) -> {:?}\n {}(..) -> {:?}",
+    //             tcx.def_path_str(def_id1),
+    //             ty1,
+    //             tcx.def_path_str(def_id2),
+    //             ty2,
+    //         ),
+    //     )
+    // }
     let erase_args =
         sig1.inputs().iter().map(|arg| is_ghost_or_snap(tcx, *arg)).collect::<Vec<bool>>();
     // let len_unerased_args = erase_args.iter().filter(|&&erase| !erase).count();

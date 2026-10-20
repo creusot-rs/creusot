@@ -57,19 +57,19 @@ impl Protocol for MessagePassingAtomicInv {
 pub fn message_passing() {
     let (atomic, atomic_own) = AtomicBool::new(false);
     let (data, mut data_perm) = PCell::new(0i32);
-    let excl = Resource::alloc(snapshot!(Excl(())));
+    let excl = ghost!(Resource::alloc(snapshot!(Excl(()))));
 
-    let inv = AtomicInvariantSC::new(
+    let inv = ghost!(AtomicInvariantSC::new(
         ghost!(MessagePassingAtomicInv {
             atomic_own: atomic_own.into_inner(),
             state: State::NotWrittenYet,
             public_data: snapshot!((data, excl.id()))
         }),
         snapshot!(MESSAGE_PASSING()),
-    );
+    ));
 
     thread::scope(|s| {
-        let inv: Ghost<&_> = inv.borrow();
+        let inv: Ghost<&_> = ghost!(inv.borrow().into_inner());
         let data = &data;
         let atomic = &atomic;
 
@@ -106,7 +106,7 @@ pub fn message_passing() {
                 }
 
                 let State::Synchronisation(d_own) =
-                    replace(&mut inv.state, State::Readable(excl.take().unwrap()))
+                    replace(&mut inv.state, State::Readable(excl.take().unwrap().into_inner()))
                 else {
                     unreachable!();
                 };

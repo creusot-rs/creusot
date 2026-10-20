@@ -50,6 +50,7 @@ impl<T: ?Sized> PCell<T> {
     #[check(terminates)]
     #[ensures(result.0 == *result.1.ward())]
     #[ensures(result.1.val() == value)]
+    #[erasure(std::cell::SyncUnsafeCell::<T>::new)]
     pub fn new(value: T) -> (Self, Ghost<Perm<PCell<T>>>)
     where
         T: Sized,
@@ -159,6 +160,7 @@ impl<T: ?Sized> PCell<T> {
     #[ensures(self == (^perm).ward())]
     #[ensures(*result == *perm.val_unsized())]
     #[ensures(^result == *(^perm).val_unsized())]
+    #[erasure(std::cell::SyncUnsafeCell::<T>::get)]
     pub unsafe fn borrow_mut<'a>(&'a self, perm: Ghost<&'a mut Perm<PCell<T>>>) -> &'a mut T {
         let _ = perm;
         unsafe { &mut *self.0.get() }
@@ -177,6 +179,7 @@ impl<T: ?Sized> PCell<T> {
     #[check(terminates)]
     #[requires(self == perm.ward())]
     #[ensures(result == perm.val())]
+    #[erasure(std::cell::SyncUnsafeCell::<T>::into_inner)]
     pub unsafe fn get(&self, perm: Ghost<&Perm<PCell<T>>>) -> T
     where
         T: Copy + Sized,

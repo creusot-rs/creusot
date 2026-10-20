@@ -68,6 +68,7 @@
         exact_size_is_empty,
         sized_hierarchy,
         nonzero_internals,
+        sync_unsafe_cell,
     )
 )]
 #![cfg_attr(all(doc, feature = "nightly"), feature(intra_doc_pointers))]

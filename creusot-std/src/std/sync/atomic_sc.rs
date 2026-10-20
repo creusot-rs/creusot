@@ -168,6 +168,7 @@ macro_rules! impl_atomic {
             )]
             #[inline(always)]
             #[trusted]
+            #[erasure(core::sync::atomic::$atomic_type$(::< $T >)?::store)]
             #[allow(unused_variables)]
             pub fn store<F>(&self, val: $type, f: Ghost<F>)
             where
