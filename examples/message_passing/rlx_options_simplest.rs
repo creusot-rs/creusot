@@ -1,4 +1,4 @@
-extern crate creusot_std;
+use core::sync::atomic::Ordering;
 
 use creusot_std::{
     ghost::{
@@ -47,49 +47,57 @@ impl Protocol for MPInv {
 }
 
 pub fn message_passing() {
-    let mut sync_view = SyncView::new();
-    let (flag, flag_perm) = AtomicBool::new(false, sync_view.borrow_mut());
-    let t_initial = snapshot!(flag.get_timestamp(*sync_view));
+    let mut view = ghost!(SyncView::new().into_inner());
+    let (flag, flag_perm) = AtomicBool::new(false, view.borrow_mut());
+    let t_initial = snapshot!(flag.get_timestamp(*view));
 
-    let inv = AtomicInvariant::new(
+    let inv = ghost!(AtomicInvariant::new(
         ghost!(MPInv { flag_perm: flag_perm.into_inner(), t_initial: *t_initial.into_ghost() }),
         snapshot!(MESSAGE_PASSING()),
-    );
+    ));
 
     thread::scope(|s| {
-        let flag = &flag;
-        let inv = &inv;
+        s.spawn(|tokens: Ghost<Tokens>| {
+            let mut view = ghost!(*view);
 
-        s.spawn(move |tokens: Ghost<Tokens>| {
             flag.store(
                 true,
+                Ordering::Relaxed,
                 ghost! { |c: &mut StoreCommitter| {
                     inv.open(tokens.into_inner(), |inv: &mut MPInv| {
-                        c.shoot_store(&mut inv.flag_perm, &mut *sync_view, *ReleaseSyncView::new());
+                        c.shoot_store(&mut inv.flag_perm, &mut *view, *ReleaseSyncView::new());
                     })
                 }},
             );
         });
 
-        s.spawn(move |mut tokens: Ghost<Tokens>| {
+        s.spawn(|mut tokens: Ghost<Tokens>| {
+            let mut view = ghost!(*view);
+
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            #[invariant(*t_initial <= flag.get_timestamp(*sync_view))]
-            while !flag.load(ghost! { |c: &LoadCommitter| {
-            inv.open(tokens.reborrow(), |inv: &mut MPInv| {
-                if !c.val_load() {
-                    return
-                }
+            #[invariant(*t_initial <= flag.get_timestamp(*view))]
+            while !flag.load(
+                Ordering::Relaxed,
+                ghost! { |c: &LoadCommitter| {
+                    inv.open(tokens.reborrow(), |inv: &mut MPInv| {
+                        if !c.val_load() {
+                            return
+                        }
 
-                c.shoot_load(&inv.flag_perm, &mut *sync_view);
-            })}}) {}
+                        c.shoot_load(&inv.flag_perm, &mut *view);
+                    })
+                }},
+            ) {}
 
-            let res = flag.load(ghost! { |c: &LoadCommitter| {
-                inv.open(tokens.reborrow(), |inv: &mut MPInv| {
-                    c.shoot_load(&inv.flag_perm, &mut *sync_view);
-                })
-            }});
-
-            proof_assert!(res == true)
+            let res = flag.load(
+                Ordering::Relaxed,
+                ghost! { |c: &LoadCommitter| {
+                    inv.open(tokens.reborrow(), |inv: &mut MPInv| {
+                        c.shoot_load(&inv.flag_perm, &mut *view);
+                    })
+                }},
+            );
+            assert!(res == true);
         });
     });
 }
