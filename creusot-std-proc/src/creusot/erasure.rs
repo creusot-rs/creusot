@@ -17,14 +17,22 @@ impl Parse for ErasureArg {
         if input.parse::<Token![_]>().is_ok() {
             return Ok(ErasureArg::Ghost);
         }
-        let private = input
-            .step(|cursor| {
-                let error = || Error::new(Span::call_site(), "");
-                let (ident, cursor) = cursor.ident().ok_or_else(error)?;
-                if ident.to_string() == "private" { Ok(((), cursor)) } else { Err(error()) }
-            })
-            .is_ok();
-        Ok(ErasureArg::Arg { private, path: input.parse()? })
+        let kw = input.step(|cursor| {
+            let error = || Error::new(Span::call_site(), "");
+            let (ident, cursor) = cursor.ident().ok_or_else(error)?;
+            if ident.to_string() == "private" {
+                Ok((false, cursor))
+            } else if ident.to_string() == "from" {
+                Ok((true, cursor))
+            } else {
+                Err(error())
+            }
+        });
+        match kw {
+            Err(_) => Ok(ErasureArg::Arg { private: false, path: input.parse()? }),
+            Ok(true) => Ok(ErasureArg::FromArg { path: input.parse()? }),
+            Ok(false) => Ok(ErasureArg::Arg { private: true, path: input.parse()? }),
+        }
     }
 }
 
@@ -33,6 +41,7 @@ impl Parse for ErasureArg {
 enum ErasureArg {
     Ghost,
     Arg { private: bool, path: ExprPath },
+    FromArg { path: ExprPath },
 }
 
 /// There are two variants of this attribute
@@ -70,35 +79,36 @@ pub(crate) fn erasure(arg: TS1, item: TS1) -> TS1 {
     let doc = doc::document_spec("erasure", doc::LogicBody::term(0, arg.clone()));
     let erasure_arg = parse_macro_input!(arg as ErasureArg);
     let mut item = parse_macro_input!(item as FnOrMethod);
-    if let ErasureArg::Arg { private, path } = erasure_arg {
-        if private {
-            // Add attribute to the item itself
-            item.attrs.push(parse_quote!(#[creusot::spec::erasure(#path)]))
-        } else {
-            // Add attribute to a dummy closure inside the item
-            let args: Punctuated<TS2, Comma> = item.sig.inputs.iter().filter_map(|arg| match arg {
-                syn::FnArg::Receiver(r) => {
-                    Some(r.self_token.to_token_stream())
-                }
-                syn::FnArg::Typed(p) => {
-                    if is_ghost_ty(&p.ty) { return None }
-                    Some(match &*p.pat {
-                        Pat::Ident(p) => p.ident.to_token_stream(),
-                        _ => quote_spanned! { p.pat.span() => compile_error!("#[erasure] does not yet support pattern arguments") },
-                    })
-                }
-            }).collect();
+    use ErasureArg::*;
+    match erasure_arg {
+        Arg { private, path } => {
+            if private {
+                // Add attribute to the item itself
+                item.attrs.push(parse_quote!(#[creusot::spec::erasure(#path)]))
+            } else {
+                let erasure_gadget: Stmt = parse_quote! {
+                    #[allow(let_underscore_drop)]
+                    let _ =
+                        #[creusot::no_translate]
+                        #[creusot::spec::erasure]
+                        || #path;
+                };
+                item.body.as_mut().unwrap().stmts.insert(0, erasure_gadget);
+            }
+        }
+        Ghost => {
+            item.attrs.push(parse_quote!(#[creusot::spec::erasure(_)]));
+        }
+        FromArg { path } => {
             let erasure_gadget: Stmt = parse_quote! {
                 #[allow(let_underscore_drop)]
                 let _ =
                     #[creusot::no_translate]
-                    #[creusot::spec::erasure]
-                    || #path(#args);
+                    #[creusot::spec::erasure(from)]
+                    || #path;
             };
             item.body.as_mut().unwrap().stmts.insert(0, erasure_gadget);
         }
-    } else {
-        item.attrs.push(parse_quote!(#[creusot::spec::erasure(_)]));
     }
     insert_doc(item, doc)
 }
