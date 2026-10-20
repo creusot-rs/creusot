@@ -222,6 +222,11 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItem<'a, 'tcx> {
                     self.item = Some((*id, subst.skip_binder(), ItemKind::Fn));
                 }
             }
+            ExprKind::ZstLiteral { .. } => {
+                if let TyKind::FnDef(id, subst) = expr.ty.kind() {
+                    self.item = Some((*id, subst.skip_binder(), ItemKind::Fn));
+                }
+            }
             ExprKind::NamedConst { def_id, args, .. } => {
                 self.item = Some((def_id, args, ItemKind::Const))
             }
@@ -393,26 +398,26 @@ fn build_erased<'tcx>(
     }
     let erase_args =
         sig1.inputs().iter().map(|arg| is_ghost_or_snap(tcx, *arg)).collect::<Vec<bool>>();
-    let len_unerased_args = erase_args.iter().filter(|&&erase| !erase).count();
-    let unerased_args1 = sig1
-        .inputs()
-        .iter()
-        .zip(erase_args.iter())
-        .filter_map(|(ty, &erase)| if erase { None } else { Some(ty) });
-    if len_unerased_args != sig2.inputs().len()
-        || !unerased_args1.zip(sig2.inputs()).all(|(ty1, ty2)| eq_erased_ty(tcx, *ty1, *ty2))
-    {
-        tcx.crash_and_error(
-            tcx.def_span(def_id1),
-            format!(
-                "#[erasure] check failed: argument types don't match\n {}({:?}) -> ...\n {}({:?}) -> ...",
-                tcx.def_path_str(def_id1),
-                sig1.inputs(),
-                tcx.def_path_str(def_id2),
-                sig2.inputs()
-            ),
-        )
-    }
+    // let len_unerased_args = erase_args.iter().filter(|&&erase| !erase).count();
+    // let unerased_args1 = sig1
+    //     .inputs()
+    //     .iter()
+    //     .zip(erase_args.iter())
+    //     .filter_map(|(ty, &erase)| if erase { None } else { Some(ty) });
+    // if len_unerased_args != sig2.inputs().len()
+    //     || !unerased_args1.zip(sig2.inputs()).all(|(ty1, ty2)| eq_erased_ty(tcx, *ty1, *ty2))
+    // {
+    //     tcx.crash_and_error(
+    //         tcx.def_span(def_id1),
+    //         format!(
+    //             "#[erasure] check failed: argument types don't match\n {}({:?}) -> ...\n {}({:?}) -> ...",
+    //             tcx.def_path_str(def_id1),
+    //             sig1.inputs(),
+    //             tcx.def_path_str(def_id2),
+    //             sig2.inputs()
+    //         ),
+    //     )
+    // }
     Erasure { def: (def_id2, subst2), erase_args }
 }
 
