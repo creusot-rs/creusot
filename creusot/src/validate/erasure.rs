@@ -188,7 +188,7 @@ enum Var {
     /// Only the `local_id` component of a `HirId` can go through cross-crate serialization
     /// We throw away the `owner` which should be the enclosing function anyway.
     HirId(HirId),
-    ExprId(ExprId),
+    ExprId(LocalDefId, ExprId),
 }
 
 impl<I: Interner> ty::TypeVisitable<I> for Var {
@@ -212,7 +212,7 @@ impl<D: SpanDecoder> Decodable<D> for Var {
         if d.read_bool() {
             Var::HirId(Decodable::decode(d))
         } else {
-            Var::ExprId(ODecodable::odecode(d))
+            Var::ExprId(LocalDefId::decode(d), ODecodable::odecode(d))
         }
     }
 }
@@ -224,7 +224,8 @@ impl<E: SpanEncoder> Encodable<E> for Var {
                 e.emit_bool(true);
                 v.encode(e)
             }
-            Var::ExprId(v) => {
+            Var::ExprId(i, v) => {
+                i.encode(e);
                 e.emit_bool(false);
                 v.oencode(e)
             }
@@ -696,7 +697,7 @@ struct AnfBuilder<'a, 'tcx> {
     level: rustc_errors::Level,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 enum VarValue<'tcx> {
     Value(AnfValue<'tcx>),
     Mutable,
@@ -789,13 +790,14 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
         stmts: &mut Vec<AnfStmt<'tcx>>,
     ) -> Result<(AnfValue<'tcx>, Span), ()> {
         let expr = &self.thir[expr_id];
+        let owner = self.def_id;
         let bind_var = |stmts: &mut Vec<AnfStmt<'tcx>>, rhs| {
             stmts.push(AnfStmt {
-                pattern: AnfPattern::Var(Var::ExprId(expr_id)),
+                pattern: AnfPattern::Var(Var::ExprId(owner, expr_id)),
                 rhs,
                 span: expr.span,
             });
-            AnfValue::Var(Var::ExprId(expr_id))
+            AnfValue::Var(Var::ExprId(owner, expr_id))
         };
         use ExprKind::*;
         let value = match &expr.kind {
@@ -1162,19 +1164,19 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
             }
             _ => {
                 let v = self.a_normal_form_expr(expr_id, stmts)?;
-                if let AnfValue::Var(Var::ExprId(expr_id2)) = v.0
+                if let AnfValue::Var(Var::ExprId(_, expr_id2)) = v.0
                     && expr_id2 == expr_id
                 {
                     // expr_id was just bound so we can use it as a place
-                    Ok(AnfPlace::mut_var(Var::ExprId(expr_id)))
+                    Ok(AnfPlace::mut_var(Var::ExprId(self.def_id, expr_id)))
                 } else {
                     // we create a place for expr_id
                     stmts.push(AnfStmt {
-                        pattern: AnfPattern::Var(Var::ExprId(expr_id)),
+                        pattern: AnfPattern::Var(Var::ExprId(self.def_id, expr_id)),
                         rhs: AnfOp::value(v),
                         span: expr.span,
                     });
-                    Ok(AnfPlace::mut_var(Var::ExprId(expr_id)))
+                    Ok(AnfPlace::mut_var(Var::ExprId(self.def_id, expr_id)))
                 }
             }
         }
@@ -1797,7 +1799,7 @@ impl<'tcx> PrintAnf<'tcx> {
     fn print_var(&self, var: Var, f: &mut Formatter) -> Result<(), std::fmt::Error> {
         match var {
             Var::HirId(hir_id) => self.print_hir_id(hir_id, f),
-            Var::ExprId(expr_id) => write!(f, "#e{}", expr_id.as_u32()),
+            Var::ExprId(_, expr_id) => write!(f, "#e{}", expr_id.as_u32()),
         }
     }
 
@@ -1916,8 +1918,9 @@ impl<'tcx> PrintAnf<'tcx> {
                 write!(f, "&raw ")?;
                 self.print_place(place, f)
             }
-            Closure(_) => {
-                write!(f, "closure")?;
+            Closure(b) => {
+                writeln!(f, "closure")?;
+                self.print_body(b, f)?;
                 Ok(())
             }
             Ctor(ctor, args) => {
