@@ -517,8 +517,7 @@ impl<T: Protocol> NonAtomicInvariant<T> {
     /// fn foo(tokens: Ghost<Tokens>) {
     ///     let inv = NonAtomicInvariant::new(ghost!(Gt0(1i32)), snapshot!(NS()));
     ///     // ...
-    ///     let mut gt = ghost!(inv.open(tokens.into_inner()));
-    ///     ghost_let!(mut gt = &mut *gt.inner);
+    ///     ghost_let!(mut gt = &mut *inv.open(tokens.into_inner()).inner);
     ///
     ///     ghost! { gt.0 = -1 };
     ///     // ... maybe do some non-ghost operations here ...
