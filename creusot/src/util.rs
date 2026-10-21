@@ -8,11 +8,11 @@ use rustc_hir::{
 use rustc_index::IndexVec;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
-    mir::Location,
+    mir::{BasicBlock, Location},
     thir,
     ty::{self, GenericArgs, GenericArgsRef, TyCtxt},
 };
-use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
+use rustc_serialize::{Decodable, Decoder, Encodable, Encoder, ContextOrd};
 use rustc_span::{RemapPathScopeComponents, Span, Symbol};
 
 use creusot_args::options::SpanMode;
@@ -227,6 +227,12 @@ fn equal_const_kinds<'tcx>(c1: ty::ConstKind<'tcx>, c2: ty::ConstKind<'tcx>) -> 
 #[repr(transparent)]
 pub struct Orphan<T>(pub T);
 
+impl<E> ContextOrd<E> for Orphan<Location> {
+}
+
+impl<E> ContextOrd<E> for Orphan<BasicBlock> {
+}
+
 pub trait ODecodable<D: Decoder> {
     fn odecode(d: &mut D) -> Self;
 }
@@ -266,6 +272,18 @@ impl<E: Encoder> OEncodable<E> for Location {
     fn oencode(&self, encoder: &mut E) {
         self.block.encode(encoder);
         self.statement_index.encode(encoder);
+    }
+}
+
+impl<D: Decoder> ODecodable<D> for BasicBlock {
+    fn odecode(decoder: &mut D) -> Self {
+        <BasicBlock as Decodable<D>>::decode(decoder)
+    }
+}
+
+impl<E: Encoder> OEncodable<E> for BasicBlock {
+    fn oencode(&self, encoder: &mut E) {
+        self.encode(encoder)
     }
 }
 
