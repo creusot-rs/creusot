@@ -18,7 +18,7 @@ pub fn message_passing() {
 
     thread::scope(|s| {
         s.spawn(|| {
-            unsafe { *data.get() = 1 };
+            unsafe { *data.get() = 42 };
             flag.store(true, Ordering::SeqCst);
         });
 
@@ -26,7 +26,7 @@ pub fn message_passing() {
             while !flag.load(Ordering::SeqCst) {}
 
             let res = unsafe { *data.get() };
-            assert!(res == 1);
+            assert!(res == 42);
         });
     });
 }

@@ -40,17 +40,23 @@ impl Protocol for MPInv {
 
     #[logic(inline)]
     fn public(self) -> Self::Public {
-        let (p, id) = *self.public_data;
-        (*self.flag_perm.ward(), p, id)
+        let (data, id) = *self.public_data;
+        (*self.flag_perm.ward(), data, id)
     }
 
     #[logic(inline)]
     fn protocol(self) -> bool {
         pearlite! {
+            let (_, data, read_excl) = self.public();
+
             match self.state {
                 State::NotWrittenYet => !self.flag_perm.val(),
-                State::Synchronisation(data_perm) => self.public_data.0 == *data_perm.ward() && self.flag_perm.val() && data_perm.val()@ == 1,
-                State::Readable(tok) => self.public_data.1 == tok.id()
+                State::Synchronisation(data_perm) => {
+                    data == *data_perm.ward() &&
+                    self.flag_perm.val() &&
+                    data_perm.val() == 42_i32
+                },
+                State::Readable(read_token) => read_excl == read_token.id()
             }
         }
     }
@@ -59,20 +65,20 @@ impl Protocol for MPInv {
 pub fn message_passing() {
     let (flag, flag_perm) = AtomicBool::new(false);
     let (data, mut data_perm) = PCell::new(0i32);
-    let excl = ghost!(Resource::alloc(snapshot!(Excl(()))));
+    let read_excl = ghost!(Resource::alloc(snapshot!(Excl(()))).into_inner());
 
     let inv = ghost!(AtomicInvariantSC::new(
         ghost!(MPInv {
             flag_perm: flag_perm.into_inner(),
             state: State::NotWrittenYet,
-            public_data: snapshot!((data, excl.id())),
+            public_data: snapshot!((data, read_excl.id())),
         }),
         snapshot!(MESSAGE_PASSING()),
     ));
 
     thread::scope(|s| {
         s.spawn(|tokens: Ghost<Tokens>| {
-            unsafe { *data.borrow_mut(ghost!(&mut *data_perm)) = 1 }
+            unsafe { *data.borrow_mut(ghost!(&mut *data_perm)) = 42 }
 
             flag.store(
                 true,
@@ -87,34 +93,39 @@ pub fn message_passing() {
         });
 
         s.spawn(|mut tokens: Ghost<Tokens>| {
-            let mut excl = ghost!(Some(excl.into_inner()));
-            let excl_snap = snapshot!(excl);
+            let mut read_excl = ghost!(Some(read_excl.into_inner()));
+            let old_read_excl = snapshot!(read_excl);
             let mut data_perm = ghost!(None);
 
-            #[invariant(excl == *excl_snap)]
+            #[invariant(read_excl == *old_read_excl)]
             #[invariant(tokens.contains(MESSAGE_PASSING()))]
-            while !flag.load(Ordering::SeqCst, ghost! { |c: &LoadCommitter| {
-                inv.open(tokens.reborrow(), |inv: &mut MPInv| {
-                    if !c.val_load() {
-                        return
-                    }
-                    c.shoot_load(&inv.flag_perm);
+            while !flag.load(
+                Ordering::SeqCst,
+                ghost! { |c: &LoadCommitter| {
+                    inv.open(tokens.reborrow(), |inv: &mut MPInv| {
+                        if !c.val_load() {
+                            return
+                        }
 
-                    if let State::Readable(excl_state) = &inv.state {
-                        excl.as_mut().unwrap().valid_op_lemma(excl_state)
-                    }
+                        c.shoot_load(&inv.flag_perm);
 
-                    let State::Synchronisation(d_perm) =
-                        replace(&mut inv.state, State::Readable(excl.take().unwrap().into_inner()))
-                    else {
-                        unreachable!();
-                    };
-                    *data_perm = Some(d_perm);
-                })}
-            }) {}
+                        if let State::Readable(read_token) = &inv.state {
+                            read_excl.as_mut().unwrap().valid_op_lemma(read_token)
+                        }
 
-            let res = unsafe { *data.borrow_mut(ghost! { data_perm.as_mut().unwrap() }) };
-            assert!(res == 1);
+                        let State::Synchronisation(d_perm) =
+                            replace(&mut inv.state, State::Readable(read_excl.take().unwrap()))
+                        else {
+                            unreachable!();
+                        };
+                        *data_perm = Some(d_perm);
+                    })
+                }},
+            ) {}
+
+            let data_perm = ghost! { data_perm.as_mut().unwrap() };
+            let res = unsafe { *data.borrow_mut(data_perm) };
+            assert!(res == 42);
         });
     });
 }
