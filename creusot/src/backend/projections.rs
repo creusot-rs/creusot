@@ -22,7 +22,7 @@ use std::{assert_matches, cell::RefCell, fmt::Debug, rc::Rc};
 use why3::{
     Ident, Name,
     coma::{Arg, Param},
-    exp::{Constant, Exp},
+    exp::Exp,
 };
 
 /// The challenge here is correctly construction the expression that assigns deep inside a structure.

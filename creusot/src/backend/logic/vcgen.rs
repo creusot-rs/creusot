@@ -280,15 +280,19 @@ impl<'tcx, N: Namer<'tcx>> VCGen<'_, 'tcx, N> {
                     };
                 safe.log_and(k(self.lower_pure(t)))
             }
-            // VC(|x| A(x), Q) = (forall<x>, VC(A(x), true)) /\ Q(|x| A(x))
-            &TermKind::Closure { arg, arg_ty, ref body } => {
+            // VC(|x| A(x), Q) = (forall<x>, VC(A(x), true)) /\ Q(|x| A(x)) (safety mode)
+            &TermKind::Closure { arg, arg_ty, ref body } if self.safety => {
                 let body = self.build_wp(body, &|_| Exp::mk_true());
                 let safe = Exp::forall([(arg.0, self.ty(arg_ty, t.span))], body);
-                if self.safety {
-                    safe.lazy_and(k(self.lower_pure(t)))
-                } else {
-                    safe.implies(k(self.lower_pure(t)))
-                }
+                safe.lazy_and(k(self.lower_pure(t)))
+            }
+            // VC(|x| A(x), Q) = (forall<x>, !VC(A(x), false)) -> Q(|x| A(x)) (non-safety mode)
+            &TermKind::Closure { arg, arg_ty, ref body } => {
+                assert!(!self.safety);
+                let mut body = self.build_wp(body, &|_| Exp::mk_false());
+                body.smart_not();
+                let safe = Exp::forall([(arg.0, self.ty(arg_ty, t.span))], body);
+                safe.implies(k(self.lower_pure(t)))
             }
             // VC((T...), Q) = VC(T[0], |t0| ... VC(T[N], |tn| Q(t0..tn))))
             TermKind::Tuple { fields } => {

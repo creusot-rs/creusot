@@ -438,9 +438,9 @@ impl Exp {
     }
 
     pub fn lazy_and(self, other: Self) -> Self {
-        if self.is_true() {
+        if other.is_false() || self.is_true() {
             other
-        } else if other.is_true() {
+        } else if self.is_false() || other.is_true() {
             self
         } else {
             Exp::BinaryOp(BinOp::LazyAnd, Box::new(self), Box::new(other))
@@ -448,9 +448,9 @@ impl Exp {
     }
 
     pub fn log_and(self, other: Self) -> Self {
-        if self.is_true() {
+        if other.is_false() || self.is_true() {
             other
-        } else if other.is_true() {
+        } else if self.is_false() || other.is_true() {
             self
         } else {
             Exp::BinaryOp(BinOp::LogAnd, Box::new(self), Box::new(other))
@@ -458,9 +458,9 @@ impl Exp {
     }
 
     pub fn log_or(self, other: Self) -> Self {
-        if self.is_true() {
+        if other.is_false() || self.is_true() {
             self
-        } else if other.is_true() {
+        } else if self.is_false() || other.is_true() {
             other
         } else {
             Exp::BinaryOp(BinOp::LogOr, Box::new(self), Box::new(other))
@@ -468,7 +468,10 @@ impl Exp {
     }
 
     pub fn if_(cond: Self, then: Self, else_: Self) -> Self {
-        if (then.is_true() && else_.is_true()) || cond.is_true() {
+        if (then.is_true() && else_.is_true())
+            || (then.is_false() && else_.is_false())
+            || cond.is_true()
+        {
             then
         } else if cond.is_false() {
             else_
@@ -482,9 +485,16 @@ impl Exp {
     /// Performs the following simplifications
     /// - `true -> A` -> `A`
     /// - `A -> true` -> `true`
-    pub fn implies(self, other: Self) -> Self {
+    /// - `false -> A` -> `true`
+    /// - `A -> false` -> !A
+    pub fn implies(mut self, other: Self) -> Self {
         if self.is_true() || other.is_true() {
             other
+        } else if self.is_false() {
+            self.smart_not();
+            self
+        } else if other.is_false() {
+            self.not()
         } else {
             Exp::Impl(Box::new(self), Box::new(other))
         }

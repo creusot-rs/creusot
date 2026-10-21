@@ -4,7 +4,7 @@ use crate::{
     logic_alias::subst_call as subst_alias,
     resolution::TraitResolved,
     translation::pearlite::{
-        BinOp, Literal, Term, TermKind, UnOp,
+        BinOp, Term, TermKind, UnOp,
         visit::{TermVisitorMut, super_visit_mut_term},
     },
 };
@@ -69,45 +69,43 @@ fn optimize_builtin<'tcx>(
     args: Box<[Term<'tcx>]>,
 ) -> TermKind<'tcx> {
     use BinOp::*;
-    use Literal::*;
     use TermKind::*;
     use UnOp::*;
 
-    let builtin = get_builtin(ctx.tcx, id);
-    let builtin_str = builtin.as_ref().map(|s| s.as_str());
+    if let Some(builtin_str) = get_builtin(ctx.tcx, id).as_ref().map(|s| s.as_str()) {
+        if let Some(op) = match builtin_str {
+            "int.Int.(+)" => Some(Add),
+            "int.Int.(-)" => Some(Sub),
+            "int.Int.(*)" => Some(Mul),
+            "int.Int.(<=)" => Some(Le),
+            "int.Int.(<)" => Some(Lt),
+            "int.Int.(>=)" => Some(Ge),
+            "int.Int.(>)" => Some(Gt),
+            _ => None,
+        } {
+            let [lhs, rhs] = args.into_array().unwrap().map(Box::new);
+            return Binary { op, lhs, rhs };
+        }
 
-    if let Some(op) = match builtin_str {
-        Some("int.Int.(+)") => Some(Add),
-        Some("int.Int.(-)") => Some(Sub),
-        Some("int.Int.(*)") => Some(Mul),
-        Some("int.Int.(<=)") => Some(Le),
-        Some("int.Int.(<)") => Some(Lt),
-        Some("int.Int.(>=)") => Some(Ge),
-        Some("int.Int.(>)") => Some(Gt),
-        _ => None,
-    } {
-        let [lhs, rhs] = args.into_array().unwrap().map(Box::new);
-        return Binary { op, lhs, rhs };
-    }
-
-    match builtin_str {
-        Some("fin") => {
-            let [arg] = *args.into_array::<1>().unwrap();
-            return Fin { term: Box::new(arg) };
+        match builtin_str {
+            "fin" => {
+                let [term] = args.into_array().unwrap().map(Box::new);
+                return Fin { term };
+            }
+            "identity" => {
+                let [arg] = args.into_array().unwrap().map(Box::new);
+                return Coerce { arg };
+            }
+            "int.Int.(-_)" => {
+                let [arg] = args.into_array().unwrap().map(Box::new);
+                return Unary { op: Neg, arg };
+            }
+            "bool.Bool.notb" => {
+                let [arg] = args.into_array().unwrap().map(Box::new);
+                return Unary { op: Not, arg };
+            }
+            _ => (),
         }
-        Some("identity") => {
-            let [arg] = *args.into_array::<1>().unwrap();
-            return Coerce { arg: Box::new(arg) };
-        }
-        Some("int.Int.(-_)") => {
-            let [arg] = *args.into_array::<1>().unwrap();
-            return Unary { op: Neg, arg: Box::new(arg) };
-        }
-        Some("bool.Bool.notb") => {
-            let [arg] = *args.into_array::<1>().unwrap();
-            return Unary { op: Not, arg: Box::new(arg) };
-        }
-        _ => (),
     }
 
     return Call { id, subst, args };
