@@ -28,7 +28,8 @@ pub use decoder::decode_metadata;
 pub use encoder::encode_metadata;
 use rustc_data_structures::fx::FxHashMap;
 use rustc_middle::ty::TyCtxt;
-use rustc_span::{SourceFile, StableSourceFileId, def_id::StableCrateId};
+use rustc_span::{SourceFile, StableSourceFileId, def_id::StableCrateId};use rustc_span::SyntaxContext;
+use rustc_serialize::ContextOrd;
 use std::hash::Hash;
 
 #[derive(Encodable, Decodable, Eq, PartialEq, Hash, Clone, Copy, Debug)]
@@ -70,7 +71,25 @@ impl EncodedSourceFileId {
 
 #[derive(Decodable, Encodable)]
 struct Footer {
-    file_index_to_stable_id: FxHashMap<SourceFileIndex, EncodedSourceFileId>,
+    file_index_to_stable_id: FxHashMap<Orphan<SourceFileIndex>, EncodedSourceFileId>,
     syntax_contexts: FxHashMap<u32, AbsoluteBytePos>,
-    expn_data: FxHashMap<(StableCrateId, u32), AbsoluteBytePos>,
+    expn_data: FxHashMap<Orphan<(StableCrateId, u32)>, AbsoluteBytePos>,
+}
+
+#[derive(Decodable, Encodable, PartialEq, Eq, Hash)]
+#[repr(C)]
+struct Orphan<T>(T);
+
+fn from_orphan_map<K, V>(x: FxHashMap<Orphan<K>, V>) -> FxHashMap<K, V> {
+    unsafe { std::mem::transmute(x) }
+}
+
+fn to_orphan_map<K, V>(x: FxHashMap<K, V>) -> FxHashMap<Orphan<K>, V> {
+    unsafe { std::mem::transmute(x) }
+}
+
+impl<E> ContextOrd<E> for Orphan<SourceFileIndex> {
+}
+
+impl<E> ContextOrd<E> for Orphan<(StableCrateId, u32)> {
 }

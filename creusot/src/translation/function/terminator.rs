@@ -9,6 +9,7 @@ use crate::{
         fmir::{self, *},
         pearlite::{Term, TermKind, UnOp},
     },
+    util::Orphan,
 };
 use rustc_middle::{
     mir::{
@@ -183,7 +184,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         {
             let mut retarget = HashMap::new();
             for target in term.targets_mut() {
-                match resolved.remove(target) {
+                match resolved.remove(&Orphan(*target)) {
                     Some(resolves) => {
                         let fresh = self.fresh_block_id();
                         retarget.insert(*target, fresh);

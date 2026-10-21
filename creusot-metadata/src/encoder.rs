@@ -136,8 +136,8 @@ impl SpanEncoder for MetadataEncoder<'_, '_> {
         eid.local_id.as_u32().encode(self);
     }
     fn encode_syntax_context(&mut self, ctx: SyntaxContext) {
-        let idx = self.hygiene_context.borrow_mut().get_syntax_ctxt_encoding_index(ctx);
-        idx.encode(self);
+        let idx = self.hygiene_context.borrow_mut().enqueue_syntax_context_for_encoding(ctx);
+        self.emit_u32(ctx.as_u32());
     }
     fn encode_crate_num(&mut self, cnum: CrateNum) {
         self.tcx.stable_crate_id(cnum).encode(self)
@@ -218,7 +218,7 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
             file_index_to_stable_id.insert(index, source_file_id);
         }
 
-        (file_to_file_index, file_index_to_stable_id)
+        (file_to_file_index, super::to_orphan_map(file_index_to_stable_id))
     };
 
     let hygiene_context = HygieneEncodeContext::default();
@@ -246,7 +246,7 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
         |encoder, index, ctxt_data| {
             let pos = AbsoluteBytePos::new(encoder.position());
             ctxt_data.encode(encoder);
-            syntax_contexts.insert(index, pos);
+            syntax_contexts.insert(index.as_u32(), pos);
         },
         |encoder, expn_id, data, hash| {
             let pos = AbsoluteBytePos::new(encoder.position());
@@ -258,7 +258,7 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
 
     // Encode the file footer.
     let footer_pos = encoder.position() as u64;
-    let footer = Footer { file_index_to_stable_id, syntax_contexts, expn_data };
+    let footer = Footer { file_index_to_stable_id, syntax_contexts, expn_data: super::to_orphan_map(expn_data) };
     footer.encode(&mut encoder);
 
     // Encode the position of the footer as the last 8 bytes of the
