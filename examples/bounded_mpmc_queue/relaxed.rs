@@ -1,10 +1,12 @@
 // DEPTH 10
-//! This implementation is an adaption from:
-//! https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
+
+// This implementation is an adaption from:
+// https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
 
 #![recursion_limit = "256"]
 
-use core::mem::MaybeUninit;
+use core::{mem::MaybeUninit, sync::atomic::Ordering};
+
 use creusot_std::{
     cell::PCell,
     ghost::{
@@ -136,7 +138,7 @@ mod state {
 }
 
 mod statuses {
-    use crate::StatusWithView;
+    use super::StatusWithView;
     use core::cmp::Ordering;
     use creusot_std::{
         ghost::resource::{self, Resource},
@@ -593,7 +595,7 @@ pub struct Queue<T> {
     inv: Ghost<AtomicInvariant<QueueInv<T>>>,
 }
 
-struct QueueCell<T> {
+pub(crate) struct QueueCell<T> {
     item: PCell<MaybeUninit<T>>,
     status: AtomicUsize,
 }
@@ -668,10 +670,13 @@ impl<T> Queue<T> {
     #[ensures(result.1@ == Seq::empty())]
     #[ensures(result.1.budget() == usize::MAX@ - 2 * length@ + 1)]
     pub fn new(length: usize) -> (Self, Ghost<PermQueue<T>>) {
-        let tokens_auth: Ghost<tokens::Authority<T>> = tokens::Authority::alloc();
-        let mut statuses_mono_auth: Ghost<Seq<statuses::Authority>> = Seq::new();
-        let mut cells_own: Ghost<Seq<Option<AtView<PermPCell<T>>>>> = Seq::new();
-        let mut statuses_own: Ghost<Seq<Perm<AtomicUsize>>> = Seq::new();
+        let tokens_auth: Ghost<tokens::Authority<T>> =
+            ghost! {tokens::Authority::alloc().into_inner()};
+        let mut statuses_mono_auth: Ghost<Seq<statuses::Authority>> =
+            ghost! {Seq::new().into_inner()};
+        let mut cells_own: Ghost<Seq<Option<AtView<PermPCell<T>>>>> =
+            ghost! {Seq::new().into_inner()};
+        let mut statuses_own: Ghost<Seq<Perm<AtomicUsize>>> = ghost! {Seq::new().into_inner()};
         let mut cells: Vec<QueueCell<T>> = Vec::new();
 
         #[invariant(cells@.len() == produced.len())]
@@ -705,7 +710,7 @@ impl<T> Queue<T> {
         for i in 0..length {
             let (item, item_own) = PCell::new(MaybeUninit::uninit());
 
-            let at_view = AtView::new(item_own);
+            let at_view = ghost! {AtView::new(item_own).into_inner()};
             let mut view = ghost!(at_view.0);
             let at_view = ghost!(at_view.into_inner().1);
 
@@ -722,9 +727,11 @@ impl<T> Queue<T> {
             cells.push(QueueCell { item, status })
         }
 
-        let (head, head_own) = AtomicUsize::new(0, SyncView::new().borrow_mut());
+        let mut head_view = ghost! { SyncView::new().into_inner() };
+        let (head, head_own) = AtomicUsize::new(0, head_view.borrow_mut());
         let head_ts = snapshot!(such_that(|t| head_own.val().contains(&t)));
-        let (tail, tail_own) = AtomicUsize::new(0, SyncView::new().borrow_mut());
+        let mut tail_view = ghost! { SyncView::new().into_inner() };
+        let (tail, tail_own) = AtomicUsize::new(0, tail_view.borrow_mut());
         let tail_ts = snapshot!(such_that(|t| tail_own.val().contains(&t)));
 
         let statuses_mono_auth_wards =
@@ -739,7 +746,7 @@ impl<T> Queue<T> {
         )
         .split();
 
-        let inv = AtomicInvariant::new(
+        let inv = ghost! { AtomicInvariant::new(
             ghost!(QueueInv {
                 head_own: head_own.into_inner(),
                 tail_own: tail_own.into_inner(),
@@ -757,7 +764,7 @@ impl<T> Queue<T> {
                 statuses_mono_auth_wards,
             }),
             snapshot!(BOUNDED_MPMC_QUEUE()),
-        );
+        ).into_inner() };
 
         let queue = Queue { cells, head, tail, inv };
 
@@ -923,17 +930,20 @@ impl<T> Queue<T> {
         let mut view = SyncView::new();
         let mut witness: Ghost<Option<statuses::Fragment>> = ghost!(None);
 
-        let head = self.head.load(ghost! { |c: &Committer<_, _, Relaxed, _>| {
-            self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                c.shoot_load(&inv.head_own, &mut SyncView::new());
-            });
-        } });
+        let head = self.head.load(
+            Ordering::Relaxed,
+            ghost! { |c: &Committer<_, _, Relaxed, _>| {
+                self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                    c.shoot_load(&inv.head_own, &mut SyncView::new());
+                });
+            } },
+        );
 
         let head_mod = head % self.cells.len();
         proof_assert!(head_mod@ == head@.rem_euclid(self.cells@.len()));
 
         let cell = &self.cells[head_mod];
-        let status = cell.status.load(ghost! { |c: &Committer<_, _, Acquire, _>| {
+        let status = cell.status.load(Ordering::Acquire, ghost! { |c: &Committer<_, _, Acquire, _>| {
             self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                 let old_inv = snapshot!(*inv);
                 let head_mod_ghost: Ghost<Int> = snapshot!(head_mod@).into_ghost();
@@ -957,6 +967,8 @@ impl<T> Queue<T> {
         let res = self.head.compare_exchange_weak::<_, Relaxed, Relaxed>(
             head,
             head + 1,
+            Ordering::Relaxed,
+            Ordering::Relaxed,
             ghost! { |c: Result<&mut Committer<_, _, Relaxed, Relaxed>, &_>| {
                 let Ok(c) = c else { return; };
 
@@ -985,6 +997,7 @@ impl<T> Queue<T> {
 
         cell.status.store(
             2 * head + 1,
+            Ordering::Release,
             ghost! { |c: &mut Committer<_, _, _, Release>| {
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                     Self::try_enqueue_store_inv(
@@ -1159,17 +1172,20 @@ impl<T> Queue<T> {
         let mut view = SyncView::new();
         let mut witness: Ghost<Option<statuses::Fragment>> = ghost!(None);
 
-        let tail = self.tail.load(ghost! { |c: &Committer<_, _, Relaxed, _>| {
-            self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                c.shoot_load(&inv.tail_own, &mut SyncView::new());
-            });
-        } });
+        let tail = self.tail.load(
+            Ordering::Relaxed,
+            ghost! { |c: &Committer<_, _, Relaxed, _>| {
+                self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                    c.shoot_load(&inv.tail_own, &mut SyncView::new());
+                });
+            } },
+        );
 
         let tail_mod = tail % self.cells.len();
         proof_assert!(tail_mod@ == tail@.rem_euclid(self.cells@.len()));
 
         let cell = &self.cells[tail_mod];
-        let status = cell.status.load(ghost! { |c: &Committer<_, _, Acquire, _>| {
+        let status = cell.status.load(Ordering::Acquire, ghost! { |c: &Committer<_, _, Acquire, _>| {
             self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                 let old_inv = snapshot!(*inv);
                 let tail_mod_ghost: Ghost<Int> = snapshot!(tail_mod@).into_ghost();
@@ -1193,6 +1209,8 @@ impl<T> Queue<T> {
         let res = self.tail.compare_exchange_weak::<_, Relaxed, Relaxed>(
             tail,
             tail + 1,
+            Ordering::Relaxed,
+            Ordering::Relaxed,
             ghost! { |c: Result<&mut Committer<_, _, Relaxed, Relaxed>, &_>| {
                 let Ok(c) = c else { return; };
 
@@ -1216,13 +1234,14 @@ impl<T> Queue<T> {
         }
 
         let item = unsafe {
-            cell.item
-                .replace(ghost!(cell_own.as_mut().unwrap()), MaybeUninit::uninit())
-                .assume_init()
+            let cell_perm = ghost! { cell_own.as_mut().unwrap() };
+            let cell_bor = cell.item.borrow_mut(cell_perm);
+            core::mem::replace(cell_bor, MaybeUninit::uninit()).assume_init()
         };
 
         cell.status.store(
             2 * (tail + self.cells.len()),
+            Ordering::Release,
             ghost! { |c: &mut Committer<_, _, _, Release>| {
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                     Self::try_dequeue_store_inv(
