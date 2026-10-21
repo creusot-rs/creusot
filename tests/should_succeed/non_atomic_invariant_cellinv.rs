@@ -2,9 +2,7 @@ extern crate creusot_std;
 use creusot_std::{
     cell::PCell,
     ghost::{
-        invariant::{
-            NonAtomicInvariant, NonAtomicInvariantExt as _, Protocol, Tokens, declare_namespace,
-        },
+        invariant::{NonAtomicInvariant, Protocol, Tokens, declare_namespace},
         perm::Perm,
     },
     prelude::*,
@@ -41,15 +39,13 @@ impl<T> Protocol for PCellNAInv<T> {
 
 impl<T> CellInv<T> {
     #[requires(tokens.contains(PERMCELL()))]
-    pub fn read<'a>(&'a self, tokens: Ghost<Tokens<'a>>) -> &'a T {
-        self.permission
-            .open(tokens, move |perm| unsafe { self.data.borrow(ghost!(&perm.into_inner().0)) })
+    pub fn read<'a>(&'a self, tokens: Ghost<&'a Tokens<'a>>) -> &'a T {
+        unsafe { self.data.borrow(ghost!(&self.permission.open_const(tokens.into_inner()).0)) }
     }
 
     #[requires(tokens.contains(PERMCELL()))]
     pub fn write(&self, x: T, tokens: Ghost<Tokens>) {
-        self.permission.open(tokens, move |perm| unsafe {
-            *self.data.borrow_mut(ghost!(&mut perm.into_inner().0)) = x
-        })
+        ghost_let!(perm = &mut self.permission.open_guarded(tokens.into_inner()).inner.0);
+        unsafe { *self.data.borrow_mut(perm) = x }
     }
 }
