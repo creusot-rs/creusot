@@ -38,6 +38,7 @@ macro_rules! impl_atomic {
             #[ensures(result == own.val())]
             #[inline(always)]
             #[trusted]
+            #[erasure(core::sync::atomic::$atomic_type$(::<$T>)?::into_inner)]
             #[allow(unused_variables)]
             pub fn into_inner(self, own: Ghost<Perm<$atomic_type $(< $T >)?>>) -> $type {
                 self.0.into_inner()
@@ -81,6 +82,7 @@ macro_rules! impl_atomic {
             )]
             #[inline(always)]
             #[trusted]
+            #[erasure(core::sync::atomic::$atomic_type$(::<$T>)?::compare_exchange)]
             #[allow(unused_variables)]
             pub fn compare_exchange<F>(&self, current: $type, new: $type, success: Ordering, failure: Ordering, f: Ghost<F>) -> Result<$type, $type>
             where
@@ -127,6 +129,7 @@ macro_rules! impl_atomic {
             )]
             #[inline(always)]
             #[trusted]
+            #[erasure(core::sync::atomic::$atomic_type$(::<$T>)?::compare_exchange_weak)]
             #[allow(unused_variables)]
             pub fn compare_exchange_weak<F>(&self, current: $type, new: $type, success: Ordering, failure: Ordering, f: Ghost<F>) -> Result<$type, $type>
             where
@@ -207,6 +210,7 @@ macro_rules! impl_atomic_int {
             )]
             #[inline(always)]
             #[trusted]
+            #[erasure(core::sync::atomic::$atomic_type::fetch_add)]
             #[allow(unused_variables)]
             pub fn fetch_add<F>(&self, val: $int_type, order: Ordering, f: Ghost<F>) -> $int_type
             where

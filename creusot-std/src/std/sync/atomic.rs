@@ -52,8 +52,6 @@ pub mod ordering {
 
 use ordering::{LoadOrdering, StoreOrdering, UpdateOrdering};
 
-const SEQ_CST: Ordering = Ordering::SeqCst;
-
 macro_rules! impl_atomic {
     ($( ($type:ty, $atomic_type:ident $(< $T:ident >)?) ),+) => { $(
 
@@ -101,6 +99,7 @@ macro_rules! impl_atomic {
             #[inline(always)]
             #[trusted]
             #[check(terminates)]
+            #[erasure(core::sync::atomic::$atomic_type$(::<$T>)?::into_inner)]
             #[allow(unused_variables)]
             pub fn into_inner(self, own: Ghost<Perm<$atomic_type $(< $T >)?>>) -> ($type, Ghost<SyncView>) {
                 (self.0.into_inner(), Ghost::conjure())
@@ -128,6 +127,7 @@ macro_rules! impl_atomic {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::compare_exchange`].")]
             #[doc = ""]
             #[doc = "The load and the store are always sequentially consistent."]
+            #[requires(success == Success::ORDERING && failure == Failure::ORDERING)]
             #[requires(forall<c: &mut Committer<Self, $type, _, _>>
                 !c.shot_store() ==> c.ward() == *self ==>
                 c.val_load().deep_model() == current.deep_model() ==>
@@ -157,8 +157,9 @@ macro_rules! impl_atomic {
             )]
             #[inline(always)]
             #[trusted]
+            #[erasure(core::sync::atomic::$atomic_type$(::<$T>)?::compare_exchange)]
             #[allow(unused_variables)]
-            pub fn compare_exchange<F, Success: UpdateOrdering, Failure: LoadOrdering>(&self, current: $type, new: $type, f: Ghost<F>) -> Result<$type, $type>
+            pub fn compare_exchange<F, Success: UpdateOrdering, Failure: LoadOrdering>(&self, current: $type, new: $type, success: Ordering, failure: Ordering, f: Ghost<F>) -> Result<$type, $type>
             where
                 F: FnGhost + FnOnce(Result<
                     &mut Committer<Self, $type, Success::Load, Success::Store>,
@@ -169,14 +170,15 @@ macro_rules! impl_atomic {
                 self.0.compare_exchange(
                     current,
                     new,
-                    if cfg!(feature = "sc-drf") { SEQ_CST } else { Success::ORDERING },
-                    if cfg!(feature = "sc-drf") { SEQ_CST } else { Failure::ORDERING }
+                    if cfg!(feature = "sc-drf") { Ordering::SeqCst } else { success },
+                    if cfg!(feature = "sc-drf") { Ordering::SeqCst } else { failure }
                 )
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::compare_exchange_weak`].")]
             #[doc = ""]
             #[doc = "The load and the store are always sequentially consistent."]
+            #[requires(success == Success::ORDERING && failure == Failure::ORDERING)]
             #[requires(forall<c: &mut Committer<Self, $type, _, _>>
                 !c.shot_store() ==> c.ward() == *self ==>
                 c.val_load().deep_model() == current.deep_model() ==>
@@ -202,8 +204,9 @@ macro_rules! impl_atomic {
             )]
             #[inline(always)]
             #[trusted]
+            #[erasure(core::sync::atomic::$atomic_type$(::<$T>)?::compare_exchange_weak)]
             #[allow(unused_variables)]
-            pub fn compare_exchange_weak<F, Success: UpdateOrdering, Failure: LoadOrdering>(&self, current: $type, new: $type, f: Ghost<F>) -> Result<$type, $type>
+            pub fn compare_exchange_weak<F, Success: UpdateOrdering, Failure: LoadOrdering>(&self, current: $type, new: $type, success: Ordering, failure: Ordering, f: Ghost<F>) -> Result<$type, $type>
             where
                 F: FnGhost + FnOnce(Result<
                     &mut Committer<Self, $type, Success::Load, Success::Store>,
@@ -214,8 +217,8 @@ macro_rules! impl_atomic {
                 self.0.compare_exchange_weak(
                     current,
                     new,
-                    if cfg!(feature = "sc-drf") { SEQ_CST } else { Success::ORDERING },
-                    if cfg!(feature = "sc-drf") { SEQ_CST } else { Failure::ORDERING }
+                    if cfg!(feature = "sc-drf") { Ordering::SeqCst } else { success },
+                    if cfg!(feature = "sc-drf") { Ordering::SeqCst } else { failure }
                 )
             }
 
@@ -235,7 +238,7 @@ macro_rules! impl_atomic {
             where
                 F: FnGhost + FnOnce(&Committer<Self, $type, Load, ()>),
             {
-                self.0.load(if cfg!(feature = "sc-drf") { SEQ_CST } else { order })
+                self.0.load(if cfg!(feature = "sc-drf") { Ordering::SeqCst } else { order })
             }
 
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::store`].")]
@@ -258,7 +261,7 @@ macro_rules! impl_atomic {
             {
                 self.0.store(
                     val,
-                    if cfg!(feature = "sc-drf") { SEQ_CST } else { order },
+                    if cfg!(feature = "sc-drf") { Ordering::SeqCst } else { order },
                 )
             }
         }
@@ -273,6 +276,7 @@ macro_rules! impl_atomic_int {
 
         impl $atomic_type {
             #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::fetch_add`].")]
+            #[requires(order == Ord::ORDERING)]
             #[requires(forall<c: &mut Committer<Self, $int_type, Ord::Load, Ord::Store>>
                 !c.shot_store() ==> c.ward() == *self ==> c.val_store() == val + c.val_load() ==>
                 f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot_store())
@@ -283,14 +287,15 @@ macro_rules! impl_atomic_int {
             )]
             #[inline(always)]
             #[trusted]
+            #[erasure(core::sync::atomic::$atomic_type::fetch_add)]
             #[allow(unused_variables)]
-            pub fn fetch_add<F, Ord: UpdateOrdering>(&self, val: $int_type, f: Ghost<F>) -> $int_type
+            pub fn fetch_add<F, Ord: UpdateOrdering>(&self, val: $int_type, order: Ordering, f: Ghost<F>) -> $int_type
             where
                 F: FnGhost + FnOnce(&mut Committer<Self, $int_type, Ord::Load, Ord::Store>),
             {
                 self.0.fetch_add(
                     val,
-                    if cfg!(feature = "sc-drf") { SEQ_CST } else { Ord::ORDERING },
+                    if cfg!(feature = "sc-drf") { Ordering::SeqCst } else { order },
                 )
             }
         }

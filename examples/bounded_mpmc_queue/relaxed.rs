@@ -1,10 +1,12 @@
 // DEPTH 10
-//! This implementation is an adaption from:
-//! https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
+
+// This implementation is an adaption from:
+// https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
 
 #![recursion_limit = "256"]
 
-use core::mem::MaybeUninit;
+use core::{mem::MaybeUninit, sync::atomic::Ordering};
+
 use creusot_std::{
     cell::PCell,
     ghost::{
@@ -136,7 +138,7 @@ mod state {
 }
 
 mod statuses {
-    use crate::StatusWithView;
+    use super::StatusWithView;
     use core::cmp::Ordering;
     use creusot_std::{
         ghost::resource::{self, Resource},
@@ -923,17 +925,20 @@ impl<T> Queue<T> {
         let mut view = SyncView::new();
         let mut witness: Ghost<Option<statuses::Fragment>> = ghost!(None);
 
-        let head = self.head.load(ghost! { |c: &Committer<_, _, Relaxed, _>| {
-            self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                c.shoot_load(&inv.head_own, &mut SyncView::new());
-            });
-        } });
+        let head = self.head.load(
+            Ordering::Relaxed,
+            ghost! { |c: &Committer<_, _, Relaxed, _>| {
+                self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                    c.shoot_load(&inv.head_own, &mut SyncView::new());
+                });
+            } },
+        );
 
         let head_mod = head % self.cells.len();
         proof_assert!(head_mod@ == head@.rem_euclid(self.cells@.len()));
 
         let cell = &self.cells[head_mod];
-        let status = cell.status.load(ghost! { |c: &Committer<_, _, Acquire, _>| {
+        let status = cell.status.load(Ordering::Acquire, ghost! { |c: &Committer<_, _, Acquire, _>| {
             self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                 let old_inv = snapshot!(*inv);
                 let head_mod_ghost: Ghost<Int> = snapshot!(head_mod@).into_ghost();
@@ -957,6 +962,8 @@ impl<T> Queue<T> {
         let res = self.head.compare_exchange_weak::<_, Relaxed, Relaxed>(
             head,
             head + 1,
+            Ordering::Relaxed,
+            Ordering::Relaxed,
             ghost! { |c: Result<&mut Committer<_, _, Relaxed, Relaxed>, &_>| {
                 let Ok(c) = c else { return; };
 
@@ -985,6 +992,7 @@ impl<T> Queue<T> {
 
         cell.status.store(
             2 * head + 1,
+            Ordering::Release,
             ghost! { |c: &mut Committer<_, _, _, Release>| {
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                     Self::try_enqueue_store_inv(
@@ -1159,17 +1167,20 @@ impl<T> Queue<T> {
         let mut view = SyncView::new();
         let mut witness: Ghost<Option<statuses::Fragment>> = ghost!(None);
 
-        let tail = self.tail.load(ghost! { |c: &Committer<_, _, Relaxed, _>| {
-            self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                c.shoot_load(&inv.tail_own, &mut SyncView::new());
-            });
-        } });
+        let tail = self.tail.load(
+            Ordering::Relaxed,
+            ghost! { |c: &Committer<_, _, Relaxed, _>| {
+                self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                    c.shoot_load(&inv.tail_own, &mut SyncView::new());
+                });
+            } },
+        );
 
         let tail_mod = tail % self.cells.len();
         proof_assert!(tail_mod@ == tail@.rem_euclid(self.cells@.len()));
 
         let cell = &self.cells[tail_mod];
-        let status = cell.status.load(ghost! { |c: &Committer<_, _, Acquire, _>| {
+        let status = cell.status.load(Ordering::Acquire, ghost! { |c: &Committer<_, _, Acquire, _>| {
             self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                 let old_inv = snapshot!(*inv);
                 let tail_mod_ghost: Ghost<Int> = snapshot!(tail_mod@).into_ghost();
@@ -1193,6 +1204,8 @@ impl<T> Queue<T> {
         let res = self.tail.compare_exchange_weak::<_, Relaxed, Relaxed>(
             tail,
             tail + 1,
+            Ordering::Relaxed,
+            Ordering::Relaxed,
             ghost! { |c: Result<&mut Committer<_, _, Relaxed, Relaxed>, &_>| {
                 let Ok(c) = c else { return; };
 
@@ -1216,13 +1229,14 @@ impl<T> Queue<T> {
         }
 
         let item = unsafe {
-            cell.item
-                .replace(ghost!(cell_own.as_mut().unwrap()), MaybeUninit::uninit())
-                .assume_init()
+            let cell_perm = ghost! { cell_own.as_mut().unwrap() };
+            let cell_bor = cell.item.borrow_mut(cell_perm);
+            core::mem::replace(cell_bor, MaybeUninit::uninit()).assume_init()
         };
 
         cell.status.store(
             2 * (tail + self.cells.len()),
+            Ordering::Release,
             ghost! { |c: &mut Committer<_, _, _, Release>| {
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                     Self::try_dequeue_store_inv(
