@@ -54,9 +54,8 @@
 //! impl<T: Invariant> CellInv<T> {
 //!     #[requires(tokens.contains(PERMCELL()))]
 //!     pub fn write(&self, x: T, tokens: Ghost<Tokens>) {
-//!         NonAtomicInvariant::open(self.permission.borrow(), tokens, move |perm| unsafe {
-//!             *self.data.borrow_mut(ghost!(&mut perm.into_inner().0)) = x
-//!         })
+//!         ghost_let!(perm = &mut self.permission.open(tokens.into_inner()).inner.0);
+//!         unsafe { *self.data.borrow_mut(perm) = x }
 //!     }
 //! }
 //! ```
@@ -430,74 +429,21 @@ pub struct NonAtomicInvariant<T: Protocol>(PhantomData<*mut T>);
 #[trusted]
 unsafe impl<T: Protocol> Send for NonAtomicInvariant<T> {}
 
-/// Define method call syntax for [`NonAtomicInvariant::open`].
-pub trait NonAtomicInvariantExt<'a> {
-    type Inner: 'a;
+/// Guard for [`NonAtomicInvariant::open`].
+///
+/// This contains the public value, that must be unchanged for the
+/// borrow. Additionally, the guard asserts that the borrow satisfies its
+/// [protocol](Protocol).
+pub struct OpenGuard<T: Protocol>(pub T::Public);
 
-    /// Alias for [`NonAtomicInvariant::open`], to use method call syntax (`inv.open(...)`).
-    #[requires(false)]
-    fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
-    where
-        F: FnOnce(Ghost<&'a mut Self::Inner>) -> A;
-}
-
-impl<'a, T: Protocol> NonAtomicInvariantExt<'a> for Ghost<&'a NonAtomicInvariant<T>> {
-    type Inner = T;
-
-    #[requires(tokens.contains(self.namespace()))]
-    #[requires(forall<t: Ghost<&mut T>> t.public() == self.public() && t.protocol() && inv(t) ==>
-        f.precondition((t,)) &&
-        // f must restore the invariant
-        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).public() == self.public() && (^t).protocol()))]
-    #[ensures(exists<t: Ghost<&mut T>> t.public() == self.public() && t.protocol() && inv(t) && f.postcondition_once((t,), result))]
-    fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
-    where
-        F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
-    {
-        NonAtomicInvariant::open(self, tokens, f)
+impl<T: Protocol> GuardRef<T> for OpenGuard<T> {
+    #[logic(open, prophetic, inline)]
+    fn guards_ref(self, b: T) -> bool {
+        b.public() == self.0 && b.protocol()
     }
 }
 
-impl<'a, T> NonAtomicInvariantExt<'a> for Ghost<&'a T>
-where
-    T: core::ops::Deref,
-    Ghost<&'a T::Target>: NonAtomicInvariantExt<'a>,
-{
-    type Inner = <Ghost<&'a T::Target> as NonAtomicInvariantExt<'a>>::Inner;
-
-    #[requires(T::deref.precondition((*self,)))]
-    #[requires(forall<this> T::deref.postcondition((*self,), this) ==>
-        <Ghost<&'a T::Target> as NonAtomicInvariantExt<'a>>::open.precondition((Ghost::new_logic(this), tokens, f))
-    )]
-    #[ensures(exists<this> T::deref.postcondition((*self,), this) &&
-        <Ghost<&'a T::Target> as NonAtomicInvariantExt<'a>>::open.postcondition((Ghost::new_logic(this), tokens, f), result)
-    )]
-    fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
-    where
-        F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
-    {
-        let this: Ghost<&T::Target> = ghost!(&self);
-        this.open(tokens, f)
-    }
-}
-
-impl<'a, L> NonAtomicInvariantExt<'a> for &'a Ghost<L>
-where
-    Ghost<&'a L>: NonAtomicInvariantExt<'a>,
-{
-    type Inner = <Ghost<&'a L> as NonAtomicInvariantExt<'a>>::Inner;
-
-    #[requires(<Ghost<&'a L> as NonAtomicInvariantExt<'a>>::open.precondition((Ghost::new_logic(&**self), tokens, f)))]
-    #[ensures(<Ghost<&'a L> as NonAtomicInvariantExt<'a>>::open.postcondition((Ghost::new_logic(&**self), tokens, f), result))]
-    fn open<A, F>(self, tokens: Ghost<Tokens<'a>>, f: F) -> A
-    where
-        F: FnOnce(Ghost<&'a mut Self::Inner>) -> A,
-    {
-        self.borrow().open(tokens, f)
-    }
-}
-
-/// Used to express the guard in [`NonAtomicInvariant::open_mut`]
+/// Guard for [`NonAtomicInvariant::open_mut`].
 pub struct OpenMutGuard;
 impl<T: Protocol> GuardRef<T> for OpenMutGuard {
     #[logic(open, prophetic, inline)]
@@ -546,30 +492,48 @@ impl<T: Protocol> NonAtomicInvariant<T> {
 
     /// Open the invariant to get the data stored inside.
     ///
-    /// This will call the closure `f` with the inner data. You must restore the
-    /// contained [`Protocol`] before returning from the closure.
-    #[requires(tokens.contains(this.namespace()))]
-    #[requires(forall<t: Ghost<&mut T>> t.public() == this.public() && t.protocol() && inv(t) ==>
-        f.precondition((t,)) &&
-        // f must restore the invariant
-        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).public() == this.public() && (^t).protocol()))]
-    #[ensures(exists<t: Ghost<&mut T>> t.public() == this.public() && t.protocol() && inv(t) &&
-        f.postcondition_once((t,), result))]
-    pub fn open<'a, A>(
-        this: Ghost<&'a Self>,
-        tokens: Ghost<Tokens<'a>>,
-        f: impl FnOnce(Ghost<&'a mut T>) -> A,
-    ) -> A {
-        ghost_let!(inv = &mut *this.open_guarded(tokens.into_inner()).inner);
-        f(inv)
-    }
-
-    /// Open the invariant similarly to [`Self::open`], but return a [`Guarded`] borrow.
+    /// The returned borrow satisfies the [protocol](Protocol) on `T`.
+    /// This protocol must be re-established before this borrow ends, with the same [public value](Protocol::public).
+    ///
+    /// # Notes on `ghost_let`
+    ///
+    /// The [`Guarded`] type can assert its type invariant at inconvenient times.
+    /// To work around this, it is often desirable to use a [`ghost_let`] to extract the inner borrow, and be able to freely break the protocol during its lifetime:
+    /// ```
+    /// use creusot_std::{
+    ///     ghost::invariant::{NonAtomicInvariant, Protocol, Tokens, declare_namespace},
+    ///     prelude::*,
+    /// };
+    /// struct Gt0(i32);
+    /// impl Protocol for Gt0 {
+    ///     type Public = ();
+    ///     #[logic] fn public(self) {}
+    ///     #[logic] fn protocol(self) -> bool { self.0 > 0i32 }
+    /// }
+    ///
+    /// declare_namespace! { NS }
+    ///
+    /// #[requires(tokens.contains(NS()))]
+    /// fn foo(tokens: Ghost<Tokens>) {
+    ///     let inv = NonAtomicInvariant::new(ghost!(Gt0(1i32)), snapshot!(NS()));
+    ///     // ...
+    ///     let mut gt = ghost!(inv.open(tokens.into_inner()));
+    ///     ghost_let!(mut gt = &mut *gt.inner);
+    ///
+    ///     ghost! { gt.0 = -1 };
+    ///     // ... maybe do some non-ghost operations here ...
+    ///     ghost! { gt.0 = 2 };
+    /// }
+    /// ```
+    ///
+    /// If we were using the `guard` variable directly, the type invariant (and
+    /// thus the protocol) would be asserted at the end of each `ghost! { gt.0 =
+    /// ... }` block, and the first would fail.
     #[trusted]
     #[requires(tokens.contains(self.namespace()))]
     #[ensures(result.guard().0 == self.public())]
     #[check(ghost)]
-    pub fn open_guarded<'a>(&'a self, tokens: Tokens<'a>) -> Guarded<&'a mut T, Public<T>> {
+    pub fn open<'a>(&'a self, tokens: Tokens<'a>) -> Guarded<&'a mut T, OpenGuard<T>> {
         panic!("Should not be called outside ghost code")
     }
 
@@ -590,7 +554,7 @@ impl<T: Protocol> NonAtomicInvariant<T> {
     /// This requires a mutable borrow on the invariant, but in exchange, you
     /// are allowed to change the public part of the invariant.
     ///
-    /// See [`Self::open_guarded`] for a version that only need a shared borrow,
+    /// See [`Self::open`] for a version that only need a shared borrow,
     /// but cannot change the public part.
     #[trusted]
     #[check(ghost)]
@@ -599,15 +563,5 @@ impl<T: Protocol> NonAtomicInvariant<T> {
     #[ensures((^self).namespace() == (*self).namespace())]
     pub fn open_mut(&mut self) -> Guarded<&mut T, OpenMutGuard> {
         unreachable!("ghost code only")
-    }
-}
-
-/// Guard for [`NonAtomicInvariant::open_guarded`].
-pub struct Public<T: Protocol>(pub T::Public);
-
-impl<T: Protocol> GuardRef<T> for Public<T> {
-    #[logic(open, prophetic, inline)]
-    fn guards_ref(self, b: T) -> bool {
-        b.public() == self.0 && b.protocol()
     }
 }

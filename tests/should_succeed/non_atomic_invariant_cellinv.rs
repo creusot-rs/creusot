@@ -45,7 +45,7 @@ impl<T> CellInv<T> {
 
     #[requires(tokens.contains(PERMCELL()))]
     pub fn write(&self, x: T, tokens: Ghost<Tokens>) {
-        ghost_let!(perm = &mut self.permission.open_guarded(tokens.into_inner()).inner.0);
+        ghost_let!(perm = &mut self.permission.open(tokens.into_inner()).inner.0);
         unsafe { *self.data.borrow_mut(perm) = x }
     }
 }

@@ -162,7 +162,7 @@ pub mod implementation {
             let (permcell, perm) =
                 PCell::new(Inner::Link { index, value, next: self.permcell.clone() });
             let frag = ghost! {
-                let pa = self.inv.open_guarded(tokens.into_inner());
+                let pa = self.inv.open(tokens.into_inner());
                 let pa = &mut *pa.inner; // FIXME #824
                 // prove that self is contained in the map by validity
                 pa.auth.frag_lemma(&self.frag);
@@ -232,7 +232,7 @@ pub mod implementation {
         #[requires(index@ < self@.len())]
         #[ensures(*result == self@[index@])]
         pub unsafe fn get<'a>(&'a self, index: usize, tokens: Ghost<Tokens<'a>>) -> &'a T {
-            ghost_let!(mut pa = &mut *self.inv.open_guarded(tokens.into_inner()).inner);
+            ghost_let!(mut pa = &mut *self.inv.open(tokens.into_inner()).inner);
             // prove that self is contained in the map by validity
             ghost! { pa.auth.frag_lemma(&self.frag) };
             Self::reroot(&self.permcell, ghost!(&mut *pa));
