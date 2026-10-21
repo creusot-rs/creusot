@@ -497,6 +497,15 @@ where
     }
 }
 
+/// Used to express the guard in [`NonAtomicInvariant::open_mut`]
+pub struct OpenMutGuard;
+impl<T: Protocol> GuardRef<T> for OpenMutGuard {
+    #[logic(open, prophetic, inline)]
+    fn guards_ref(self, x: T) -> bool {
+        x.protocol()
+    }
+}
+
 impl<T: Protocol> NonAtomicInvariant<T> {
     /// Construct a `NonAtomicInvariant`
     ///
@@ -555,6 +564,7 @@ impl<T: Protocol> NonAtomicInvariant<T> {
         f(inv)
     }
 
+    /// Open the invariant similarly to [`Self::open`], but return a [`Guarded`] borrow.
     #[trusted]
     #[requires(tokens.contains(self.namespace()))]
     #[ensures(result.guard().0 == self.public())]
@@ -573,21 +583,21 @@ impl<T: Protocol> NonAtomicInvariant<T> {
         panic!("Should not be called outside ghost code")
     }
 
-    /// Open the invariant to get the data stored inside.
-    ///
-    /// See [`Self::open`].
+    /// Open the invariant to get the data stored inside. The
+    /// [protocol](Protocol) must be restored by the end of the returned
+    /// borrow's lifetime.
     ///
     /// This requires a mutable borrow on the invariant, but in exchange, you
     /// are allowed to change the public part of the invariant.
+    ///
+    /// See [`Self::open_guarded`] for a version that only need a shared borrow,
+    /// but cannot change the public part.
     #[trusted]
     #[check(ghost)]
-    #[requires(forall<t: Ghost<&mut T>> t.protocol() && t.public() == this.public() && inv(t) ==>
-        f.precondition((t,)) &&
-        (forall<res: A> f.postcondition_once((t,), res) ==> (^t).protocol()))]
-    #[ensures(exists<t: Ghost<&mut T>> t.protocol() && t.public() == this.public() && inv(t) &&
-        f.postcondition_once((t,), result) && (^this).public() == (^t).public())]
-    #[ensures(this.namespace() == (^this).namespace())]
-    pub fn open_mut<'a, A>(this: Ghost<&'a mut Self>, f: impl FnOnce(Ghost<&'a mut T>) -> A) -> A {
+    #[ensures(result.inner.public() == self.public())]
+    #[ensures((^result.inner).public() == (^self).public())]
+    #[ensures((^self).namespace() == (*self).namespace())]
+    pub fn open_mut(&mut self) -> Guarded<&mut T, OpenMutGuard> {
         unreachable!("ghost code only")
     }
 }
