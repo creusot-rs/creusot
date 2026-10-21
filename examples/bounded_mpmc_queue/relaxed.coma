@@ -2126,6 +2126,8 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
+  type t_Ordering = Relaxed | Release | Acquire | AcqRel | SeqCst
+  
   type t_Tokens
   
   type t_AtomicInvariant_QueueInv_T
@@ -2810,6 +2812,12 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   meta "rewrite_def" predicate inv_ref_AtomicUsize
   
+  constant const_ORDERING : t_Ordering
+  
+  let set_ORDERING (return) = bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- Relaxed ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Ordering = Any.any_l () ]
+    [ return (_const: t_Ordering) -> -{const_ORDERING = _const}- return ]
+  
   predicate precondition_closure3 (self: closure3) (args: t_Committer_AtomicUsize_usize_Relaxed_unit) =
     let c = args in forall bor_self: MutBorrow.t closure3. bor_self.current = self /\ inv_closure3 bor_self.final
       -> closure3'pre bor_self c
@@ -2841,10 +2849,12 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure3
   
-  let load_FnGhostWrapper_closure3 (self: t_AtomicUsize) (f: t_FnGhostWrapper_closure3) (return (x: UInt64.t)) =
+  let load_FnGhostWrapper_closure3 (self: t_AtomicUsize) (order: t_Ordering) (f: t_FnGhostWrapper_closure3)
+    (return (x: UInt64.t)) =
   {[@stop_split] [@expl:load_FnGhostWrapper_closure3 requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicUsize self)
     /\ ([@stop_split] [@expl:load 'f' type invariant] inv_Ghost_FnGhostWrapper_closure3 f)
-    /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicUsize_usize_Relaxed_unit. not shot_store_AtomicUsize c
+    /\ ([@stop_split] [@expl:load requires #0] order = const_ORDERING)
+    /\ ([@stop_split] [@expl:load requires #1] forall c: t_Committer_AtomicUsize_usize_Relaxed_unit. not shot_store_AtomicUsize c
       -> ward_AtomicUsize c = self -> precondition_FnGhostWrapper_closure3 f c)}
     any
     [ return (result: UInt64.t) ->
@@ -3378,6 +3388,12 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
+  constant const_ORDERING'0 : t_Ordering
+  
+  let set_ORDERING'0 (return) = bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- Acquire ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Ordering = Any.any_l () ]
+    [ return (_const: t_Ordering) -> -{const_ORDERING'0 = _const}- return ]
+  
   predicate precondition_closure5 (self: closure5) (args: t_Committer_AtomicUsize_usize_Acquire_unit) =
     let c = args in forall bor_self: MutBorrow.t closure5. bor_self.current = self /\ inv_closure5 bor_self.final
       -> closure5'pre bor_self c
@@ -3407,10 +3423,12 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure5
   
-  let load_FnGhostWrapper_closure5 (self: t_AtomicUsize) (f: t_FnGhostWrapper_closure5) (return (x: UInt64.t)) =
+  let load_FnGhostWrapper_closure5 (self: t_AtomicUsize) (order: t_Ordering) (f: t_FnGhostWrapper_closure5)
+    (return (x: UInt64.t)) =
   {[@stop_split] [@expl:load_FnGhostWrapper_closure5 requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicUsize self)
     /\ ([@stop_split] [@expl:load 'f' type invariant] inv_Ghost_FnGhostWrapper_closure5 f)
-    /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicUsize_usize_Acquire_unit. not shot_store_AtomicUsize'0 c
+    /\ ([@stop_split] [@expl:load requires #0] order = const_ORDERING'0)
+    /\ ([@stop_split] [@expl:load requires #1] forall c: t_Committer_AtomicUsize_usize_Acquire_unit. not shot_store_AtomicUsize'0 c
       -> ward_AtomicUsize'1 c = self -> precondition_FnGhostWrapper_closure5 f c)}
     any
     [ return (result: UInt64.t) ->
@@ -4158,16 +4176,17 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure6
   
   let compare_exchange_weak_FnGhostWrapper_closure6 (self: t_AtomicUsize) (current': UInt64.t) (new'0: UInt64.t)
-    (f: t_FnGhostWrapper_closure6) (return (x: t_Result_usize_usize)) =
+    (success: t_Ordering) (failure: t_Ordering) (f: t_FnGhostWrapper_closure6) (return (x: t_Result_usize_usize)) =
   {[@stop_split] [@expl:compare_exchange_weak_FnGhostWrapper_closure6 requires] ([@stop_split] [@expl:compare_exchange_weak 'self' type invariant] inv_ref_AtomicUsize self)
     /\ ([@stop_split] [@expl:compare_exchange_weak 'f' type invariant] inv_Ghost_FnGhostWrapper_closure6 f)
-    /\ ([@stop_split] [@expl:compare_exchange_weak requires #0] forall c: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed. not shot_store_AtomicUsize'1 c.current
+    /\ ([@stop_split] [@expl:compare_exchange_weak requires #0] success = const_ORDERING /\ failure = const_ORDERING)
+    /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed. not shot_store_AtomicUsize'1 c.current
         -> ward_AtomicUsize'2 c.current = self
         -> deep_model_usize (val_load_AtomicUsize'1 c.current) = deep_model_usize current'
         -> val_store_AtomicUsize c.current = new'0
         -> precondition_FnGhostWrapper_closure6 f (Ok c)
         /\ (postcondition_once_FnGhostWrapper_closure6 f (Ok c) () -> shot_store_AtomicUsize'1 c.final))
-    /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicUsize_usize_Relaxed_unit. not shot_store_AtomicUsize c
+    /\ ([@stop_split] [@expl:compare_exchange_weak requires #2] forall c: t_Committer_AtomicUsize_usize_Relaxed_unit. not shot_store_AtomicUsize c
       -> ward_AtomicUsize c = self -> precondition_FnGhostWrapper_closure6 f (Err c))}
     any
     [ return (result: t_Result_usize_usize) ->
@@ -4222,26 +4241,37 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
     [ return (result: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> {[@stop_split] [@expl:new ensures] result = x}
       (! return {result}) ]
   
-  let uninit_T (return (x: t_MaybeUninit_T)) = any
-    [ return (result: t_MaybeUninit_T) -> {[@stop_split] [@expl:uninit ensures] view_MaybeUninit_T result = None'3}
-      (! return {result}) ]
-  
   function fin_Ghost_refmut_Perm_PCell_MaybeUninit_T [@inline:trivial] (self: MutBorrow.t t_Perm_PCell_MaybeUninit_T) : t_Perm_PCell_MaybeUninit_T
    = self.final
   
   meta "rewrite_def" function fin_Ghost_refmut_Perm_PCell_MaybeUninit_T
   
-  let replace_MaybeUninit_T (self: t_PCell_MaybeUninit_T) (perm: MutBorrow.t t_Perm_PCell_MaybeUninit_T)
-    (val''1: t_MaybeUninit_T) (return (x: t_MaybeUninit_T)) = {[@stop_split] [@expl:replace requires] self
+  let borrow_mut_MaybeUninit_T (self: t_PCell_MaybeUninit_T) (perm: MutBorrow.t t_Perm_PCell_MaybeUninit_T)
+    (return (x: MutBorrow.t t_MaybeUninit_T)) = {[@stop_split] [@expl:borrow_mut requires] self
     = ward_PCell_MaybeUninit_T perm.current}
     any
-    [ return (result: t_MaybeUninit_T) ->
-    {[@stop_split] [@expl:replace_MaybeUninit_T ensures] ([@stop_split] [@expl:replace ensures #0] val''1
-        = val_PCell_MaybeUninit_T (fin_Ghost_refmut_Perm_PCell_MaybeUninit_T perm))
-      /\ ([@stop_split] [@expl:replace ensures #1] result = val_PCell_MaybeUninit_T perm.current)
-      /\ ([@stop_split] [@expl:replace ensures #2] self
-      = ward_PCell_MaybeUninit_T (fin_Ghost_refmut_Perm_PCell_MaybeUninit_T perm))}
+    [ return (result: MutBorrow.t t_MaybeUninit_T) ->
+    {[@stop_split] [@expl:borrow_mut_MaybeUninit_T ensures] ([@stop_split] [@expl:borrow_mut ensures #0] self
+        = ward_PCell_MaybeUninit_T (fin_Ghost_refmut_Perm_PCell_MaybeUninit_T perm))
+      /\ ([@stop_split] [@expl:borrow_mut ensures #1] result.current = val_unsized_PCell_MaybeUninit_T perm.current)
+      /\ ([@stop_split] [@expl:borrow_mut ensures #2] result.final
+      = val_unsized_PCell_MaybeUninit_T (fin_Ghost_refmut_Perm_PCell_MaybeUninit_T perm))}
       (! return {result}) ]
+  
+  let uninit_T (return (x: t_MaybeUninit_T)) = any
+    [ return (result: t_MaybeUninit_T) -> {[@stop_split] [@expl:uninit ensures] view_MaybeUninit_T result = None'3}
+      (! return {result}) ]
+  
+  let replace_MaybeUninit_T (dest: MutBorrow.t t_MaybeUninit_T) (src: t_MaybeUninit_T) (return (x: t_MaybeUninit_T)) =
+  any
+    [ return (result: t_MaybeUninit_T) ->
+    {[@stop_split] [@expl:replace_MaybeUninit_T ensures] ([@stop_split] [@expl:replace ensures #0] dest.final = src)
+      /\ ([@stop_split] [@expl:replace ensures #1] result = dest.current)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_MaybeUninit_T [@inline:trivial] (_1: MutBorrow.t t_MaybeUninit_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_MaybeUninit_T
   
   predicate inv_T (_1: t_T)
   
@@ -4664,6 +4694,12 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
+  constant const_ORDERING'1 : t_Ordering
+  
+  let set_ORDERING'1 (return) = bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- Release ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Ordering = Any.any_l () ]
+    [ return (_const: t_Ordering) -> -{const_ORDERING'1 = _const}- return ]
+  
   predicate precondition_closure7 (self: closure7) (args: MutBorrow.t t_Committer_AtomicUsize_usize_unit_Release) =
     let c = args in forall bor_self: MutBorrow.t closure7. bor_self.current = self /\ inv_closure7 bor_self.final
       -> closure7'pre bor_self c
@@ -4693,11 +4729,12 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure7
   
-  let store_FnGhostWrapper_closure7 (self: t_AtomicUsize) (val''1: UInt64.t) (f: t_FnGhostWrapper_closure7)
-    (return (x: ())) =
+  let store_FnGhostWrapper_closure7 (self: t_AtomicUsize) (val''1: UInt64.t) (order: t_Ordering)
+    (f: t_FnGhostWrapper_closure7) (return (x: ())) =
   {[@stop_split] [@expl:store_FnGhostWrapper_closure7 requires] ([@stop_split] [@expl:store 'self' type invariant] inv_ref_AtomicUsize self)
     /\ ([@stop_split] [@expl:store 'f' type invariant] inv_Ghost_FnGhostWrapper_closure7 f)
-    /\ ([@stop_split] [@expl:store requires] forall c: MutBorrow.t t_Committer_AtomicUsize_usize_unit_Release. not shot_store_AtomicUsize'2 c.current
+    /\ ([@stop_split] [@expl:store requires #0] order = const_ORDERING'1)
+    /\ ([@stop_split] [@expl:store requires #1] forall c: MutBorrow.t t_Committer_AtomicUsize_usize_unit_Release. not shot_store_AtomicUsize'2 c.current
       -> ward_AtomicUsize'3 c.current = self
       -> val_store_AtomicUsize'0 c.current = val''1
       -> precondition_FnGhostWrapper_closure7 f c
@@ -4729,196 +4766,219 @@ module M_impl_Queue_T__try_dequeue (* Queue<T> *)
       -> c.current.ward = self
       -> gt_log_Int (Seq.length c.current.old_seq) 0 /\ c.current.new_seq = tail_T'0 c.current.old_seq
       -> precondition_F f c /\ (postcondition_once_F f c () -> c.final.shot /\ hist_inv_T c.current c.final))}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = new (fun (_x: t_SyncView) -> [ &view <- _x ] s1)
-      | s1 = [ &_14 <- None ] s2
-      | s2 = new_Option_Fragment {_14} (fun (_x: t_Option_Fragment) -> [ &witness <- _x ] s3)
-      | s3 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-          (fun (_bor: MutBorrow.t t_Tokens) -> [ &_21 <- _bor ] [ &tokens <- _bor.final ] s4)
-      | s4 = [ &_19 <- { c0 = self; c1 = _21 } ] s5
-      | s5 = __new_closure3 {_19} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_18 <- _x ] s6)
-      | s6 = new_FnGhostWrapper_closure3 {_18} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_17 <- _x ] s7)
-      | s7 = load_FnGhostWrapper_closure3 {self.tail} {_17} (fun (_x: UInt64.t) -> [ &tail'0 <- _x ] s8)
-      | s8 = len_QueueCell_T {self.cells} (fun (_x: UInt64.t) -> [ &_24 <- _x ] s9)
-      | s9 = [ &_26 <- _24 = (0: UInt64.t) ] s10
-      | s10 = {[@expl:remainder by zero] not _26} s11
-      | s11 = UInt64.rem {tail'0} {_24} (fun (_x: UInt64.t) -> [ &tail_mod <- _x ] s12)
-      | s12 = {[@expl:assertion] UInt64.t'int tail_mod
-        = EuclideanDivision.mod (UInt64.t'int tail'0) (Seq.length (view_Vec_QueueCell_T_Global self.cells))}
-        s13
-      | s13 = index_Vec_QueueCell_T_Global {self.cells} {tail_mod} (fun (_x: t_QueueCell_T) -> [ &_33 <- _x ] s14)
-      | s14 = [ &cell <- _33 ] s15
-      | s15 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-          (fun (_bor: MutBorrow.t t_Tokens) -> [ &_42 <- _bor ] [ &tokens <- _bor.final ] s16)
-      | s16 = MutBorrow.borrow_mut <t_SyncView> {view}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_44 <- _bor ] [ &view <- _bor.final ] s17)
-      | s17 = MutBorrow.borrow_mut <t_Option_Fragment> {witness}
-          (fun (_bor: MutBorrow.t t_Option_Fragment) ->
-            [ &_45 <- _bor ] -{inv_Ghost_Option_Fragment _bor.final}-
-            [ &witness <- _bor.final ] s18)
-        [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment witness} any) ]
-      | s18 = [ &_40 <- { c0'1 = self; c1'1 = _42; c2'1 = tail_mod; c3'1 = _44; c4'1 = _45 } ] s19
-      | s19 = __new_closure5 {_40} (fun (_x: t_FnGhostWrapper_closure5) -> [ &_39 <- _x ] s20)
-      | s20 = new_FnGhostWrapper_closure5 {_39} (fun (_x: t_FnGhostWrapper_closure5) -> [ &_38 <- _x ] s21)
-      | s21 = load_FnGhostWrapper_closure5 {cell.status} {_38} (fun (_x: UInt64.t) -> [ &status'1 <- _x ] s22)
-      | s22 = UInt64.mul {(2: UInt64.t)} {tail'0} (fun (_x: UInt64.t) -> [ &_49 <- _x ] s23)
-      | s23 = UInt64.add {_49} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_48 <- _x ] s24)
-      | s24 = [ &_47 <- _48 <> status'1 ] s25
-      | s25 = any [ br0 -> {_47 = false} (! bb13) | br1 -> {_47} (! bb12) ] ]
-    | bb12 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment witness} any) ]
-      | s1 = -{resolve_Ghost_Option_Fragment'0 witness}- s2
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Ghost_F f} any) ]
-      | s3 = -{resolve_Ghost_F'0 f}- s4
-      | s4 = [ &_ret <- None'3 ] s5
-      | s5 = return {_ret} ]
-    | bb13 = s0
-      [ s0 = [ &_54 <- None'4 ] s1
-      | s1 = new_Option_TokenR_T {_54} (fun (_x: t_Option_TokenR_T) -> [ &token <- _x ] s2)
-      | s2 = [ &_56 <- None'5 ] s3
-      | s3 = new_Option_Perm_PCell_MaybeUninit_T {_56}
-          (fun (_x: t_Option_Perm_PCell_MaybeUninit_T) -> [ &cell_own <- _x ] s4)
-      | s4 = UInt64.add {tail'0} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_60 <- _x ] s5)
-      | s5 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-          (fun (_bor: MutBorrow.t t_Tokens) -> [ &_66 <- _bor ] [ &tokens <- _bor.final ] s6)
-      | s6 = MutBorrow.borrow_mut <t_Option_Fragment> {witness}
-          (fun (_bor: MutBorrow.t t_Option_Fragment) ->
-            [ &_67 <- _bor ] -{inv_Ghost_Option_Fragment _bor.final}-
-            [ &witness <- _bor.final ] s7) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment witness} any) ]
-      | s7 = MutBorrow.borrow_mut <t_Option_TokenR_T> {token}
-          (fun (_bor: MutBorrow.t t_Option_TokenR_T) ->
-            [ &_69 <- _bor ] -{inv_Ghost_Option_TokenR_T _bor.final}-
-            [ &token <- _bor.final ] s8) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenR_T token} any) ]
-      | s8 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {cell_own}
-          (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_70 <- _bor ] [ &cell_own <- _bor.final ] s9)
-      | s9 = [ &_64 <- { c0'3 = self; c1'3 = _66; c2'3 = f; c3'3 = _67; c4'3 = view; c5'3 = _69; c6'3 = _70 } ] s10
-      | s10 = __new_closure6 {_64} (fun (_x: t_FnGhostWrapper_closure6) -> [ &_63 <- _x ] s11)
-      | s11 = new_FnGhostWrapper_closure6 {_63} (fun (_x: t_FnGhostWrapper_closure6) -> [ &_62 <- _x ] s12)
-      | s12 = compare_exchange_weak_FnGhostWrapper_closure6 {self.tail} {tail'0} {_60} {_62}
-          (fun (_x: t_Result_usize_usize) -> [ &res <- _x ] s13)
-      | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment witness} any) ]
-      | s14 = -{resolve_Ghost_Option_Fragment'0 witness}- s15
-      | s15 = is_err_usize {res} (fun (_x: bool) -> [ &_72 <- _x ] s16)
-      | s16 = any [ br0 -> {_72 = false} (! bb21) | br1 -> {_72} (! bb20) ] ]
-    | bb20 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenR_T token} any) ]
-      | s1 = -{resolve_Ghost_Option_TokenR_T'0 token}- s2
-      | s2 = [ &_ret <- None'3 ] s3
-      | s3 = return {_ret} ]
-    | bb21 = s0
-      [ s0 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {cell_own}
-          (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_86 <- _bor ] [ &cell_own <- _bor.final ] s1)
-      | s1 = deref_mut_Ghost_Option_Perm_PCell_MaybeUninit_T {_86}
-          (fun (_x: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_85 <- _x ] s2)
-      | s2 = MutBorrow.borrow_final <t_Option_Perm_PCell_MaybeUninit_T> {_85.current} {MutBorrow.get_id _85}
-          (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
-            [ &_84 <- _bor ] [ &_85 <- { _85 with current = _bor.final } ] s3)
-      | s3 = as_mut_Perm_PCell_MaybeUninit_T {_84}
-          (fun (_x: t_Option_refmut_Perm_PCell_MaybeUninit_T) -> [ &_83 <- _x ] s4)
-      | s4 = unwrap_refmut_Perm_PCell_MaybeUninit_T {_83}
-          (fun (_x: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> [ &_82 <- _x ] s5)
-      | s5 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_82.current} {MutBorrow.get_id _82}
-          (fun (_bor: MutBorrow.t t_Perm_PCell_MaybeUninit_T) ->
-            [ &_81 <- _bor ] [ &_82 <- { _82 with current = _bor.final } ] s6)
-      | s6 = -{resolve_refmut_Option_Perm_PCell_MaybeUninit_T _85}- s7
-      | s7 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _82}- s8
-      | s8 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_81.current} {MutBorrow.get_id _81}
-          (fun (_bor: MutBorrow.t t_Perm_PCell_MaybeUninit_T) ->
-            [ &_80 <- _bor ] [ &_81 <- { _81 with current = _bor.final } ] s9)
-      | s9 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _81}- s10
-      | s10 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_80.current} {MutBorrow.get_id _80}
-          (fun (_bor: MutBorrow.t t_Perm_PCell_MaybeUninit_T) ->
-            [ &_79 <- _bor ] [ &_80 <- { _80 with current = _bor.final } ] s11)
-      | s11 = new_refmut_Perm_PCell_MaybeUninit_T {_79}
-          (fun (_x: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> [ &_78 <- _x ] s12)
-      | s12 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _80}- s13
-      | s13 = uninit_T (fun (_x: t_MaybeUninit_T) -> [ &_87 <- _x ] s14)
-      | s14 = replace_MaybeUninit_T {cell.item} {_78} {_87} (fun (_x: t_MaybeUninit_T) -> [ &_76 <- _x ] s15)
-      | s15 = assume_init_T {_76} (fun (_x: t_T) -> [ &item'0 <- _x ] s16)
-      | s16 = len_QueueCell_T {self.cells} (fun (_x: UInt64.t) -> [ &_93 <- _x ] s17)
-      | s17 = UInt64.add {tail'0} {_93} (fun (_x: UInt64.t) -> [ &_91 <- _x ] s18)
-      | s18 = UInt64.mul {(2: UInt64.t)} {_91} (fun (_x: UInt64.t) -> [ &_90 <- _x ] s19)
-      | s19 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-          (fun (_bor: MutBorrow.t t_Tokens) -> [ &_99 <- _bor ] [ &tokens <- _bor.final ] s20)
-      | s20 = MutBorrow.borrow_mut <t_Option_TokenR_T> {token}
-          (fun (_bor: MutBorrow.t t_Option_TokenR_T) ->
-            [ &_100 <- _bor ] -{inv_Ghost_Option_TokenR_T _bor.final}-
-            [ &token <- _bor.final ] s21) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenR_T token} any) ]
-      | s21 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {cell_own}
-          (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
-            [ &_101 <- _bor ] [ &cell_own <- _bor.final ] s22)
-      | s22 = [ &_97 <- { c0'5 = self; c1'5 = _99; c2'5 = _100; c3'5 = _101 } ] s23
-      | s23 = __new_closure7 {_97} (fun (_x: t_FnGhostWrapper_closure7) -> [ &_96 <- _x ] s24)
-      | s24 = new_FnGhostWrapper_closure7 {_96} (fun (_x: t_FnGhostWrapper_closure7) -> [ &_95 <- _x ] s25)
-      | s25 = store_FnGhostWrapper_closure7 {cell.status} {_90} {_95} (fun (_x: ()) -> [ &_88 <- _x ] s26)
-      | s26 = s27 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenR_T token} any) ]
-      | s27 = -{resolve_Ghost_Option_TokenR_T'0 token}- s28
-      | s28 = [ &_ret <- Some'3 item'0 ] s29
-      | s29 = return {_ret} ] ]
-    [ & _ret: t_Option_T = Any.any_l ()
-    | & self: t_Queue_T = self
-    | & tokens: t_Tokens = tokens
-    | & f: t_F = f
-    | & view: t_SyncView = Any.any_l ()
-    | & witness: t_Option_Fragment = Any.any_l ()
-    | & _14: t_Option_Fragment = Any.any_l ()
-    | & tail'0: UInt64.t = Any.any_l ()
-    | & _17: t_FnGhostWrapper_closure3 = Any.any_l ()
-    | & _18: t_FnGhostWrapper_closure3 = Any.any_l ()
-    | & _19: closure3 = Any.any_l ()
-    | & _21: MutBorrow.t t_Tokens = Any.any_l ()
-    | & tail_mod: UInt64.t = Any.any_l ()
-    | & _24: UInt64.t = Any.any_l ()
-    | & _26: bool = Any.any_l ()
-    | & cell: t_QueueCell_T = Any.any_l ()
-    | & _33: t_QueueCell_T = Any.any_l ()
-    | & status'1: UInt64.t = Any.any_l ()
-    | & _38: t_FnGhostWrapper_closure5 = Any.any_l ()
-    | & _39: t_FnGhostWrapper_closure5 = Any.any_l ()
-    | & _40: closure5 = Any.any_l ()
-    | & _42: MutBorrow.t t_Tokens = Any.any_l ()
-    | & _44: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _45: MutBorrow.t t_Option_Fragment = Any.any_l ()
-    | & _47: bool = Any.any_l ()
-    | & _48: UInt64.t = Any.any_l ()
-    | & _49: UInt64.t = Any.any_l ()
-    | & token: t_Option_TokenR_T = Any.any_l ()
-    | & _54: t_Option_TokenR_T = Any.any_l ()
-    | & cell_own: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _56: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & res: t_Result_usize_usize = Any.any_l ()
-    | & _60: UInt64.t = Any.any_l ()
-    | & _62: t_FnGhostWrapper_closure6 = Any.any_l ()
-    | & _63: t_FnGhostWrapper_closure6 = Any.any_l ()
-    | & _64: closure6 = Any.any_l ()
-    | & _66: MutBorrow.t t_Tokens = Any.any_l ()
-    | & _67: MutBorrow.t t_Option_Fragment = Any.any_l ()
-    | & _69: MutBorrow.t t_Option_TokenR_T = Any.any_l ()
-    | & _70: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _72: bool = Any.any_l ()
-    | & item'0: t_T = Any.any_l ()
-    | & _76: t_MaybeUninit_T = Any.any_l ()
-    | & _78: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _79: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _80: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _81: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _82: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _83: t_Option_refmut_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _84: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _85: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _86: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _87: t_MaybeUninit_T = Any.any_l ()
-    | & _88: () = Any.any_l ()
-    | & _90: UInt64.t = Any.any_l ()
-    | & _91: UInt64.t = Any.any_l ()
-    | & _93: UInt64.t = Any.any_l ()
-    | & _95: t_FnGhostWrapper_closure7 = Any.any_l ()
-    | & _96: t_FnGhostWrapper_closure7 = Any.any_l ()
-    | & _97: closure7 = Any.any_l ()
-    | & _99: MutBorrow.t t_Tokens = Any.any_l ()
-    | & _100: MutBorrow.t t_Option_TokenR_T = Any.any_l ()
-    | & _101: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l () ])
+    (! set_ORDERING'1
+      (set_ORDERING'0
+        (set_ORDERING
+          (bb0
+          [ bb0 = s0
+            [ s0 = new (fun (_x: t_SyncView) -> [ &view <- _x ] s1)
+            | s1 = [ &_14 <- None ] s2
+            | s2 = new_Option_Fragment {_14} (fun (_x: t_Option_Fragment) -> [ &witness <- _x ] s3)
+            | s3 = [ &_17 <- Relaxed ] s4
+            | s4 = MutBorrow.borrow_mut <t_Tokens> {tokens}
+                (fun (_bor: MutBorrow.t t_Tokens) -> [ &_22 <- _bor ] [ &tokens <- _bor.final ] s5)
+            | s5 = [ &_20 <- { c0 = self; c1 = _22 } ] s6
+            | s6 = __new_closure3 {_20} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_19 <- _x ] s7)
+            | s7 = new_FnGhostWrapper_closure3 {_19} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_18 <- _x ] s8)
+            | s8 = load_FnGhostWrapper_closure3 {self.tail} {_17} {_18} (fun (_x: UInt64.t) -> [ &tail'0 <- _x ] s9)
+            | s9 = len_QueueCell_T {self.cells} (fun (_x: UInt64.t) -> [ &_25 <- _x ] s10)
+            | s10 = [ &_27 <- _25 = (0: UInt64.t) ] s11
+            | s11 = {[@expl:remainder by zero] not _27} s12
+            | s12 = UInt64.rem {tail'0} {_25} (fun (_x: UInt64.t) -> [ &tail_mod <- _x ] s13)
+            | s13 = {[@expl:assertion] UInt64.t'int tail_mod
+              = EuclideanDivision.mod (UInt64.t'int tail'0) (Seq.length (view_Vec_QueueCell_T_Global self.cells))}
+              s14
+            | s14 = index_Vec_QueueCell_T_Global {self.cells} {tail_mod} (fun (_x: t_QueueCell_T) -> [ &_34 <- _x ] s15)
+            | s15 = [ &cell <- _34 ] s16
+            | s16 = [ &_39 <- Acquire ] s17
+            | s17 = MutBorrow.borrow_mut <t_Tokens> {tokens}
+                (fun (_bor: MutBorrow.t t_Tokens) -> [ &_44 <- _bor ] [ &tokens <- _bor.final ] s18)
+            | s18 = MutBorrow.borrow_mut <t_SyncView> {view}
+                (fun (_bor: MutBorrow.t t_SyncView) -> [ &_46 <- _bor ] [ &view <- _bor.final ] s19)
+            | s19 = MutBorrow.borrow_mut <t_Option_Fragment> {witness}
+                (fun (_bor: MutBorrow.t t_Option_Fragment) ->
+                  [ &_47 <- _bor ] -{inv_Ghost_Option_Fragment _bor.final}-
+                  [ &witness <- _bor.final ] s20)
+              [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment witness} any) ]
+            | s20 = [ &_42 <- { c0'1 = self; c1'1 = _44; c2'1 = tail_mod; c3'1 = _46; c4'1 = _47 } ] s21
+            | s21 = __new_closure5 {_42} (fun (_x: t_FnGhostWrapper_closure5) -> [ &_41 <- _x ] s22)
+            | s22 = new_FnGhostWrapper_closure5 {_41} (fun (_x: t_FnGhostWrapper_closure5) -> [ &_40 <- _x ] s23)
+            | s23 = load_FnGhostWrapper_closure5 {cell.status} {_39} {_40}
+                (fun (_x: UInt64.t) -> [ &status'1 <- _x ] s24)
+            | s24 = UInt64.mul {(2: UInt64.t)} {tail'0} (fun (_x: UInt64.t) -> [ &_51 <- _x ] s25)
+            | s25 = UInt64.add {_51} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_50 <- _x ] s26)
+            | s26 = [ &_49 <- _50 <> status'1 ] s27
+            | s27 = any [ br0 -> {_49 = false} (! bb13) | br1 -> {_49} (! bb12) ] ]
+          | bb12 = s0
+            [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment witness} any) ]
+            | s1 = -{resolve_Ghost_Option_Fragment'0 witness}- s2
+            | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Ghost_F f} any) ]
+            | s3 = -{resolve_Ghost_F'0 f}- s4
+            | s4 = [ &_ret <- None'3 ] s5
+            | s5 = return {_ret} ]
+          | bb13 = s0
+            [ s0 = [ &_56 <- None'4 ] s1
+            | s1 = new_Option_TokenR_T {_56} (fun (_x: t_Option_TokenR_T) -> [ &token <- _x ] s2)
+            | s2 = [ &_58 <- None'5 ] s3
+            | s3 = new_Option_Perm_PCell_MaybeUninit_T {_58}
+                (fun (_x: t_Option_Perm_PCell_MaybeUninit_T) -> [ &cell_own <- _x ] s4)
+            | s4 = UInt64.add {tail'0} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_62 <- _x ] s5)
+            | s5 = [ &_64 <- Relaxed ] s6
+            | s6 = [ &_65 <- Relaxed ] s7
+            | s7 = MutBorrow.borrow_mut <t_Tokens> {tokens}
+                (fun (_bor: MutBorrow.t t_Tokens) -> [ &_70 <- _bor ] [ &tokens <- _bor.final ] s8)
+            | s8 = MutBorrow.borrow_mut <t_Option_Fragment> {witness}
+                (fun (_bor: MutBorrow.t t_Option_Fragment) ->
+                  [ &_71 <- _bor ] -{inv_Ghost_Option_Fragment _bor.final}-
+                  [ &witness <- _bor.final ] s9)
+              [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment witness} any) ]
+            | s9 = MutBorrow.borrow_mut <t_Option_TokenR_T> {token}
+                (fun (_bor: MutBorrow.t t_Option_TokenR_T) ->
+                  [ &_73 <- _bor ] -{inv_Ghost_Option_TokenR_T _bor.final}-
+                  [ &token <- _bor.final ] s10)
+              [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenR_T token} any) ]
+            | s10 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {cell_own}
+                (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
+                  [ &_74 <- _bor ] [ &cell_own <- _bor.final ] s11)
+            | s11 = [ &_68 <- { c0'3 = self; c1'3 = _70; c2'3 = f; c3'3 = _71; c4'3 = view; c5'3 = _73; c6'3 = _74 } ]
+              s12
+            | s12 = __new_closure6 {_68} (fun (_x: t_FnGhostWrapper_closure6) -> [ &_67 <- _x ] s13)
+            | s13 = new_FnGhostWrapper_closure6 {_67} (fun (_x: t_FnGhostWrapper_closure6) -> [ &_66 <- _x ] s14)
+            | s14 = compare_exchange_weak_FnGhostWrapper_closure6 {self.tail} {tail'0} {_62} {_64} {_65} {_66}
+                (fun (_x: t_Result_usize_usize) -> [ &res <- _x ] s15)
+            | s15 = s16 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment witness} any) ]
+            | s16 = -{resolve_Ghost_Option_Fragment'0 witness}- s17
+            | s17 = is_err_usize {res} (fun (_x: bool) -> [ &_76 <- _x ] s18)
+            | s18 = any [ br0 -> {_76 = false} (! bb21) | br1 -> {_76} (! bb20) ] ]
+          | bb20 = s0
+            [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenR_T token} any) ]
+            | s1 = -{resolve_Ghost_Option_TokenR_T'0 token}- s2
+            | s2 = [ &_ret <- None'3 ] s3
+            | s3 = return {_ret} ]
+          | bb21 = s0
+            [ s0 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {cell_own}
+                (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
+                  [ &_87 <- _bor ] [ &cell_own <- _bor.final ] s1)
+            | s1 = deref_mut_Ghost_Option_Perm_PCell_MaybeUninit_T {_87}
+                (fun (_x: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_86 <- _x ] s2)
+            | s2 = MutBorrow.borrow_final <t_Option_Perm_PCell_MaybeUninit_T> {_86.current} {MutBorrow.get_id _86}
+                (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
+                  [ &_85 <- _bor ] [ &_86 <- { _86 with current = _bor.final } ] s3)
+            | s3 = as_mut_Perm_PCell_MaybeUninit_T {_85}
+                (fun (_x: t_Option_refmut_Perm_PCell_MaybeUninit_T) -> [ &_84 <- _x ] s4)
+            | s4 = unwrap_refmut_Perm_PCell_MaybeUninit_T {_84}
+                (fun (_x: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> [ &_83 <- _x ] s5)
+            | s5 = -{resolve_refmut_Option_Perm_PCell_MaybeUninit_T _86}- s6
+            | s6 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_83.current} {MutBorrow.get_id _83}
+                (fun (_bor: MutBorrow.t t_Perm_PCell_MaybeUninit_T) ->
+                  [ &_82 <- _bor ] [ &_83 <- { _83 with current = _bor.final } ] s7)
+            | s7 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _83}- s8
+            | s8 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_82.current} {MutBorrow.get_id _82}
+                (fun (_bor: MutBorrow.t t_Perm_PCell_MaybeUninit_T) ->
+                  [ &_81 <- _bor ] [ &_82 <- { _82 with current = _bor.final } ] s9)
+            | s9 = new_refmut_Perm_PCell_MaybeUninit_T {_81}
+                (fun (_x: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> [ &cell_perm <- _x ] s10)
+            | s10 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _82}- s11
+            | s11 = borrow_mut_MaybeUninit_T {cell.item} {cell_perm}
+                (fun (_x: MutBorrow.t t_MaybeUninit_T) -> [ &cell_bor <- _x ] s12)
+            | s12 = uninit_T (fun (_x: t_MaybeUninit_T) -> [ &_93 <- _x ] s13)
+            | s13 = MutBorrow.borrow_final <t_MaybeUninit_T> {cell_bor.current} {MutBorrow.get_id cell_bor}
+                (fun (_bor: MutBorrow.t t_MaybeUninit_T) ->
+                  [ &_92 <- _bor ] [ &cell_bor <- { cell_bor with current = _bor.final } ] s14)
+            | s14 = replace_MaybeUninit_T {_92} {_93} (fun (_x: t_MaybeUninit_T) -> [ &_91 <- _x ] s15)
+            | s15 = -{resolve_refmut_MaybeUninit_T cell_bor}- s16
+            | s16 = assume_init_T {_91} (fun (_x: t_T) -> [ &item'0 <- _x ] s17)
+            | s17 = len_QueueCell_T {self.cells} (fun (_x: UInt64.t) -> [ &_99 <- _x ] s18)
+            | s18 = UInt64.add {tail'0} {_99} (fun (_x: UInt64.t) -> [ &_97 <- _x ] s19)
+            | s19 = UInt64.mul {(2: UInt64.t)} {_97} (fun (_x: UInt64.t) -> [ &_96 <- _x ] s20)
+            | s20 = [ &_101 <- Release ] s21
+            | s21 = MutBorrow.borrow_mut <t_Tokens> {tokens}
+                (fun (_bor: MutBorrow.t t_Tokens) -> [ &_106 <- _bor ] [ &tokens <- _bor.final ] s22)
+            | s22 = MutBorrow.borrow_mut <t_Option_TokenR_T> {token}
+                (fun (_bor: MutBorrow.t t_Option_TokenR_T) ->
+                  [ &_107 <- _bor ] -{inv_Ghost_Option_TokenR_T _bor.final}-
+                  [ &token <- _bor.final ] s23)
+              [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenR_T token} any) ]
+            | s23 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {cell_own}
+                (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
+                  [ &_108 <- _bor ] [ &cell_own <- _bor.final ] s24)
+            | s24 = [ &_104 <- { c0'5 = self; c1'5 = _106; c2'5 = _107; c3'5 = _108 } ] s25
+            | s25 = __new_closure7 {_104} (fun (_x: t_FnGhostWrapper_closure7) -> [ &_103 <- _x ] s26)
+            | s26 = new_FnGhostWrapper_closure7 {_103} (fun (_x: t_FnGhostWrapper_closure7) -> [ &_102 <- _x ] s27)
+            | s27 = store_FnGhostWrapper_closure7 {cell.status} {_96} {_101} {_102} (fun (_x: ()) -> [ &_94 <- _x ] s28)
+            | s28 = s29 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenR_T token} any) ]
+            | s29 = -{resolve_Ghost_Option_TokenR_T'0 token}- s30
+            | s30 = [ &_ret <- Some'3 item'0 ] s31
+            | s31 = return {_ret} ] ]
+          [ & _ret: t_Option_T = Any.any_l ()
+          | & self: t_Queue_T = self
+          | & tokens: t_Tokens = tokens
+          | & f: t_F = f
+          | & view: t_SyncView = Any.any_l ()
+          | & witness: t_Option_Fragment = Any.any_l ()
+          | & _14: t_Option_Fragment = Any.any_l ()
+          | & tail'0: UInt64.t = Any.any_l ()
+          | & _17: t_Ordering = Any.any_l ()
+          | & _18: t_FnGhostWrapper_closure3 = Any.any_l ()
+          | & _19: t_FnGhostWrapper_closure3 = Any.any_l ()
+          | & _20: closure3 = Any.any_l ()
+          | & _22: MutBorrow.t t_Tokens = Any.any_l ()
+          | & tail_mod: UInt64.t = Any.any_l ()
+          | & _25: UInt64.t = Any.any_l ()
+          | & _27: bool = Any.any_l ()
+          | & cell: t_QueueCell_T = Any.any_l ()
+          | & _34: t_QueueCell_T = Any.any_l ()
+          | & status'1: UInt64.t = Any.any_l ()
+          | & _39: t_Ordering = Any.any_l ()
+          | & _40: t_FnGhostWrapper_closure5 = Any.any_l ()
+          | & _41: t_FnGhostWrapper_closure5 = Any.any_l ()
+          | & _42: closure5 = Any.any_l ()
+          | & _44: MutBorrow.t t_Tokens = Any.any_l ()
+          | & _46: MutBorrow.t t_SyncView = Any.any_l ()
+          | & _47: MutBorrow.t t_Option_Fragment = Any.any_l ()
+          | & _49: bool = Any.any_l ()
+          | & _50: UInt64.t = Any.any_l ()
+          | & _51: UInt64.t = Any.any_l ()
+          | & token: t_Option_TokenR_T = Any.any_l ()
+          | & _56: t_Option_TokenR_T = Any.any_l ()
+          | & cell_own: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _58: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & res: t_Result_usize_usize = Any.any_l ()
+          | & _62: UInt64.t = Any.any_l ()
+          | & _64: t_Ordering = Any.any_l ()
+          | & _65: t_Ordering = Any.any_l ()
+          | & _66: t_FnGhostWrapper_closure6 = Any.any_l ()
+          | & _67: t_FnGhostWrapper_closure6 = Any.any_l ()
+          | & _68: closure6 = Any.any_l ()
+          | & _70: MutBorrow.t t_Tokens = Any.any_l ()
+          | & _71: MutBorrow.t t_Option_Fragment = Any.any_l ()
+          | & _73: MutBorrow.t t_Option_TokenR_T = Any.any_l ()
+          | & _74: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _76: bool = Any.any_l ()
+          | & item'0: t_T = Any.any_l ()
+          | & cell_perm: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _81: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _82: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _83: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _84: t_Option_refmut_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _85: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _86: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _87: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & cell_bor: MutBorrow.t t_MaybeUninit_T = Any.any_l ()
+          | & _91: t_MaybeUninit_T = Any.any_l ()
+          | & _92: MutBorrow.t t_MaybeUninit_T = Any.any_l ()
+          | & _93: t_MaybeUninit_T = Any.any_l ()
+          | & _94: () = Any.any_l ()
+          | & _96: UInt64.t = Any.any_l ()
+          | & _97: UInt64.t = Any.any_l ()
+          | & _99: UInt64.t = Any.any_l ()
+          | & _101: t_Ordering = Any.any_l ()
+          | & _102: t_FnGhostWrapper_closure7 = Any.any_l ()
+          | & _103: t_FnGhostWrapper_closure7 = Any.any_l ()
+          | & _104: closure7 = Any.any_l ()
+          | & _106: MutBorrow.t t_Tokens = Any.any_l ()
+          | & _107: MutBorrow.t t_Option_TokenR_T = Any.any_l ()
+          | & _108: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l () ]))))
     [ return (result: t_Option_T) ->
     {[@stop_split] [@expl:try_dequeue_T ensures] ([@stop_split] [@expl:try_dequeue result type invariant] inv_Option_T result)
       /\ ([@stop_split] [@expl:try_dequeue ensures] match result with
@@ -7273,6 +7333,8 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
+  type t_Ordering = Relaxed | Release | Acquire | AcqRel | SeqCst
+  
   type t_Tokens
   
   type t_AtomicInvariant_QueueInv_T
@@ -7957,6 +8019,12 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   meta "rewrite_def" predicate inv_ref_AtomicUsize
   
+  constant const_ORDERING : t_Ordering
+  
+  let set_ORDERING (return) = bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- Relaxed ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Ordering = Any.any_l () ]
+    [ return (_const: t_Ordering) -> -{const_ORDERING = _const}- return ]
+  
   predicate precondition_closure4 (self: closure4) (args: t_Committer_AtomicUsize_usize_Relaxed_unit) =
     let c = args in forall bor_self: MutBorrow.t closure4. bor_self.current = self /\ inv_closure4 bor_self.final
       -> closure4'pre bor_self c
@@ -7988,10 +8056,12 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure4
   
-  let load_FnGhostWrapper_closure4 (self: t_AtomicUsize) (f: t_FnGhostWrapper_closure4) (return (x: UInt64.t)) =
+  let load_FnGhostWrapper_closure4 (self: t_AtomicUsize) (order: t_Ordering) (f: t_FnGhostWrapper_closure4)
+    (return (x: UInt64.t)) =
   {[@stop_split] [@expl:load_FnGhostWrapper_closure4 requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicUsize self)
     /\ ([@stop_split] [@expl:load 'f' type invariant] inv_Ghost_FnGhostWrapper_closure4 f)
-    /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicUsize_usize_Relaxed_unit. not shot_store_AtomicUsize c
+    /\ ([@stop_split] [@expl:load requires #0] order = const_ORDERING)
+    /\ ([@stop_split] [@expl:load requires #1] forall c: t_Committer_AtomicUsize_usize_Relaxed_unit. not shot_store_AtomicUsize c
       -> ward_AtomicUsize c = self -> precondition_FnGhostWrapper_closure4 f c)}
     any
     [ return (result: UInt64.t) ->
@@ -8525,6 +8595,12 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
+  constant const_ORDERING'0 : t_Ordering
+  
+  let set_ORDERING'0 (return) = bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- Acquire ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Ordering = Any.any_l () ]
+    [ return (_const: t_Ordering) -> -{const_ORDERING'0 = _const}- return ]
+  
   predicate precondition_closure6 (self: closure6) (args: t_Committer_AtomicUsize_usize_Acquire_unit) =
     let c = args in forall bor_self: MutBorrow.t closure6. bor_self.current = self /\ inv_closure6 bor_self.final
       -> closure6'pre bor_self c
@@ -8554,10 +8630,12 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure6
   
-  let load_FnGhostWrapper_closure6 (self: t_AtomicUsize) (f: t_FnGhostWrapper_closure6) (return (x: UInt64.t)) =
+  let load_FnGhostWrapper_closure6 (self: t_AtomicUsize) (order: t_Ordering) (f: t_FnGhostWrapper_closure6)
+    (return (x: UInt64.t)) =
   {[@stop_split] [@expl:load_FnGhostWrapper_closure6 requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicUsize self)
     /\ ([@stop_split] [@expl:load 'f' type invariant] inv_Ghost_FnGhostWrapper_closure6 f)
-    /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicUsize_usize_Acquire_unit. not shot_store_AtomicUsize'0 c
+    /\ ([@stop_split] [@expl:load requires #0] order = const_ORDERING'0)
+    /\ ([@stop_split] [@expl:load requires #1] forall c: t_Committer_AtomicUsize_usize_Acquire_unit. not shot_store_AtomicUsize'0 c
       -> ward_AtomicUsize'1 c = self -> precondition_FnGhostWrapper_closure6 f c)}
     any
     [ return (result: UInt64.t) ->
@@ -9313,16 +9391,17 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure7
   
   let compare_exchange_weak_FnGhostWrapper_closure7 (self: t_AtomicUsize) (current': UInt64.t) (new'0: UInt64.t)
-    (f: t_FnGhostWrapper_closure7) (return (x: t_Result_usize_usize)) =
+    (success: t_Ordering) (failure: t_Ordering) (f: t_FnGhostWrapper_closure7) (return (x: t_Result_usize_usize)) =
   {[@stop_split] [@expl:compare_exchange_weak_FnGhostWrapper_closure7 requires] ([@stop_split] [@expl:compare_exchange_weak 'self' type invariant] inv_ref_AtomicUsize self)
     /\ ([@stop_split] [@expl:compare_exchange_weak 'f' type invariant] inv_Ghost_FnGhostWrapper_closure7 f)
-    /\ ([@stop_split] [@expl:compare_exchange_weak requires #0] forall c: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed. not shot_store_AtomicUsize'1 c.current
+    /\ ([@stop_split] [@expl:compare_exchange_weak requires #0] success = const_ORDERING /\ failure = const_ORDERING)
+    /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: MutBorrow.t t_Committer_AtomicUsize_usize_Relaxed_Relaxed. not shot_store_AtomicUsize'1 c.current
         -> ward_AtomicUsize'2 c.current = self
         -> deep_model_usize (val_load_AtomicUsize'1 c.current) = deep_model_usize current'
         -> val_store_AtomicUsize c.current = new'0
         -> precondition_FnGhostWrapper_closure7 f (Ok c)
         /\ (postcondition_once_FnGhostWrapper_closure7 f (Ok c) () -> shot_store_AtomicUsize'1 c.final))
-    /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicUsize_usize_Relaxed_unit. not shot_store_AtomicUsize c
+    /\ ([@stop_split] [@expl:compare_exchange_weak requires #2] forall c: t_Committer_AtomicUsize_usize_Relaxed_unit. not shot_store_AtomicUsize c
       -> ward_AtomicUsize c = self -> precondition_FnGhostWrapper_closure7 f (Err c))}
     any
     [ return (result: t_Result_usize_usize) ->
@@ -9816,6 +9895,12 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
       /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
+  constant const_ORDERING'1 : t_Ordering
+  
+  let set_ORDERING'1 (return) = bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- Release ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Ordering = Any.any_l () ]
+    [ return (_const: t_Ordering) -> -{const_ORDERING'1 = _const}- return ]
+  
   predicate precondition_closure8 (self: closure8) (args: MutBorrow.t t_Committer_AtomicUsize_usize_unit_Release) =
     let c = args in forall bor_self: MutBorrow.t closure8. bor_self.current = self /\ inv_closure8 bor_self.final
       -> closure8'pre bor_self c
@@ -9845,11 +9930,12 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure8
   
-  let store_FnGhostWrapper_closure8 (self: t_AtomicUsize) (val''1: UInt64.t) (f: t_FnGhostWrapper_closure8)
-    (return (x: ())) =
+  let store_FnGhostWrapper_closure8 (self: t_AtomicUsize) (val''1: UInt64.t) (order: t_Ordering)
+    (f: t_FnGhostWrapper_closure8) (return (x: ())) =
   {[@stop_split] [@expl:store_FnGhostWrapper_closure8 requires] ([@stop_split] [@expl:store 'self' type invariant] inv_ref_AtomicUsize self)
     /\ ([@stop_split] [@expl:store 'f' type invariant] inv_Ghost_FnGhostWrapper_closure8 f)
-    /\ ([@stop_split] [@expl:store requires] forall c: MutBorrow.t t_Committer_AtomicUsize_usize_unit_Release. not shot_store_AtomicUsize'2 c.current
+    /\ ([@stop_split] [@expl:store requires #0] order = const_ORDERING'1)
+    /\ ([@stop_split] [@expl:store requires #1] forall c: MutBorrow.t t_Committer_AtomicUsize_usize_unit_Release. not shot_store_AtomicUsize'2 c.current
       -> ward_AtomicUsize'3 c.current = self
       -> val_store_AtomicUsize'0 c.current = val''1
       -> precondition_FnGhostWrapper_closure8 f c
@@ -9874,202 +9960,221 @@ module M_impl_Queue_T__try_enqueue (* Queue<T> *)
       -> c.current.ward = self
       -> c.current.new_seq = Seq.snoc c.current.old_seq item'0
       -> precondition_F f c /\ (postcondition_once_F f c () -> c.final.shot /\ hist_inv_T c.current c.final))}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = new (fun (_x: t_SyncView) -> [ &view <- _x ] s1)
-      | s1 = [ &_19 <- None ] s2
-      | s2 = new_Option_Fragment {_19} (fun (_x: t_Option_Fragment) -> [ &witness <- _x ] s3)
-      | s3 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-          (fun (_bor: MutBorrow.t t_Tokens) -> [ &_26 <- _bor ] [ &tokens <- _bor.final ] s4)
-      | s4 = [ &_24 <- { c0 = self; c1 = _26 } ] s5
-      | s5 = __new_closure4 {_24} (fun (_x: t_FnGhostWrapper_closure4) -> [ &_23 <- _x ] s6)
-      | s6 = new_FnGhostWrapper_closure4 {_23} (fun (_x: t_FnGhostWrapper_closure4) -> [ &_22 <- _x ] s7)
-      | s7 = load_FnGhostWrapper_closure4 {self.head} {_22} (fun (_x: UInt64.t) -> [ &head'0 <- _x ] s8)
-      | s8 = len_QueueCell_T {self.cells} (fun (_x: UInt64.t) -> [ &_29 <- _x ] s9)
-      | s9 = [ &_31 <- _29 = (0: UInt64.t) ] s10
-      | s10 = {[@expl:remainder by zero] not _31} s11
-      | s11 = UInt64.rem {head'0} {_29} (fun (_x: UInt64.t) -> [ &head_mod <- _x ] s12)
-      | s12 = {[@expl:assertion] UInt64.t'int head_mod
-        = EuclideanDivision.mod (UInt64.t'int head'0) (Seq.length (view_Vec_QueueCell_T_Global self.cells))}
-        s13
-      | s13 = index_Vec_QueueCell_T_Global {self.cells} {head_mod} (fun (_x: t_QueueCell_T) -> [ &_38 <- _x ] s14)
-      | s14 = [ &cell <- _38 ] s15
-      | s15 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-          (fun (_bor: MutBorrow.t t_Tokens) -> [ &_47 <- _bor ] [ &tokens <- _bor.final ] s16)
-      | s16 = MutBorrow.borrow_mut <t_SyncView> {view}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_49 <- _bor ] [ &view <- _bor.final ] s17)
-      | s17 = MutBorrow.borrow_mut <t_Option_Fragment> {witness}
-          (fun (_bor: MutBorrow.t t_Option_Fragment) ->
-            [ &_50 <- _bor ] -{inv_Ghost_Option_Fragment _bor.final}-
-            [ &witness <- _bor.final ] s18)
-        [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment witness} any) ]
-      | s18 = [ &_45 <- { c0'1 = self; c1'1 = _47; c2'1 = head_mod; c3'1 = _49; c4'1 = _50 } ] s19
-      | s19 = __new_closure6 {_45} (fun (_x: t_FnGhostWrapper_closure6) -> [ &_44 <- _x ] s20)
-      | s20 = new_FnGhostWrapper_closure6 {_44} (fun (_x: t_FnGhostWrapper_closure6) -> [ &_43 <- _x ] s21)
-      | s21 = load_FnGhostWrapper_closure6 {cell.status} {_43} (fun (_x: UInt64.t) -> [ &status'1 <- _x ] s22)
-      | s22 = UInt64.mul {(2: UInt64.t)} {head'0} (fun (_x: UInt64.t) -> [ &_53 <- _x ] s23)
-      | s23 = [ &_52 <- _53 <> status'1 ] s24
-      | s24 = any [ br0 -> {_52 = false} (! bb13) | br1 -> {_52} (! bb12) ] ]
-    | bb12 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment witness} any) ]
-      | s1 = -{resolve_Ghost_Option_Fragment'0 witness}- s2
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Ghost_F f} any) ]
-      | s3 = -{resolve_Ghost_F'0 f}- s4
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_T item'0} any) ]
-      | s5 = -{resolve_T item'0}- s6
-      | s6 = [ &_ret <- false ] s7
-      | s7 = return {_ret} ]
-    | bb13 = s0
-      [ s0 = [ &_58 <- None'4 ] s1
-      | s1 = new_Option_TokenW_T {_58} (fun (_x: t_Option_TokenW_T) -> [ &token <- _x ] s2)
-      | s2 = [ &_60 <- None'5 ] s3
-      | s3 = new_Option_Perm_PCell_MaybeUninit_T {_60}
-          (fun (_x: t_Option_Perm_PCell_MaybeUninit_T) -> [ &cell_own <- _x ] s4)
-      | s4 = UInt64.add {head'0} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_64 <- _x ] s5)
-      | s5 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-          (fun (_bor: MutBorrow.t t_Tokens) -> [ &_70 <- _bor ] [ &tokens <- _bor.final ] s6)
-      | s6 = MutBorrow.borrow_mut <t_Option_Fragment> {witness}
-          (fun (_bor: MutBorrow.t t_Option_Fragment) ->
-            [ &_72 <- _bor ] -{inv_Ghost_Option_Fragment _bor.final}-
-            [ &witness <- _bor.final ] s7) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment witness} any) ]
-      | s7 = MutBorrow.borrow_mut <t_Option_TokenW_T> {token}
-          (fun (_bor: MutBorrow.t t_Option_TokenW_T) ->
-            [ &_74 <- _bor ] -{inv_Ghost_Option_TokenW_T _bor.final}-
-            [ &token <- _bor.final ] s8) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenW_T token} any) ]
-      | s8 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {cell_own}
-          (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_75 <- _bor ] [ &cell_own <- _bor.final ] s9)
-      | s9 = [ &_68 <- { c0'3 = self;
-                         c1'3 = _70;
-                         c2'3 = item'0;
-                         c3'3 = f;
-                         c4'3 = _72;
-                         c5'3 = view;
-                         c6'3 = _74;
-                         c7'3 = _75 } ] s10
-      | s10 = __new_closure7 {_68} (fun (_x: t_FnGhostWrapper_closure7) -> [ &_67 <- _x ] s11)
-      | s11 = new_FnGhostWrapper_closure7 {_67} (fun (_x: t_FnGhostWrapper_closure7) -> [ &_66 <- _x ] s12)
-      | s12 = compare_exchange_weak_FnGhostWrapper_closure7 {self.head} {head'0} {_64} {_66}
-          (fun (_x: t_Result_usize_usize) -> [ &res <- _x ] s13)
-      | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment witness} any) ]
-      | s14 = -{resolve_Ghost_Option_Fragment'0 witness}- s15
-      | s15 = is_err_usize {res} (fun (_x: bool) -> [ &_77 <- _x ] s16)
-      | s16 = any [ br0 -> {_77 = false} (! bb21) | br1 -> {_77} (! bb20) ] ]
-    | bb20 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenW_T token} any) ]
-      | s1 = -{resolve_Ghost_Option_TokenW_T'0 token}- s2
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_T item'0} any) ]
-      | s3 = -{resolve_T item'0}- s4
-      | s4 = [ &_ret <- false ] s5
-      | s5 = return {_ret} ]
-    | bb21 = s0
-      [ s0 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {cell_own}
-          (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_90 <- _bor ] [ &cell_own <- _bor.final ] s1)
-      | s1 = deref_mut_Ghost_Option_Perm_PCell_MaybeUninit_T {_90}
-          (fun (_x: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_89 <- _x ] s2)
-      | s2 = MutBorrow.borrow_final <t_Option_Perm_PCell_MaybeUninit_T> {_89.current} {MutBorrow.get_id _89}
-          (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
-            [ &_88 <- _bor ] [ &_89 <- { _89 with current = _bor.final } ] s3)
-      | s3 = as_mut_Perm_PCell_MaybeUninit_T {_88}
-          (fun (_x: t_Option_refmut_Perm_PCell_MaybeUninit_T) -> [ &_87 <- _x ] s4)
-      | s4 = unwrap_refmut_Perm_PCell_MaybeUninit_T {_87}
-          (fun (_x: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> [ &_86 <- _x ] s5)
-      | s5 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_86.current} {MutBorrow.get_id _86}
-          (fun (_bor: MutBorrow.t t_Perm_PCell_MaybeUninit_T) ->
-            [ &_85 <- _bor ] [ &_86 <- { _86 with current = _bor.final } ] s6)
-      | s6 = -{resolve_refmut_Option_Perm_PCell_MaybeUninit_T _89}- s7
-      | s7 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _86}- s8
-      | s8 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_85.current} {MutBorrow.get_id _85}
-          (fun (_bor: MutBorrow.t t_Perm_PCell_MaybeUninit_T) ->
-            [ &_84 <- _bor ] [ &_85 <- { _85 with current = _bor.final } ] s9)
-      | s9 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _85}- s10
-      | s10 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_84.current} {MutBorrow.get_id _84}
-          (fun (_bor: MutBorrow.t t_Perm_PCell_MaybeUninit_T) ->
-            [ &_83 <- _bor ] [ &_84 <- { _84 with current = _bor.final } ] s11)
-      | s11 = new_refmut_Perm_PCell_MaybeUninit_T {_83}
-          (fun (_x: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> [ &_82 <- _x ] s12)
-      | s12 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _84}- s13
-      | s13 = new_T {item'0} (fun (_x: t_MaybeUninit_T) -> [ &_91 <- _x ] s14)
-      | s14 = set_MaybeUninit_T {cell.item} {_82} {_91} (fun (_x: ()) -> [ &_80 <- _x ] s15)
-      | s15 = UInt64.mul {(2: UInt64.t)} {head'0} (fun (_x: UInt64.t) -> [ &_96 <- _x ] s16)
-      | s16 = UInt64.add {_96} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_95 <- _x ] s17)
-      | s17 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-          (fun (_bor: MutBorrow.t t_Tokens) -> [ &_102 <- _bor ] [ &tokens <- _bor.final ] s18)
-      | s18 = MutBorrow.borrow_mut <t_Option_TokenW_T> {token}
-          (fun (_bor: MutBorrow.t t_Option_TokenW_T) ->
-            [ &_103 <- _bor ] -{inv_Ghost_Option_TokenW_T _bor.final}-
-            [ &token <- _bor.final ] s19) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenW_T token} any) ]
-      | s19 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {cell_own}
-          (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
-            [ &_104 <- _bor ] [ &cell_own <- _bor.final ] s20)
-      | s20 = [ &_100 <- { c0'5 = self; c1'5 = _102; c2'5 = _103; c3'5 = _104 } ] s21
-      | s21 = __new_closure8 {_100} (fun (_x: t_FnGhostWrapper_closure8) -> [ &_99 <- _x ] s22)
-      | s22 = new_FnGhostWrapper_closure8 {_99} (fun (_x: t_FnGhostWrapper_closure8) -> [ &_98 <- _x ] s23)
-      | s23 = store_FnGhostWrapper_closure8 {cell.status} {_95} {_98} (fun (_x: ()) -> [ &_93 <- _x ] s24)
-      | s24 = s25 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenW_T token} any) ]
-      | s25 = -{resolve_Ghost_Option_TokenW_T'0 token}- s26
-      | s26 = [ &_ret <- true ] s27
-      | s27 = return {_ret} ] ]
-    [ & _ret: bool = Any.any_l ()
-    | & self: t_Queue_T = self
-    | & item'0: t_T = item'0
-    | & tokens: t_Tokens = tokens
-    | & f: t_F = f
-    | & view: t_SyncView = Any.any_l ()
-    | & witness: t_Option_Fragment = Any.any_l ()
-    | & _19: t_Option_Fragment = Any.any_l ()
-    | & head'0: UInt64.t = Any.any_l ()
-    | & _22: t_FnGhostWrapper_closure4 = Any.any_l ()
-    | & _23: t_FnGhostWrapper_closure4 = Any.any_l ()
-    | & _24: closure4 = Any.any_l ()
-    | & _26: MutBorrow.t t_Tokens = Any.any_l ()
-    | & head_mod: UInt64.t = Any.any_l ()
-    | & _29: UInt64.t = Any.any_l ()
-    | & _31: bool = Any.any_l ()
-    | & cell: t_QueueCell_T = Any.any_l ()
-    | & _38: t_QueueCell_T = Any.any_l ()
-    | & status'1: UInt64.t = Any.any_l ()
-    | & _43: t_FnGhostWrapper_closure6 = Any.any_l ()
-    | & _44: t_FnGhostWrapper_closure6 = Any.any_l ()
-    | & _45: closure6 = Any.any_l ()
-    | & _47: MutBorrow.t t_Tokens = Any.any_l ()
-    | & _49: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _50: MutBorrow.t t_Option_Fragment = Any.any_l ()
-    | & _52: bool = Any.any_l ()
-    | & _53: UInt64.t = Any.any_l ()
-    | & token: t_Option_TokenW_T = Any.any_l ()
-    | & _58: t_Option_TokenW_T = Any.any_l ()
-    | & cell_own: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _60: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & res: t_Result_usize_usize = Any.any_l ()
-    | & _64: UInt64.t = Any.any_l ()
-    | & _66: t_FnGhostWrapper_closure7 = Any.any_l ()
-    | & _67: t_FnGhostWrapper_closure7 = Any.any_l ()
-    | & _68: closure7 = Any.any_l ()
-    | & _70: MutBorrow.t t_Tokens = Any.any_l ()
-    | & _72: MutBorrow.t t_Option_Fragment = Any.any_l ()
-    | & _74: MutBorrow.t t_Option_TokenW_T = Any.any_l ()
-    | & _75: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _77: bool = Any.any_l ()
-    | & _80: () = Any.any_l ()
-    | & _82: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _83: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _84: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _85: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _86: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _87: t_Option_refmut_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _88: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _89: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _90: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _91: t_MaybeUninit_T = Any.any_l ()
-    | & _93: () = Any.any_l ()
-    | & _95: UInt64.t = Any.any_l ()
-    | & _96: UInt64.t = Any.any_l ()
-    | & _98: t_FnGhostWrapper_closure8 = Any.any_l ()
-    | & _99: t_FnGhostWrapper_closure8 = Any.any_l ()
-    | & _100: closure8 = Any.any_l ()
-    | & _102: MutBorrow.t t_Tokens = Any.any_l ()
-    | & _103: MutBorrow.t t_Option_TokenW_T = Any.any_l ()
-    | & _104: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l () ])
+    (! set_ORDERING'1
+      (set_ORDERING'0
+        (set_ORDERING
+          (bb0
+          [ bb0 = s0
+            [ s0 = new (fun (_x: t_SyncView) -> [ &view <- _x ] s1)
+            | s1 = [ &_19 <- None ] s2
+            | s2 = new_Option_Fragment {_19} (fun (_x: t_Option_Fragment) -> [ &witness <- _x ] s3)
+            | s3 = [ &_22 <- Relaxed ] s4
+            | s4 = MutBorrow.borrow_mut <t_Tokens> {tokens}
+                (fun (_bor: MutBorrow.t t_Tokens) -> [ &_27 <- _bor ] [ &tokens <- _bor.final ] s5)
+            | s5 = [ &_25 <- { c0 = self; c1 = _27 } ] s6
+            | s6 = __new_closure4 {_25} (fun (_x: t_FnGhostWrapper_closure4) -> [ &_24 <- _x ] s7)
+            | s7 = new_FnGhostWrapper_closure4 {_24} (fun (_x: t_FnGhostWrapper_closure4) -> [ &_23 <- _x ] s8)
+            | s8 = load_FnGhostWrapper_closure4 {self.head} {_22} {_23} (fun (_x: UInt64.t) -> [ &head'0 <- _x ] s9)
+            | s9 = len_QueueCell_T {self.cells} (fun (_x: UInt64.t) -> [ &_30 <- _x ] s10)
+            | s10 = [ &_32 <- _30 = (0: UInt64.t) ] s11
+            | s11 = {[@expl:remainder by zero] not _32} s12
+            | s12 = UInt64.rem {head'0} {_30} (fun (_x: UInt64.t) -> [ &head_mod <- _x ] s13)
+            | s13 = {[@expl:assertion] UInt64.t'int head_mod
+              = EuclideanDivision.mod (UInt64.t'int head'0) (Seq.length (view_Vec_QueueCell_T_Global self.cells))}
+              s14
+            | s14 = index_Vec_QueueCell_T_Global {self.cells} {head_mod} (fun (_x: t_QueueCell_T) -> [ &_39 <- _x ] s15)
+            | s15 = [ &cell <- _39 ] s16
+            | s16 = [ &_44 <- Acquire ] s17
+            | s17 = MutBorrow.borrow_mut <t_Tokens> {tokens}
+                (fun (_bor: MutBorrow.t t_Tokens) -> [ &_49 <- _bor ] [ &tokens <- _bor.final ] s18)
+            | s18 = MutBorrow.borrow_mut <t_SyncView> {view}
+                (fun (_bor: MutBorrow.t t_SyncView) -> [ &_51 <- _bor ] [ &view <- _bor.final ] s19)
+            | s19 = MutBorrow.borrow_mut <t_Option_Fragment> {witness}
+                (fun (_bor: MutBorrow.t t_Option_Fragment) ->
+                  [ &_52 <- _bor ] -{inv_Ghost_Option_Fragment _bor.final}-
+                  [ &witness <- _bor.final ] s20)
+              [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment witness} any) ]
+            | s20 = [ &_47 <- { c0'1 = self; c1'1 = _49; c2'1 = head_mod; c3'1 = _51; c4'1 = _52 } ] s21
+            | s21 = __new_closure6 {_47} (fun (_x: t_FnGhostWrapper_closure6) -> [ &_46 <- _x ] s22)
+            | s22 = new_FnGhostWrapper_closure6 {_46} (fun (_x: t_FnGhostWrapper_closure6) -> [ &_45 <- _x ] s23)
+            | s23 = load_FnGhostWrapper_closure6 {cell.status} {_44} {_45}
+                (fun (_x: UInt64.t) -> [ &status'1 <- _x ] s24)
+            | s24 = UInt64.mul {(2: UInt64.t)} {head'0} (fun (_x: UInt64.t) -> [ &_55 <- _x ] s25)
+            | s25 = [ &_54 <- _55 <> status'1 ] s26
+            | s26 = any [ br0 -> {_54 = false} (! bb13) | br1 -> {_54} (! bb12) ] ]
+          | bb12 = s0
+            [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment witness} any) ]
+            | s1 = -{resolve_Ghost_Option_Fragment'0 witness}- s2
+            | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Ghost_F f} any) ]
+            | s3 = -{resolve_Ghost_F'0 f}- s4
+            | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_T item'0} any) ]
+            | s5 = -{resolve_T item'0}- s6
+            | s6 = [ &_ret <- false ] s7
+            | s7 = return {_ret} ]
+          | bb13 = s0
+            [ s0 = [ &_60 <- None'4 ] s1
+            | s1 = new_Option_TokenW_T {_60} (fun (_x: t_Option_TokenW_T) -> [ &token <- _x ] s2)
+            | s2 = [ &_62 <- None'5 ] s3
+            | s3 = new_Option_Perm_PCell_MaybeUninit_T {_62}
+                (fun (_x: t_Option_Perm_PCell_MaybeUninit_T) -> [ &cell_own <- _x ] s4)
+            | s4 = UInt64.add {head'0} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_66 <- _x ] s5)
+            | s5 = [ &_68 <- Relaxed ] s6
+            | s6 = [ &_69 <- Relaxed ] s7
+            | s7 = MutBorrow.borrow_mut <t_Tokens> {tokens}
+                (fun (_bor: MutBorrow.t t_Tokens) -> [ &_74 <- _bor ] [ &tokens <- _bor.final ] s8)
+            | s8 = MutBorrow.borrow_mut <t_Option_Fragment> {witness}
+                (fun (_bor: MutBorrow.t t_Option_Fragment) ->
+                  [ &_76 <- _bor ] -{inv_Ghost_Option_Fragment _bor.final}-
+                  [ &witness <- _bor.final ] s9)
+              [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment witness} any) ]
+            | s9 = MutBorrow.borrow_mut <t_Option_TokenW_T> {token}
+                (fun (_bor: MutBorrow.t t_Option_TokenW_T) ->
+                  [ &_78 <- _bor ] -{inv_Ghost_Option_TokenW_T _bor.final}-
+                  [ &token <- _bor.final ] s10)
+              [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenW_T token} any) ]
+            | s10 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {cell_own}
+                (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
+                  [ &_79 <- _bor ] [ &cell_own <- _bor.final ] s11)
+            | s11 = [ &_72 <- { c0'3 = self;
+                                c1'3 = _74;
+                                c2'3 = item'0;
+                                c3'3 = f;
+                                c4'3 = _76;
+                                c5'3 = view;
+                                c6'3 = _78;
+                                c7'3 = _79 } ] s12
+            | s12 = __new_closure7 {_72} (fun (_x: t_FnGhostWrapper_closure7) -> [ &_71 <- _x ] s13)
+            | s13 = new_FnGhostWrapper_closure7 {_71} (fun (_x: t_FnGhostWrapper_closure7) -> [ &_70 <- _x ] s14)
+            | s14 = compare_exchange_weak_FnGhostWrapper_closure7 {self.head} {head'0} {_66} {_68} {_69} {_70}
+                (fun (_x: t_Result_usize_usize) -> [ &res <- _x ] s15)
+            | s15 = s16 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment witness} any) ]
+            | s16 = -{resolve_Ghost_Option_Fragment'0 witness}- s17
+            | s17 = is_err_usize {res} (fun (_x: bool) -> [ &_81 <- _x ] s18)
+            | s18 = any [ br0 -> {_81 = false} (! bb21) | br1 -> {_81} (! bb20) ] ]
+          | bb20 = s0
+            [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenW_T token} any) ]
+            | s1 = -{resolve_Ghost_Option_TokenW_T'0 token}- s2
+            | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_T item'0} any) ]
+            | s3 = -{resolve_T item'0}- s4
+            | s4 = [ &_ret <- false ] s5
+            | s5 = return {_ret} ]
+          | bb21 = s0
+            [ s0 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {cell_own}
+                (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
+                  [ &_94 <- _bor ] [ &cell_own <- _bor.final ] s1)
+            | s1 = deref_mut_Ghost_Option_Perm_PCell_MaybeUninit_T {_94}
+                (fun (_x: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_93 <- _x ] s2)
+            | s2 = MutBorrow.borrow_final <t_Option_Perm_PCell_MaybeUninit_T> {_93.current} {MutBorrow.get_id _93}
+                (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
+                  [ &_92 <- _bor ] [ &_93 <- { _93 with current = _bor.final } ] s3)
+            | s3 = as_mut_Perm_PCell_MaybeUninit_T {_92}
+                (fun (_x: t_Option_refmut_Perm_PCell_MaybeUninit_T) -> [ &_91 <- _x ] s4)
+            | s4 = unwrap_refmut_Perm_PCell_MaybeUninit_T {_91}
+                (fun (_x: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> [ &_90 <- _x ] s5)
+            | s5 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_90.current} {MutBorrow.get_id _90}
+                (fun (_bor: MutBorrow.t t_Perm_PCell_MaybeUninit_T) ->
+                  [ &_89 <- _bor ] [ &_90 <- { _90 with current = _bor.final } ] s6)
+            | s6 = -{resolve_refmut_Option_Perm_PCell_MaybeUninit_T _93}- s7
+            | s7 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _90}- s8
+            | s8 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_89.current} {MutBorrow.get_id _89}
+                (fun (_bor: MutBorrow.t t_Perm_PCell_MaybeUninit_T) ->
+                  [ &_88 <- _bor ] [ &_89 <- { _89 with current = _bor.final } ] s9)
+            | s9 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _89}- s10
+            | s10 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_88.current} {MutBorrow.get_id _88}
+                (fun (_bor: MutBorrow.t t_Perm_PCell_MaybeUninit_T) ->
+                  [ &_87 <- _bor ] [ &_88 <- { _88 with current = _bor.final } ] s11)
+            | s11 = new_refmut_Perm_PCell_MaybeUninit_T {_87}
+                (fun (_x: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> [ &_86 <- _x ] s12)
+            | s12 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _88}- s13
+            | s13 = new_T {item'0} (fun (_x: t_MaybeUninit_T) -> [ &_95 <- _x ] s14)
+            | s14 = set_MaybeUninit_T {cell.item} {_86} {_95} (fun (_x: ()) -> [ &_84 <- _x ] s15)
+            | s15 = UInt64.mul {(2: UInt64.t)} {head'0} (fun (_x: UInt64.t) -> [ &_100 <- _x ] s16)
+            | s16 = UInt64.add {_100} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &_99 <- _x ] s17)
+            | s17 = [ &_102 <- Release ] s18
+            | s18 = MutBorrow.borrow_mut <t_Tokens> {tokens}
+                (fun (_bor: MutBorrow.t t_Tokens) -> [ &_107 <- _bor ] [ &tokens <- _bor.final ] s19)
+            | s19 = MutBorrow.borrow_mut <t_Option_TokenW_T> {token}
+                (fun (_bor: MutBorrow.t t_Option_TokenW_T) ->
+                  [ &_108 <- _bor ] -{inv_Ghost_Option_TokenW_T _bor.final}-
+                  [ &token <- _bor.final ] s20)
+              [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenW_T token} any) ]
+            | s20 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {cell_own}
+                (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
+                  [ &_109 <- _bor ] [ &cell_own <- _bor.final ] s21)
+            | s21 = [ &_105 <- { c0'5 = self; c1'5 = _107; c2'5 = _108; c3'5 = _109 } ] s22
+            | s22 = __new_closure8 {_105} (fun (_x: t_FnGhostWrapper_closure8) -> [ &_104 <- _x ] s23)
+            | s23 = new_FnGhostWrapper_closure8 {_104} (fun (_x: t_FnGhostWrapper_closure8) -> [ &_103 <- _x ] s24)
+            | s24 = store_FnGhostWrapper_closure8 {cell.status} {_99} {_102} {_103} (fun (_x: ()) -> [ &_97 <- _x ] s25)
+            | s25 = s26 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_TokenW_T token} any) ]
+            | s26 = -{resolve_Ghost_Option_TokenW_T'0 token}- s27
+            | s27 = [ &_ret <- true ] s28
+            | s28 = return {_ret} ] ]
+          [ & _ret: bool = Any.any_l ()
+          | & self: t_Queue_T = self
+          | & item'0: t_T = item'0
+          | & tokens: t_Tokens = tokens
+          | & f: t_F = f
+          | & view: t_SyncView = Any.any_l ()
+          | & witness: t_Option_Fragment = Any.any_l ()
+          | & _19: t_Option_Fragment = Any.any_l ()
+          | & head'0: UInt64.t = Any.any_l ()
+          | & _22: t_Ordering = Any.any_l ()
+          | & _23: t_FnGhostWrapper_closure4 = Any.any_l ()
+          | & _24: t_FnGhostWrapper_closure4 = Any.any_l ()
+          | & _25: closure4 = Any.any_l ()
+          | & _27: MutBorrow.t t_Tokens = Any.any_l ()
+          | & head_mod: UInt64.t = Any.any_l ()
+          | & _30: UInt64.t = Any.any_l ()
+          | & _32: bool = Any.any_l ()
+          | & cell: t_QueueCell_T = Any.any_l ()
+          | & _39: t_QueueCell_T = Any.any_l ()
+          | & status'1: UInt64.t = Any.any_l ()
+          | & _44: t_Ordering = Any.any_l ()
+          | & _45: t_FnGhostWrapper_closure6 = Any.any_l ()
+          | & _46: t_FnGhostWrapper_closure6 = Any.any_l ()
+          | & _47: closure6 = Any.any_l ()
+          | & _49: MutBorrow.t t_Tokens = Any.any_l ()
+          | & _51: MutBorrow.t t_SyncView = Any.any_l ()
+          | & _52: MutBorrow.t t_Option_Fragment = Any.any_l ()
+          | & _54: bool = Any.any_l ()
+          | & _55: UInt64.t = Any.any_l ()
+          | & token: t_Option_TokenW_T = Any.any_l ()
+          | & _60: t_Option_TokenW_T = Any.any_l ()
+          | & cell_own: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _62: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & res: t_Result_usize_usize = Any.any_l ()
+          | & _66: UInt64.t = Any.any_l ()
+          | & _68: t_Ordering = Any.any_l ()
+          | & _69: t_Ordering = Any.any_l ()
+          | & _70: t_FnGhostWrapper_closure7 = Any.any_l ()
+          | & _71: t_FnGhostWrapper_closure7 = Any.any_l ()
+          | & _72: closure7 = Any.any_l ()
+          | & _74: MutBorrow.t t_Tokens = Any.any_l ()
+          | & _76: MutBorrow.t t_Option_Fragment = Any.any_l ()
+          | & _78: MutBorrow.t t_Option_TokenW_T = Any.any_l ()
+          | & _79: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _81: bool = Any.any_l ()
+          | & _84: () = Any.any_l ()
+          | & _86: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _87: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _88: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _89: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _90: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _91: t_Option_refmut_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _92: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _93: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _94: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+          | & _95: t_MaybeUninit_T = Any.any_l ()
+          | & _97: () = Any.any_l ()
+          | & _99: UInt64.t = Any.any_l ()
+          | & _100: UInt64.t = Any.any_l ()
+          | & _102: t_Ordering = Any.any_l ()
+          | & _103: t_FnGhostWrapper_closure8 = Any.any_l ()
+          | & _104: t_FnGhostWrapper_closure8 = Any.any_l ()
+          | & _105: closure8 = Any.any_l ()
+          | & _107: MutBorrow.t t_Tokens = Any.any_l ()
+          | & _108: MutBorrow.t t_Option_TokenW_T = Any.any_l ()
+          | & _109: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l () ]))))
     [ return (result: bool) ->
     {[@stop_split] [@expl:try_enqueue_T ensures] ([@stop_split] [@expl:try_enqueue ensures #0] result
         -> (exists c: MutBorrow.t t_QueueCommitter_T. not c.current.shot
