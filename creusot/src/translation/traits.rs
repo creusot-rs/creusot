@@ -116,7 +116,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         {
             return Err(infcx.err_ctxt().report_fulfillment_errors(errors));
         }
-        return Ok(());
+        Ok(())
     }
 }
 
