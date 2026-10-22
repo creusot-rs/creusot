@@ -178,9 +178,6 @@ fn invoke_cargo(
     if matches!(build, Build::Doc) {
         let mut rustdocflags = std::env::var("RUSTDOCFLAGS").unwrap_or_else(|_| String::new());
         for &arg in CREUSOT_RUSTC_ARGS {
-            if arg == "-Znext-solver=globally" {
-                continue;
-            }
             rustdocflags.push(' ');
             rustdocflags.push_str(arg);
         }
