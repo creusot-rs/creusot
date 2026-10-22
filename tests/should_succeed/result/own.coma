@@ -1,4 +1,5 @@
 module M_impl_OwnResult_Option_T_E__transpose (* OwnResult<std::option::Option<T>, E> *)
+  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_T
@@ -20,6 +21,11 @@ module M_impl_OwnResult_Option_T_E__transpose (* OwnResult<std::option::Option<T
   type t_OwnResult_T_E = Ok'0 t_T | Err'0 t_E
   
   type t_Option_OwnResult_T_E = None'0 | Some'0 t_OwnResult_T_E
+  
+  function discriminant_Option_T (x: t_Option_T) : Int64.t = match x with
+      | None -> (0: Int64.t)
+      | Some _ -> (1: Int64.t)
+      end
   
   let elim_Ok (_x: t_OwnResult_Option_T_E) (return (f0: t_Option_T)) = any
     [ _k (f0: t_Option_T) -> {Ok f0 = _x} (! return {f0})
@@ -88,8 +94,10 @@ module M_impl_OwnResult_Option_T_E__transpose (* OwnResult<std::option::Option<T
       | s1 = [ &_14 <- Err'0 e ] s2
       | s2 = [ &_ret <- Some'0 _14 ] s3
       | s3 = return {_ret} ]
-    | bb2 = elim_Ok {self}
-        (fun (r0: t_Option_T) -> any [ br0 -> {r0 = None} (! bb6) | br1 (x0: t_T) -> {r0 = Some x0} (! bb7) ])
+    | bb2 = s0
+      [ s0 = elim_Ok {self} (fun (r0: t_Option_T) -> [ &_8 <- discriminant_Option_T r0 ] s1)
+      | s1 = elim_Ok {self}
+          (fun (r0: t_Option_T) -> any [ br0 -> {r0 = None} (! bb6) | br1 (x0: t_T) -> {r0 = Some x0} (! bb7) ]) ]
     | bb7 = s0
       [ s0 = elim_Ok {self} (fun (r0: t_Option_T) -> elim_Some {r0} (fun (r0'0: t_T) -> [ &x <- r0'0 ] s1))
       | s1 = [ &_11 <- Ok'0 x ] s2
@@ -98,6 +106,7 @@ module M_impl_OwnResult_Option_T_E__transpose (* OwnResult<std::option::Option<T
     | bb6 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_OwnResult_T_E = Any.any_l ()
     | & self: t_OwnResult_Option_T_E = self
+    | & _8: Int64.t = Any.any_l ()
     | & x: t_T = Any.any_l ()
     | & _11: t_OwnResult_T_E = Any.any_l ()
     | & e: t_E = Any.any_l ()

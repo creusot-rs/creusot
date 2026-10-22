@@ -738,7 +738,14 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                                 ),
                             ),
                             Exp::Const(why3::exp::Constant::IntDigits10(
-                                discr.val.to_string(),
+                                match *discr.ty.kind() {
+                                    TyKind::Int(ity) => crate::backend::ty::sign_extend(
+                                        discr.val as i128,
+                                        ity.normalize(ctx.tcx.sess.target.pointer_width),
+                                    )
+                                    .to_string(),
+                                    _ => discr.val.to_string(),
+                                },
                                 Some(ty.clone()),
                             )),
                         )
