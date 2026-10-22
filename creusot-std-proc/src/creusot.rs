@@ -227,18 +227,6 @@ impl ContractSubject {
             Const(item) => item.ident.to_string(),
         }
     }
-
-    fn mark_unused(&mut self) {
-        if let ContractSubject::FnOrMethod(sig) = self {
-            for arg in sig.sig.inputs.iter_mut() {
-                let attrs = match arg {
-                    FnArg::Receiver(r) => &mut r.attrs,
-                    FnArg::Typed(r) => &mut r.attrs,
-                };
-                attrs.push(parse_quote! { #[allow(unused)]});
-            }
-        }
-    }
 }
 
 fn generate_unique_ident(prefix: &str, span: Span) -> Ident {
