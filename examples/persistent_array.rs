@@ -57,7 +57,7 @@ pub mod implementation {
             pearlite! {
                 // We indeed have the corresponding fragment of the invariant
                 self.frag.id() == self.inv@.public()
-                && self.frag@.lookup(*self.permcell@) != None
+                && self.frag@.lookup(*self.permcell) != None
                 && self.inv@.namespace() == PARRAY()
             }
         }
@@ -72,7 +72,7 @@ pub mod implementation {
         type ViewTy = Seq<T>;
         #[logic(inline)]
         fn view(self) -> Seq<T> {
-            pearlite! { self.frag@.lookup(*self.permcell@).unwrap_logic().0 }
+            pearlite! { self.frag@.lookup(*self.permcell).unwrap_logic().0 }
         }
     }
 
@@ -172,7 +172,7 @@ pub mod implementation {
                     proof_assert!(false)
                 }
                 pa.perms.insert(snapshot!(permcell), perm.into_inner());
-                pa.depth = snapshot!(pa.depth.set(permcell, pa.depth[*self.permcell@] + 1));
+                pa.depth = snapshot!(pa.depth.set(permcell, pa.depth[*self.permcell] + 1));
                 let mut frag = Fragment::new_unit(pa.auth.id());
                 pa.auth.update(&mut frag, FMapInsertLocalUpdate(snapshot!(permcell), new_ag));
                 frag
@@ -237,7 +237,7 @@ pub mod implementation {
             ghost! { pa.auth.frag_lemma(&self.frag) };
             Self::reroot(&self.permcell, ghost!(&mut *pa));
             proof_assert!(pa.protocol());
-            let perm = ghost!(&*pa.into_inner().perms.get(&snapshot!(*self.permcell@)).unwrap());
+            let perm = ghost!(&*pa.into_inner().perms.get(&snapshot!(*self.permcell)).unwrap());
             let Inner::Direct(arr) = (unsafe { self.permcell.borrow(perm) }) else {
                 unreachable!()
             };

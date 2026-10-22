@@ -11,10 +11,14 @@ module M_arc
   
   function view_Arc_i32_Global (self: t_Arc_i32_Global) : Int32.t
   
+  function deref_Arc_i32_Global [@inline:trivial] (self: t_Arc_i32_Global) : Int32.t = view_Arc_i32_Global self
+  
+  meta "rewrite_def" function deref_Arc_i32_Global
+  
   let new_i32 (data: Int32.t) (return (x: t_Arc_i32_Global)) = any
     [ return (result: t_Arc_i32_Global) ->
     {[@stop_split] [@expl:new_i32 ensures] ([@stop_split] [@expl:new result type invariant] inv_Arc_i32_Global result)
-      /\ ([@stop_split] [@expl:new ensures] view_Arc_i32_Global result = data)}
+      /\ ([@stop_split] [@expl:new ensures] deref_Arc_i32_Global result = data)}
       (! return {result}) ]
   
   predicate invariant_ref_Arc_i32_Global [@inline:trivial] (self: t_Arc_i32_Global) = inv_Arc_i32_Global self
@@ -28,7 +32,7 @@ module M_arc
   let as_ref_Arc_i32_Global (self: t_Arc_i32_Global) (return (x: Int32.t)) =
   {[@stop_split] [@expl:as_ref 'self' type invariant] inv_ref_Arc_i32_Global self}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:as_ref ensures] result = view_Arc_i32_Global self}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:as_ref ensures] result = deref_Arc_i32_Global self}
       (! return {result}) ]
   
   let clone_Arc_i32_Global (self: t_Arc_i32_Global) (return (x: t_Arc_i32_Global)) =
@@ -58,7 +62,7 @@ module M_arc
     any
     [ return (result: bool) -> {[@stop_split] [@expl:ptr_eq_i32 ensures] ([@stop_split] [@expl:ptr_eq ensures #0] result
         = (deep_model_ptr_i32 (as_ptr_Arc_i32_Global this) = deep_model_ptr_i32 (as_ptr_Arc_i32_Global other)))
-      /\ ([@stop_split] [@expl:ptr_eq ensures #1] result -> view_Arc_i32_Global this = view_Arc_i32_Global other)}
+      /\ ([@stop_split] [@expl:ptr_eq ensures #1] result -> this = other)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -113,10 +117,14 @@ module M_rc
   
   function view_Rc_i32_Global (self: t_Rc_i32_Global) : Int32.t
   
+  function deref_Rc_i32_Global [@inline:trivial] (self: t_Rc_i32_Global) : Int32.t = view_Rc_i32_Global self
+  
+  meta "rewrite_def" function deref_Rc_i32_Global
+  
   let new_i32 (value: Int32.t) (return (x: t_Rc_i32_Global)) = any
     [ return (result: t_Rc_i32_Global) ->
     {[@stop_split] [@expl:new_i32 ensures] ([@stop_split] [@expl:new result type invariant] inv_Rc_i32_Global result)
-      /\ ([@stop_split] [@expl:new ensures] view_Rc_i32_Global result = value)}
+      /\ ([@stop_split] [@expl:new ensures] deref_Rc_i32_Global result = value)}
       (! return {result}) ]
   
   predicate invariant_ref_Rc_i32_Global [@inline:trivial] (self: t_Rc_i32_Global) = inv_Rc_i32_Global self
@@ -130,7 +138,7 @@ module M_rc
   let as_ref_Rc_i32_Global (self: t_Rc_i32_Global) (return (x: Int32.t)) =
   {[@stop_split] [@expl:as_ref 'self' type invariant] inv_ref_Rc_i32_Global self}
     any
-    [ return (result: Int32.t) -> {[@stop_split] [@expl:as_ref ensures] result = view_Rc_i32_Global self}
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:as_ref ensures] result = deref_Rc_i32_Global self}
       (! return {result}) ]
   
   let clone_Rc_i32_Global (self: t_Rc_i32_Global) (return (x: t_Rc_i32_Global)) =
