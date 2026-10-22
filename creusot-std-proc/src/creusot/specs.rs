@@ -13,21 +13,19 @@ use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{
-    Attribute, Block, Expr, Ident, Item, Pat, Path, ReturnType, Stmt, Token, Type, parenthesized,
     parse::{self, Parse},
-    parse_macro_input, parse_quote,
     punctuated::Punctuated,
     spanned::Spanned as _,
     token::{self, Comma},
+    *,
 };
 
 pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
     const REQUIRES_LEN: usize = "#[requires(".len();
     let documentation = document_spec("requires", doc::LogicBody::term(REQUIRES_LEN, attr.clone()));
 
-    let mut item = parse_macro_input!(tokens as ContractSubject);
+    let item = parse_macro_input!(tokens as ContractSubject);
     let req_body = pretyping::encode_term(&parse_macro_input!(attr as Term));
-    item.mark_unused();
 
     let req_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
     let name_tag = req_name.to_string();
@@ -43,6 +41,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
             let mut companion = TokenStream::new();
             if let Some(b) = fn_or_meth.body.as_mut() {
+                mark_unused(&mut fn_or_meth.sig);
                 b.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens)));
             } else {
                 assert!(fn_or_meth.is_trait_signature());
@@ -138,7 +137,6 @@ fn ensures_inner(attr: TS1, tokens: TS1, has_logic_alias: Option<bool>) -> TS1 {
             (result, pretyping::encode_term_with_triggers(&term))
         }
     };
-    item.mark_unused();
 
     let ens_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
     let name_tag = ens_name.clone().to_string();
@@ -173,6 +171,7 @@ fn ensures_inner(attr: TS1, tokens: TS1, has_logic_alias: Option<bool>) -> TS1 {
 
             let mut companion = TokenStream::new();
             if let Some(b) = fn_or_meth.body.as_mut() {
+                mark_unused(&mut fn_or_meth.sig);
                 b.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens)));
             } else {
                 assert!(fn_or_meth.is_trait_signature());
@@ -381,6 +380,16 @@ pub fn variant(attr: TS1, tokens: TS1) -> TS1 {
     super::invariant::desugar_variant(attr.into(), tokens.into())
         .unwrap_or_else(|e| e.to_compile_error())
         .into()
+}
+
+fn mark_unused(sig: &mut Signature) {
+    for arg in sig.inputs.iter_mut() {
+        let attrs = match arg {
+            FnArg::Receiver(r) => &mut r.attrs,
+            FnArg::Typed(r) => &mut r.attrs,
+        };
+        attrs.push(parse_quote! { #[allow(unused)] });
+    }
 }
 
 /// A structure to parse some attributes followed by something else.
