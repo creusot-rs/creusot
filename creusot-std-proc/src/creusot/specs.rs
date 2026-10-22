@@ -98,7 +98,7 @@ fn ensures_inner(attr: TS1, tokens: TS1, has_logic_alias: Option<bool>) -> TS1 {
     let (result, ens_body) = match parse_macro_input!(attr as EnsuresTerm) {
         closure @ (EnsuresTerm::EnsuresClosure(..)
         | EnsuresTerm::TermWithTriggers(TermWithTriggers {
-            term: box Term::Closure(..),
+            term: Term::Closure(..),
             ..
         })) if matches!(item, ContractSubject::Closure(_)) => {
             return syn::Error::new(
@@ -113,7 +113,7 @@ fn ensures_inner(attr: TS1, tokens: TS1, has_logic_alias: Option<bool>) -> TS1 {
         }
         EnsuresTerm::TermWithTriggers(TermWithTriggers {
             trigger,
-            term: box Term::Closure(mut closure),
+            term: Term::Closure(mut closure),
         }) => {
             if closure.inputs.len() != 1 {
                 return syn::Error::new(
