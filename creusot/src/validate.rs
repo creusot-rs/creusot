@@ -56,6 +56,7 @@ pub(crate) fn is_ghost_or_snap(tcx: TyCtxt, ty: Ty) -> bool {
 }
 
 pub(crate) fn validate(ctx: &TranslationCtx) {
+    debug!("Validating...");
     for local_id in ctx.tcx.hir_body_owners() {
         let def_id = local_id.to_def_id();
         let (thir, expr) = ctx.thir_body(local_id);
