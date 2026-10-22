@@ -3,8 +3,8 @@ use crate::{
     ctx::TranslationCtx,
     naming::{lowercase_prefix, name},
     translation::pearlite::{
-        BinOp, Ident, Literal, PIdent, Pattern, PatternKind, QuantKind, Term, TermKind, TermSort,
-        TermWithTriggers, Trigger, UnOp,
+        BinOp, Ident, Literal, PIdent, Pattern, PatternKind, QuantKind, Substable, Term, TermKind,
+        TermSort, TermWithTriggers, Trigger, UnOp, visit::TermVisitor,
     },
 };
 use rustc_abi::{FieldIdx, VariantIdx};
@@ -28,6 +28,78 @@ use std::{
 };
 
 type Triggers<'tcx> = Box<[Trigger<'tcx>]>;
+
+#[derive(Copy, Clone)]
+enum TriggerError {
+    ForbiddenIdent { use_span: Span, forbidden_def: (Ident, Span) },
+    Match(Span),
+    Stmt(Span),
+}
+struct TriggerChecks<'a> {
+    forbidden_ident: &'a HashMap<Ident, Span>,
+    errors: Vec<TriggerError>,
+}
+
+impl<'a> TriggerChecks<'a> {
+    fn report_errors(&self, ctx: &TranslationCtx<'_>) -> Result<(), ErrorGuaranteed> {
+        if !self.errors.is_empty() {
+            for (idx, &err) in self.errors.iter().enumerate() {
+                let err = match err {
+                    TriggerError::ForbiddenIdent { use_span, forbidden_def: (ident, def_span) } => {
+                        let e = ctx.dcx().span_err(
+                            use_span,
+                            "Identifiers from struct and enum patterns are forbidden in triggers",
+                        );
+                        ctx.dcx().span_note(
+                            def_span,
+                            format!("`{}` defined here", ident.name().to_string()),
+                        );
+                        e
+                    }
+                    TriggerError::Match(span) => {
+                        ctx.dcx().span_err(span, "Match expressions are forbidden in triggers")
+                    }
+                    TriggerError::Stmt(span) => ctx.dcx().span_err(
+                        span,
+                        "Triggers can only be simple expressions with no preceding statements",
+                    ),
+                };
+                if idx + 1 == self.errors.len() {
+                    return Err(err);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn visit_triggers(&mut self, triggers: &[Trigger<'_>]) {
+        for trigger in triggers {
+            for term in &trigger.0 {
+                self.visit_term(term);
+            }
+        }
+    }
+}
+
+impl<'a, 'tcx> TermVisitor<'tcx> for TriggerChecks<'a> {
+    fn visit_term(&mut self, term: &Term<'tcx>) {
+        match &term.kind {
+            TermKind::Var(var) => {
+                if let Some(def_span) = self.forbidden_ident.get(&var.0) {
+                    self.errors.push(TriggerError::ForbiddenIdent {
+                        use_span: term.span,
+                        forbidden_def: (var.0, *def_span),
+                    })
+                }
+            }
+            TermKind::Match { .. } => self.errors.push(TriggerError::Match(term.span)),
+            TermKind::Let { .. } => self.errors.push(TriggerError::Stmt(term.span)),
+            _ => {}
+        }
+        super::visit::super_visit_term(term, self);
+    }
+}
 
 fn deref_mut_method() -> Symbol {
     Symbol::intern("deref_mut_method")
@@ -110,24 +182,60 @@ pub(crate) fn from_thir<'tcx>(
         Other => [].into(),
     };
 
-    let (triggers, body) = lower.body_term(expr)?;
-    let term = patterns
-        .into_iter()
-        .rev()
-        .fold(body, |body: Term<'tcx>, (ident, pattern)| {
-            use PatternKind::*;
-            match pattern.kind {
-                Binder(v, box Pattern { kind: Wildcard, .. }) if v.0 == ident => body,
-                Wildcard | Tuple(box []) => body,
-                _ => {
-                    let span = body.span;
-                    let ty = pattern.ty;
-                    Term::let_(pattern, Term::var(ident, ty), body, span)
-                }
+    struct PatIdentCollector<'a> {
+        pat_idents: &'a mut HashMap<Ident, Span>,
+    }
+    impl<'a, 'tcx> TermVisitor<'tcx> for PatIdentCollector<'a> {
+        fn visit_pattern(&mut self, pat: &Pattern<'tcx>) {
+            if let PatternKind::Binder(pat_ident, ..) = &pat.kind {
+                self.pat_idents.insert(pat_ident.0, pat.span);
             }
-        })
-        .into();
-    Ok(TermWithTriggers { term, triggers })
+            super::visit::super_visit_pattern(pat, self);
+        }
+    }
+
+    let (mut triggers, body) = lower.body_term(expr)?;
+
+    let mut subst = HashMap::new();
+    let mut bad_subst = HashMap::new();
+
+    for (ident, pattern) in patterns.iter().rev() {
+        let mut pattern = pattern;
+        while let PatternKind::Binder(pat_ident, subpat) = &pattern.kind {
+            if pat_ident.0 != *ident {
+                subst.insert(pat_ident.0, TermKind::Var(PIdent(*ident)));
+            }
+
+            pattern = subpat;
+        }
+        PatIdentCollector { pat_idents: &mut bad_subst }.visit_pattern(pattern);
+    }
+
+    if !subst.is_empty() {
+        for trigger in &mut triggers {
+            for term in &mut trigger.0 {
+                term.subst_mut(&subst);
+            }
+        }
+    }
+
+    let mut checker = TriggerChecks { forbidden_ident: &bad_subst, errors: Vec::new() };
+    checker.visit_triggers(&triggers);
+    checker.report_errors(ctx)?;
+
+    let term = patterns.into_iter().rev().fold(body, |body: Term<'tcx>, (ident, pattern)| {
+        use PatternKind::*;
+        match pattern.kind {
+            Binder(v, box Pattern { kind: Wildcard, .. }) if v.0 == ident => body,
+            Wildcard | Tuple(box []) => body,
+            _ => {
+                let ty = pattern.ty;
+                let span = body.span;
+                Term::let_(pattern, Term::var(ident, ty), body, span)
+            }
+        }
+    });
+    Ok(TermWithTriggers { term: Box::new(term), triggers })
 }
 
 struct ThirTerm<'a, 'tcx> {

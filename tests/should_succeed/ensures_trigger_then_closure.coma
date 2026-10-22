@@ -1,0 +1,42 @@
+module M_pair
+  use creusot.int.UInt32
+  
+  type tup2_u32_u32 = { f0: UInt32.t; f1: UInt32.t }
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : UInt32.t
+  
+  function pair (x: UInt32.t) : tup2_u32_u32
+  
+  goal vc_pair: x <> (0: UInt32.t)
+    -> x <> (1: UInt32.t)
+    -> ([@stop_split] [@expl:pair ensures] let {f0 = a; f1 = b} as result = { f0 = x; f1 = x } in a = b)
+end
+module M_use_pair
+  use creusot.int.UInt32
+  
+  type tup2_u32_u32 = { f0: UInt32.t; f1: UInt32.t }
+  
+  function pair (x: UInt32.t) : tup2_u32_u32 = { f0 = x; f1 = x }
+  
+  axiom pair_spec: forall x: UInt32.t [pair x]. x <> (0: UInt32.t)
+      -> x <> (1: UInt32.t) -> (let {f0 = a; f1 = b} as result = pair x in a = b)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : UInt32.t
+  
+  function use_pair (x: UInt32.t) : tup2_u32_u32
+  
+  goal vc_use_pair: x <> (0: UInt32.t)
+    -> x <> (1: UInt32.t)
+    -> ([@stop_split] [@expl:pair requires] ([@stop_split] [@expl:pair requires #0] x <> (0: UInt32.t))
+      /\ ([@stop_split] [@expl:pair requires #1] x <> (1: UInt32.t)))
+    /\ (([@stop_split] [@expl:pair ensures] let {f0 = a; f1 = b} as result = pair x in a = b)
+    -> (let result = pair x in [@stop_split] [@expl:use_pair ensures] result.f0 = result.f1))
+end

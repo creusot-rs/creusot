@@ -8,7 +8,7 @@ use crate::{
         pretyping,
     },
 };
-use pearlite_syn::{EnsuresTerm, Term, TermPath};
+use pearlite_syn::{EnsuresTerm, Term, TermPath, TermWithTriggers};
 use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned};
@@ -96,16 +96,42 @@ fn ensures_inner(attr: TS1, tokens: TS1, has_logic_alias: Option<bool>) -> TS1 {
 
     let mut item = parse_macro_input!(tokens as ContractSubject);
     let (result, ens_body) = match parse_macro_input!(attr as EnsuresTerm) {
+        closure @ (EnsuresTerm::EnsuresClosure(..)
+        | EnsuresTerm::TermWithTriggers(TermWithTriggers {
+            term: box Term::Closure(..),
+            ..
+        })) if matches!(item, ContractSubject::Closure(_)) => {
+            return syn::Error::new(
+                closure.span(),
+                "The syntax #[ensures(|res| ...)] is not supported for specifying closures.",
+            )
+            .into_compile_error()
+            .into();
+        }
         EnsuresTerm::EnsuresClosure(closure) => {
-            if matches!(item, ContractSubject::Closure(_)) {
+            (closure.result, pretyping::encode_term_with_triggers(&closure.body))
+        }
+        EnsuresTerm::TermWithTriggers(TermWithTriggers {
+            trigger,
+            term: box Term::Closure(mut closure),
+        }) => {
+            if closure.inputs.len() != 1 {
                 return syn::Error::new(
                     closure.span(),
-                    "The syntax #[ensures(|res| ...)] is not supported for specifying closures.",
+                    "The syntax #[ensures(|res| ...)] requires \
+                    a closure with a single input and an implicit `bool` output.",
                 )
                 .into_compile_error()
                 .into();
             }
-            (closure.result, pretyping::encode_term_with_triggers(&closure.body))
+            let result = closure.inputs.pop().unwrap().into_value();
+            (
+                result,
+                pretyping::encode_term_with_triggers(&TermWithTriggers {
+                    trigger,
+                    term: closure.body,
+                }),
+            )
         }
         EnsuresTerm::TermWithTriggers(term) => {
             let result = ident_to_pat(Ident::new("result", Span::call_site()));
