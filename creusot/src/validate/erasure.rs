@@ -45,6 +45,7 @@ use crate::{
 // * Top-level implementation
 
 pub(crate) fn validate_erasures(ctx: &TranslationCtx) {
+    debug!("Erasure check...");
     // Only do the erasure check for the primary package
     // to minimize the number of THIR bodies stored by dependencies
     if !ctx.opts.should_output || ctx.opts.erasure_check.is_no() {

@@ -85,6 +85,7 @@ pub(crate) type RecursiveCalls = IndexMap<DefId, IndexSet<DefId>>;
 /// which the variant should have decreased.
 #[must_use]
 pub(crate) fn validate_terminates(ctx: &TranslationCtx) -> RecursiveCalls {
+    debug!("Validating termination...");
     // Check for ghost loops
     for local_id in ctx.hir_body_owners() {
         let def_id = local_id.to_def_id();
@@ -530,6 +531,7 @@ impl CallGraph {
             {
                 continue;
             }
+            trace!("entering {}", ctx.def_path_str(def_id));
 
             let contract = &ctx.sig(def_id).contract;
             let terminates = contract.purity.is_terminates();
