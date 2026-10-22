@@ -20,7 +20,7 @@ use crate::{
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{PlaceTy, ProjectionElem},
-    ty::{EarlyBinder, Ty, TyCtxt, TyKind},
+    ty::{self, EarlyBinder, Ty, TyCtxt, TyKind},
 };
 use rustc_span::Span;
 use std::{cell::Cell, collections::HashMap, iter::repeat_n};
@@ -143,8 +143,25 @@ impl<'tcx, N: Namer<'tcx>> VCGen<'_, 'tcx, N> {
                             PtrCastKind::Unknown => unsupported_cast(self.ctx, t.span, argty, t.ty),
                         }
                     }
+                    TyKind::Adt(..) => {
+                        self.build_wp(arg, &|arg| {
+                            let discr = self.names.discriminant(argty);
+                            let discr_ty = self.ctx.normalize_erasing_regions(
+                                self.names.typing_env(),
+                                ty::Unnormalized::new(argty.discriminant_ty(self.ctx.tcx)),
+                            );
+                            k(cast_int(self.names, discr_ty, t.ty, Exp::Call(Box::new(Exp::var(discr)), Box::new([arg]))))
+                        })
+                    }
                     _ => unsupported_cast(self.ctx, t.span, argty, t.ty),
             }},
+            TermKind::Discriminant { arg } => {
+                let argty = arg.ty;
+                self.build_wp(arg, &|arg| {
+                    let discr = self.names.discriminant(argty);
+                    k(Exp::Call(Box::new(Exp::var(discr)), Box::new([arg])))
+                })
+            },
             TermKind::Coerce { arg } => self.build_wp(arg, k),
             // Items are just global names so
             // VC(i, Q) = Q(i)
