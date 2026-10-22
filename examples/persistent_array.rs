@@ -56,9 +56,9 @@ pub mod implementation {
         fn invariant(self) -> bool {
             pearlite! {
                 // We indeed have the corresponding fragment of the invariant
-                self.frag.id() == self.inv@.public()
+                self.frag.id() == self.inv.public()
                 && self.frag@.lookup(*self.permcell) != None
-                && self.inv@.namespace() == PARRAY()
+                && self.inv.namespace() == PARRAY()
             }
         }
     }
