@@ -29,6 +29,7 @@ pub(crate) enum Dependency<'tcx> {
     PrivateFields(DefId, GenericArgsRef<'tcx>),
     PrivateResolve(DefId, GenericArgsRef<'tcx>),
     PrivateTyInv(DefId, GenericArgsRef<'tcx>),
+    Discriminant(Ty<'tcx>),
 }
 
 impl<'tcx> Dependency<'tcx> {
@@ -123,6 +124,9 @@ impl<'tcx> Dependency<'tcx> {
                 type_string(ctx.tcx, String::new(), target) + "_of",
                 source,
             ))),
+            Dependency::Discriminant(ty) => {
+                Some(Symbol::intern(&type_string(ctx.tcx, "discriminant".to_string(), ty)))
+            }
             Dependency::PreMod(_) => None,
             Dependency::PrivateResolve(..) => Some(Symbol::intern("resolve__private")),
             Dependency::PrivateTyInv(..) => Some(Symbol::intern("inv__private")),

@@ -118,6 +118,7 @@ pub enum RValue<'tcx> {
     Array(Box<[Operand<'tcx>]>),
     Repeat(Operand<'tcx>, Operand<'tcx>),
     Ptr(Place<'tcx>),
+    Discriminant(Place<'tcx>),
 }
 
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
@@ -590,6 +591,7 @@ pub(crate) fn super_visit_rvalue<'tcx, V: FmirVisitor<'tcx>>(visitor: &mut V, rv
             visitor.visit_operand(op2);
         }
         RValue::Ptr(pl) => visitor.visit_place(pl),
+        RValue::Discriminant(pl) => visitor.visit_place(pl),
     }
 }
 
@@ -727,5 +729,6 @@ pub(crate) fn super_visit_mut_rvalue<'tcx, V: FmirVisitorMut<'tcx>>(
             visitor.visit_mut_operand(op2);
         }
         RValue::Ptr(pl) => visitor.visit_mut_place(pl),
+        RValue::Discriminant(pl) => visitor.visit_mut_place(pl),
     }
 }
