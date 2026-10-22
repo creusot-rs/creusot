@@ -47,6 +47,7 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
                 assert!(fn_or_meth.is_trait_signature());
                 let mut sig = fn_or_meth.sig.clone();
                 sig.ident = req_name.clone();
+                mark_unused(&mut sig);
                 // Make sure the spec method has a prototype which is very similar to the original one,
                 // To guarantee that they have the same ParamEnv
                 // (in particular, they have the same early/late bound variables)
@@ -93,7 +94,7 @@ fn ensures_inner(attr: TS1, tokens: TS1, has_logic_alias: Option<bool>) -> TS1 {
     const ENSURES_LEN: usize = "#[ensures(".len();
     let documentation = document_spec("ensures", doc::LogicBody::term(ENSURES_LEN, attr.clone()));
 
-    let mut item = parse_macro_input!(tokens as ContractSubject);
+    let item = parse_macro_input!(tokens as ContractSubject);
     let (result, ens_body) = match parse_macro_input!(attr as EnsuresTerm) {
         closure @ (EnsuresTerm::EnsuresClosure(..)
         | EnsuresTerm::TermWithTriggers(TermWithTriggers {
@@ -177,6 +178,7 @@ fn ensures_inner(attr: TS1, tokens: TS1, has_logic_alias: Option<bool>) -> TS1 {
                 assert!(fn_or_meth.is_trait_signature());
                 let mut sig = fn_or_meth.sig.clone();
                 sig.ident = ens_name;
+                mark_unused(&mut sig);
                 // Make sure the spec method has a prototype which is very similar to the original one,
                 // To guarantee that they have the same ParamEnv
                 // (in particular, they have the same early/late bound variables)
