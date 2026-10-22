@@ -17,8 +17,8 @@ impl Invariant for S {
 }
 
 pub fn test2() {
-    let v = vec![S(0)];
-    let b = !v.is_empty();
+    let mut v = vec![S(0)];
+    let b = v.pop_if(|_| true).is_some();
     proof_assert! { b };
 }
 

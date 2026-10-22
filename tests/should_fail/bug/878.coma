@@ -53,6 +53,7 @@ module M_test2
   use creusot.slice.Slice64
   use seq.Seq
   use creusot.int.UInt64
+  use creusot.prelude.MutBorrow
   use creusot.prelude.Any
   use int.Int
   
@@ -120,6 +121,8 @@ module M_test2
       /\ ([@stop_split] [@expl:into_vec ensures] view_Vec_S_Global result = view_Box_slice_S_Global self)}
       (! return {result}) ]
   
+  type t_Option_S = None | Some t_S
+  
   meta "compute_max_steps" 1000000
   
   meta "select_lsinst" "all"
@@ -132,14 +135,19 @@ module M_test2
           /\ Seq.length __arr_temp.Slice64.elts = 1}-
           [ &_4 <- __arr_temp ] s2) ]
       | s2 = into_vec_S {_4} (fun (_x: t_Vec_S_Global) -> [ &v <- _x ] s3)
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_Vec_S_Global v} any) ]
+      | s3 = MutBorrow.borrow_mut <t_Vec_S_Global> {v}
+          (fun (_bor: MutBorrow.t t_Vec_S_Global) ->
+            [ &_9 <- _bor ] -{inv_Vec_S_Global _bor.final}-
+            [ &v <- _bor.final ] s4) [ _ck -> (! {[@expl:type invariant] inv_Vec_S_Global v} any) ]
       | s4 = {false} any ] ]
     [ & _ret: () = Any.any_l ()
     | & v: t_Vec_S_Global = Any.any_l ()
     | & _4: Slice64.array t_S = Any.any_l ()
     | & _5: t_S = Any.any_l ()
     | & b: bool = Any.any_l ()
-    | & _7: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _7: t_Option_S = Any.any_l ()
+    | & _8: t_Option_S = Any.any_l ()
+    | & _9: MutBorrow.t t_Vec_S_Global = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
 module M_test3
   use creusot.int.UInt32
