@@ -26,12 +26,16 @@ meta "rewrite_def" predicate inv_ref_T
 
 function view_Rc_T_A (self: t_Rc_T_A) : t_T
 
+function deref_Rc_T_A [@inline:trivial] (self: t_Rc_T_A) : t_T = view_Rc_T_A self
+
+meta "rewrite_def" function deref_Rc_T_A
+
 let as_ref_Rc_T_A (self: t_Rc_T_A) (return (x: t_T)) =
 {[@stop_split] [@expl:as_ref 'self' type invariant] inv_ref_Rc_T_A self}
   any
   [ return (result: t_T) ->
   {[@stop_split] [@expl:as_ref_Rc_T_A ensures] ([@stop_split] [@expl:as_ref result type invariant] inv_ref_T result)
-    /\ ([@stop_split] [@expl:as_ref ensures] result = view_Rc_T_A self)}
+    /\ ([@stop_split] [@expl:as_ref ensures] result = deref_Rc_T_A self)}
     (! return {result}) ]
 
 meta "compute_max_steps" 1000000
@@ -46,5 +50,5 @@ let extern_spec_T_A_Deref_Rc_T_A_deref_body_T (self_: t_Rc_T_A) (return (x: t_T)
   [ & _ret: t_T = Any.any_l () | & self_: t_Rc_T_A = self_ | & _4: t_T = Any.any_l () ])
   [ return (result: t_T) ->
   {[@stop_split] [@expl:extern_spec_T_A_Deref_Rc_T_A_deref_body_T ensures] ([@stop_split] [@expl:extern_spec_T_A_Deref_Rc_T_A_deref_body result type invariant] inv_ref_T result)
-    /\ ([@stop_split] [@expl:extern_spec_T_A_Deref_Rc_T_A_deref_body ensures] result = view_Rc_T_A self_)}
+    /\ ([@stop_split] [@expl:extern_spec_T_A_Deref_Rc_T_A_deref_body ensures] result = deref_Rc_T_A self_)}
     (! return {result}) ]
