@@ -6369,6 +6369,7 @@ module M_impl_Tree_K_V_3__height (* Tree<K, V> *)
       end
 end
 module M_impl_Tree_K_V_5__is_red (* Tree<K, V> *)
+  use creusot.int.Int64
   use creusot.prelude.Any
   
   type t_Color = Red | Black
@@ -6380,6 +6381,11 @@ module M_impl_Tree_K_V_5__is_red (* Tree<K, V> *)
   type t_Tree_K_V = { node: t_Option_Box_Node_K_V_Global }
   with t_Node_K_V = { left: t_Tree_K_V; color: t_Color; key: t_K; val': t_V; right: t_Tree_K_V }
   with t_Option_Box_Node_K_V_Global = None | Some t_Node_K_V
+  
+  function discriminant_Color (x: t_Color) : Int64.t = match x with
+      | Red -> (0: Int64.t)
+      | Black -> (1: Int64.t)
+      end
   
   let elim_Some (_x: t_Option_Box_Node_K_V_Global) (return (f0: t_Node_K_V)) = any
     [ _k (f0: t_Node_K_V) -> {Some f0 = _x} (! return {f0})
@@ -6439,11 +6445,13 @@ module M_impl_Tree_K_V_5__is_red (* Tree<K, V> *)
   {[@stop_split] [@expl:is_red 'self' type invariant] inv_ref_Tree_K_V self}
     (! bb0
     [ bb0 = any [ br0 -> {self.node = None} (! bb1) | br1 (x0: t_Node_K_V) -> {self.node = Some x0} (! bb2) ]
-    | bb2 = elim_Some {self.node}
-        (fun (r0: t_Node_K_V) -> any [ br0 -> {r0.color = Red} (! bb4) | br1 -> {r0.color = Black} (! bb1) ])
+    | bb2 = s0
+      [ s0 = elim_Some {self.node} (fun (r0: t_Node_K_V) -> [ &_4 <- discriminant_Color r0.color ] s1)
+      | s1 = elim_Some {self.node}
+          (fun (r0: t_Node_K_V) -> any [ br0 -> {r0.color = Red} (! bb4) | br1 -> {r0.color = Black} (! bb1) ]) ]
     | bb1 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
     | bb4 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
-    [ & _ret: bool = Any.any_l () | & self: t_Tree_K_V = self ])
+    [ & _ret: bool = Any.any_l () | & self: t_Tree_K_V = self | & _4: Int64.t = Any.any_l () ])
     [ return (result: bool) -> {[@stop_split] [@expl:is_red ensures] result = (color_K self = Red)}
       (! return {result}) ]
 end

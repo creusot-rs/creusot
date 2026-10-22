@@ -27,6 +27,7 @@ use crate::{
         specification::Condition,
     },
 };
+use rustc_abi::Size;
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{
@@ -738,7 +739,18 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                                 ),
                             ),
                             Exp::Const(why3::exp::Constant::IntDigits10(
-                                discr.val.to_string(),
+                                match *discr.ty.kind() {
+                                    TyKind::Int(ity) => {
+                                        let size = Size::from_bits(
+                                            ity.normalize(ctx.sess.target.pointer_width)
+                                                .bit_width()
+                                                .unwrap(),
+                                        );
+                                        let bits = size.sign_extend(discr.val);
+                                        bits.to_string()
+                                    }
+                                    _ => discr.val.to_string(),
+                                },
                                 Some(ty.clone()),
                             )),
                         )
