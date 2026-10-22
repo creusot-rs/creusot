@@ -12,6 +12,7 @@ use rustc_span::Span;
 use std::collections::{HashMap, HashSet};
 
 pub fn validate_recursive_types(ctx: &TranslationCtx) {
+    debug!("Validating recursive types...");
     let graph = build_type_graph(ctx);
     let mut positivity = StrictPositivity::new();
 

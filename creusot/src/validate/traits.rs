@@ -11,6 +11,7 @@ use rustc_span::sym;
 ///
 /// This is because laws are auto-loaded, and we do not want to generate polymorphic WhyML code.
 pub(crate) fn validate_traits(ctx: &TranslationCtx) {
+    debug!("Validating traits...");
     let mut law_violations = Vec::new();
 
     for trait_item_id in ctx.hir_crate_items(()).trait_items() {
@@ -50,6 +51,7 @@ pub(crate) fn validate_traits(ctx: &TranslationCtx) {
 /// Also validates that the impls has the needed additional predicates, it the trait item has an
 /// extern spec.
 pub(crate) fn validate_impls<'tcx>(ctx: &TranslationCtx<'tcx>) {
+    debug!("Validating impls...");
     for impl_id in ctx.all_local_trait_impls(()).values().flat_map(|i| i.iter()) {
         if !matches!(ctx.def_kind(*impl_id), DefKind::Impl { .. }) {
             continue;
