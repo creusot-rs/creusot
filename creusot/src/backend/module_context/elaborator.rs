@@ -7,7 +7,7 @@ use crate::{
         program,
         resolve::{ResolveDef, elaborate_resolve_def, structural_resolve},
         signature::{LogicSignature, lower_logic_sig, lower_program_sig},
-        term::{lower_pure, lower_pure_weakdep},
+        term::{lower_pat, lower_pure, lower_pure_weakdep},
         ty::{
             constructor, eliminator, translate_adtdecl, translate_closure_ty, translate_tuple_ty,
             translate_ty,
@@ -21,8 +21,8 @@ use crate::{
     translation::{
         constant::try_const_to_term,
         pearlite::{
-            BinOp, PIdent, Pattern, QuantKind, Substable as _, Term, TermWithTriggers, Trigger,
-            normalize,
+            BinOp, PIdent, Pattern, QuantKind, Substable as _, Term, TermKind, TermWithTriggers,
+            Trigger, normalize,
         },
         specification::Condition,
     },
@@ -43,7 +43,8 @@ use why3::{
     Exp, Ident, Name,
     coma::{Defn, Expr, Param, Prototype},
     declaration::{
-        Axiom, Decl, DeclKind, LogicDecl, Meta, MetaArg, MetaIdent, Signature, TyDecl, Use,
+        Axiom, Decl, DeclKind, LogicDecl, LogicDefn, Meta, MetaArg, MetaIdent, Signature, TyDecl,
+        Use,
     },
     ty::Type,
 };
@@ -693,6 +694,89 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         vec![Decl::LogicDecl(LogicDecl { kind: Some(DeclKind::Function), sig })]
     }
 
+    fn expand_discriminant(&mut self, source: Ty<'tcx>) -> Vec<Decl> {
+        let dep = Dependency::Discriminant(source);
+        let ctx = self.ctx;
+        let typing_env = self.typing_env;
+        let names = self.namer(dep);
+        let name = names.dependency(dep).ident();
+        let arg = (Ident::fresh_local("x"), translate_ty(ctx, &names, DUMMY_SP, source));
+        let ty = translate_ty(
+            ctx,
+            &names,
+            DUMMY_SP,
+            ctx.normalize_erasing_regions(
+                typing_env,
+                ty::Unnormalized::new(source.discriminant_ty(ctx.tcx)),
+            ),
+        );
+        let sig =
+            Signature { name, attrs: vec![], retty: Some(ty.clone()), args: [arg.clone()].into() };
+
+        match *source.kind() {
+            TyKind::Adt(def, args) => Vec::from_iter([Decl::LogicDefn(LogicDefn {
+                sig,
+                body: Exp::match_(Exp::var(arg.0), {
+                    def.variants().iter_enumerated().map(|(variant_idx, variant_def)| {
+                        let discr = source.discriminant_for_variant(ctx.tcx, variant_idx).unwrap();
+                        (
+                            lower_pat(
+                                ctx,
+                                &names,
+                                &Pattern::constructor(
+                                    variant_idx,
+                                    variant_def.fields.iter_enumerated().map(|(f, field_def)| {
+                                        (
+                                            f,
+                                            Pattern::wildcard(ctx.normalize_erasing_regions(
+                                                typing_env,
+                                                field_def.ty(ctx.tcx, args),
+                                            )),
+                                        )
+                                    }),
+                                    source,
+                                ),
+                            ),
+                            Exp::Const(why3::exp::Constant::IntDigits10(
+                                discr.val.to_string(),
+                                Some(ty.clone()),
+                            )),
+                        )
+                    })
+                }),
+            })]),
+
+            TyKind::Bool
+            | TyKind::Char
+            | TyKind::Int { .. }
+            | TyKind::Uint { .. }
+            | TyKind::Float { .. }
+            | TyKind::Foreign { .. }
+            | TyKind::Str { .. }
+            | TyKind::Array { .. }
+            | TyKind::Pat { .. }
+            | TyKind::Slice { .. }
+            | TyKind::RawPtr { .. }
+            | TyKind::Ref { .. }
+            | TyKind::FnDef { .. }
+            | TyKind::FnPtr { .. }
+            | TyKind::UnsafeBinder { .. }
+            | TyKind::Dynamic { .. }
+            | TyKind::Closure { .. }
+            | TyKind::Never { .. }
+            | TyKind::Tuple { .. } => Vec::from_iter([Decl::LogicDefn(LogicDefn {
+                sig,
+                body: Exp::Const(why3::exp::Constant::IntDigits10(
+                    "0".to_string(),
+                    Some(ty.clone()),
+                )),
+            })]),
+            _ => {
+                Vec::from_iter([Decl::LogicDecl(LogicDecl { sig, kind: Some(DeclKind::Function) })])
+            }
+        }
+    }
+
     /// # Parameters
     ///
     /// `span`: span of the item being expanded
@@ -757,6 +841,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 vec![eliminator(ctx, &self.namer(dep), def_id, subst)]
             }
             Dependency::DynCast(source, target) => self.expand_dyn_cast(source, target),
+            Dependency::Discriminant(source) => self.expand_discriminant(source),
             Dependency::PrivateResolve(def_id, subst) | Dependency::PrivateTyInv(def_id, subst) => {
                 let namer = self.namer(dep);
                 let sig = Signature {
@@ -1258,6 +1343,26 @@ fn size_of_logic_term<'tcx>(
     }
 }
 
+/// std::intrinsics::discriminant_value
+fn discriminant_value_logic_term<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    inputs: &[(PIdent, Span, Ty<'tcx>)],
+) -> Option<Term<'tcx>> {
+    let &[(arg, span, ty)] = inputs else { panic!() };
+
+    Some(Term {
+        ty: ctx.normalize_erasing_regions(
+            typing_env,
+            ty::Unnormalized::new(ty.discriminant_ty(ctx.tcx)),
+        ),
+        kind: TermKind::Discriminant {
+            arg: Box::new(Term { ty, kind: TermKind::Var(arg), span: span }),
+        },
+        span: span,
+    })
+}
+
 fn size_of_array<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
@@ -1428,6 +1533,7 @@ fn term<'tcx>(
         Intrinsic::Postcondition => postcondition_term(ctx, names, subst, inputs),
         Intrinsic::Precondition => precondition_term(ctx, names, subst, inputs),
         Intrinsic::HistInv => fn_mut_hist_inv_term(ctx, typing_env, subst, inputs),
+        Intrinsic::DiscriminantValueLogic => discriminant_value_logic_term(ctx, typing_env, inputs),
         Intrinsic::SizeOfLogic => size_of_logic_term(ctx, typing_env, def_id, subst.type_at(0)),
         Intrinsic::SizeOfValLogic => size_of_val_logic_term(ctx, names, subst, inputs),
         Intrinsic::AlignOfLogic => align_of_logic_term(ctx, typing_env, def_id, subst.type_at(0)),

@@ -21,6 +21,10 @@ extern_spec! {
                 }
             }
 
+            #[check(ghost)]
+            #[ensures(result == discriminant_value_logic(*v))]
+            fn discriminant_value<T>(v: &T) -> <T as core::marker::DiscriminantKind>::Discriminant;
+
             // This intrinsic is used by the constant `SizedTypeProperties::SIZE`
             #[check(terminates)]
             #[ensures(result@ == size_of_logic::<T>())]
@@ -34,4 +38,10 @@ extern_spec! {
             fn align_of<T>() -> usize;
         }
     }
+}
+
+#[logic(open, inline)]
+#[intrinsic("discriminant_value_logic")]
+pub fn discriminant_value_logic<T>(_: T) -> <T as core::marker::DiscriminantKind>::Discriminant {
+    dead
 }

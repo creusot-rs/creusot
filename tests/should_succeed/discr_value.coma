@@ -1,0 +1,119 @@
+module M_logic
+  use creusot.int.UInt32
+  use creusot.int.Int64
+  
+  type t_Foo = A | B | C | D
+  
+  function discr [@inline:trivial] (self: t_Foo) : int = match self with
+      | A -> 0
+      | B -> 3
+      | C -> 4
+      | D -> 10
+      end
+  
+  meta "rewrite_def" function discr
+  
+  function discriminant_Foo (x: t_Foo) : Int64.t = match x with
+      | A -> (0: Int64.t)
+      | B -> (3: Int64.t)
+      | C -> (4: Int64.t)
+      | D -> (10: Int64.t)
+      end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant f : t_Foo
+  
+  function logic (f: t_Foo) : UInt32.t
+  
+  goal vc_logic: [@stop_split] [@expl:logic ensures] UInt32.t'int (UInt32.of_int (Int64.to_int (discriminant_Foo f)))
+    = discr f
+end
+module M_program
+  use creusot.int.Int64
+  use creusot.int.UInt32
+  use creusot.prelude.Any
+  
+  type t_Foo = A | B | C | D
+  
+  function discriminant_Foo (x: t_Foo) : Int64.t = match x with
+      | A -> (0: Int64.t)
+      | B -> (3: Int64.t)
+      | C -> (4: Int64.t)
+      | D -> (10: Int64.t)
+      end
+  
+  function discr [@inline:trivial] (self: t_Foo) : int = match self with
+      | A -> 0
+      | B -> 3
+      | C -> 4
+      | D -> 10
+      end
+  
+  meta "rewrite_def" function discr
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let program (f: t_Foo) (return (x: UInt32.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_4 <- f ] s1
+      | s1 = [ &_5 <- discriminant_Foo _4 ] s2
+      | s2 = [ &_ret <- UInt32.of_int (Int64.to_int _5) ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: UInt32.t = Any.any_l () | & f: t_Foo = f | & _4: t_Foo = Any.any_l () | & _5: Int64.t = Any.any_l () ])
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:program ensures] UInt32.t'int result = discr f}
+      (! return {result}) ]
+end
+module M_use_intrinsic
+  use creusot.prelude.Any
+  
+  type t_T
+  
+  type t_Discriminant
+  
+  predicate inv_T (_1: t_T)
+  
+  predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+  
+  meta "rewrite_def" predicate invariant_ref_T
+  
+  predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+  
+  meta "rewrite_def" predicate inv_ref_T
+  
+  predicate inv_Discriminant (_1: t_Discriminant)
+  
+  type t_Discriminant'0
+  
+  function discriminant_T (x: t_T) : t_Discriminant
+  
+  function discriminant_value_T [@inline:trivial] (_1: t_T) : t_Discriminant = discriminant_T _1
+  
+  meta "rewrite_def" function discriminant_value_T
+  
+  let discriminant_value_T'0 (v: t_T) (return (x: t_Discriminant)) =
+  {[@stop_split] [@expl:discriminant_value 'v' type invariant] inv_ref_T v}
+    any
+    [ return (result: t_Discriminant) ->
+    {[@stop_split] [@expl:discriminant_value_T ensures] ([@stop_split] [@expl:discriminant_value result type invariant] inv_Discriminant result)
+      /\ ([@stop_split] [@expl:discriminant_value ensures] result = discriminant_value_T v)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let use_intrinsic_T (v: t_T) (return (x: t_Discriminant)) =
+  {[@stop_split] [@expl:use_intrinsic 'v' type invariant] inv_ref_T v}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = discriminant_value_T'0 {v} (fun (_x: t_Discriminant) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: t_Discriminant = Any.any_l () | & v: t_T = v ])
+    [ return (result: t_Discriminant) ->
+    {[@stop_split] [@expl:use_intrinsic result type invariant] inv_Discriminant result}
+      (! return {result}) ]
+end

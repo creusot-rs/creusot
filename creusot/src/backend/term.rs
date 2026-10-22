@@ -212,8 +212,26 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                             }
                         }
                     }
+                    TyKind::Adt(..) => {
+                        let discr = self.names.discriminant(argty);
+                        cast_int(
+                            self.names,
+                            self.ctx.normalize_erasing_regions(
+                                self.names.typing_env(),
+                                ty::Unnormalized::new(argty.discriminant_ty(self.ctx.tcx)),
+                            ),
+                            term.ty,
+                            Exp::Call(Box::new(Exp::var(discr)), Box::new([arg])),
+                        )
+                    }
                     _ => unsupported_cast(self.ctx, term.span, argty, term.ty),
                 }
+            }
+            TermKind::Discriminant { arg } => {
+                let argty = arg.ty;
+                let arg = self.lower_term(arg);
+                let discr = self.names.discriminant(argty);
+                Exp::Call(Box::new(Exp::var(discr)), Box::new([arg]))
             }
             TermKind::Coerce { arg } => self.lower_term(arg),
             &TermKind::ConstItem { id, subst } => Exp::Var(self.names.item(id, subst)),
