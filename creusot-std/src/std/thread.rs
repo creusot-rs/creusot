@@ -120,7 +120,7 @@ impl<'scope, 'env, 'a, F: for<'scope2> FnOnce(&Scope<'scope2, 'env>) -> T, T>
 {
     type Output = T;
     #[trusted]
-    extern "rust-call" fn call_once(self, args: (&'scope ::std::thread::Scope,)) -> T {
+    extern "rust-call" fn call_once(self, _args: (&'scope ::std::thread::Scope,)) -> T {
         todo!() // self.0(args.0)
     }
 }
@@ -130,7 +130,7 @@ impl<'scope, F: FnOnce(Ghost<Tokens>) -> T + 'scope, T> FnOnce<()> for ErasedSco
     type Output = T;
 
     #[trusted]
-    extern "rust-call" fn call_once(self, args: ()) -> T {
+    extern "rust-call" fn call_once(self, _args: ()) -> T {
         todo!() // self.0(args.0)
     }
 }
