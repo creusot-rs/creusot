@@ -45,7 +45,10 @@
 //!
 //! 7. [`prelude`][mod@prelude]: What you should import before doing anything with Creusot
 #![cfg_attr(feature = "nightly", allow(incomplete_features, internal_features))]
-#![cfg_attr(feature = "nightly", feature(step_trait, unboxed_closures, tuple_trait, edition_panic))]
+#![cfg_attr(
+    feature = "nightly",
+    feature(step_trait, unboxed_closures, tuple_trait, edition_panic, sync_unsafe_cell)
+)]
 #![cfg_attr(all(feature = "nightly", feature = "std"), feature(allocator_api))]
 #![cfg_attr(
     creusot,
@@ -68,7 +71,6 @@
         exact_size_is_empty,
         sized_hierarchy,
         nonzero_internals,
-        sync_unsafe_cell,
     )
 )]
 #![cfg_attr(all(doc, feature = "nightly"), feature(intra_doc_pointers))]
