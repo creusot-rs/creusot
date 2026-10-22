@@ -333,6 +333,24 @@ impl<T: Protocol> AtomicInvariantSC<T> {
     pub fn open<A>(&self, tokens: Tokens, f: impl FnGhost + for<'a> FnOnce(&'a mut T) -> A) -> A {
         panic!("Should not be called outside ghost code")
     }
+
+    /// Open the invariant to get the data stored inside. The
+    /// [protocol](Protocol) must be restored by the end of the returned
+    /// borrow's lifetime.
+    ///
+    /// This requires a mutable borrow on the invariant, but in exchange, you
+    /// are allowed to change the public part of the invariant.
+    ///
+    /// See [`Self::open`] for a version that only need a shared borrow,
+    /// but cannot change the public part.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.inner.public() == self.public())]
+    #[ensures((^result.inner).public() == (^self).public())]
+    #[ensures((^self).namespace() == (*self).namespace())]
+    pub fn open_mut(&mut self) -> Guarded<&mut T, OpenMutGuard> {
+        unreachable!("ghost code only")
+    }
 }
 
 /// A shareable invariant for atomic accesses between threads.
@@ -409,6 +427,24 @@ impl<T: Protocol> AtomicInvariant<T> {
     #[check(ghost)]
     pub fn open<A>(&self, tokens: Tokens, f: impl FnGhost + for<'a> FnOnce(&'a mut T) -> A) -> A {
         panic!("Should not be called outside ghost code")
+    }
+
+    /// Open the invariant to get the data stored inside. The
+    /// [protocol](Protocol) must be restored by the end of the returned
+    /// borrow's lifetime.
+    ///
+    /// This requires a mutable borrow on the invariant, but in exchange, you
+    /// are allowed to change the public part of the invariant.
+    ///
+    /// See [`Self::open`] for a version that only need a shared borrow,
+    /// but cannot change the public part.
+    #[trusted]
+    #[check(ghost)]
+    #[ensures(result.inner.public() == self.public())]
+    #[ensures((^result.inner).public() == (^self).public())]
+    #[ensures((^self).namespace() == (*self).namespace())]
+    pub fn open_mut(&mut self) -> Guarded<&mut T, OpenMutGuard> {
+        unreachable!("ghost code only")
     }
 }
 
