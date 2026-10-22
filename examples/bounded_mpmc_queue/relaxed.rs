@@ -3,8 +3,6 @@
 // This implementation is an adaption from:
 // https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
 
-#![recursion_limit = "256"]
-
 use core::{mem::MaybeUninit, sync::atomic::Ordering};
 
 use creusot_std::{
@@ -922,7 +920,7 @@ impl<T> Queue<T> {
     where
         F: FnGhost + FnOnce(&mut QueueCommitter<T>),
     {
-        let mut view = SyncView::new();
+        let mut view = ghost!(SyncView::new().into_inner());
         let mut witness: Ghost<Option<statuses::Fragment>> = ghost!(None);
 
         let head = self.head.load(
@@ -988,7 +986,9 @@ impl<T> Queue<T> {
             return false;
         }
 
-        unsafe { cell.item.set(ghost!(cell_own.as_mut().unwrap()), MaybeUninit::new(item)) };
+        unsafe {
+            *cell.item.borrow_mut(ghost!(cell_own.as_mut().unwrap())) = MaybeUninit::new(item)
+        };
 
         cell.status.store(
             2 * head + 1,
@@ -1164,7 +1164,7 @@ impl<T> Queue<T> {
     where
         F: FnGhost + FnOnce(&mut QueueCommitter<T>),
     {
-        let mut view = SyncView::new();
+        let mut view = ghost!(SyncView::new().into_inner());
         let mut witness: Ghost<Option<statuses::Fragment>> = ghost!(None);
 
         let tail = self.tail.load(

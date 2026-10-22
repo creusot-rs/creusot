@@ -30,7 +30,11 @@ pub use self::{
 };
 
 #[cfg(creusot)]
+pub use self::fn_ghost::{ErasedGhostFn, ErasedGhostFnArg};
+
+#[cfg(creusot)]
 use crate::resolve::{resolve, structural_resolve};
+
 use crate::{
     logic::ops::{DerefLogic, DerefMutLogic, Fin},
     prelude::*,

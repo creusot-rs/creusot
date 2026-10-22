@@ -525,23 +525,10 @@ impl<'tcx> AnfPlace<'tcx> {
     }
 }
 
-#[derive(Clone, Debug, Eq, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
+#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
 enum AnfProjection {
     Deref { unsafe_: bool },
     Field { variant: VariantIdx, field: FieldIdx },
-}
-
-impl PartialEq for AnfProjection {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (Self::Deref { .. }, Self::Deref { .. }) => true,
-            (
-                Self::Field { variant: l_variant, field: l_field },
-                Self::Field { variant: r_variant, field: r_field },
-            ) => l_variant == r_variant && l_field == r_field,
-            _ => false,
-        }
-    }
 }
 
 impl AnfProjection {

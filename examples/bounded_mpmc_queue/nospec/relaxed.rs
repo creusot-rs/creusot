@@ -6,7 +6,7 @@
 #![recursion_limit = "256"]
 
 use core::mem::{MaybeUninit, replace};
-use creusot_std::prelude::erasure;
+use creusot_std::{ghost::ErasedGhostFn, prelude::erasure, std::sync::SyncViewExt};
 use std::{
     cell::SyncUnsafeCell,
     sync::atomic::{AtomicUsize, Ordering},
@@ -23,7 +23,7 @@ struct QueueCell<T> {
     status: AtomicUsize,
 }
 
-impl<T> Queue<T> {
+impl<T: 'static> Queue<T> {
     #[erasure(spec::Queue::<T>::new)]
     pub fn new(length: usize) -> Self {
         let mut cells: Vec<QueueCell<T>> = Vec::new();
@@ -41,7 +41,7 @@ impl<T> Queue<T> {
         Queue { cells, head, tail }
     }
 
-    #[erasure(spec::Queue::<T>::try_enqueue)]
+    #[erasure(spec::Queue::<T>::try_enqueue::<ErasedGhostFn<T, spec::ErasedQueue, ()>>)]
     pub fn try_enqueue(&self, item: T) -> bool {
         let head = self.head.load(Ordering::Relaxed);
         let head_mod = head % self.cells.len();
@@ -60,14 +60,14 @@ impl<T> Queue<T> {
             return false;
         }
 
-        unsafe { *cell.item.get() = MaybeUninit::new(item) };
+        unsafe { *cell.item.borrow_mut() = MaybeUninit::new(item) };
 
         cell.status.store(2 * head + 1, Ordering::Release);
 
         true
     }
 
-    #[erasure(spec::Queue::<T>::try_dequeue)]
+    #[erasure(spec::Queue::<T>::try_dequeue::<ErasedGhostFn<T, spec::ErasedQueue, ()>>)]
     pub fn try_dequeue(&self) -> Option<T> {
         let tail = self.tail.load(Ordering::Relaxed);
         let tail_mod = tail % self.cells.len();
@@ -86,7 +86,7 @@ impl<T> Queue<T> {
             return None;
         }
 
-        let item = unsafe { replace(&mut *cell.item.get(), MaybeUninit::uninit()).assume_init() };
+        let item = unsafe { replace(cell.item.borrow_mut(), MaybeUninit::uninit()).assume_init() };
 
         cell.status.store(2 * (tail + self.cells.len()), Ordering::Release);
 
@@ -96,4 +96,9 @@ impl<T> Queue<T> {
 
 mod spec {
     include!("../relaxed.rs");
+
+    pub struct ErasedQueue {}
+    impl creusot_std::ghost::ErasedGhostFnArg for ErasedQueue {
+        type Ty<'a, T: 'a> = QueueCommitter<'a, T>;
+    }
 }
