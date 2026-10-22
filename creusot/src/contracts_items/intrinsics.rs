@@ -26,10 +26,6 @@ macro_rules! contracts_items {
                 .iter_local_def_id()
                 .filter_map(|did| {
                     let mut did = did.to_def_id();
-                    let q = format!("{:?}", tcx.get_all_attrs(did));
-                    if q.contains("\"index_logic\"") {
-                        eprintln!(">>> FOUND <<< \n{did:?} {q}");
-                    }
                     match tcx.def_kind(did) {
                         DefKind::Ctor(..) => did = tcx.parent(did),
                         // Some definitions are not associated to HirIds and cannot have attributes
@@ -44,7 +40,7 @@ macro_rules! contracts_items {
                         DefKind::AssocFn |
                         DefKind::Trait |
                         DefKind::Impl { .. } => (),
-                        _ => { return None }
+                        _ => return None,
                     }
                     Some((get_intrinsic(tcx, did)?, did))
                 })
