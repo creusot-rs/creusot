@@ -166,6 +166,10 @@ extern_spec! {
         fn clear(&mut self);
 
         #[check(ghost)]
+        #[ensures(result == (self@.len() == 0))]
+        fn is_empty(&self) -> bool;
+
+        #[check(ghost)]
         #[ensures(result@ == self@)]
         fn into_boxed_slice(self) -> Box<[T], A>;
     }
