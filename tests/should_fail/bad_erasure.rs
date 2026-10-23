@@ -39,3 +39,23 @@ pub trait Quux {
 
 #[erasure(T::quux)]
 pub fn quux2<T: Quux>() {}
+
+#[allow(unused)]
+pub struct P {
+    a: usize,
+    b: usize,
+}
+
+pub fn q() -> usize {
+    0
+}
+
+pub fn p() -> P {
+    P { a: q(), b: q() }
+}
+
+// Wrong if `q` returns different values.
+#[erasure(p)]
+pub fn p2() -> P {
+    P { b: q(), a: q() }
+}
