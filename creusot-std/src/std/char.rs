@@ -51,6 +51,8 @@ impl CharExt for char {
     #[trusted]
     #[logic(opaque)]
     #[ensures(1 <= result.len() && result.len() <= 4)]
+    #[ensures((self@ <= 127) == (result.len() == 1))]
+    #[ensures(self@ <= 127 ==> result[0]@ == self@)]
     fn to_utf8(self) -> Seq<u8> {
         dead
     }
