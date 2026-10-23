@@ -35,7 +35,7 @@ pub struct Metadata<'tcx> {
     trusted_positivity: ExternTypes<'tcx>,
     erased_thir: HashMap<DefId, AnfBlock<'tcx>>,
     erased_defid: HashMap<DefId, Option<Erasure<'tcx>>>,
-    erasure_type: HashMap<(DefId, VariantIdx), ErasureType>,
+    erasure_type: HashMap<DefId, Vec<ErasureType>>,
 }
 
 impl<'tcx> Metadata<'tcx> {
@@ -88,7 +88,13 @@ impl<'tcx> Metadata<'tcx> {
     }
 
     pub(crate) fn erasure_type(&self, id: DefId, i: VariantIdx) -> Option<&ErasureType> {
-        self.erasure_type.get(&(id, i))
+        self.erasure_type.get(&id).and_then(|es| {
+            es.get(i.as_usize())
+        })
+    }
+
+    pub(crate) fn insert_erasure_type(&mut self, id: DefId, es: Vec<ErasureType>) {
+        assert!(self.erasure_type.insert(id, es).is_none())
     }
 
     pub(crate) fn load(&mut self, tcx: TyCtxt<'tcx>, overrides: &HashMap<String, PathBuf>) {

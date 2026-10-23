@@ -224,8 +224,35 @@ pub fn call_store() {
     store(1, 2)
 }
 
-pub struct RI<A>(A, A);
+#[allow(unused)]
+pub struct RI<Idx> {
+    start: Idx,
+    end: Idx,
+    exhausted: bool,
+}
 
 erase! {
-    type RI<A> => ::std::ops::RangeInclusive<A>
+    type RI<Idx> => ops::RI<Idx>
+}
+
+impl<Idx> RI<Idx> {
+    #[erasure(ops::RI::<Idx>::new)]
+    pub fn new(start: Idx, end: Idx) -> Self {
+        Self { start, end, exhausted: false }
+    }
+}
+
+pub mod ops {
+    #[allow(unused)]
+    pub struct RI<Idx> {
+        start: Idx,
+        end: Idx,
+        exhausted: bool,
+    }
+
+    impl<Idx> RI<Idx> {
+        pub fn new(start: Idx, end: Idx) -> Self {
+            Self { start, end, exhausted: false }
+        }
+    }
 }

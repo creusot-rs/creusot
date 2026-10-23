@@ -735,7 +735,7 @@ impl<'tcx> TranslationCtx<'tcx> {
                         self.erasures_to_check.insert(erased);
                     }
                 }
-                TypeErasure(erased, erasure) => todo!(),
+                TypeErasure(erased, erasure) => self.externs.insert_erasure_type(erased, erasure),
             }
         }
         if self.erasures_to_check.is_empty() {
@@ -832,7 +832,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
     }
 
-    pub(crate) fn erasure_type(&self, def_id: DefId, i: VariantIdx) -> Option<&ErasureType<'tcx>> {
+    pub(crate) fn erasure_type(&self, def_id: DefId, i: VariantIdx) -> Option<&ErasureType> {
         self.externs.erasure_type(def_id, i)
     }
 
@@ -867,11 +867,12 @@ pub struct Erasure<'tcx> {
     pub erase_args: Vec<bool>,
 }
 
+#[derive(Debug, TyDecodable, TyEncodable)]
 pub struct ErasureType {
-    def: DefId,
-    variant: VariantIdx,
-    n_fields: usize,
-    erase_fields: Vec<Option<FieldIdx>>,
+    pub def: DefId,
+    pub variant: VariantIdx,
+    pub n_fields: usize,
+    pub erase_fields: Vec<Option<FieldIdx>>,
 }
 
 impl ErasureType {

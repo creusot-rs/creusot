@@ -1,6 +1,7 @@
 use crate::{
     contracts_items::{
-        ErasureKind, Intrinsic, get_erasure, get_trusted_positive, is_eval_constant, is_trusted,
+        ErasureKind, Intrinsic, get_erasure, get_trusted_positive, is_erasure_type,
+        is_eval_constant, is_trusted,
     },
     ctx::*,
     resolution::TraitResolved,
@@ -11,6 +12,7 @@ use crate::{
     util::{eq_nameless_generic_args, erased_identity_for_item, forge_def_id, forge_def_id_from},
     validate::is_ghost_or_snap,
 };
+use rustc_abi::VariantIdx;
 use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
@@ -256,8 +258,11 @@ pub(crate) fn extract_erasure_from_item<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     local_def_id: LocalDefId,
 ) -> Option<ErasureItem<'tcx>> {
-    let (thir, expr) = ctx.tcx.thir_body(local_def_id).unwrap_or_else(|err| err.raise_fatal());
     let def_id = local_def_id.to_def_id();
+    if is_erasure_type(ctx.tcx, def_id) {
+        return Some(extract_erasure_type(ctx, local_def_id));
+    }
+    let (thir, expr) = ctx.tcx.thir_body(local_def_id).unwrap_or_else(|err| err.raise_fatal());
     let (id_this, (id_resolved, subst_resolved)) = match get_erasure(ctx.tcx, def_id) {
         None => return None,
         Some(ErasureKind::Parent) => {
@@ -315,8 +320,48 @@ pub(crate) fn extract_erasure_from_item<'tcx>(
     Some(ErasureItem::FnErasure(id_this.expect_local(), Some(erased)))
 }
 
+pub(crate) fn extract_erasure_type<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    item_id: LocalDefId,
+) -> ErasureItem<'tcx> {
+    let sig = ctx.tcx.fn_sig(item_id);
+    let &[a, b] = sig.skip_binder().skip_binder().inputs() else {
+        panic!();
+    };
+    let ty::TyKind::Adt(a, _) = a.kind() else { panic!() };
+    let ty::TyKind::Adt(b, _) = b.kind() else { panic!() };
+    let def = b.def_id();
+    let av = a.variants();
+    let bv = b.variants();
+    if av.len() != bv.len() {
+        unimplemented!()
+    }
+    let erasure = av
+        .iter_enumerated()
+        .zip(bv)
+        .map(|((variant, a), b)| {
+            if a.fields.len() != b.fields.len() {
+                unimplemented!()
+            }
+            let erase_fields = a
+                .fields
+                .iter()
+                .zip(b.fields.iter_enumerated())
+                .map(
+                    |(a, (i, b))| {
+                        if a.name != b.name { panic!("mismatched field names") } else { Some(i) }
+                    },
+                )
+                .collect();
+            ErasureType { def, variant, n_fields: b.fields.len(), erase_fields }
+        })
+        .collect();
+    ErasureItem::TypeErasure(a.def_id(), erasure)
+}
+
 pub enum ErasureItem<'tcx> {
     FnErasure(LocalDefId, Option<Erasure<'tcx>>),
+    /// Erasure for each variant
     TypeErasure(DefId, Vec<ErasureType>),
 }
 
