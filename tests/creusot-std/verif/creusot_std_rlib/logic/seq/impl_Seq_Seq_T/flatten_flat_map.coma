@@ -1,0 +1,68 @@
+(* logic::seq::Seq<logic::seq::Seq<T>> *)
+
+use seq.Seq
+use map.Map
+use int.Int
+
+type t_T
+
+type t_RangeFrom_Int = { start: int }
+
+function index_Seq_Seq_T [@inline:trivial] (self: Seq.seq (Seq.seq t_T)) (range: t_RangeFrom_Int) : Seq.seq (Seq.seq t_T)
+ = Seq.([..]) self range.start (Seq.length self)
+
+meta "rewrite_def" function index_Seq_Seq_T
+
+function tail_Seq_T [@inline:trivial] (self: Seq.seq (Seq.seq t_T)) : Seq.seq (Seq.seq t_T) =
+  index_Seq_Seq_T self { start = 1 }
+
+meta "rewrite_def" function tail_Seq_T
+
+function flatten_T (self: Seq.seq (Seq.seq t_T)) : Seq.seq t_T
+
+axiom flatten_T_def: forall self: Seq.seq (Seq.seq t_T) [flatten_T self]. flatten_T self
+    = (if Seq.length self = 0 then Seq.empty: Seq.seq t_T else Seq.(++) (Seq.get self 0) (flatten_T (tail_Seq_T self)))
+
+function index_Mapping_Seq_T_Seq_T [@inline:trivial] (self: Map.map (Seq.seq t_T) (Seq.seq t_T)) (a: Seq.seq t_T) : Seq.seq t_T
+ = Map.get self a
+
+meta "rewrite_def" function index_Mapping_Seq_T_Seq_T
+
+function cons_Seq_T [@inline:trivial] (self: Seq.seq (Seq.seq t_T)) (x: Seq.seq t_T) : Seq.seq (Seq.seq t_T) =
+  Seq.cons x self
+
+meta "rewrite_def" function cons_Seq_T
+
+function map_Seq_T (self: Seq.seq (Seq.seq t_T)) (m: Map.map (Seq.seq t_T) (Seq.seq t_T)) : Seq.seq (Seq.seq t_T)
+
+axiom map_Seq_T_def:
+  forall self: Seq.seq (Seq.seq t_T), m: Map.map (Seq.seq t_T) (Seq.seq t_T) [map_Seq_T self m]. map_Seq_T self m
+    = (if Seq.length self = 0 then
+      Seq.empty: Seq.seq (Seq.seq t_T)
+    else
+      cons_Seq_T (map_Seq_T (tail_Seq_T self) m) (Map.get m (Seq.get self 0))
+    )
+
+axiom map_Seq_T_spec:
+  forall self: Seq.seq (Seq.seq t_T), m: Map.map (Seq.seq t_T) (Seq.seq t_T) [map_Seq_T self m]. Seq.length (map_Seq_T self m)
+    = Seq.length self
+
+axiom map_Seq_T_spec'0:
+  forall self: Seq.seq (Seq.seq t_T), m: Map.map (Seq.seq t_T) (Seq.seq t_T) [map_Seq_T self m]. forall i: int. 0 <= i
+        /\ i < Seq.length self -> Seq.get (map_Seq_T self m) i = index_Mapping_Seq_T_Seq_T m (Seq.get self i)
+
+function flat_map_Seq_T [@inline:trivial] (self: Seq.seq (Seq.seq t_T)) (f: Map.map (Seq.seq t_T) (Seq.seq t_T)) : Seq.seq t_T
+ = flatten_T (map_Seq_T self f)
+
+meta "rewrite_def" function flat_map_Seq_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Seq.seq (Seq.seq t_T)
+
+function flatten_flat_map_T (self: Seq.seq (Seq.seq t_T)) : ()
+
+goal vc_flatten_flat_map_T: [@stop_split] [@expl:flatten_flat_map ensures] flatten_T self
+  = flat_map_Seq_T self (fun (s: Seq.seq t_T) -> s)

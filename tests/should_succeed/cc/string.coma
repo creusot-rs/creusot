@@ -13,24 +13,44 @@ module M_test_split_at
   
   type t_RangeFrom_Int = { start: int }
   
-  function index_Seq_char [@inline:trivial] (self: Seq.seq Char.t) (range: t_RangeFrom_Int) : Seq.seq Char.t =
-    Seq.([..]) self range.start (Seq.length self)
+  function index_Seq_Seq_u8 [@inline:trivial] (self: Seq.seq (Seq.seq UInt8.t)) (range: t_RangeFrom_Int) : Seq.seq (Seq.seq UInt8.t)
+   = Seq.([..]) self range.start (Seq.length self)
   
-  meta "rewrite_def" function index_Seq_char
+  meta "rewrite_def" function index_Seq_Seq_u8
   
-  function tail_char [@inline:trivial] (self: Seq.seq Char.t) : Seq.seq Char.t = index_Seq_char self { start = 1 }
+  function tail_Seq_u8 [@inline:trivial] (self: Seq.seq (Seq.seq UInt8.t)) : Seq.seq (Seq.seq UInt8.t) =
+    index_Seq_Seq_u8 self { start = 1 }
   
-  meta "rewrite_def" function tail_char
+  meta "rewrite_def" function tail_Seq_u8
   
-  function flat_map_char (self: Seq.seq Char.t) (other: Map.map Char.t (Seq.seq UInt8.t)) : Seq.seq UInt8.t
+  function flatten_u8 (self: Seq.seq (Seq.seq UInt8.t)) : Seq.seq UInt8.t
   
-  axiom flat_map_char_def:
-    forall self: Seq.seq Char.t, other: Map.map Char.t (Seq.seq UInt8.t) [flat_map_char self other]. flat_map_char self other
+  axiom flatten_u8_def: forall self: Seq.seq (Seq.seq UInt8.t) [flatten_u8 self]. flatten_u8 self
       = (if Seq.length self = 0 then
         Seq.empty: Seq.seq UInt8.t
       else
-        Seq.(++) (Map.get other (Seq.get self 0)) (flat_map_char (tail_char self) other)
+        Seq.(++) (Seq.get self 0) (flatten_u8 (tail_Seq_u8 self))
       )
+  
+  function index_Mapping_char_Seq_u8 [@inline:trivial] (self: Map.map Char.t (Seq.seq UInt8.t)) (a: Char.t) : Seq.seq UInt8.t
+   = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_char_Seq_u8
+  
+  function map_char (self: Seq.seq Char.t) (m: Map.map Char.t (Seq.seq UInt8.t)) : Seq.seq (Seq.seq UInt8.t)
+  
+  axiom map_char_spec:
+    forall self: Seq.seq Char.t, m: Map.map Char.t (Seq.seq UInt8.t) [map_char self m]. Seq.length (map_char self m)
+      = Seq.length self
+  
+  axiom map_char_spec'0:
+    forall self: Seq.seq Char.t, m: Map.map Char.t (Seq.seq UInt8.t) [map_char self m]. forall i: int. 0 <= i
+          /\ i < Seq.length self -> Seq.get (map_char self m) i = index_Mapping_char_Seq_u8 m (Seq.get self i)
+  
+  function flat_map_char [@inline:trivial] (self: Seq.seq Char.t) (f: Map.map Char.t (Seq.seq UInt8.t)) : Seq.seq UInt8.t
+   = flatten_u8 (map_char self f)
+  
+  meta "rewrite_def" function flat_map_char
   
   function to_utf8_char (self: Char.t) : Seq.seq UInt8.t
   
@@ -79,24 +99,44 @@ module M_test_str_len
   
   type t_RangeFrom_Int = { start: int }
   
-  function index_Seq_char [@inline:trivial] (self: Seq.seq Char.t) (range: t_RangeFrom_Int) : Seq.seq Char.t =
-    Seq.([..]) self range.start (Seq.length self)
+  function index_Seq_Seq_u8 [@inline:trivial] (self: Seq.seq (Seq.seq UInt8.t)) (range: t_RangeFrom_Int) : Seq.seq (Seq.seq UInt8.t)
+   = Seq.([..]) self range.start (Seq.length self)
   
-  meta "rewrite_def" function index_Seq_char
+  meta "rewrite_def" function index_Seq_Seq_u8
   
-  function tail_char [@inline:trivial] (self: Seq.seq Char.t) : Seq.seq Char.t = index_Seq_char self { start = 1 }
+  function tail_Seq_u8 [@inline:trivial] (self: Seq.seq (Seq.seq UInt8.t)) : Seq.seq (Seq.seq UInt8.t) =
+    index_Seq_Seq_u8 self { start = 1 }
   
-  meta "rewrite_def" function tail_char
+  meta "rewrite_def" function tail_Seq_u8
   
-  function flat_map_char (self: Seq.seq Char.t) (other: Map.map Char.t (Seq.seq UInt8.t)) : Seq.seq UInt8.t
+  function flatten_u8 (self: Seq.seq (Seq.seq UInt8.t)) : Seq.seq UInt8.t
   
-  axiom flat_map_char_def:
-    forall self: Seq.seq Char.t, other: Map.map Char.t (Seq.seq UInt8.t) [flat_map_char self other]. flat_map_char self other
+  axiom flatten_u8_def: forall self: Seq.seq (Seq.seq UInt8.t) [flatten_u8 self]. flatten_u8 self
       = (if Seq.length self = 0 then
         Seq.empty: Seq.seq UInt8.t
       else
-        Seq.(++) (Map.get other (Seq.get self 0)) (flat_map_char (tail_char self) other)
+        Seq.(++) (Seq.get self 0) (flatten_u8 (tail_Seq_u8 self))
       )
+  
+  function index_Mapping_char_Seq_u8 [@inline:trivial] (self: Map.map Char.t (Seq.seq UInt8.t)) (a: Char.t) : Seq.seq UInt8.t
+   = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_char_Seq_u8
+  
+  function map_char (self: Seq.seq Char.t) (m: Map.map Char.t (Seq.seq UInt8.t)) : Seq.seq (Seq.seq UInt8.t)
+  
+  axiom map_char_spec:
+    forall self: Seq.seq Char.t, m: Map.map Char.t (Seq.seq UInt8.t) [map_char self m]. Seq.length (map_char self m)
+      = Seq.length self
+  
+  axiom map_char_spec'0:
+    forall self: Seq.seq Char.t, m: Map.map Char.t (Seq.seq UInt8.t) [map_char self m]. forall i: int. 0 <= i
+          /\ i < Seq.length self -> Seq.get (map_char self m) i = index_Mapping_char_Seq_u8 m (Seq.get self i)
+  
+  function flat_map_char [@inline:trivial] (self: Seq.seq Char.t) (f: Map.map Char.t (Seq.seq UInt8.t)) : Seq.seq UInt8.t
+   = flatten_u8 (map_char self f)
+  
+  meta "rewrite_def" function flat_map_char
   
   function to_utf8_char (self: Char.t) : Seq.seq UInt8.t
   
@@ -152,24 +192,44 @@ module M_test_string_len
   
   type t_RangeFrom_Int = { start: int }
   
-  function index_Seq_char [@inline:trivial] (self: Seq.seq Char.t) (range: t_RangeFrom_Int) : Seq.seq Char.t =
-    Seq.([..]) self range.start (Seq.length self)
+  function index_Seq_Seq_u8 [@inline:trivial] (self: Seq.seq (Seq.seq UInt8.t)) (range: t_RangeFrom_Int) : Seq.seq (Seq.seq UInt8.t)
+   = Seq.([..]) self range.start (Seq.length self)
   
-  meta "rewrite_def" function index_Seq_char
+  meta "rewrite_def" function index_Seq_Seq_u8
   
-  function tail_char [@inline:trivial] (self: Seq.seq Char.t) : Seq.seq Char.t = index_Seq_char self { start = 1 }
+  function tail_Seq_u8 [@inline:trivial] (self: Seq.seq (Seq.seq UInt8.t)) : Seq.seq (Seq.seq UInt8.t) =
+    index_Seq_Seq_u8 self { start = 1 }
   
-  meta "rewrite_def" function tail_char
+  meta "rewrite_def" function tail_Seq_u8
   
-  function flat_map_char (self: Seq.seq Char.t) (other: Map.map Char.t (Seq.seq UInt8.t)) : Seq.seq UInt8.t
+  function flatten_u8 (self: Seq.seq (Seq.seq UInt8.t)) : Seq.seq UInt8.t
   
-  axiom flat_map_char_def:
-    forall self: Seq.seq Char.t, other: Map.map Char.t (Seq.seq UInt8.t) [flat_map_char self other]. flat_map_char self other
+  axiom flatten_u8_def: forall self: Seq.seq (Seq.seq UInt8.t) [flatten_u8 self]. flatten_u8 self
       = (if Seq.length self = 0 then
         Seq.empty: Seq.seq UInt8.t
       else
-        Seq.(++) (Map.get other (Seq.get self 0)) (flat_map_char (tail_char self) other)
+        Seq.(++) (Seq.get self 0) (flatten_u8 (tail_Seq_u8 self))
       )
+  
+  function index_Mapping_char_Seq_u8 [@inline:trivial] (self: Map.map Char.t (Seq.seq UInt8.t)) (a: Char.t) : Seq.seq UInt8.t
+   = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_char_Seq_u8
+  
+  function map_char (self: Seq.seq Char.t) (m: Map.map Char.t (Seq.seq UInt8.t)) : Seq.seq (Seq.seq UInt8.t)
+  
+  axiom map_char_spec:
+    forall self: Seq.seq Char.t, m: Map.map Char.t (Seq.seq UInt8.t) [map_char self m]. Seq.length (map_char self m)
+      = Seq.length self
+  
+  axiom map_char_spec'0:
+    forall self: Seq.seq Char.t, m: Map.map Char.t (Seq.seq UInt8.t) [map_char self m]. forall i: int. 0 <= i
+          /\ i < Seq.length self -> Seq.get (map_char self m) i = index_Mapping_char_Seq_u8 m (Seq.get self i)
+  
+  function flat_map_char [@inline:trivial] (self: Seq.seq Char.t) (f: Map.map Char.t (Seq.seq UInt8.t)) : Seq.seq UInt8.t
+   = flatten_u8 (map_char self f)
+  
+  meta "rewrite_def" function flat_map_char
   
   function to_utf8_char (self: Char.t) : Seq.seq UInt8.t
   

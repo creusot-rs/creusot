@@ -1,0 +1,57 @@
+(* logic::seq::Seq<logic::seq::Seq<T>> *)
+
+use seq.Seq
+use int.Int
+
+type t_T
+
+type t_RangeFrom_Int = { start: int }
+
+function index_Seq_Seq_T [@inline:trivial] (self: Seq.seq (Seq.seq t_T)) (range: t_RangeFrom_Int) : Seq.seq (Seq.seq t_T)
+ = Seq.([..]) self range.start (Seq.length self)
+
+meta "rewrite_def" function index_Seq_Seq_T
+
+function tail_Seq_T [@inline:trivial] (self: Seq.seq (Seq.seq t_T)) : Seq.seq (Seq.seq t_T) =
+  index_Seq_Seq_T self { start = 1 }
+
+meta "rewrite_def" function tail_Seq_T
+
+function flatten_T (self: Seq.seq (Seq.seq t_T)) : Seq.seq t_T
+
+axiom flatten_T_def: forall self: Seq.seq (Seq.seq t_T) [flatten_T self]. flatten_T self
+    = (if Seq.length self = 0 then Seq.empty: Seq.seq t_T else Seq.(++) (Seq.get self 0) (flatten_T (tail_Seq_T self)))
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+  ge_log_Int self 0 /\ gt_log_Int self other
+
+meta "rewrite_def" predicate well_founded_relation_Int
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Seq.seq (Seq.seq t_T)
+
+constant other : Seq.seq (Seq.seq t_T)
+
+function concat_flatten_T (self: Seq.seq (Seq.seq t_T)) (other: Seq.seq (Seq.seq t_T)) : ()
+
+goal vc_concat_flatten_T: if gt_log_Int (Seq.length self) 0 then
+    ([@expl:variant decreases] well_founded_relation_Int (Seq.length self) (Seq.length (tail_Seq_T self)))
+    /\ (([@stop_split] [@expl:concat_flatten ensures] flatten_T (Seq.(++) (tail_Seq_T self) other)
+      = Seq.(++) (flatten_T (tail_Seq_T self)) (flatten_T other))
+    -> ([@stop_split] [@expl:concat_flatten ensures] flatten_T (Seq.(++) self other)
+    = Seq.(++) (flatten_T self) (flatten_T other)))
+  else
+    [@stop_split] [@expl:concat_flatten ensures] flatten_T (Seq.(++) self other)
+    = Seq.(++) (flatten_T self) (flatten_T other)
+  

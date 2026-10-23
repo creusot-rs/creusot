@@ -1,0 +1,40 @@
+(* logic::seq::Seq<logic::seq::Seq<T>> *)
+
+use seq.Seq
+
+type t_T
+
+type t_RangeFrom_Int = { start: int }
+
+function index_Seq_Seq_T [@inline:trivial] (self: Seq.seq (Seq.seq t_T)) (range: t_RangeFrom_Int) : Seq.seq (Seq.seq t_T)
+ = Seq.([..]) self range.start (Seq.length self)
+
+meta "rewrite_def" function index_Seq_Seq_T
+
+function tail_Seq_T [@inline:trivial] (self: Seq.seq (Seq.seq t_T)) : Seq.seq (Seq.seq t_T) =
+  index_Seq_Seq_T self { start = 1 }
+
+meta "rewrite_def" function tail_Seq_T
+
+function flatten_T (self: Seq.seq (Seq.seq t_T)) : Seq.seq t_T
+
+axiom flatten_T_def: forall self: Seq.seq (Seq.seq t_T) [flatten_T self]. flatten_T self
+    = (if Seq.length self = 0 then Seq.empty: Seq.seq t_T else Seq.(++) (Seq.get self 0) (flatten_T (tail_Seq_T self)))
+
+function cons_Seq_T [@inline:trivial] (self: Seq.seq (Seq.seq t_T)) (x: Seq.seq t_T) : Seq.seq (Seq.seq t_T) =
+  Seq.cons x self
+
+meta "rewrite_def" function cons_Seq_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Seq.seq (Seq.seq t_T)
+
+constant x : Seq.seq t_T
+
+function cons_flatten_T (self: Seq.seq (Seq.seq t_T)) (x: Seq.seq t_T) : ()
+
+goal vc_cons_flatten_T: [@stop_split] [@expl:cons_flatten ensures] flatten_T (cons_Seq_T self x)
+  = Seq.(++) x (flatten_T self)

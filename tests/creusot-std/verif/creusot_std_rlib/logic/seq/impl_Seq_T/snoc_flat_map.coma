@@ -1,0 +1,109 @@
+(* logic::seq::Seq<T> *)
+
+use seq.Seq
+use map.Map
+use int.Int
+
+type t_T
+
+type t_U
+
+type t_RangeFrom_Int = { start: int }
+
+function index_Seq_Seq_U [@inline:trivial] (self: Seq.seq (Seq.seq t_U)) (range: t_RangeFrom_Int) : Seq.seq (Seq.seq t_U)
+ = Seq.([..]) self range.start (Seq.length self)
+
+meta "rewrite_def" function index_Seq_Seq_U
+
+function tail_Seq_U [@inline:trivial] (self: Seq.seq (Seq.seq t_U)) : Seq.seq (Seq.seq t_U) =
+  index_Seq_Seq_U self { start = 1 }
+
+meta "rewrite_def" function tail_Seq_U
+
+function flatten_U (self: Seq.seq (Seq.seq t_U)) : Seq.seq t_U
+
+axiom flatten_U_def: forall self: Seq.seq (Seq.seq t_U) [flatten_U self]. flatten_U self
+    = (if Seq.length self = 0 then Seq.empty: Seq.seq t_U else Seq.(++) (Seq.get self 0) (flatten_U (tail_Seq_U self)))
+
+function index_Mapping_T_Seq_U [@inline:trivial] (self: Map.map t_T (Seq.seq t_U)) (a: t_T) : Seq.seq t_U =
+  Map.get self a
+
+meta "rewrite_def" function index_Mapping_T_Seq_U
+
+function cons_Seq_U [@inline:trivial] (self: Seq.seq (Seq.seq t_U)) (x: Seq.seq t_U) : Seq.seq (Seq.seq t_U) =
+  Seq.cons x self
+
+meta "rewrite_def" function cons_Seq_U
+
+function index_Seq_T [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeFrom_Int) : Seq.seq t_T =
+  Seq.([..]) self range.start (Seq.length self)
+
+meta "rewrite_def" function index_Seq_T
+
+function tail_T [@inline:trivial] (self: Seq.seq t_T) : Seq.seq t_T = index_Seq_T self { start = 1 }
+
+meta "rewrite_def" function tail_T
+
+function map_T (self: Seq.seq t_T) (m: Map.map t_T (Seq.seq t_U)) : Seq.seq (Seq.seq t_U)
+
+axiom map_T_def: forall self: Seq.seq t_T, m: Map.map t_T (Seq.seq t_U) [map_T self m]. map_T self m
+    = (if Seq.length self = 0 then
+      Seq.empty: Seq.seq (Seq.seq t_U)
+    else
+      cons_Seq_U (map_T (tail_T self) m) (Map.get m (Seq.get self 0))
+    )
+
+axiom map_T_spec: forall self: Seq.seq t_T, m: Map.map t_T (Seq.seq t_U) [map_T self m]. Seq.length (map_T self m)
+    = Seq.length self
+
+axiom map_T_spec'0: forall self: Seq.seq t_T, m: Map.map t_T (Seq.seq t_U) [map_T self m]. forall i: int. 0 <= i
+        /\ i < Seq.length self -> Seq.get (map_T self m) i = index_Mapping_T_Seq_U m (Seq.get self i)
+
+function flat_map_T [@inline:trivial] (self: Seq.seq t_T) (f: Map.map t_T (Seq.seq t_U)) : Seq.seq t_U =
+  flatten_U (map_T self f)
+
+meta "rewrite_def" function flat_map_T
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+function concat_flatten_U (self: Seq.seq (Seq.seq t_U)) (other: Seq.seq (Seq.seq t_U)) : ()
+
+axiom concat_flatten_U_def:
+  forall self: Seq.seq (Seq.seq t_U), other: Seq.seq (Seq.seq t_U) [concat_flatten_U self other]. concat_flatten_U self other
+    = (if gt_log_Int (Seq.length self) 0 then let _ = concat_flatten_U (tail_Seq_U self) other in () else ())
+
+axiom concat_flatten_U_spec:
+  forall self: Seq.seq (Seq.seq t_U), other: Seq.seq (Seq.seq t_U). flatten_U (Seq.(++) self other)
+    = Seq.(++) (flatten_U self) (flatten_U other)
+
+function singleton_flatten_U (x: Seq.seq t_U) : () = ()
+
+axiom singleton_flatten_U_spec: forall x: Seq.seq t_U. flatten_U (Seq.singleton x) = x
+
+function snoc_flatten_U (self: Seq.seq (Seq.seq t_U)) (x: Seq.seq t_U) : () =
+  let _ = concat_flatten_U self (Seq.singleton x) in let _ = singleton_flatten_U x in ()
+
+axiom snoc_flatten_U_spec: forall self: Seq.seq (Seq.seq t_U), x: Seq.seq t_U. flatten_U (Seq.snoc self x)
+    = Seq.(++) (flatten_U self) x
+
+function snoc_map_T (self: Seq.seq t_T) (x: t_T) (f: Map.map t_T (Seq.seq t_U)) : () = ()
+
+axiom snoc_map_T_spec: forall self: Seq.seq t_T, x: t_T, f: Map.map t_T (Seq.seq t_U). map_T (Seq.snoc self x) f
+    = Seq.snoc (map_T self f) (Map.get f x)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Seq.seq t_T
+
+constant x : t_T
+
+constant f : Map.map t_T (Seq.seq t_U)
+
+function snoc_flat_map_T (self: Seq.seq t_T) (x: t_T) (f: Map.map t_T (Seq.seq t_U)) : ()
+
+goal vc_snoc_flat_map_T: [@stop_split] [@expl:snoc_flat_map ensures] flat_map_T (Seq.snoc self x) f
+  = Seq.(++) (flat_map_T self f) (Map.get f x)

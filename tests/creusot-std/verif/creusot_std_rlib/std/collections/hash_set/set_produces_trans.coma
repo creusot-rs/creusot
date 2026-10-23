@@ -32,11 +32,11 @@ predicate set_produces_T (start: t_I) (visited: Seq.seq t_T) (end': t_I) =
       /\ 0 <= j /\ j < Seq.length visited /\ deep_model_T (Seq.get visited i) = deep_model_T (Seq.get visited j)
     -> i = j)
 
-constant concat_contains_T: () = ()
+function concat_contains_T (self: Seq.seq t_T) (other: Seq.seq t_T) (x: t_T) : ()
 
-axiom concat_contains_T_spec: forall a: Seq.seq t_T, b: Seq.seq t_T, x: t_T. contains_T (Seq.(++) a b) x
-      = contains_T a x
-    \/ contains_T b x
+axiom concat_contains_T_spec: forall self: Seq.seq t_T, other: Seq.seq t_T, x: t_T. contains_T (Seq.(++) self other) x
+      = contains_T self x
+    \/ contains_T other x
 
 type t_Option_ref_T = None | Some t_T
 
@@ -58,9 +58,6 @@ function set_produces_trans_T (a: t_I) (ab: Seq.seq t_T) (b: t_I) (bc: Seq.seq t
 
 goal vc_set_produces_trans_T: set_produces_T a ab b
   -> set_produces_T b bc c
-  -> ([@stop_split] [@expl:concat_contains ensures] forall a'0: Seq.seq t_T, b'0: Seq.seq t_T, x: t_T. contains_T (Seq.(++) a'0 b'0) x
-        = contains_T a'0 x
-      \/ contains_T b'0 x)
   -> (forall i: int, x: t_T. Seq.length ab <= i
         /\ (if 0 <= i /\ i < Seq.length (Seq.(++) ab bc) then Some (Seq.get (Seq.(++) ab bc) i) else None) = Some x
       -> contains_T bc x)

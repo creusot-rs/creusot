@@ -88,7 +88,7 @@ pub fn set_produces<T: DeepModel, I: View<ViewTy = FSet<T::DeepModelTy>>>(
     }
 }
 
-#[logic(open)]
+#[logic]
 #[requires(set_produces(a, ab, b))]
 #[requires(set_produces(b, bc, c))]
 #[ensures(set_produces(a, ab.concat(bc), c))]
@@ -99,7 +99,7 @@ pub fn set_produces_trans<T: DeepModel, I: View<ViewTy = FSet<T::DeepModelTy>>>(
     bc: Seq<T>,
     c: I,
 ) {
-    Seq::<T>::concat_contains();
+    let _ = Seq::<T>::concat_contains;
     proof_assert! { forall<i, x: T> ab.len() <= i && ab.concat(bc).get(i) == Some(&x) ==> bc.contains(x) };
     proof_assert! { forall<i> 0 <= i && i < bc.len() ==> bc[i] == ab.concat(bc)[ab.len() + i] };
 }

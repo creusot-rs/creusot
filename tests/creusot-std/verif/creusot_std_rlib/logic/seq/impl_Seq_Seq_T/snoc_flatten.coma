@@ -1,0 +1,57 @@
+(* logic::seq::Seq<logic::seq::Seq<T>> *)
+
+use seq.Seq
+use int.Int
+
+type t_T
+
+type t_RangeFrom_Int = { start: int }
+
+function index_Seq_Seq_T [@inline:trivial] (self: Seq.seq (Seq.seq t_T)) (range: t_RangeFrom_Int) : Seq.seq (Seq.seq t_T)
+ = Seq.([..]) self range.start (Seq.length self)
+
+meta "rewrite_def" function index_Seq_Seq_T
+
+function tail_Seq_T [@inline:trivial] (self: Seq.seq (Seq.seq t_T)) : Seq.seq (Seq.seq t_T) =
+  index_Seq_Seq_T self { start = 1 }
+
+meta "rewrite_def" function tail_Seq_T
+
+function flatten_T (self: Seq.seq (Seq.seq t_T)) : Seq.seq t_T
+
+axiom flatten_T_def: forall self: Seq.seq (Seq.seq t_T) [flatten_T self]. flatten_T self
+    = (if Seq.length self = 0 then Seq.empty: Seq.seq t_T else Seq.(++) (Seq.get self 0) (flatten_T (tail_Seq_T self)))
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+function concat_flatten_T (self: Seq.seq (Seq.seq t_T)) (other: Seq.seq (Seq.seq t_T)) : ()
+
+axiom concat_flatten_T_def:
+  forall self: Seq.seq (Seq.seq t_T), other: Seq.seq (Seq.seq t_T) [concat_flatten_T self other]. concat_flatten_T self other
+    = (if gt_log_Int (Seq.length self) 0 then let _ = concat_flatten_T (tail_Seq_T self) other in () else ())
+
+axiom concat_flatten_T_spec:
+  forall self: Seq.seq (Seq.seq t_T), other: Seq.seq (Seq.seq t_T). flatten_T (Seq.(++) self other)
+    = Seq.(++) (flatten_T self) (flatten_T other)
+
+function singleton_flatten_T (x: Seq.seq t_T) : () = ()
+
+axiom singleton_flatten_T_spec: forall x: Seq.seq t_T. flatten_T (Seq.singleton x) = x
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Seq.seq (Seq.seq t_T)
+
+constant x : Seq.seq t_T
+
+function snoc_flatten_T (self: Seq.seq (Seq.seq t_T)) (x: Seq.seq t_T) : ()
+
+goal vc_snoc_flatten_T: Seq.snoc self x = Seq.(++) self (Seq.singleton x)
+  && (([@stop_split] [@expl:concat_flatten ensures] flatten_T (Seq.(++) self (Seq.singleton x))
+    = Seq.(++) (flatten_T self) (flatten_T (Seq.singleton x)))
+  -> ([@stop_split] [@expl:singleton_flatten ensures] flatten_T (Seq.singleton x) = x)
+  -> ([@stop_split] [@expl:snoc_flatten ensures] flatten_T (Seq.snoc self x) = Seq.(++) (flatten_T self) x))
