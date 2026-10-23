@@ -1,6 +1,7 @@
 use crate::{
     contracts_items::{
-        ErasureKind, Intrinsic, get_erasure, get_trusted_positive, is_eval_constant, is_trusted,
+        ErasureKind, Intrinsic, get_erasure, get_trusted_positive, is_erasure_type,
+        is_eval_constant, is_trusted,
     },
     ctx::*,
     resolution::TraitResolved,
@@ -11,6 +12,7 @@ use crate::{
     util::{eq_nameless_generic_args, erased_identity_for_item, forge_def_id, forge_def_id_from},
     validate::is_ghost_or_snap,
 };
+use rustc_abi::FieldIdx;
 use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
@@ -293,9 +295,12 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItem<'a, 'tcx> {
 pub(crate) fn extract_erasure_from_item<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     local_def_id: LocalDefId,
-    (thir, expr): ThirExpr<'tcx>,
-) -> Option<(LocalDefId, Option<Erasure<'tcx>>)> {
+) -> Option<ErasureItem<'tcx>> {
     let def_id = local_def_id.to_def_id();
+    if is_erasure_type(ctx.tcx, def_id) {
+        return Some(extract_erasure_type(ctx, local_def_id));
+    }
+    let (thir, expr) = ctx.tcx.thir_body(local_def_id).unwrap_or_else(|err| err.raise_fatal());
     let (id_this, (id_resolved, subst_resolved)) = match get_erasure(ctx.tcx, def_id) {
         None => return None,
         Some(ErasureKind::Parent) => {
@@ -345,12 +350,52 @@ pub(crate) fn extract_erasure_from_item<'tcx>(
                     format!("#[erasure(_)] requires the #[trusted] attribute"),
                 )
             }
-            return Some((local_def_id, None));
+            return Some(ErasureItem::FnErasure(local_def_id, None));
         }
     };
     let erased =
         build_erased(ctx.tcx, ctx.typing_env(id_this), id_this, id_resolved, subst_resolved);
-    Some((id_this.expect_local(), Some(erased)))
+    Some(ErasureItem::FnErasure(id_this.expect_local(), Some(erased)))
+}
+
+pub(crate) fn extract_erasure_type<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    item_id: LocalDefId,
+) -> ErasureItem<'tcx> {
+    let sig = ctx.tcx.fn_sig(item_id);
+    let &[a, b] = sig.skip_binder().skip_binder().inputs() else {
+        panic!();
+    };
+    let ty::TyKind::Adt(a, _) = a.kind() else { panic!() };
+    let ty::TyKind::Adt(b, _) = b.kind() else { panic!() };
+    let def = b.def_id();
+    let av = a.variants();
+    let bv = b.variants();
+    if av.len() != bv.len() {
+        unimplemented!()
+    }
+    let erasure = av
+        .iter_enumerated()
+        .zip(bv)
+        .map(|((variant, a), b)| {
+            let erase_fields = a
+                .fields
+                .iter()
+                .map(|a| {
+                    b.fields.iter().position(|b| a.name == b.name).map(|i| FieldIdx::from_usize(i))
+                })
+                .collect::<Vec<_>>();
+            let n_fields = erase_fields.iter().filter(|i| i.is_some()).count();
+            ErasureType { def, variant, n_fields, erase_fields }
+        })
+        .collect();
+    ErasureItem::TypeErasure(a.def_id(), erasure)
+}
+
+pub enum ErasureItem<'tcx> {
+    FnErasure(LocalDefId, Option<Erasure<'tcx>>),
+    /// Erasure for each variant
+    TypeErasure(DefId, Vec<ErasureType>),
 }
 
 /// Extract erasure for nested items
@@ -417,7 +462,7 @@ fn build_erased<'tcx>(
     let sig1 = tcx.instantiate_bound_regions_with_erased(
         tcx.normalize_erasing_regions(typing_env, tcx.fn_sig(def_id1).instantiate_identity()),
     );
-    let sig2 = tcx.instantiate_bound_regions_with_erased(
+    let _sig2 = tcx.instantiate_bound_regions_with_erased(
         tcx.instantiate_and_normalize_erasing_regions(subst2, typing_env, tcx.fn_sig(def_id2)),
     );
     // let ty1 = sig1.output();
@@ -463,13 +508,13 @@ fn build_erased<'tcx>(
 /// - `ty1 == ty2`
 /// - `ty1 == Ghost<_>` and `ty2 == ()`
 /// - `ty1 == (ty0, Ghost<_>)` for some `ty0` and `ty0` equals `ty2` up to erasure
-fn eq_erased_ty<'tcx>(tcx: TyCtxt<'tcx>, ty1: Ty<'tcx>, ty2: Ty<'tcx>) -> bool {
+fn _eq_erased_ty<'tcx>(tcx: TyCtxt<'tcx>, ty1: Ty<'tcx>, ty2: Ty<'tcx>) -> bool {
     if ty1 == ty2 || is_ghost_or_snap(tcx, ty1) && ty2.is_unit() {
         return true;
     }
     match ty1.kind() {
         TyKind::Tuple(tys) => {
-            tys.len() == 2 && eq_erased_ty(tcx, tys[0], ty2) && is_ghost_or_snap(tcx, tys[1])
+            tys.len() == 2 && _eq_erased_ty(tcx, tys[0], ty2) && is_ghost_or_snap(tcx, tys[1])
         }
         _ => false,
     }

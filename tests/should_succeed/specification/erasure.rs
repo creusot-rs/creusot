@@ -215,11 +215,44 @@ pub fn call_store_spec() {
 }
 
 #[erasure(store)]
-pub fn store_spec(x: usize, y: usize, z: Ghost<usize>) {}
+pub fn store_spec(_: usize, _: usize, _: Ghost<usize>) {}
 
-pub fn store(x: usize, y: usize) {}
+pub fn store(_: usize, _: usize) {}
 
 #[erasure(call_store_spec)]
 pub fn call_store() {
     store(1, 2)
+}
+
+#[allow(unused)]
+pub struct RI<Idx> {
+    start: Idx,
+    end: Idx,
+    exhausted: bool,
+}
+
+erase! {
+    type RI<Idx> => ops::RI<Idx>
+}
+
+impl<Idx> RI<Idx> {
+    #[erasure(ops::RI::<Idx>::new)]
+    pub fn new(start: Idx, end: Idx) -> Self {
+        Self { start, end, exhausted: false }
+    }
+}
+
+pub mod ops {
+    #[allow(unused)]
+    pub struct RI<Idx> {
+        start: Idx,
+        end: Idx,
+        exhausted: bool,
+    }
+
+    impl<Idx> RI<Idx> {
+        pub fn new(start: Idx, end: Idx) -> Self {
+            Self { start, end, exhausted: false }
+        }
+    }
 }
