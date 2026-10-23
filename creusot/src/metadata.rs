@@ -88,9 +88,7 @@ impl<'tcx> Metadata<'tcx> {
     }
 
     pub(crate) fn erasure_type(&self, id: DefId, i: VariantIdx) -> Option<&ErasureType> {
-        self.erasure_type.get(&id).and_then(|es| {
-            es.get(i.as_usize())
-        })
+        self.erasure_type.get(&id).and_then(|es| es.get(i.as_usize()))
     }
 
     pub(crate) fn insert_erasure_type(&mut self, id: DefId, es: Vec<ErasureType>) {
