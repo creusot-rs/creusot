@@ -4,6 +4,7 @@ pub mod atomic_sc;
 pub mod committer;
 pub mod view;
 
+#[cfg(feature = "nightly")]
 use crate::prelude::*;
 
 #[cfg(feature = "std")]
