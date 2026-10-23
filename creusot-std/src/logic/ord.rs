@@ -371,3 +371,35 @@ impl<T: OrdLogic> SemiLattice for T {
         if self < other { other } else { self }
     }
 }
+
+impl PartialOrdLogic for () {
+    #[logic(open, inline)]
+    fn le_log(self, _: Self) -> bool {
+        true
+    }
+
+    #[logic(open, inline)]
+    fn lt_log(self, _: Self) -> bool {
+        false
+    }
+
+    #[logic]
+    #[ensures(!(self < self))]
+    fn irreflexive(self) {}
+
+    #[logic]
+    #[requires(x < y)]
+    #[requires(y < z)]
+    #[ensures(x < z)]
+    fn transitive(x: Self, y: Self, z: Self) {}
+
+    #[logic]
+    #[ensures((self <= other) == (self < other || self == other))]
+    fn le_lt_log(self, other: Self) {}
+}
+
+impl OrdLogic for () {
+    #[logic]
+    #[ensures(self < other || self == other || other < self)]
+    fn lt_log_total(self, other: Self) {}
+}
