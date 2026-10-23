@@ -22,6 +22,16 @@ axiom inv_axiom [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_
       | Some f0 -> inv_T f0
       end
 
+predicate resolve_T (_1: t_T)
+
+predicate resolve_Option_T (_1: t_Option_T)
+
+axiom resolve_axiom [@rewrite]: forall _1: t_Option_T [resolve_Option_T _1]. resolve_Option_T _1
+    = match _1 with
+      | None -> true
+      | Some x0 -> resolve_T x0
+      end
+
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
@@ -30,9 +40,12 @@ let extern_spec_T_Option_T_unwrap_body_T (self_: t_Option_T) (return (x: t_T)) =
 {[@stop_split] [@expl:extern_spec_T_Option_T_unwrap_body_T requires] ([@stop_split] [@expl:extern_spec_T_Option_T_unwrap_body 'self_' type invariant] inv_Option_T self_)
   /\ ([@stop_split] [@expl:extern_spec_T_Option_T_unwrap_body requires] self_ <> None)}
   (! bb0
-  [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
+  [ bb0 = any [ br0 -> {self_ = None} (! bb2) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
   | bb3 = s0 [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s1) | s1 = [ &_ret <- t ] s2 | s2 = return {_ret} ]
-  | bb4 = {false} any ] [ & _ret: t_T = Any.any_l () | & self_: t_Option_T = self_ | & t: t_T = Any.any_l () ])
+  | bb2 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_T self_} any) ]
+    | s1 = -{resolve_Option_T self_}- s2
+    | s2 = {false} any ] ] [ & _ret: t_T = Any.any_l () | & self_: t_Option_T = self_ | & t: t_T = Any.any_l () ])
   [ return (result: t_T) ->
   {[@stop_split] [@expl:extern_spec_T_Option_T_unwrap_body_T ensures] ([@stop_split] [@expl:extern_spec_T_Option_T_unwrap_body result type invariant] inv_T result)
     /\ ([@stop_split] [@expl:extern_spec_T_Option_T_unwrap_body ensures] Some result = self_)}

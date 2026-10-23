@@ -6,6 +6,30 @@ type t_E
 
 type t_Result_T_E = Ok t_T | Err t_E
 
+predicate inv_T (_1: t_T)
+
+predicate inv_E (_1: t_E)
+
+predicate inv_Result_T_E (_1: t_Result_T_E)
+
+axiom inv_axiom [@rewrite]: forall _1: t_Result_T_E [inv_Result_T_E _1]. inv_Result_T_E _1
+    = match _1 with
+      | Ok f0 -> inv_T f0
+      | Err f0 -> inv_E f0
+      end
+
+predicate resolve_T (_1: t_T)
+
+predicate resolve_E (_1: t_E)
+
+predicate resolve_Result_T_E (_1: t_Result_T_E)
+
+axiom resolve_axiom [@rewrite]: forall _1: t_Result_T_E [resolve_Result_T_E _1]. resolve_Result_T_E _1
+    = match _1 with
+      | Ok x0 -> resolve_T x0
+      | Err x0 -> resolve_E x0
+      end
+
 let elim_Err (_x: t_Result_T_E) (return (f0: t_E)) = any
   [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
   | _chk -> (! {[@expl:elim Err] match _x with
@@ -25,18 +49,6 @@ let elim_Ok (_x: t_Result_T_E) (return (f0: t_T)) = any
       | _ -> false
       end}
     any) ]
-
-predicate inv_T (_1: t_T)
-
-predicate inv_E (_1: t_E)
-
-predicate inv_Result_T_E (_1: t_Result_T_E)
-
-axiom inv_axiom [@rewrite]: forall _1: t_Result_T_E [inv_Result_T_E _1]. inv_Result_T_E _1
-    = match _1 with
-      | Ok f0 -> inv_T f0
-      | Err f0 -> inv_E f0
-      end
 
 predicate inv_Infallible [@inline:trivial] (_1: ()) = false
 
@@ -67,14 +79,20 @@ let extern_spec_T_E_Try_Result_T_E_branch_body_T (self_: t_Result_T_E)
   (return (x: t_ControlFlow_Result_Infallible_E_T)) =
 {[@stop_split] [@expl:extern_spec_T_E_Try_Result_T_E_branch_body 'self_' type invariant] inv_Result_T_E self_}
   (! bb0
-  [ bb0 = any [ br0 (x0: t_T) -> {self_ = Ok x0} (! bb4) | br1 (x0: t_E) -> {self_ = Err x0} (! bb3) ]
+  [ bb0 = any [ br0 (x0: t_T) -> {self_ = Ok x0} (! bb2) | br1 (x0: t_E) -> {self_ = Err x0} (! bb3) ]
   | bb3 = s0
-    [ s0 = elim_Err {self_} (fun (r0: t_E) -> [ &e <- r0 ] s1)
-    | s1 = [ &_8 <- Err'0 e ] s2
-    | s2 = [ &_ret <- Break _8 ] s3
-    | s3 = return {_ret} ]
-  | bb4 = s0
-    [ s0 = elim_Ok {self_} (fun (r0: t_T) -> [ &v <- r0 ] s1) | s1 = [ &_ret <- Continue v ] s2 | s2 = return {_ret} ] ]
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Result_T_E self_} any) ]
+    | s1 = -{resolve_Result_T_E self_}- s2
+    | s2 = elim_Err {self_} (fun (r0: t_E) -> [ &e <- r0 ] s3)
+    | s3 = [ &_8 <- Err'0 e ] s4
+    | s4 = [ &_ret <- Break _8 ] s5
+    | s5 = return {_ret} ]
+  | bb2 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Result_T_E self_} any) ]
+    | s1 = -{resolve_Result_T_E self_}- s2
+    | s2 = elim_Ok {self_} (fun (r0: t_T) -> [ &v <- r0 ] s3)
+    | s3 = [ &_ret <- Continue v ] s4
+    | s4 = return {_ret} ] ]
   [ & _ret: t_ControlFlow_Result_Infallible_E_T = Any.any_l ()
   | & self_: t_Result_T_E = self_
   | & v: t_T = Any.any_l ()

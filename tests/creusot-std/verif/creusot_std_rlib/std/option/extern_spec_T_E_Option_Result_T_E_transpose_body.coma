@@ -16,6 +16,30 @@ let elim_Some (_x: t_Option_Result_T_E) (return (f0: t_Result_T_E)) = any
       end}
     any) ]
 
+predicate inv_T (_1: t_T)
+
+predicate inv_E (_1: t_E)
+
+predicate inv_Result_T_E (_1: t_Result_T_E)
+
+axiom inv_axiom [@rewrite]: forall _1: t_Result_T_E [inv_Result_T_E _1]. inv_Result_T_E _1
+    = match _1 with
+      | Ok f0 -> inv_T f0
+      | Err f0 -> inv_E f0
+      end
+
+predicate resolve_T (_1: t_T)
+
+predicate resolve_E (_1: t_E)
+
+predicate resolve_Result_T_E (_1: t_Result_T_E)
+
+axiom resolve_axiom [@rewrite]: forall _1: t_Result_T_E [resolve_Result_T_E _1]. resolve_Result_T_E _1
+    = match _1 with
+      | Ok x0 -> resolve_T x0
+      | Err x0 -> resolve_E x0
+      end
+
 let elim_Err (_x: t_Result_T_E) (return (f0: t_E)) = any
   [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
   | _chk -> (! {[@expl:elim Err] match _x with
@@ -36,24 +60,21 @@ let elim_Ok (_x: t_Result_T_E) (return (f0: t_T)) = any
       end}
     any) ]
 
-predicate inv_T (_1: t_T)
-
-predicate inv_E (_1: t_E)
-
-predicate inv_Result_T_E (_1: t_Result_T_E)
-
-axiom inv_axiom [@rewrite]: forall _1: t_Result_T_E [inv_Result_T_E _1]. inv_Result_T_E _1
-    = match _1 with
-      | Ok f0 -> inv_T f0
-      | Err f0 -> inv_E f0
-      end
-
 predicate inv_Option_Result_T_E (_1: t_Option_Result_T_E)
 
 axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_Result_T_E [inv_Option_Result_T_E _1]. inv_Option_Result_T_E _1
     = match _1 with
       | None -> true
       | Some f0 -> inv_Result_T_E f0
+      end
+
+predicate resolve_Option_Result_T_E (_1: t_Option_Result_T_E)
+
+axiom resolve_axiom'0 [@rewrite]:
+  forall _1: t_Option_Result_T_E [resolve_Option_Result_T_E _1]. resolve_Option_Result_T_E _1
+    = match _1 with
+      | None -> true
+      | Some x0 -> resolve_Result_T_E x0
       end
 
 predicate inv_Option_T (_1: t_Option_T)
@@ -79,19 +100,46 @@ meta "select_lsinst" "all"
 let extern_spec_T_E_Option_Result_T_E_transpose_body_T (self_: t_Option_Result_T_E) (return (x: t_Result_Option_T_E)) =
 {[@stop_split] [@expl:extern_spec_T_E_Option_Result_T_E_transpose_body 'self_' type invariant] inv_Option_Result_T_E self_}
   (! bb0
-  [ bb0 = any [ br0 -> {self_ = None} (! bb7) | br1 (x0: t_Result_T_E) -> {self_ = Some x0} (! bb3) ]
+  [ bb0 = any [ br0 -> {self_ = None} (! bb2) | br1 (x0: t_Result_T_E) -> {self_ = Some x0} (! bb3) ]
   | bb3 = elim_Some {self_}
-      (fun (r0: t_Result_T_E) -> any [ br0 (x0: t_T) -> {r0 = Ok x0} (! bb6) | br1 (x0: t_E) -> {r0 = Err x0} (! bb5) ])
+      (fun (r0: t_Result_T_E) -> any [ br0 (x0: t_T) -> {r0 = Ok x0} (! bb4) | br1 (x0: t_E) -> {r0 = Err x0} (! bb5) ])
   | bb5 = s0
-    [ s0 = elim_Some {self_} (fun (r0: t_Result_T_E) -> elim_Err {r0} (fun (r0'0: t_E) -> [ &err <- r0'0 ] s1))
-    | s1 = [ &_ret <- Err'0 err ] s2
-    | s2 = return {_ret} ]
-  | bb6 = s0
-    [ s0 = elim_Some {self_} (fun (r0: t_Result_T_E) -> elim_Ok {r0} (fun (r0'0: t_T) -> [ &ok <- r0'0 ] s1))
-    | s1 = [ &_8 <- Some'0 ok ] s2
-    | s2 = [ &_ret <- Ok'0 _8 ] s3
-    | s3 = return {_ret} ]
-  | bb7 = s0 [ s0 = [ &_6 <- None'0 ] s1 | s1 = [ &_ret <- Ok'0 _6 ] s2 | s2 = return {_ret} ] ]
+    [ s0 = s1
+      [ _ck -> (! {[@expl:type invariant] match self_ with
+          | Some x -> inv_Result_T_E x
+          | _ -> true
+          end}
+        any) ]
+    | s1 = -{match self_ with
+        | Some x -> resolve_Result_T_E x
+        | _ -> true
+        end}-
+      s2
+    | s2 = elim_Some {self_} (fun (r0: t_Result_T_E) -> elim_Err {r0} (fun (r0'0: t_E) -> [ &err <- r0'0 ] s3))
+    | s3 = [ &_ret <- Err'0 err ] s4
+    | s4 = return {_ret} ]
+  | bb4 = s0
+    [ s0 = s1
+      [ _ck -> (! {[@expl:type invariant] match self_ with
+          | Some x -> inv_Result_T_E x
+          | _ -> true
+          end}
+        any) ]
+    | s1 = -{match self_ with
+        | Some x -> resolve_Result_T_E x
+        | _ -> true
+        end}-
+      s2
+    | s2 = elim_Some {self_} (fun (r0: t_Result_T_E) -> elim_Ok {r0} (fun (r0'0: t_T) -> [ &ok <- r0'0 ] s3))
+    | s3 = [ &_8 <- Some'0 ok ] s4
+    | s4 = [ &_ret <- Ok'0 _8 ] s5
+    | s5 = return {_ret} ]
+  | bb2 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_Result_T_E self_} any) ]
+    | s1 = -{resolve_Option_Result_T_E self_}- s2
+    | s2 = [ &_6 <- None'0 ] s3
+    | s3 = [ &_ret <- Ok'0 _6 ] s4
+    | s4 = return {_ret} ] ]
   [ & _ret: t_Result_Option_T_E = Any.any_l ()
   | & self_: t_Option_Result_T_E = self_
   | & _6: t_Option_T = Any.any_l ()

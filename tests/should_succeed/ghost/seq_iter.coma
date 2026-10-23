@@ -159,6 +159,14 @@ module M_reverse_ghost
   
   predicate resolve_T (_1: t_T)
   
+  predicate resolve_Option_T (_1: t_Option_T)
+  
+  axiom resolve_axiom [@rewrite]: forall _1: t_Option_T [resolve_Option_T _1]. resolve_Option_T _1
+      = match _1 with
+        | None -> true
+        | Some x0 -> resolve_T x0
+        end
+  
   predicate resolve_Seq_T (self: Seq.seq t_T) =
     forall i: int. 0 <= i /\ i < Seq.length self -> resolve_T (Seq.get self i)
   
@@ -172,7 +180,7 @@ module M_reverse_ghost
   
   predicate resolve_Iter_T'0 (_1: t_Iter_T)
   
-  axiom resolve_axiom: forall _1: t_Iter_T [resolve_Iter_T'0 _1]. resolve_Iter_T'0 _1 -> resolve_Iter_T _1
+  axiom resolve_axiom'0: forall _1: t_Iter_T [resolve_Iter_T'0 _1]. resolve_Iter_T'0 _1 -> resolve_Iter_T _1
   
   let new_Seq_T (x: Seq.seq t_T) (return (x'0: Seq.seq t_T)) =
   {[@stop_split] [@expl:new 'x' type invariant] inv_Seq_T x}
@@ -231,10 +239,12 @@ module M_reverse_ghost
           | s5 = push_front_T {_47} {x} (fun (_x: ()) -> [ &_46 <- _x ] s6)
           | s6 = bb8 ] ] ]
     | bb13 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
-      | s1 = -{resolve_Iter_T'0 iter}- s2
-      | s2 = new_Seq_T {result} (fun (_x: Seq.seq t_T) -> [ &_ret <- _x ] s3)
-      | s3 = return {_ret} ] ]
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_T _35} any) ]
+      | s1 = -{resolve_Option_T _35}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Iter_T iter} any) ]
+      | s3 = -{resolve_Iter_T'0 iter}- s4
+      | s4 = new_Seq_T {result} (fun (_x: Seq.seq t_T) -> [ &_ret <- _x ] s5)
+      | s5 = return {_ret} ] ]
     [ & _ret: Seq.seq t_T = Any.any_l ()
     | & s: Seq.seq t_T = s
     | & len: int = Any.any_l ()

@@ -65,6 +65,17 @@ module M_try_option
         end)}
       (! return {result}) ]
   
+  predicate resolve_T (_1: t_T)
+  
+  predicate resolve_ControlFlow_Option_Infallible_T (_1: t_ControlFlow_Option_Infallible_T)
+  
+  axiom resolve_axiom [@rewrite]:
+    forall _1: t_ControlFlow_Option_Infallible_T [resolve_ControlFlow_Option_Infallible_T _1]. resolve_ControlFlow_Option_Infallible_T _1
+      = match _1 with
+        | Continue x0 -> resolve_T x0
+        | Break x0 -> true
+        end
+  
   let elim_Break (_x: t_ControlFlow_Option_Infallible_T) (return (f0: t_Option_Infallible)) = any
     [ _k (f0: t_Option_Infallible) -> {Break f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Break] match _x with
@@ -99,11 +110,13 @@ module M_try_option
     [ bb0 = s0
       [ s0 = branch_Option_T {x} (fun (_x: t_ControlFlow_Option_Infallible_T) -> [ &_5 <- _x ] s1)
       | s1 = any
-        [ br0 (x0: t_T) -> {_5 = Continue x0} (! bb4) | br1 (x0: t_Option_Infallible) -> {_5 = Break x0} (! bb5) ] ]
-    | bb5 = s0
-      [ s0 = elim_Break {_5} (fun (r0: t_Option_Infallible) -> [ &residual <- r0 ] s1)
-      | s1 = from_residual_Option_T {residual} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s2)
-      | s2 = return {_ret} ]
+        [ br0 (x0: t_T) -> {_5 = Continue x0} (! bb4) | br1 (x0: t_Option_Infallible) -> {_5 = Break x0} (! bb3) ] ]
+    | bb3 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_Infallible_T _5} any) ]
+      | s1 = -{resolve_ControlFlow_Option_Infallible_T _5}- s2
+      | s2 = elim_Break {_5} (fun (r0: t_Option_Infallible) -> [ &residual <- r0 ] s3)
+      | s3 = from_residual_Option_T {residual} (fun (_x: t_Option_T) -> [ &_ret <- _x ] s4)
+      | s4 = return {_ret} ]
     | bb4 = s0
       [ s0 = elim_Continue {_5} (fun (r0: t_T) -> [ &val' <- r0 ] s1)
       | s1 = [ &_ret <- Some val' ] s2
@@ -176,6 +189,28 @@ module M_try_result
         end)}
       (! return {result}) ]
   
+  predicate resolve_T (_1: t_T)
+  
+  predicate resolve_E (_1: t_E)
+  
+  predicate resolve_Result_Infallible_E (_1: t_Result_Infallible_E)
+  
+  axiom resolve_axiom [@rewrite]:
+    forall _1: t_Result_Infallible_E [resolve_Result_Infallible_E _1]. resolve_Result_Infallible_E _1
+      = match _1 with
+        | Ok'0 x0 -> true
+        | Err'0 x0 -> resolve_E x0
+        end
+  
+  predicate resolve_ControlFlow_Result_Infallible_E_T (_1: t_ControlFlow_Result_Infallible_E_T)
+  
+  axiom resolve_axiom'0 [@rewrite]:
+    forall _1: t_ControlFlow_Result_Infallible_E_T [resolve_ControlFlow_Result_Infallible_E_T _1]. resolve_ControlFlow_Result_Infallible_E_T _1
+      = match _1 with
+        | Continue x0 -> resolve_T x0
+        | Break x0 -> resolve_Result_Infallible_E x0
+        end
+  
   let elim_Break (_x: t_ControlFlow_Result_Infallible_E_T) (return (f0: t_Result_Infallible_E)) = any
     [ _k (f0: t_Result_Infallible_E) -> {Break f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Break] match _x with
@@ -226,15 +261,19 @@ module M_try_result
     [ bb0 = s0
       [ s0 = branch_Result_T_E {x} (fun (_x: t_ControlFlow_Result_Infallible_E_T) -> [ &_5 <- _x ] s1)
       | s1 = any
-        [ br0 (x0: t_T) -> {_5 = Continue x0} (! bb4) | br1 (x0: t_Result_Infallible_E) -> {_5 = Break x0} (! bb5) ] ]
-    | bb5 = s0
-      [ s0 = elim_Break {_5} (fun (r0: t_Result_Infallible_E) -> [ &residual <- r0 ] s1)
-      | s1 = from_residual_Result_T_E {residual} (fun (_x: t_Result_T_E) -> [ &_ret <- _x ] s2)
-      | s2 = return {_ret} ]
+        [ br0 (x0: t_T) -> {_5 = Continue x0} (! bb4) | br1 (x0: t_Result_Infallible_E) -> {_5 = Break x0} (! bb3) ] ]
+    | bb3 = s0
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Result_Infallible_E_T _5} any) ]
+      | s1 = -{resolve_ControlFlow_Result_Infallible_E_T _5}- s2
+      | s2 = elim_Break {_5} (fun (r0: t_Result_Infallible_E) -> [ &residual <- r0 ] s3)
+      | s3 = from_residual_Result_T_E {residual} (fun (_x: t_Result_T_E) -> [ &_ret <- _x ] s4)
+      | s4 = return {_ret} ]
     | bb4 = s0
-      [ s0 = elim_Continue {_5} (fun (r0: t_T) -> [ &val' <- r0 ] s1)
-      | s1 = [ &_ret <- Ok val' ] s2
-      | s2 = return {_ret} ] ]
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Result_Infallible_E_T _5} any) ]
+      | s1 = -{resolve_ControlFlow_Result_Infallible_E_T _5}- s2
+      | s2 = elim_Continue {_5} (fun (r0: t_T) -> [ &val' <- r0 ] s3)
+      | s3 = [ &_ret <- Ok val' ] s4
+      | s4 = return {_ret} ] ]
     [ & _ret: t_Result_T_E = Any.any_l ()
     | & x: t_Result_T_E = x
     | & _5: t_ControlFlow_Result_Infallible_E_T = Any.any_l ()

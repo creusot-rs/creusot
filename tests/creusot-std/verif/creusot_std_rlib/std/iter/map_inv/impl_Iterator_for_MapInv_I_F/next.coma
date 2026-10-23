@@ -277,6 +277,16 @@ meta "rewrite_def" predicate resolve_refmut_MapInv_I_F
 
 type t_Option_B = None'0 | Some'0 t_B
 
+predicate resolve_Item (_1: t_Item)
+
+predicate resolve_Option_Item (_1: t_Option_Item)
+
+axiom resolve_axiom [@rewrite]: forall _1: t_Option_Item [resolve_Option_Item _1]. resolve_Option_Item _1
+    = match _1 with
+      | None -> true
+      | Some x0 -> resolve_Item x0
+      end
+
 predicate inv_Option_B (_1: t_Option_B)
 
 axiom inv_axiom'1 [@rewrite]: forall _1: t_Option_B [inv_Option_B _1]. inv_Option_B _1
@@ -325,12 +335,14 @@ let next_MapInv_I_F (self: MutBorrow.t t_MapInv_I_F) (return (x: t_Option_B)) =
     | s11 = [ &_ret <- Some'0 r ] s12
     | s12 = return {_ret} ]
   | bb5 = s0
-    [ s0 = [ &_34 <- Seq.empty: Seq.seq t_Item ] s1
-    | s1 = [ &self <- { self with current = { self.current with produced = _34 } } ] s2
-    | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_MapInv_I_F self} any) ]
-    | s3 = -{resolve_refmut_MapInv_I_F self}- s4
-    | s4 = [ &_ret <- None'0 ] s5
-    | s5 = return {_ret} ] ]
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_Item _7} any) ]
+    | s1 = -{resolve_Option_Item _7}- s2
+    | s2 = [ &_34 <- Seq.empty: Seq.seq t_Item ] s3
+    | s3 = [ &self <- { self with current = { self.current with produced = _34 } } ] s4
+    | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_MapInv_I_F self} any) ]
+    | s5 = -{resolve_refmut_MapInv_I_F self}- s6
+    | s6 = [ &_ret <- None'0 ] s7
+    | s7 = return {_ret} ] ]
   [ & _ret: t_Option_B = Any.any_l ()
   | & self: MutBorrow.t t_MapInv_I_F = self
   | & _old_self: t_MapInv_I_F = Any.any_l ()

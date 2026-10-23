@@ -49,7 +49,7 @@ use crate::{
     naming::lowercase_prefix,
     translation::{
         fmir::{self, BorrowKind, LocalKind},
-        function::{Assertion, discriminator_for_switch},
+        function::Assertion,
         pearlite::{Substable, Term, TermKind},
     },
     util::Orphan,
@@ -572,48 +572,11 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
         if pred_blocks.is_empty() {
             return;
         }
-        let mut resolved_between = pred_blocks
+        let resolved_between = pred_blocks
             .iter()
             .map(|&pred| self.resolver.resolved_places_between_blocks(pred, bb))
             .collect::<Vec<_>>();
-        for (pred, resolved) in iter::zip(pred_blocks, resolved_between.iter_mut()) {
-            let bbd = &self.resolver.body.basic_blocks[*pred];
-            let Some(discr_pl) = discriminator_for_switch(bbd) else {
-                continue;
-            };
-            let LookupResult::Exact(discr_mp) = self.move_data().rev_lookup.find(discr_pl.as_ref())
-            else {
-                continue;
-            };
-            let Some(adt) = discr_pl.ty(self.resolver.body, self.tcx()).ty.ty_adt_def() else {
-                continue;
-            };
-            let mir::TerminatorKind::SwitchInt { targets, .. } = &bbd.terminator().kind else {
-                unreachable!()
-            };
-            if targets.otherwise() == bb {
-                continue;
-            }
-            let mut inactive_mps = self.empty_bitset();
-            // We first insert all the move paths of the discriminator..
-            on_all_children_bits(self.move_data(), discr_mp, |mpi| {
-                inactive_mps.insert(mpi);
-            });
-            // ..and then remove everything which is active in this branch
-            let mut discrs = adt.discriminants(self.tcx());
-            for discr in targets.iter().filter_map(|(val, tgt)| (tgt == bb).then_some(val)) {
-                let var = discrs.find(|d| d.1.val == discr).unwrap().0;
-                let pl = self.tcx().mk_place_downcast(discr_pl, adt, var);
-                if let LookupResult::Exact(mp) = self.move_data().rev_lookup.find(pl.as_ref()) {
-                    on_all_children_bits(self.move_data(), mp, |mpi| {
-                        inactive_mps.remove(mpi);
-                    })
-                } else {
-                    inactive_mps.remove(discr_mp);
-                }
-            }
-            resolved.0.subtract(&inactive_mps);
-        }
+
         // If we have multiple predecessors (join point) but all of them agree on the deaths, then don't introduce a dedicated block.
         if resolved_between.windows(2).all(|r| r[0] == r[1]) {
             let r = resolved_between.into_iter().next().unwrap();

@@ -135,6 +135,24 @@ let branch_Option_tup2_refmut_slice_T_refmut_slice_T (self: t_Option_tup2_refmut
       end)}
     (! return {result}) ]
 
+predicate resolve_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_slice_T
+
+predicate resolve_tup2_refmut_slice_T_refmut_slice_T [@inline:trivial] (_1: tup2_refmut_slice_T_refmut_slice_T) =
+  resolve_refmut_slice_T _1.f0 /\ resolve_refmut_slice_T _1.f1
+
+meta "rewrite_def" predicate resolve_tup2_refmut_slice_T_refmut_slice_T
+
+predicate resolve_ControlFlow_Option_Infallible_tup2_refmut_slice_T_refmut_slice_T (_1: t_ControlFlow_Option_Infallible_tup2_refmut_slice_T_refmut_slice_T)
+
+axiom resolve_axiom [@rewrite]:
+  forall _1: t_ControlFlow_Option_Infallible_tup2_refmut_slice_T_refmut_slice_T [resolve_ControlFlow_Option_Infallible_tup2_refmut_slice_T_refmut_slice_T _1]. resolve_ControlFlow_Option_Infallible_tup2_refmut_slice_T_refmut_slice_T _1
+    = match _1 with
+      | Continue x0 -> resolve_tup2_refmut_slice_T_refmut_slice_T x0
+      | Break x0 -> true
+      end
+
 let elim_Break (_x: t_ControlFlow_Option_Infallible_tup2_refmut_slice_T_refmut_slice_T)
   (return (f0'0: t_Option_Infallible)) = any
   [ _k (f0'0: t_Option_Infallible) -> {Break f0'0 = _x} (! return {f0'0})
@@ -192,10 +210,6 @@ predicate resolve_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = _1.final = 
 
 meta "rewrite_def" predicate resolve_refmut_T
 
-predicate resolve_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
-
-meta "rewrite_def" predicate resolve_refmut_slice_T
-
 function index_slice_T [@inline:trivial] (self: Slice64.slice t_T) (ix: int) : t_T = Seq.get (Slice64.view self) ix
 
 meta "rewrite_def" function index_slice_T
@@ -220,12 +234,16 @@ let extern_spec_T__slice_T_split_first_mut_body_T (self_: MutBorrow.t (Slice64.s
         (fun (_x: t_ControlFlow_Option_Infallible_tup2_refmut_slice_T_refmut_slice_T) -> [ &_9 <- _x ] s3)
     | s3 = any
       [ br0 (x0: tup2_refmut_slice_T_refmut_slice_T) -> {_9 = Continue x0} (! bb5)
-      | br1 (x0: t_Option_Infallible) -> {_9 = Break x0} (! bb6) ] ]
-  | bb6 = s0
-    [ s0 = elim_Break {_9} (fun (r0: t_Option_Infallible) -> [ &residual <- r0 ] s1)
-    | s1 = from_residual_Option_tup2_refmut_T_refmut_slice_T {residual}
-        (fun (_x: t_Option_tup2_refmut_T_refmut_slice_T) -> [ &_ret <- _x ] s2)
-    | s2 = bb9 ]
+      | br1 (x0: t_Option_Infallible) -> {_9 = Break x0} (! bb4) ] ]
+  | bb4 = s0
+    [ s0 = s1
+      [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_Infallible_tup2_refmut_slice_T_refmut_slice_T _9}
+        any) ]
+    | s1 = -{resolve_ControlFlow_Option_Infallible_tup2_refmut_slice_T_refmut_slice_T _9}- s2
+    | s2 = elim_Break {_9} (fun (r0: t_Option_Infallible) -> [ &residual <- r0 ] s3)
+    | s3 = from_residual_Option_tup2_refmut_T_refmut_slice_T {residual}
+        (fun (_x: t_Option_tup2_refmut_T_refmut_slice_T) -> [ &_ret <- _x ] s4)
+    | s4 = bb9 ]
   | bb5 = s0
     [ s0 = elim_Continue {_9} (fun (r0: tup2_refmut_slice_T_refmut_slice_T) -> [ &val' <- r0 ] s1)
     | s1 = [ &_8 <- val' ] s2

@@ -10,12 +10,10 @@ use crate::{
         pearlite::{Term, TermKind, UnOp},
     },
 };
-use itertools::Itertools;
 use rustc_middle::{
     mir::{
-        self, AssertKind, BasicBlockData, Location, Operand, Place, Rvalue, SourceInfo,
-        StatementKind, SwitchTargets,
-        TerminatorKind::{self, *},
+        self, AssertKind, Location, Operand, Rvalue, SourceInfo, StatementKind, SwitchTargets,
+        TerminatorKind::*,
     },
     ty::{GenericArgKind, Ty, TyKind},
 };
@@ -36,10 +34,17 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         let mut term = match &terminator.kind {
             Goto { target } => Terminator::Goto(*target),
             SwitchInt { discr, targets, .. } => {
-                let real_discr = discriminator_for_switch(&self.body.basic_blocks[loc.block])
-                    .map(Operand::Move)
-                    .unwrap_or_else(|| discr.clone());
-
+                let bbd = &self.body.basic_blocks[loc.block];
+                let real_discr = if let Some(mir::Statement {
+                    kind: StatementKind::Assign(box (pl, Rvalue::Discriminant(real_discr))),
+                    ..
+                }) = bbd.statements.last()
+                    && discr.place() == Some(*pl)
+                {
+                    Operand::Move(*real_discr)
+                } else {
+                    discr.clone()
+                };
                 let discriminant = self.translate_operand(&real_discr, span);
                 let ty = real_discr.ty(self.body, self.tcx());
                 make_switch(self.ctx, terminator.source_info, ty, targets, discriminant)
@@ -219,23 +224,6 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
     }
 }
 
-// Find the place being discriminated, if there is one
-pub(crate) fn discriminator_for_switch<'tcx>(bbd: &BasicBlockData<'tcx>) -> Option<Place<'tcx>> {
-    let discr = if let TerminatorKind::SwitchInt { discr, .. } = &bbd.terminator().kind {
-        discr
-    } else {
-        return None;
-    };
-
-    if let StatementKind::Assign(box (pl, Rvalue::Discriminant(real_discr))) =
-        bbd.statements.last()?.kind
-    {
-        if discr.place() == Some(pl) { Some(real_discr) } else { None }
-    } else {
-        None
-    }
-}
-
 fn make_switch<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     si: SourceInfo,
@@ -261,25 +249,23 @@ fn make_switch<'tcx>(
             Branches::Constructor(*def, substs, branches, default)
         }
         TyKind::Bool => {
-            let branches: (_, _) = targets
+            let f_branch = targets
                 .iter()
-                .sorted()
-                .map(|tgt| tgt.1)
-                .chain([targets.otherwise()])
-                .take(2)
-                .collect_tuple()
-                .unwrap();
+                .find_map(|(d, tgt)| (d == 0).then_some(tgt))
+                .unwrap_or(targets.otherwise());
 
-            Branches::Bool(branches.0, branches.1)
+            let t_branch = targets
+                .iter()
+                .find_map(|(d, tgt)| (d == 1).then_some(tgt))
+                .unwrap_or(targets.otherwise());
+
+            Branches::Bool(f_branch, t_branch)
         }
         TyKind::Float(_) => {
             ctx.crash_and_error(si.span, "Float patterns are currently unsupported")
         }
         TyKind::Uint(_) => Branches::Uint(targets.iter().collect(), targets.otherwise()),
-        TyKind::Int(_) => {
-            let branches = targets.iter().map(|(val, tgt)| (val as i128, tgt)).collect();
-            Branches::Int(branches, targets.otherwise())
-        }
+        TyKind::Int(_) => Branches::Int(targets.iter().collect(), targets.otherwise()),
         ty => ctx.crash_and_error(si.span, format!("match on {:?} is currently unsupported", ty)),
     };
     Terminator::Switch(discr, si.span, branches)

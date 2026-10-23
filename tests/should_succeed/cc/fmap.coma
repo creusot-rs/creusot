@@ -199,13 +199,27 @@ module M_resolves
         end}
       any) ]
   
+  predicate resolve_tup2_refmut_usize_refmut_usize [@inline:trivial] (_1: tup2_refmut_usize_refmut_usize) =
+    resolve_refmut_usize _1.f0 /\ resolve_refmut_usize _1.f1
+  
+  meta "rewrite_def" predicate resolve_tup2_refmut_usize_refmut_usize
+  
+  predicate resolve_Option_tup2_refmut_usize_refmut_usize (_1: t_Option_tup2_refmut_usize_refmut_usize)
+  
+  axiom resolve_axiom'0 [@rewrite]:
+    forall _1: t_Option_tup2_refmut_usize_refmut_usize [resolve_Option_tup2_refmut_usize_refmut_usize _1]. resolve_Option_tup2_refmut_usize_refmut_usize _1
+      = match _1 with
+        | None'0 -> true
+        | Some'0 x0 -> resolve_tup2_refmut_usize_refmut_usize x0
+        end
+  
   predicate resolve_FMap_refmut_usize_refmut_usize (self: t_FMap_refmut_usize_refmut_usize) =
     forall k: MutBorrow.t UInt64.t, v: MutBorrow.t UInt64.t. lookup_refmut_usize self k = Some v
       -> resolve_refmut_usize k /\ resolve_refmut_usize v
   
   predicate resolve_FMap_refmut_usize_refmut_usize'0 (_1: t_FMap_refmut_usize_refmut_usize)
   
-  axiom resolve_axiom'0 [@rewrite]:
+  axiom resolve_axiom'1 [@rewrite]:
     forall _1: t_FMap_refmut_usize_refmut_usize [resolve_FMap_refmut_usize_refmut_usize'0 _1]. resolve_FMap_refmut_usize_refmut_usize'0 _1
       = resolve_FMap_refmut_usize_refmut_usize _1
   
@@ -216,7 +230,7 @@ module M_resolves
   
   predicate resolve_Iter_refmut_usize_refmut_usize'0 (_1: t_Iter_refmut_usize_refmut_usize)
   
-  axiom resolve_axiom'1:
+  axiom resolve_axiom'2:
     forall _1: t_Iter_refmut_usize_refmut_usize [resolve_Iter_refmut_usize_refmut_usize'0 _1]. resolve_Iter_refmut_usize_refmut_usize'0 _1
       -> resolve_Iter_refmut_usize_refmut_usize _1
   
@@ -287,11 +301,12 @@ module M_resolves
           | s8 = -{resolve_refmut_usize v2}- s9
           | s9 = bb9 ] ] ]
     | bb14 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Iter_refmut_usize_refmut_usize iter} any) ]
-      | s1 = -{resolve_Iter_refmut_usize_refmut_usize'0 iter}- s2
-      | s2 = UInt64.add {k} {v} (fun (_x: UInt64.t) -> [ &_2 <- _x ] s3)
-      | s3 = new_usize {_2} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s4)
-      | s4 = return {_ret} ] ]
+      [ s0 = -{resolve_Option_tup2_refmut_usize_refmut_usize _45}- s1
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_Iter_refmut_usize_refmut_usize iter} any) ]
+      | s2 = -{resolve_Iter_refmut_usize_refmut_usize'0 iter}- s3
+      | s3 = UInt64.add {k} {v} (fun (_x: UInt64.t) -> [ &_2 <- _x ] s4)
+      | s4 = new_usize {_2} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s5)
+      | s5 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & _2: UInt64.t = Any.any_l ()
     | & k: UInt64.t = Any.any_l ()

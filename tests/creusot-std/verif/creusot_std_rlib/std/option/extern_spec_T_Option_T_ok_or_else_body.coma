@@ -22,6 +22,26 @@ type t_E
 
 type t_Result_T_E = Ok t_T | Err t_E
 
+predicate inv_T (_1: t_T)
+
+predicate inv_Option_T (_1: t_Option_T)
+
+axiom inv_axiom [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
+    = match _1 with
+      | None -> true
+      | Some f0 -> inv_T f0
+      end
+
+predicate resolve_T (_1: t_T)
+
+predicate resolve_Option_T (_1: t_Option_T)
+
+axiom resolve_axiom [@rewrite]: forall _1: t_Option_T [resolve_Option_T _1]. resolve_Option_T _1
+    = match _1 with
+      | None -> true
+      | Some x0 -> resolve_T x0
+      end
+
 predicate precondition_F (self: t_F) (args: ())
 
 predicate inv_E (_1: t_E)
@@ -36,16 +56,6 @@ let call_once_F (self: t_F) (args: ()) (return (x: t_E)) =
   {[@stop_split] [@expl:call_once_F ensures] ([@stop_split] [@expl:call_once result type invariant] inv_E result)
     /\ ([@stop_split] [@expl:call_once ensures] postcondition_once_F self args result)}
     (! return {result}) ]
-
-predicate inv_T (_1: t_T)
-
-predicate inv_Option_T (_1: t_Option_T)
-
-axiom inv_axiom [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
-    = match _1 with
-      | None -> true
-      | Some f0 -> inv_T f0
-      end
 
 predicate inv_Result_T_E (_1: t_Result_T_E)
 
@@ -64,17 +74,19 @@ let extern_spec_T_Option_T_ok_or_else_body_T (self_: t_Option_T) (err: t_F) (ret
   /\ ([@stop_split] [@expl:extern_spec_T_Option_T_ok_or_else_body 'err' type invariant] inv_F err)
   /\ ([@stop_split] [@expl:extern_spec_T_Option_T_ok_or_else_body requires] self_ = None -> precondition_F err ())}
   (! bb0
-  [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
+  [ bb0 = any [ br0 -> {self_ = None} (! bb2) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
   | bb3 = s0
     [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F err} any) ]
     | s1 = -{resolve_F err}- s2
     | s2 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s3)
     | s3 = [ &_ret <- Ok t ] s4
     | s4 = return {_ret} ]
-  | bb4 = s0
-    [ s0 = call_once_F {err} {_12} (fun (_x: t_E) -> [ &_10 <- _x ] s1)
-    | s1 = [ &_ret <- Err _10 ] s2
-    | s2 = return {_ret} ] ]
+  | bb2 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_T self_} any) ]
+    | s1 = -{resolve_Option_T self_}- s2
+    | s2 = call_once_F {err} {_12} (fun (_x: t_E) -> [ &_10 <- _x ] s3)
+    | s3 = [ &_ret <- Err _10 ] s4
+    | s4 = return {_ret} ] ]
   [ & _ret: t_Result_T_E = Any.any_l ()
   | & self_: t_Option_T = self_
   | & err: t_F = err

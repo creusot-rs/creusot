@@ -19,8 +19,8 @@ use crate::{
         signature::{Contract, ProgramSignature, lower_program_sig},
         term::{cast_int, lower_pure, unsupported_cast},
         ty::{
-            constructor, floatty_to_prelude, int, ity_to_prelude, sign_extend, translate_ty,
-            ty_to_prelude, uty_to_prelude,
+            constructor, floatty_to_prelude, int, ity_to_prelude, translate_ty, ty_to_prelude,
+            uty_to_prelude,
         },
         ty_inv::{is_tyinv_trivial, sig_add_type_invariant_spec},
         wto::{Component, weak_topological_order},
@@ -39,14 +39,13 @@ use crate::{
 };
 use indexmap::IndexMap;
 use petgraph::graphmap::DiGraphMap;
-use rustc_abi::VariantIdx;
+use rustc_abi::{Integer, VariantIdx};
 use rustc_hir::{Safety, def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::{BasicBlock, BinOp, PlaceTy, ProjectionElem, START_BLOCK, UnOp},
-    ty::{self, AdtDef, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind},
+    ty::{self, AdtDef, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind, layout::IntegerExt},
 };
 use rustc_span::{DUMMY_SP, Span};
-use rustc_type_ir::IntTy;
 use std::{collections::HashMap, fmt::Debug, iter::once};
 use why3::{
     Ident, Name,
@@ -989,22 +988,17 @@ impl<'tcx> Branches<'tcx> {
                 // Collect (expr, target) pairs to avoid iterating twice
                 let branches: Vec<_> = brs
                     .into_iter()
-                    .map(|(mut val, tgt)| {
+                    .map(|(val, tgt)| {
                         let why_ty =
                             Type::qconstructor(names.in_pre(ity_to_prelude(ctx.tcx, *ity), "t"));
-                        let e = if names.bitwise_mode() {
+                        let val_str = if !names.bitwise_mode() {
                             // In bitwise mode, integers are bit vectors, whose literals are always unsigned
-                            if val < 0 && *ity != IntTy::I128 {
-                                let target_width = ctx.tcx.sess.target.pointer_width;
-                                val += 1 << ity.normalize(target_width).bit_width().unwrap();
-                            }
-                            Exp::Const(Constant::IntDigits10(val.to_string(), Some(why_ty)))
+                            let size = Integer::from_int_ty(&ctx.tcx, *ity).size();
+                            size.sign_extend(val).to_string()
                         } else {
-                            Exp::Const(Constant::IntDigits10(
-                                sign_extend(val, *ity).to_string(),
-                                Some(why_ty),
-                            ))
+                            val.to_string()
                         };
+                        let e = Exp::Const(Constant::IntDigits10(val_str, Some(why_ty)));
                         (e, mk_goto(block_idents, tgt))
                     })
                     .collect();
