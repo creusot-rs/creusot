@@ -839,7 +839,25 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
   
   type t_Option_tup2_Item_Item = None'1 | Some'1 tup2_Item_Item
   
-  predicate resolve_Item (_1: t_Item)
+  predicate resolve_Item (_1: t_Item'0)
+  
+  predicate resolve_Option_Item (_1: t_Option_Item'0)
+  
+  axiom resolve_axiom [@rewrite]: forall _1: t_Option_Item'0 [resolve_Option_Item _1]. resolve_Option_Item _1
+      = match _1 with
+        | None'0 -> true
+        | Some'0 x0 -> resolve_Item x0
+        end
+  
+  predicate resolve_Item'0 (_1: t_Item)
+  
+  predicate resolve_Option_Item'0 (_1: t_Option_Item)
+  
+  axiom resolve_axiom'0 [@rewrite]: forall _1: t_Option_Item [resolve_Option_Item'0 _1]. resolve_Option_Item'0 _1
+      = match _1 with
+        | None -> true
+        | Some x0 -> resolve_Item'0 x0
+        end
   
   predicate inv_tup2_Item_Item [@inline:trivial] (_1: tup2_Item_Item) = inv_Item _1.f0 /\ inv_Item'0 _1.f1
   
@@ -858,7 +876,7 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
     completed_A (MutBorrow.borrow_logic self.current.a self.final.a (MutBorrow.inherit_id (MutBorrow.get_id self) 0))
       /\ self.current.b = self.final.b
     \/ (exists x: t_Item. produces_A self.current.a (Seq.singleton x) self.final.a
-      /\ resolve_Item x
+      /\ resolve_Item'0 x
       /\ completed_B (MutBorrow.borrow_logic self.current.b self.final.b (MutBorrow.inherit_id (MutBorrow.get_id self) 1)))
   
   predicate produces_Zip_A_B (self: t_Zip_A_B) (visited: Seq.seq tup2_Item_Item) (tl: t_Zip_A_B) =
@@ -902,15 +920,19 @@ module M_impl_Iterator_for_Zip_A_B__next (* <Zip<A, B> as common::Iterator> *)
       | s3 = [ &_ret <- Some'1 _16 ] s4
       | s4 = return {_ret} ]
     | bb10 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Item x} any) ]
-      | s1 = -{resolve_Item x}- s2
-      | s2 = [ &_ret <- None'1 ] s3
-      | s3 = return {_ret} ]
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_Item'0 _11} any) ]
+      | s1 = -{resolve_Option_Item _11}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Item x} any) ]
+      | s3 = -{resolve_Item'0 x}- s4
+      | s4 = [ &_ret <- None'1 ] s5
+      | s5 = return {_ret} ]
     | bb3 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Zip_A_B self} any) ]
-      | s1 = -{resolve_refmut_Zip_A_B self}- s2
-      | s2 = [ &_ret <- None'1 ] s3
-      | s3 = return {_ret} ] ]
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_Item _5} any) ]
+      | s1 = -{resolve_Option_Item'0 _5}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Zip_A_B self} any) ]
+      | s3 = -{resolve_refmut_Zip_A_B self}- s4
+      | s4 = [ &_ret <- None'1 ] s5
+      | s5 = return {_ret} ] ]
     [ & _ret: t_Option_tup2_Item_Item = Any.any_l ()
     | & self: MutBorrow.t t_Zip_A_B = self
     | & x: t_Item = Any.any_l ()

@@ -151,6 +151,20 @@ module M_take_first_mut
   
   meta "rewrite_def" predicate resolve_refmut_T
   
+  predicate resolve_tup2_refmut_T_refmut_slice_T [@inline:trivial] (_1: tup2_refmut_T_refmut_slice_T) =
+    resolve_refmut_T _1.f0 /\ resolve_refmut_slice_T _1.f1
+  
+  meta "rewrite_def" predicate resolve_tup2_refmut_T_refmut_slice_T
+  
+  predicate resolve_Option_tup2_refmut_T_refmut_slice_T (_1: t_Option_tup2_refmut_T_refmut_slice_T)
+  
+  axiom resolve_axiom [@rewrite]:
+    forall _1: t_Option_tup2_refmut_T_refmut_slice_T [resolve_Option_tup2_refmut_T_refmut_slice_T _1]. resolve_Option_tup2_refmut_T_refmut_slice_T _1
+      = match _1 with
+        | None -> true
+        | Some x0 -> resolve_tup2_refmut_T_refmut_slice_T x0
+        end
+  
   predicate inv_Option_refmut_T (_1: t_Option_refmut_T)
   
   axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_refmut_T [inv_Option_refmut_T _1]. inv_Option_refmut_T _1
@@ -215,12 +229,14 @@ module M_take_first_mut
       | s15 = -{resolve_refmut_slice_T _6}- s16
       | s16 = return {_ret} ]
     | bb4 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_slice_T self_} any) ]
-      | s1 = -{resolve_refmut_refmut_slice_T self_}- s2
-      | s2 = [ &_ret <- None'0 ] s3
-      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T _6} any) ]
-      | s4 = -{resolve_refmut_slice_T _6}- s5
-      | s5 = return {_ret} ] ]
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_tup2_refmut_T_refmut_slice_T _4} any) ]
+      | s1 = -{resolve_Option_tup2_refmut_T_refmut_slice_T _4}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_slice_T self_} any) ]
+      | s3 = -{resolve_refmut_refmut_slice_T self_}- s4
+      | s4 = [ &_ret <- None'0 ] s5
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T _6} any) ]
+      | s6 = -{resolve_refmut_slice_T _6}- s7
+      | s7 = return {_ret} ] ]
     [ & _ret: t_Option_refmut_T = Any.any_l ()
     | & self_: MutBorrow.t (MutBorrow.t (Slice64.slice t_T)) = self_
     | & _4: t_Option_tup2_refmut_T_refmut_slice_T = Any.any_l ()

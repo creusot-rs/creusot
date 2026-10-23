@@ -46,6 +46,16 @@ axiom inv_axiom [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_
       | Some f0 -> inv_T f0
       end
 
+predicate resolve_T (_1: t_T)
+
+predicate resolve_Option_T (_1: t_Option_T)
+
+axiom resolve_axiom [@rewrite]: forall _1: t_Option_T [resolve_Option_T _1]. resolve_Option_T _1
+    = match _1 with
+      | None -> true
+      | Some x0 -> resolve_T x0
+      end
+
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
@@ -70,8 +80,10 @@ let extern_spec_T_Option_T_is_some_and_body_T (self_: t_Option_T)
     [ s0 = s1
       [ _ck -> (! {[@expl:type invariant] inv_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct f} any) ]
     | s1 = -{resolve_impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct f}- s2
-    | s2 = [ &_ret <- false ] s3
-    | s3 = return {_ret} ] ]
+    | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_Option_T self_} any) ]
+    | s3 = -{resolve_Option_T self_}- s4
+    | s4 = [ &_ret <- false ] s5
+    | s5 = return {_ret} ] ]
   [ & _ret: bool = Any.any_l ()
   | & self_: t_Option_T = self_
   | & f: impl_32_FnOnce_40_T_41__32__45__62__32_bool_32__43__32_Destruct = f

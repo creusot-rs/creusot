@@ -171,7 +171,7 @@ pub enum Branches<'tcx> {
     Int(
         #[type_visitable(ignore)]
         #[type_foldable(identity)]
-        Box<[(i128, BasicBlock)]>,
+        Box<[(u128, BasicBlock)]>, // The u128 value is the zero-extended value in an u128
         BasicBlock,
     ),
     Uint(

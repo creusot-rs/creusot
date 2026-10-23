@@ -1795,6 +1795,16 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
   
   type t_Option_B = None'0 | Some'0 t_B
   
+  predicate resolve_Item (_1: t_Item)
+  
+  predicate resolve_Option_Item (_1: t_Option_Item)
+  
+  axiom resolve_axiom [@rewrite]: forall _1: t_Option_Item [resolve_Option_Item _1]. resolve_Option_Item _1
+      = match _1 with
+        | None -> true
+        | Some x0 -> resolve_Item x0
+        end
+  
   predicate inv_Option_B (_1: t_Option_B)
   
   axiom inv_axiom'1 [@rewrite]: forall _1: t_Option_B [inv_Option_B _1]. inv_Option_B _1
@@ -1864,10 +1874,12 @@ module M_impl_Iterator_for_Map_I_F__next (* <Map<I, F> as common::Iterator> *)
       | s8 = [ &_ret <- Some'0 _14 ] s9
       | s9 = return {_ret} ]
     | bb4 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Map_I_F self} any) ]
-      | s1 = -{resolve_refmut_Map_I_F self}- s2
-      | s2 = [ &_ret <- None'0 ] s3
-      | s3 = return {_ret} ] ]
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_Item _4} any) ]
+      | s1 = -{resolve_Option_Item _4}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Map_I_F self} any) ]
+      | s3 = -{resolve_refmut_Map_I_F self}- s4
+      | s4 = [ &_ret <- None'0 ] s5
+      | s5 = return {_ret} ] ]
     [ & _ret: t_Option_B = Any.any_l ()
     | & self: MutBorrow.t t_Map_I_F = self
     | & _4: t_Option_Item = Any.any_l ()

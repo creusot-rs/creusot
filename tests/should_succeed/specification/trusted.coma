@@ -215,6 +215,14 @@ module M_rose
   axiom resolve_axiom'0 [@rewrite]: forall _1: t_Rose_T [resolve_Rose_T _1]. resolve_Rose_T _1
       = (resolve_T _1.f0 /\ resolve_Vec_Rose_T_Global'0 _1.f1)
   
+  predicate resolve_Option_Rose_T (_1: t_Option_Rose_T)
+  
+  axiom resolve_axiom'1 [@rewrite]: forall _1: t_Option_Rose_T [resolve_Option_Rose_T _1]. resolve_Option_Rose_T _1
+      = match _1 with
+        | None -> true
+        | Some x0 -> resolve_Rose_T x0
+        end
+  
   predicate resolve_IntoIter_Rose_T_Global [@inline:trivial] (self: t_IntoIter_Rose_T_Global) =
     forall i: int. 0 <= i /\ i < Seq.length (view_IntoIter_Rose_T_Global self)
       -> resolve_Rose_T (Seq.get (view_IntoIter_Rose_T_Global self) i)
@@ -223,7 +231,7 @@ module M_rose
   
   predicate resolve_IntoIter_Rose_T_Global'0 (_1: t_IntoIter_Rose_T_Global)
   
-  axiom resolve_axiom'1:
+  axiom resolve_axiom'2:
     forall _1: t_IntoIter_Rose_T_Global [resolve_IntoIter_Rose_T_Global'0 _1]. resolve_IntoIter_Rose_T_Global'0 _1
       -> resolve_IntoIter_Rose_T_Global _1
   
@@ -260,10 +268,12 @@ module M_rose
           | s1 = rose_T {r'0} (fun (_x: UInt64.t) -> [ &_15 <- _x ] s2)
           | s2 = bb2 ] ] ]
     | bb6 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_IntoIter_Rose_T_Global iter} any) ]
-      | s1 = -{resolve_IntoIter_Rose_T_Global'0 iter}- s2
-      | s2 = [ &_ret <- (0: UInt64.t) ] s3
-      | s3 = return {_ret} ] ]
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_Rose_T _9} any) ]
+      | s1 = -{resolve_Option_Rose_T _9}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_IntoIter_Rose_T_Global iter} any) ]
+      | s3 = -{resolve_IntoIter_Rose_T_Global'0 iter}- s4
+      | s4 = [ &_ret <- (0: UInt64.t) ] s5
+      | s5 = return {_ret} ] ]
     [ & _ret: UInt64.t = Any.any_l ()
     | & r: t_Rose_T = r
     | & _4: t_IntoIter_Rose_T_Global = Any.any_l ()

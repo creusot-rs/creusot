@@ -40,14 +40,18 @@ let extern_spec_T_Option_T_or_body_T (self_: t_Option_T) (optb: t_Option_T) (ret
 {[@stop_split] [@expl:extern_spec_T_Option_T_or_body_T requires] ([@stop_split] [@expl:extern_spec_T_Option_T_or_body 'self_' type invariant] inv_Option_T self_)
   /\ ([@stop_split] [@expl:extern_spec_T_Option_T_or_body 'optb' type invariant] inv_Option_T optb)}
   (! bb0
-  [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
+  [ bb0 = any [ br0 -> {self_ = None} (! bb2) | br1 (x0: t_T) -> {self_ = Some x0} (! bb3) ]
   | bb3 = s0
     [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_T optb} any) ]
     | s1 = -{resolve_Option_T optb}- s2
     | s2 = elim_Some {self_} (fun (r0: t_T) -> [ &t <- r0 ] s3)
     | s3 = [ &_ret <- Some t ] s4
     | s4 = return {_ret} ]
-  | bb4 = s0 [ s0 = [ &_ret <- optb ] s1 | s1 = return {_ret} ] ]
+  | bb2 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_T self_} any) ]
+    | s1 = -{resolve_Option_T self_}- s2
+    | s2 = [ &_ret <- optb ] s3
+    | s3 = return {_ret} ] ]
   [ & _ret: t_Option_T = Any.any_l ()
   | & self_: t_Option_T = self_
   | & optb: t_Option_T = optb

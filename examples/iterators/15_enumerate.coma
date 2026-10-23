@@ -1267,6 +1267,16 @@ module M_impl_Iterator_for_Enumerate_I__next (* <Enumerate<I> as common::Iterato
   
   type t_Option_tup2_usize_Item = None'0 | Some'0 tup2_usize_Item
   
+  predicate resolve_Item (_1: t_Item)
+  
+  predicate resolve_Option_Item (_1: t_Option_Item)
+  
+  axiom resolve_axiom [@rewrite]: forall _1: t_Option_Item [resolve_Option_Item _1]. resolve_Option_Item _1
+      = match _1 with
+        | None -> true
+        | Some x0 -> resolve_Item x0
+        end
+  
   predicate inv_tup2_usize_Item [@inline:trivial] (_1: tup2_usize_Item) = inv_Item _1.f1
   
   meta "rewrite_def" predicate inv_tup2_usize_Item
@@ -1321,10 +1331,12 @@ module M_impl_Iterator_for_Enumerate_I__next (* <Enumerate<I> as common::Iterato
       | s6 = [ &_ret <- Some'0 _9 ] s7
       | s7 = return {_ret} ]
     | bb3 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Enumerate_I self} any) ]
-      | s1 = -{resolve_refmut_Enumerate_I self}- s2
-      | s2 = [ &_ret <- None'0 ] s3
-      | s3 = return {_ret} ] ]
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_Item _4} any) ]
+      | s1 = -{resolve_Option_Item _4}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Enumerate_I self} any) ]
+      | s3 = -{resolve_refmut_Enumerate_I self}- s4
+      | s4 = [ &_ret <- None'0 ] s5
+      | s5 = return {_ret} ] ]
     [ & _ret: t_Option_tup2_usize_Item = Any.any_l ()
     | & self: MutBorrow.t t_Enumerate_I = self
     | & _4: t_Option_Item = Any.any_l ()

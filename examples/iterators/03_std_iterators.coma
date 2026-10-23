@@ -131,6 +131,15 @@ module M_all_zero
   
   meta "rewrite_def" predicate resolve_refmut_usize
   
+  predicate resolve_Option_refmut_usize (_1: t_Option_refmut_usize)
+  
+  axiom resolve_axiom [@rewrite]:
+    forall _1: t_Option_refmut_usize [resolve_Option_refmut_usize _1]. resolve_Option_refmut_usize _1
+      = match _1 with
+        | None -> true
+        | Some x0 -> resolve_refmut_usize x0
+        end
+  
   predicate resolve_IterMut_usize [@inline:trivial] (self: t_IterMut_usize) =
     (view_IterMut_usize self).current = (view_IterMut_usize self).final
   
@@ -138,7 +147,7 @@ module M_all_zero
   
   predicate resolve_IterMut_usize'0 (_1: t_IterMut_usize)
   
-  axiom resolve_axiom: forall _1: t_IterMut_usize [resolve_IterMut_usize'0 _1]. resolve_IterMut_usize'0 _1
+  axiom resolve_axiom'0: forall _1: t_IterMut_usize [resolve_IterMut_usize'0 _1]. resolve_IterMut_usize'0 _1
       -> resolve_IterMut_usize _1
   
   predicate resolve_refmut_Vec_usize_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_usize_Global) =
@@ -199,10 +208,11 @@ module M_all_zero
           | s5 = -{resolve_refmut_usize x}- s6
           | s6 = bb6 ] ] ]
     | bb11 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_IterMut_usize iter} any) ]
-      | s1 = -{resolve_IterMut_usize'0 iter}- s2
-      | s2 = -{resolve_refmut_Vec_usize_Global v}- s3
-      | s3 = return {_ret} ] ]
+      [ s0 = -{resolve_Option_refmut_usize _28}- s1
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_IterMut_usize iter} any) ]
+      | s2 = -{resolve_IterMut_usize'0 iter}- s3
+      | s3 = -{resolve_refmut_Vec_usize_Global v}- s4
+      | s4 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & v: MutBorrow.t t_Vec_usize_Global = v
     | & iter: t_IterMut_usize = Any.any_l ()

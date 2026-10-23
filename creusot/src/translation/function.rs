@@ -25,8 +25,6 @@ use rustc_middle::{
 use rustc_span::{DUMMY_SP, Span};
 use std::{assert_matches, collections::HashMap, ops::FnOnce};
 
-pub(crate) use self::terminator::discriminator_for_switch;
-
 /// Translate a function from rustc's MIR to fMIR.
 pub(crate) fn fmir<'tcx>(ctx: &TranslationCtx<'tcx>, body_id: BodyId) -> fmir::Body<'tcx> {
     BodyTranslator::with_context(ctx, body_id, |func_translator| func_translator.translate())

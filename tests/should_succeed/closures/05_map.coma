@@ -161,6 +161,16 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
   
   type t_Option_B = None'0 | Some'0 t_B
   
+  predicate resolve_A (_1: t_A)
+  
+  predicate resolve_Option_A (_1: t_Option_A)
+  
+  axiom resolve_axiom [@rewrite]: forall _1: t_Option_A [resolve_Option_A _1]. resolve_Option_A _1
+      = match _1 with
+        | None -> true
+        | Some x0 -> resolve_A x0
+        end
+  
   predicate inv_Option_B (_1: t_Option_B)
   
   axiom inv_axiom'1 [@rewrite]: forall _1: t_Option_B [inv_Option_B _1]. inv_Option_B _1
@@ -193,10 +203,12 @@ module M_impl_FakeIterator_for_Map_I_F__next (* <Map<I, F> as FakeIterator> *)
       | s5 = [ &_ret <- Some'0 _6 ] s6
       | s6 = return {_ret} ]
     | bb3 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Map_I_F self} any) ]
-      | s1 = -{resolve_refmut_Map_I_F self}- s2
-      | s2 = [ &_ret <- None'0 ] s3
-      | s3 = return {_ret} ] ]
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_A _2} any) ]
+      | s1 = -{resolve_Option_A _2}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Map_I_F self} any) ]
+      | s3 = -{resolve_refmut_Map_I_F self}- s4
+      | s4 = [ &_ret <- None'0 ] s5
+      | s5 = return {_ret} ] ]
     [ & _ret: t_Option_B = Any.any_l ()
     | & self: MutBorrow.t t_Map_I_F = self
     | & _2: t_Option_A = Any.any_l ()

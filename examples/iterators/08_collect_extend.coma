@@ -148,6 +148,16 @@ module M_collect
       = Seq.snoc (view_Vec_Item_Global self.current) value}
       (! return {result}) ]
   
+  predicate resolve_Item (_1: t_Item)
+  
+  predicate resolve_Option_Item (_1: t_Option_Item)
+  
+  axiom resolve_axiom [@rewrite]: forall _1: t_Option_Item [resolve_Option_Item _1]. resolve_Option_Item _1
+      = match _1 with
+        | None -> true
+        | Some x0 -> resolve_Item x0
+        end
+  
   predicate resolve_I (_1: t_I)
   
   meta "compute_max_steps" 1000000
@@ -195,10 +205,12 @@ module M_collect
           | s5 = push_Item {_38} {x} (fun (_x: ()) -> [ &_37 <- _x ] s6)
           | s6 = bb5 ] ] ]
     | bb10 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_I iter'0} any) ]
-      | s1 = -{resolve_I iter'0}- s2
-      | s2 = [ &_ret <- res ] s3
-      | s3 = return {_ret} ] ]
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_Item _26} any) ]
+      | s1 = -{resolve_Option_Item _26}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_I iter'0} any) ]
+      | s3 = -{resolve_I iter'0}- s4
+      | s4 = [ &_ret <- res ] s5
+      | s5 = return {_ret} ] ]
     [ & _ret: t_Vec_Item_Global = Any.any_l ()
     | & iter: t_I = iter
     | & res: t_Vec_Item_Global = Any.any_l ()
@@ -431,6 +443,16 @@ module M_extend
       = Seq.snoc (view_Vec_T_Global self.current) value}
       (! return {result}) ]
   
+  predicate resolve_T (_1: t_T)
+  
+  predicate resolve_Option_T (_1: t_Option_T)
+  
+  axiom resolve_axiom [@rewrite]: forall _1: t_Option_T [resolve_Option_T _1]. resolve_Option_T _1
+      = match _1 with
+        | None -> true
+        | Some x0 -> resolve_T x0
+        end
+  
   predicate resolve_I (_1: t_I)
   
   predicate resolve_refmut_Vec_T_Global [@inline:trivial] (_1: MutBorrow.t t_Vec_T_Global) = _1.final = _1.current
@@ -486,11 +508,13 @@ module M_extend
           | s5 = push_T {_42} {x} (fun (_x: ()) -> [ &_41 <- _x ] s6)
           | s6 = bb5 ] ] ]
     | bb10 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_I iter'0} any) ]
-      | s1 = -{resolve_I iter'0}- s2
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_Vec_T_Global vec} any) ]
-      | s3 = -{resolve_refmut_Vec_T_Global vec}- s4
-      | s4 = return {_ret} ] ]
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_T _30} any) ]
+      | s1 = -{resolve_Option_T _30}- s2
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_I iter'0} any) ]
+      | s3 = -{resolve_I iter'0}- s4
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_refmut_Vec_T_Global vec} any) ]
+      | s5 = -{resolve_refmut_Vec_T_Global vec}- s6
+      | s6 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & vec: MutBorrow.t t_Vec_T_Global = vec
     | & iter: t_I = iter

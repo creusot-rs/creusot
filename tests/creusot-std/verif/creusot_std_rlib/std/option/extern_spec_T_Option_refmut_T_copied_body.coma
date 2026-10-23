@@ -37,6 +37,14 @@ axiom inv_axiom [@rewrite]: forall _1: t_Option_refmut_T [inv_Option_refmut_T _1
       | Some f0 -> inv_refmut_T f0
       end
 
+predicate resolve_Option_refmut_T (_1: t_Option_refmut_T)
+
+axiom resolve_axiom [@rewrite]: forall _1: t_Option_refmut_T [resolve_Option_refmut_T _1]. resolve_Option_refmut_T _1
+    = match _1 with
+      | None -> true
+      | Some x0 -> resolve_refmut_T x0
+      end
+
 predicate inv_Option_T (_1: t_Option_T)
 
 axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
@@ -52,14 +60,18 @@ meta "select_lsinst" "all"
 let extern_spec_T_Option__refmut_T_copied_body_T (self_: t_Option_refmut_T) (return (x: t_Option_T)) =
 {[@stop_split] [@expl:extern_spec_T_Option__refmut_T_copied_body 'self_' type invariant] inv_Option_refmut_T self_}
   (! bb0
-  [ bb0 = any [ br0 -> {self_ = None} (! bb4) | br1 (x0: MutBorrow.t t_T) -> {self_ = Some x0} (! bb3) ]
+  [ bb0 = any [ br0 -> {self_ = None} (! bb2) | br1 (x0: MutBorrow.t t_T) -> {self_ = Some x0} (! bb3) ]
   | bb3 = s0
     [ s0 = elim_Some {self_} (fun (r0: MutBorrow.t t_T) -> [ &t <- r0 ] s1)
     | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_T t} any) ]
     | s2 = -{resolve_refmut_T t}- s3
     | s3 = [ &_ret <- Some'0 (t.current) ] s4
     | s4 = return {_ret} ]
-  | bb4 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ] ]
+  | bb2 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_refmut_T self_} any) ]
+    | s1 = -{resolve_Option_refmut_T self_}- s2
+    | s2 = [ &_ret <- None'0 ] s3
+    | s3 = return {_ret} ] ]
   [ & _ret: t_Option_T = Any.any_l () | & self_: t_Option_refmut_T = self_ | & t: MutBorrow.t t_T = Any.any_l () ])
   [ return (result: t_Option_T) ->
   {[@stop_split] [@expl:extern_spec_T_Option__refmut_T_copied_body_T ensures] ([@stop_split] [@expl:extern_spec_T_Option__refmut_T_copied_body result type invariant] inv_Option_T result)

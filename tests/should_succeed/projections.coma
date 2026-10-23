@@ -17,6 +17,19 @@ module M_copy_out_of_sum
   
   type t_Result_refmut_u32_refmut_u32 = Ok (MutBorrow.t UInt32.t) | Err (MutBorrow.t UInt32.t)
   
+  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_u32
+  
+  predicate resolve_Result_refmut_u32_refmut_u32 (_1: t_Result_refmut_u32_refmut_u32)
+  
+  axiom resolve_axiom [@rewrite]:
+    forall _1: t_Result_refmut_u32_refmut_u32 [resolve_Result_refmut_u32_refmut_u32 _1]. resolve_Result_refmut_u32_refmut_u32 _1
+      = match _1 with
+        | Ok x0 -> resolve_refmut_u32 x0
+        | Err x0 -> resolve_refmut_u32 x0
+        end
+  
   let elim_Err (_x: t_Result_refmut_u32_refmut_u32) (return (f0: MutBorrow.t UInt32.t)) = any
     [ _k (f0: MutBorrow.t UInt32.t) -> {Err f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Err] match _x with
@@ -24,10 +37,6 @@ module M_copy_out_of_sum
         | _ -> false
         end}
       any) ]
-  
-  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_u32
   
   let elim_Ok (_x: t_Result_refmut_u32_refmut_u32) (return (f0: MutBorrow.t UInt32.t)) = any
     [ _k (f0: MutBorrow.t UInt32.t) -> {Ok f0 = _x} (! return {f0})
@@ -43,17 +52,19 @@ module M_copy_out_of_sum
   
   let copy_out_of_sum (x: t_Result_refmut_u32_refmut_u32) (return (x'0: UInt32.t)) = (! bb0
     [ bb0 = any
-      [ br0 (x0: MutBorrow.t UInt32.t) -> {x = Ok x0} (! bb4) | br1 (x0: MutBorrow.t UInt32.t) -> {x = Err x0} (! bb3) ]
+      [ br0 (x0: MutBorrow.t UInt32.t) -> {x = Ok x0} (! bb2) | br1 (x0: MutBorrow.t UInt32.t) -> {x = Err x0} (! bb3) ]
     | bb3 = s0
-      [ s0 = elim_Err {x} (fun (r0: MutBorrow.t UInt32.t) -> [ &y <- r0 ] s1)
-      | s1 = -{resolve_refmut_u32 y}- s2
-      | s2 = [ &_ret <- y.current ] s3
-      | s3 = return {_ret} ]
-    | bb4 = s0
-      [ s0 = elim_Ok {x} (fun (r0: MutBorrow.t UInt32.t) -> [ &x'0 <- r0 ] s1)
-      | s1 = -{resolve_refmut_u32 x'0}- s2
-      | s2 = [ &_ret <- x'0.current ] s3
-      | s3 = return {_ret} ] ]
+      [ s0 = -{resolve_Result_refmut_u32_refmut_u32 x}- s1
+      | s1 = elim_Err {x} (fun (r0: MutBorrow.t UInt32.t) -> [ &y <- r0 ] s2)
+      | s2 = -{resolve_refmut_u32 y}- s3
+      | s3 = [ &_ret <- y.current ] s4
+      | s4 = return {_ret} ]
+    | bb2 = s0
+      [ s0 = -{resolve_Result_refmut_u32_refmut_u32 x}- s1
+      | s1 = elim_Ok {x} (fun (r0: MutBorrow.t UInt32.t) -> [ &x'0 <- r0 ] s2)
+      | s2 = -{resolve_refmut_u32 x'0}- s3
+      | s3 = [ &_ret <- x'0.current ] s4
+      | s4 = return {_ret} ] ]
     [ & _ret: UInt32.t = Any.any_l ()
     | & x: t_Result_refmut_u32_refmut_u32 = x
     | & x'0: MutBorrow.t UInt32.t = Any.any_l ()

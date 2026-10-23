@@ -26,6 +26,16 @@ axiom inv_axiom [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_
       | Some f0 -> inv_T f0
       end
 
+predicate resolve_T (_1: t_T)
+
+predicate resolve_Option_T (_1: t_Option_T)
+
+axiom resolve_axiom [@rewrite]: forall _1: t_Option_T [resolve_Option_T _1]. resolve_Option_T _1
+    = match _1 with
+      | None -> true
+      | Some x0 -> resolve_T x0
+      end
+
 predicate inv_Infallible [@inline:trivial] (_1: ()) = false
 
 meta "rewrite_def" predicate inv_Infallible
@@ -57,7 +67,12 @@ let extern_spec_T_Try_Option_T_branch_body_T (self_: t_Option_T) (return (x: t_C
   [ bb0 = any [ br0 -> {self_ = None} (! bb3) | br1 (x0: t_T) -> {self_ = Some x0} (! bb4) ]
   | bb4 = s0
     [ s0 = elim_Some {self_} (fun (r0: t_T) -> [ &v <- r0 ] s1) | s1 = [ &_ret <- Continue v ] s2 | s2 = return {_ret} ]
-  | bb3 = s0 [ s0 = [ &_7 <- None'0 ] s1 | s1 = [ &_ret <- Break _7 ] s2 | s2 = return {_ret} ] ]
+  | bb3 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Option_T self_} any) ]
+    | s1 = -{resolve_Option_T self_}- s2
+    | s2 = [ &_7 <- None'0 ] s3
+    | s3 = [ &_ret <- Break _7 ] s4
+    | s4 = return {_ret} ] ]
   [ & _ret: t_ControlFlow_Option_Infallible_T = Any.any_l ()
   | & self_: t_Option_T = self_
   | & v: t_T = Any.any_l ()
