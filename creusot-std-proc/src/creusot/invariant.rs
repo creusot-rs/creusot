@@ -249,26 +249,29 @@ fn desugar_for(
     // This is indirectly enforced by typechecking the subsequent `produces` invariant.
     // This may thus break if we change the order of invariants.
     quote_spanned! {for_span=> {
-        let mut #it = ::core::iter::IntoIterator::into_iter(#iter);
-        let #iter_old = snapshot! { #it };
-        let mut #produced;
-        {#![allow(unused_assignments)]
-         #produced = snapshot! { ::creusot_std::logic::Seq::empty() };}
-        let _ = { #[creusot::before_loop] || {} };
-        #(#outer)*
-        #lbl
-        loop {
-            #(#inner)*
-            #variant
-            #(#invariants)*
-            match ::core::iter::Iterator::next(&mut #it) {
-                Some(#elem) => {
-                    {#![allow(unused_assignments)]
-                     #produced = snapshot! { #produced.inner().concat(::creusot_std::logic::Seq::singleton(#elem)) };}
-                    let #pat = #elem;
-                    #body
-                },
-                None => break,
+        match ::core::iter::IntoIterator::into_iter(#iter) {
+            mut #it => {
+                let #iter_old = snapshot! { #it };
+                let mut #produced;
+                {#![allow(unused_assignments)]
+                #produced = snapshot! { ::creusot_std::logic::Seq::empty() };}
+                let _ = { #[creusot::before_loop] || {} };
+                #(#outer)*
+                #lbl
+                loop {
+                    #(#inner)*
+                    #variant
+                    #(#invariants)*
+                    match ::core::iter::Iterator::next(&mut #it) {
+                        None => break,
+                        Some(#elem) => {
+                            {#![allow(unused_assignments)]
+                            #produced = snapshot! { #produced.inner().concat(::creusot_std::logic::Seq::singleton(#elem)) };}
+                            let #pat = #elem;
+                            #body
+                        },
+                    }
+                }
             }
         }
     } }
