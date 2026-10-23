@@ -546,11 +546,11 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   
   type t_Id
   
-  type t_Public_PA_T = { f0: t_Id }
+  type t_OpenGuard_PA_T = { f0: t_Id }
   
-  type t_Guarded_refmut_PA_T_Public_PA_T = {
+  type t_Guarded_refmut_PA_T_OpenGuard_PA_T = {
     inner: MutBorrow.t t_PA_T;
-    _guard: t_Public_PA_T;
+    _guard: t_OpenGuard_PA_T;
     _initial: MutBorrow.t t_PA_T }
   
   predicate contains_Namespace [@inline:trivial] (self: Set.set t_Namespace) (e: t_Namespace) = Set.mem e self
@@ -683,20 +683,20 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   
   meta "rewrite_def" predicate protocol_PA_T
   
-  predicate guards_ref_Public_PA_T [@inline:trivial] (self: t_Public_PA_T) (b: t_PA_T) =
+  predicate guards_ref_OpenGuard_PA_T [@inline:trivial] (self: t_OpenGuard_PA_T) (b: t_PA_T) =
     public_PA_T b = self.f0 /\ protocol_PA_T b
   
-  meta "rewrite_def" predicate guards_ref_Public_PA_T
+  meta "rewrite_def" predicate guards_ref_OpenGuard_PA_T
   
-  predicate guards_Public_PA_T [@inline:trivial] (self: t_Public_PA_T) (initial: MutBorrow.t t_PA_T) (current': MutBorrow.t t_PA_T) =
-    guards_ref_Public_PA_T self current'.current /\ initial.final = current'.final
+  predicate guards_OpenGuard_PA_T [@inline:trivial] (self: t_OpenGuard_PA_T) (initial: MutBorrow.t t_PA_T) (current': MutBorrow.t t_PA_T) =
+    guards_ref_OpenGuard_PA_T self current'.current /\ initial.final = current'.final
   
-  meta "rewrite_def" predicate guards_Public_PA_T
+  meta "rewrite_def" predicate guards_OpenGuard_PA_T
   
-  predicate invariant_Guarded_refmut_PA_T_Public_PA_T [@inline:trivial] (self: t_Guarded_refmut_PA_T_Public_PA_T) =
-    guards_Public_PA_T self._guard self._initial self.inner
+  predicate invariant_Guarded_refmut_PA_T_OpenGuard_PA_T [@inline:trivial] (self: t_Guarded_refmut_PA_T_OpenGuard_PA_T) =
+    guards_OpenGuard_PA_T self._guard self._initial self.inner
   
-  meta "rewrite_def" predicate invariant_Guarded_refmut_PA_T_Public_PA_T
+  meta "rewrite_def" predicate invariant_Guarded_refmut_PA_T_OpenGuard_PA_T
   
   predicate invariant_Authority_FMap_PCell_Inner_T_Ag_Seq_T (self: t_Authority_FMap_PCell_Inner_T_Ag_Seq_T)
   
@@ -720,25 +720,26 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   
   meta "rewrite_def" predicate inv_refmut_PA_T
   
-  predicate inv_Guarded_refmut_PA_T_Public_PA_T (_1: t_Guarded_refmut_PA_T_Public_PA_T)
+  predicate inv_Guarded_refmut_PA_T_OpenGuard_PA_T (_1: t_Guarded_refmut_PA_T_OpenGuard_PA_T)
   
   axiom inv_axiom'1 [@rewrite]:
-    forall _1: t_Guarded_refmut_PA_T_Public_PA_T [inv_Guarded_refmut_PA_T_Public_PA_T _1]. inv_Guarded_refmut_PA_T_Public_PA_T _1
-      = (invariant_Guarded_refmut_PA_T_Public_PA_T _1 /\ inv_refmut_PA_T _1.inner)
+    forall _1: t_Guarded_refmut_PA_T_OpenGuard_PA_T [inv_Guarded_refmut_PA_T_OpenGuard_PA_T _1]. inv_Guarded_refmut_PA_T_OpenGuard_PA_T _1
+      = (invariant_Guarded_refmut_PA_T_OpenGuard_PA_T _1 /\ inv_refmut_PA_T _1.inner)
   
-  function guard_refmut_PA_T [@inline:trivial] (self: t_Guarded_refmut_PA_T_Public_PA_T) : t_Public_PA_T = self._guard
+  function guard_refmut_PA_T [@inline:trivial] (self: t_Guarded_refmut_PA_T_OpenGuard_PA_T) : t_OpenGuard_PA_T =
+    self._guard
   
   meta "rewrite_def" function guard_refmut_PA_T
   
   function public_PA_T'0 (self: t_NonAtomicInvariant_PA_T) : t_Id
   
-  let open_guarded_PA_T (self: t_NonAtomicInvariant_PA_T) (tokens: t_Tokens)
-    (return (x: t_Guarded_refmut_PA_T_Public_PA_T)) =
-  {[@stop_split] [@expl:open_guarded requires] contains tokens (namespace_PA_T self)}
+  let open_PA_T (self: t_NonAtomicInvariant_PA_T) (tokens: t_Tokens)
+    (return (x: t_Guarded_refmut_PA_T_OpenGuard_PA_T)) =
+  {[@stop_split] [@expl:open requires] contains tokens (namespace_PA_T self)}
     any
-    [ return (result: t_Guarded_refmut_PA_T_Public_PA_T) ->
-    {[@stop_split] [@expl:open_guarded_PA_T ensures] ([@stop_split] [@expl:open_guarded result type invariant] inv_Guarded_refmut_PA_T_Public_PA_T result)
-      /\ ([@stop_split] [@expl:open_guarded ensures] (guard_refmut_PA_T result).f0 = public_PA_T'0 self)}
+    [ return (result: t_Guarded_refmut_PA_T_OpenGuard_PA_T) ->
+    {[@stop_split] [@expl:open_PA_T ensures] ([@stop_split] [@expl:open result type invariant] inv_Guarded_refmut_PA_T_OpenGuard_PA_T result)
+      /\ ([@stop_split] [@expl:open ensures] (guard_refmut_PA_T result).f0 = public_PA_T'0 self)}
       (! return {result}) ]
   
   predicate invariant_Ghost_refmut_PA_T [@inline:trivial] (self: MutBorrow.t t_PA_T) = inv_refmut_PA_T self
@@ -1183,10 +1184,10 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       /\ ([@stop_split] [@expl:get_unchecked ensures] has_value_usize index (Slice64.view self) result)}
       (! return {result}) ]
   
-  predicate resolve_Guarded_refmut_PA_T_Public_PA_T (_1: t_Guarded_refmut_PA_T_Public_PA_T)
+  predicate resolve_Guarded_refmut_PA_T_OpenGuard_PA_T (_1: t_Guarded_refmut_PA_T_OpenGuard_PA_T)
   
   axiom resolve_axiom [@rewrite]:
-    forall _1: t_Guarded_refmut_PA_T_Public_PA_T [resolve_Guarded_refmut_PA_T_Public_PA_T _1]. resolve_Guarded_refmut_PA_T_Public_PA_T _1
+    forall _1: t_Guarded_refmut_PA_T_OpenGuard_PA_T [resolve_Guarded_refmut_PA_T_OpenGuard_PA_T _1]. resolve_Guarded_refmut_PA_T_OpenGuard_PA_T _1
       = resolve_refmut_PA_T _1.inner
   
   function view_GhostShared_NonAtomicInvariant_PA_T [@inline:trivial] (self: t_NonAtomicInvariant_PA_T) : t_NonAtomicInvariant_PA_T
@@ -1234,7 +1235,7 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
           (fun (_x: t_NonAtomicInvariant_PA_T) -> [ &_17 <- _x ] s1)
       | s1 = deref_GhostShared_NonAtomicInvariant_PA_T {_17} (fun (_x: t_NonAtomicInvariant_PA_T) -> [ &_15 <- _x ] s2)
       | s2 = into_inner_Tokens {tokens} (fun (_x: t_Tokens) -> [ &_19 <- _x ] s3)
-      | s3 = open_guarded_PA_T {_15} {_19} (fun (_x: t_Guarded_refmut_PA_T_Public_PA_T) -> [ &_13 <- _x ] s4)
+      | s3 = open_PA_T {_15} {_19} (fun (_x: t_Guarded_refmut_PA_T_OpenGuard_PA_T) -> [ &_13 <- _x ] s4)
       | s4 = MutBorrow.borrow_final <t_PA_T> {_13.inner.current} {MutBorrow.get_id _13.inner}
           (fun (_bor: MutBorrow.t t_PA_T) ->
             [ &__temp <- _bor ] -{inv_PA_T _bor.final}-
@@ -1304,15 +1305,15 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       | s1 = deref_Vec_T_Global {arr} (fun (_x: Slice64.slice t_T) -> [ &_67 <- _x ] s2)
       | s2 = get_unchecked_T {_67} {index} (fun (_x: t_T) -> [ &_65 <- _x ] s3)
       | s3 = [ &_ret <- _65 ] s4
-      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_Guarded_refmut_PA_T_Public_PA_T _13} any) ]
-      | s5 = -{resolve_Guarded_refmut_PA_T_Public_PA_T _13}- s6
+      | s4 = s5 [ _ck -> (! {[@expl:type invariant] inv_Guarded_refmut_PA_T_OpenGuard_PA_T _13} any) ]
+      | s5 = -{resolve_Guarded_refmut_PA_T_OpenGuard_PA_T _13}- s6
       | s6 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
     | & self: t_PersistentArray_T = self
     | & index: UInt64.t = index
     | & tokens: t_Tokens = tokens
     | & __temp: MutBorrow.t t_PA_T = Any.any_l ()
-    | & _13: t_Guarded_refmut_PA_T_Public_PA_T = Any.any_l ()
+    | & _13: t_Guarded_refmut_PA_T_OpenGuard_PA_T = Any.any_l ()
     | & _15: t_NonAtomicInvariant_PA_T = Any.any_l ()
     | & _17: t_NonAtomicInvariant_PA_T = Any.any_l ()
     | & _19: t_Tokens = Any.any_l ()
@@ -4428,11 +4429,11 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   
   type t_Id
   
-  type t_Public_PA_T = { f0'1: t_Id }
+  type t_OpenGuard_PA_T = { f0'1: t_Id }
   
-  type t_Guarded_refmut_PA_T_Public_PA_T = {
+  type t_Guarded_refmut_PA_T_OpenGuard_PA_T = {
     inner: MutBorrow.t t_PA_T;
-    _guard: t_Public_PA_T;
+    _guard: t_OpenGuard_PA_T;
     _initial: MutBorrow.t t_PA_T }
   
   predicate contains_Namespace [@inline:trivial] (self: Set.set t_Namespace) (e: t_Namespace) = Set.mem e self
@@ -4520,20 +4521,20 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   
   meta "rewrite_def" predicate protocol_PA_T
   
-  predicate guards_ref_Public_PA_T [@inline:trivial] (self: t_Public_PA_T) (b: t_PA_T) =
+  predicate guards_ref_OpenGuard_PA_T [@inline:trivial] (self: t_OpenGuard_PA_T) (b: t_PA_T) =
     public_PA_T b = self.f0'1 /\ protocol_PA_T b
   
-  meta "rewrite_def" predicate guards_ref_Public_PA_T
+  meta "rewrite_def" predicate guards_ref_OpenGuard_PA_T
   
-  predicate guards_Public_PA_T [@inline:trivial] (self: t_Public_PA_T) (initial: MutBorrow.t t_PA_T) (current': MutBorrow.t t_PA_T) =
-    guards_ref_Public_PA_T self current'.current /\ initial.final = current'.final
+  predicate guards_OpenGuard_PA_T [@inline:trivial] (self: t_OpenGuard_PA_T) (initial: MutBorrow.t t_PA_T) (current': MutBorrow.t t_PA_T) =
+    guards_ref_OpenGuard_PA_T self current'.current /\ initial.final = current'.final
   
-  meta "rewrite_def" predicate guards_Public_PA_T
+  meta "rewrite_def" predicate guards_OpenGuard_PA_T
   
-  predicate invariant_Guarded_refmut_PA_T_Public_PA_T [@inline:trivial] (self: t_Guarded_refmut_PA_T_Public_PA_T) =
-    guards_Public_PA_T self._guard self._initial self.inner
+  predicate invariant_Guarded_refmut_PA_T_OpenGuard_PA_T [@inline:trivial] (self: t_Guarded_refmut_PA_T_OpenGuard_PA_T) =
+    guards_OpenGuard_PA_T self._guard self._initial self.inner
   
-  meta "rewrite_def" predicate invariant_Guarded_refmut_PA_T_Public_PA_T
+  meta "rewrite_def" predicate invariant_Guarded_refmut_PA_T_OpenGuard_PA_T
   
   predicate invariant_Authority_FMap_PCell_Inner_T_Ag_Seq_T (self: t_Authority_FMap_PCell_Inner_T_Ag_Seq_T)
   
@@ -4557,25 +4558,26 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   
   meta "rewrite_def" predicate inv_refmut_PA_T
   
-  predicate inv_Guarded_refmut_PA_T_Public_PA_T (_1: t_Guarded_refmut_PA_T_Public_PA_T)
+  predicate inv_Guarded_refmut_PA_T_OpenGuard_PA_T (_1: t_Guarded_refmut_PA_T_OpenGuard_PA_T)
   
   axiom inv_axiom'3 [@rewrite]:
-    forall _1: t_Guarded_refmut_PA_T_Public_PA_T [inv_Guarded_refmut_PA_T_Public_PA_T _1]. inv_Guarded_refmut_PA_T_Public_PA_T _1
-      = (invariant_Guarded_refmut_PA_T_Public_PA_T _1 /\ inv_refmut_PA_T _1.inner)
+    forall _1: t_Guarded_refmut_PA_T_OpenGuard_PA_T [inv_Guarded_refmut_PA_T_OpenGuard_PA_T _1]. inv_Guarded_refmut_PA_T_OpenGuard_PA_T _1
+      = (invariant_Guarded_refmut_PA_T_OpenGuard_PA_T _1 /\ inv_refmut_PA_T _1.inner)
   
-  function guard_refmut_PA_T [@inline:trivial] (self: t_Guarded_refmut_PA_T_Public_PA_T) : t_Public_PA_T = self._guard
+  function guard_refmut_PA_T [@inline:trivial] (self: t_Guarded_refmut_PA_T_OpenGuard_PA_T) : t_OpenGuard_PA_T =
+    self._guard
   
   meta "rewrite_def" function guard_refmut_PA_T
   
   function public_PA_T'0 (self: t_NonAtomicInvariant_PA_T) : t_Id
   
-  let open_guarded_PA_T (self: t_NonAtomicInvariant_PA_T) (tokens: t_Tokens)
-    (return (x: t_Guarded_refmut_PA_T_Public_PA_T)) =
-  {[@stop_split] [@expl:open_guarded requires] contains tokens (namespace_PA_T self)}
+  let open_PA_T (self: t_NonAtomicInvariant_PA_T) (tokens: t_Tokens)
+    (return (x: t_Guarded_refmut_PA_T_OpenGuard_PA_T)) =
+  {[@stop_split] [@expl:open requires] contains tokens (namespace_PA_T self)}
     any
-    [ return (result: t_Guarded_refmut_PA_T_Public_PA_T) ->
-    {[@stop_split] [@expl:open_guarded_PA_T ensures] ([@stop_split] [@expl:open_guarded result type invariant] inv_Guarded_refmut_PA_T_Public_PA_T result)
-      /\ ([@stop_split] [@expl:open_guarded ensures] (guard_refmut_PA_T result).f0'1 = public_PA_T'0 self)}
+    [ return (result: t_Guarded_refmut_PA_T_OpenGuard_PA_T) ->
+    {[@stop_split] [@expl:open_PA_T ensures] ([@stop_split] [@expl:open result type invariant] inv_Guarded_refmut_PA_T_OpenGuard_PA_T result)
+      /\ ([@stop_split] [@expl:open ensures] (guard_refmut_PA_T result).f0'1 = public_PA_T'0 self)}
       (! return {result}) ]
   
   predicate inv_Fragment_FMap_PCell_Inner_T_Ag_Seq_T (_1: t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T)
@@ -4944,10 +4946,10 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   
   meta "rewrite_def" predicate resolve_refmut_PA_T
   
-  predicate resolve_Guarded_refmut_PA_T_Public_PA_T (_1: t_Guarded_refmut_PA_T_Public_PA_T)
+  predicate resolve_Guarded_refmut_PA_T_OpenGuard_PA_T (_1: t_Guarded_refmut_PA_T_OpenGuard_PA_T)
   
   axiom resolve_axiom [@rewrite]:
-    forall _1: t_Guarded_refmut_PA_T_Public_PA_T [resolve_Guarded_refmut_PA_T_Public_PA_T _1]. resolve_Guarded_refmut_PA_T_Public_PA_T _1
+    forall _1: t_Guarded_refmut_PA_T_OpenGuard_PA_T [resolve_Guarded_refmut_PA_T_OpenGuard_PA_T _1]. resolve_Guarded_refmut_PA_T_OpenGuard_PA_T _1
       = resolve_refmut_PA_T _1.inner
   
   let new_Fragment_FMap_PCell_Inner_T_Ag_Seq_T (x: t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T)
@@ -5013,7 +5015,7 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
           (fun (_x: t_NonAtomicInvariant_PA_T) -> [ &_33 <- _x ] s7)
       | s7 = deref_GhostShared_NonAtomicInvariant_PA_T {_33} (fun (_x: t_NonAtomicInvariant_PA_T) -> [ &_31 <- _x ] s8)
       | s8 = into_inner_Tokens {tokens} (fun (_x: t_Tokens) -> [ &_35 <- _x ] s9)
-      | s9 = open_guarded_PA_T {_31} {_35} (fun (_x: t_Guarded_refmut_PA_T_Public_PA_T) -> [ &pa <- _x ] s10)
+      | s9 = open_PA_T {_31} {_35} (fun (_x: t_Guarded_refmut_PA_T_OpenGuard_PA_T) -> [ &pa <- _x ] s10)
       | s10 = MutBorrow.borrow_final <t_PA_T> {pa.inner.current} {MutBorrow.get_id pa.inner}
           (fun (_bor: MutBorrow.t t_PA_T) ->
             [ &pa'0 <- _bor ] -{inv_PA_T _bor.final}-
@@ -5089,8 +5091,8 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
       | s15 = -{resolve_refmut_Fragment_FMap_PCell_Inner_T_Ag_Seq_T _79}- s16
       | s16 = s17 [ _ck -> (! {[@expl:type invariant] inv_refmut_PA_T pa'0} any) ]
       | s17 = -{resolve_refmut_PA_T pa'0}- s18
-      | s18 = s19 [ _ck -> (! {[@expl:type invariant] inv_Guarded_refmut_PA_T_Public_PA_T pa} any) ]
-      | s19 = -{resolve_Guarded_refmut_PA_T_Public_PA_T pa}- s20
+      | s18 = s19 [ _ck -> (! {[@expl:type invariant] inv_Guarded_refmut_PA_T_OpenGuard_PA_T pa} any) ]
+      | s19 = -{resolve_Guarded_refmut_PA_T_OpenGuard_PA_T pa}- s20
       | s20 = new_Fragment_FMap_PCell_Inner_T_Ag_Seq_T {frag'1}
           (fun (_x: t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T) -> [ &frag'0 <- _x ] s21)
       | s21 = new_PCell_Inner_T {permcell'0} (fun (_x: t_Rc_PCell_Inner_T_Global) -> [ &_85 <- _x ] s22)
@@ -5108,7 +5110,7 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
     | & _22: t_Inner_T = Any.any_l ()
     | & _25: t_Rc_PCell_Inner_T_Global = Any.any_l ()
     | & frag'0: t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T = Any.any_l ()
-    | & pa: t_Guarded_refmut_PA_T_Public_PA_T = Any.any_l ()
+    | & pa: t_Guarded_refmut_PA_T_OpenGuard_PA_T = Any.any_l ()
     | & _31: t_NonAtomicInvariant_PA_T = Any.any_l ()
     | & _33: t_NonAtomicInvariant_PA_T = Any.any_l ()
     | & _35: t_Tokens = Any.any_l ()

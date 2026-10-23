@@ -197,9 +197,39 @@ pub mod macros {
     /// [`Ghost`]: crate::ghost::Ghost
     pub use base_macros::ghost;
 
+    /// Declares a ghost variable without immediately resolving the intermediate
+    /// expression.
+    ///
+    /// The statement `ghost_let!(x = e)` is almost equivalent with `let x = ghost!(e)`; but, intermediate
+    /// expressions are resolved in the _englobing_ scope, rather that in the block delimited by `ghost!`.
+    ///
+    /// This is used quite a lot when [opening invariants](crate::ghost::invariant::NonAtomicInvariant::open).
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use creusot_std::prelude::*;
+    ///
+    /// struct Gt0(i32);
+    /// impl Invariant for Gt0 {
+    ///     #[logic] fn invariant(self) -> bool { self.0 > 0i32 }
+    /// }
+    ///
+    /// let mut gt = ghost!(Gt0(1i32));
+    /// let mut bor = ghost!(&mut *gt);
+    ///
+    /// // this asserts the type invariant right here, meaning we must prove
+    /// // _right now_ that the final value of `x` is > 0...
+    /// // let x = ghost!(&mut bor.0);
+    ///
+    /// // this asserts the invariant at the end of the _englobing_ scope
+    /// // instead, letting us finish the proof.
+    /// ghost_let!(x = &mut bor.0);
+    /// # let _ = x;
+    /// ```
     pub use base_macros::ghost_let;
 
-    /// Specify that the function can be called in additionnal contexts.
+    /// Specify that the function can be called in additional contexts.
     ///
     /// # Syntax
     ///
