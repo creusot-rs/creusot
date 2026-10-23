@@ -209,3 +209,34 @@ pub fn unsize2<T, const N: usize>(t: &[T; N]) -> &[T] {
     _k = ghost! {1};
     t
 }
+
+#[trusted]
+pub fn for_loop() -> usize {
+    let mut a = 0;
+    for i in 0..42 {
+        a += i;
+    }
+    a
+}
+
+#[erasure(for_loop)]
+pub fn for_loop2() -> usize {
+    let mut a = 0;
+    #[invariant(produced.len() <= 42)]
+    for i in 0..42 {
+        a += i;
+    }
+    a
+}
+
+#[trusted]
+pub fn closure() -> usize {
+    let f = |x: usize| x;
+    f(0)
+}
+
+#[erasure(closure)]
+pub fn closure2() -> usize {
+    let f = |x: usize| x;
+    f(0)
+}
