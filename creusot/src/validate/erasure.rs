@@ -339,6 +339,8 @@ enum OpTag<'tcx> {
     Loop,
     /// `match` guards are represented by a `Guard` statement at the start of a block
     Guard,
+    /// Let binding without a RHS
+    NoDef,
 }
 
 impl<'tcx> AnfOp<'tcx> {
@@ -1233,9 +1235,17 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
             }
             Let { pattern, initializer, else_block, span, .. } => {
                 let Some(initializer) = initializer else {
-                    return Err(
-                        self.unsupported_syntax(*span, "unsupported let without initializer")
-                    );
+                    let PatKind::Binding { var, subpattern: None, ty, .. } = pattern.kind else {
+                        return Err(self.unsupported_syntax(
+                            *span,
+                            "unsupported let without initializer and with non-variable pattern",
+                        ));
+                    };
+                    if is_ghost_or_snap(self.tcx, ty) {
+                        return Ok(());
+                    }
+                    self.alias.insert(var.0.local_id, VarValue::Mutable);
+                    return Ok(());
                 };
                 if is_erasable(self.tcx, self.thir, *initializer) {
                     if let Some(_) = else_block {
@@ -1863,6 +1873,7 @@ impl<'tcx> PrintAnf<'tcx> {
             Guard => write!(f, "guard"),
             Break => write!(f, "break"),
             Loop => write!(f, "loop"),
+            NoDef => write!(f, "nodef"),
         }
     }
 
