@@ -1024,11 +1024,13 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 AnfValue::Ctor(Ctor::Array, fields)
             }
             Adt(box AdtExpr { adt_def, variant_index, fields, .. }) => {
-                let fields = fields
-                    .iter()
-                    .map(|field| self.a_normal_form_expr(field.expr, stmts))
-                    .collect::<Result<_, _>>()?;
-                AnfValue::Ctor(Ctor::Adt(adt_def.did(), *variant_index), fields)
+                // Put the fields in a canonical order
+                let mut args: Vec<_> = vec![(AnfValue::Unit, Default::default()); fields.len()];
+                // The side effects are resolved in order in `stmts`
+                for field in fields {
+                    args[field.name.as_usize()] = self.a_normal_form_expr(field.expr, stmts)?;
+                }
+                AnfValue::Ctor(Ctor::Adt(adt_def.did(), *variant_index), args)
             }
             NamedConst { def_id, args, .. } => bind_var(stmts, AnfOp::const_(*def_id, args)),
             PointerCoercion { cast: MutToConstPointer, source, .. } => {
