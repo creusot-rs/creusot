@@ -70,9 +70,9 @@
             };
 
             z3 = {
-              version = "5.1.0";
-              sha256 = "sha256-F46bADHVe6ssQrj6oXPSi3KRGBaX//pXO3+4bMFi8Ag=";
-            };
+              version = "5.3.1";
+              sha256 = "sha256-WjVLuYMWHrwFQMTwLxt8r+QaSSPi33LTuxL/sCKKzPU=";
+           };
           };
         in
         {
@@ -116,7 +116,7 @@
                 });
             in
             {
-              inherit (pkgs.creusot) prelude creusot;
+              inherit (pkgs.creusot) prelude creusot z3;
 
               default = mkCreusot { isFree = false; };
               free = mkCreusot { isFree = true; };
