@@ -719,6 +719,18 @@ macro_rules! spec_abs_diff {
                 #[ensures(self@ < 0 ==> result@ == -self@)]
                 fn abs(self) -> Self;
             }
+
+            impl TryFrom<$signed> for $unsigned {
+                #[check(ghost)]
+                #[ensures(match result { Ok(val) => val@ == value@, Err(_) => value@ < 0 })]
+                fn try_from(value: $signed) -> Result<Self, core::num::TryFromIntError>;
+            }
+
+            impl TryFrom<$unsigned> for $signed {
+                #[check(ghost)]
+                #[ensures(match result { Ok(val) => val@ == value@, Err(_) => value@ > Self::MAX@ })]
+                fn try_from(value: $unsigned) -> Result<Self, core::num::TryFromIntError>;
+            }
         }
     };
 }
