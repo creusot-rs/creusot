@@ -12,14 +12,12 @@
 //! (We often expand expressions like that to insert `ghost!` blocks.)
 //!
 //! We solve that by transforming THIR expressions to A-normal form.
-use std::{borrow::Cow, collections::HashMap, fmt::Formatter};
-
 use creusot_args::options::ErasureCheck;
 use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_ast::{BindingMode, ByRef, Mutability};
 use rustc_errors::{Diag, DiagMessage};
 use rustc_hir::{
-    ItemLocalId,
+    HirId, ItemLocalId,
     def_id::{DefId, LocalDefId},
 };
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
@@ -32,6 +30,7 @@ use rustc_middle::{
 use rustc_serialize::{Decodable, Decoder, Encodable, Encoder};
 use rustc_span::{DUMMY_SP, Span, SpanDecoder, SpanEncoder};
 use rustc_type_ir::{Interner, TypeFoldable, TypeSuperFoldable as _, VisitorResult as _};
+use std::{borrow::Cow, collections::HashMap, fmt::Formatter};
 
 use crate::{
     backend::is_trusted_item,
@@ -186,10 +185,8 @@ pub(crate) struct AnfBlock<'tcx> {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum Var {
-    /// Only the `local_id` component of a `HirId` can go through cross-crate serialization
-    /// We throw away the `owner` which should be the enclosing function anyway.
-    HirId(ItemLocalId),
-    ExprId(ExprId),
+    HirId(HirId),
+    ExprId(LocalDefId, ExprId),
 }
 
 impl<I: Interner> ty::TypeVisitable<I> for Var {
@@ -213,7 +210,7 @@ impl<D: SpanDecoder> Decodable<D> for Var {
         if d.read_bool() {
             Var::HirId(Decodable::decode(d))
         } else {
-            Var::ExprId(ODecodable::odecode(d))
+            Var::ExprId(LocalDefId::decode(d), ODecodable::odecode(d))
         }
     }
 }
@@ -225,7 +222,8 @@ impl<E: SpanEncoder> Encodable<E> for Var {
                 e.emit_bool(true);
                 v.encode(e)
             }
-            Var::ExprId(v) => {
+            Var::ExprId(i, v) => {
+                i.encode(e);
                 e.emit_bool(false);
                 v.oencode(e)
             }
@@ -461,7 +459,7 @@ enum ErasureInfo {
     EraseArgs(Vec<bool>),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
+#[derive(Clone, Debug, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
 enum AnfValue<'tcx> {
     Unit,
     Var(Var),
@@ -477,6 +475,7 @@ enum AnfValue<'tcx> {
     RawBorrow(Box<AnfPlace<'tcx>>),
     Ctor(Ctor, Vec<(AnfValue<'tcx>, Span)>),
     Field(VariantIdx, FieldIdx, Box<AnfValue<'tcx>>),
+    Closure(Box<AnfBlock<'tcx>>),
     /// Cast from *[T] to *T
     Thin(Box<AnfValue<'tcx>>),
     /// Other casts
@@ -499,7 +498,7 @@ enum Ctor {
     Array,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
+#[derive(Clone, Debug, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
 struct AnfPlace<'tcx> {
     base: AnfPlaceBase<'tcx>,
     projections: Vec<AnfProjection>,
@@ -542,7 +541,7 @@ impl AnfProjection {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
+#[derive(Clone, Debug, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
 enum AnfPlaceBase<'tcx> {
     MutVar(Var),
     /// This ANF conversion may skip binding immutable variables, so we record their value here instead.
@@ -685,6 +684,7 @@ struct AnfBuilder<'a, 'tcx> {
     level: rustc_errors::Level,
 }
 
+#[derive(Clone, Debug)]
 enum VarValue<'tcx> {
     Value(AnfValue<'tcx>),
     Mutable,
@@ -706,6 +706,21 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
         let scope_tree = tcx.region_scope_tree(def_id);
         let typing_env = ty::TypingEnv::post_analysis(tcx, def_id);
         AnfBuilder { tcx, ctx, def_id, typing_env, thir, scope_tree, alias, level }
+    }
+
+    fn new_thir(&self, def_id: LocalDefId, thir: &'a Thir<'tcx>) -> Self {
+        let scope_tree = self.tcx.region_scope_tree(def_id);
+        let typing_env = ty::TypingEnv::post_analysis(self.tcx, def_id);
+        AnfBuilder {
+            tcx: self.tcx,
+            ctx: self.ctx,
+            def_id,
+            typing_env,
+            thir,
+            scope_tree,
+            alias: self.alias.clone(),
+            level: self.level,
+        }
     }
 
     fn span(&self) -> Span {
@@ -762,13 +777,14 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
         stmts: &mut Vec<AnfStmt<'tcx>>,
     ) -> Result<(AnfValue<'tcx>, Span), ()> {
         let expr = &self.thir[expr_id];
+        let owner = self.def_id;
         let bind_var = |stmts: &mut Vec<AnfStmt<'tcx>>, rhs| {
             stmts.push(AnfStmt {
-                pattern: AnfPattern::Var(Var::ExprId(expr_id)),
+                pattern: AnfPattern::Var(Var::ExprId(owner, expr_id)),
                 rhs,
                 span: expr.span,
             });
-            AnfValue::Var(Var::ExprId(expr_id))
+            AnfValue::Var(Var::ExprId(owner, expr_id))
         };
         use ExprKind::*;
         let value = match &expr.kind {
@@ -798,6 +814,14 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
             }
             Block { block } => self.a_normal_form_block(*block, stmts)?,
             VarRef { id } => match self.alias.get(&id.0.local_id) {
+                Some(VarValue::Mutable) => {
+                    let borrow = AnfValue::Borrow(AnfPlace::mut_var(self.var(*id)).into());
+                    bind_var(stmts, AnfOp::read((borrow, expr.span)))
+                }
+                Some(VarValue::Value(v)) => v.clone(),
+                None => AnfValue::Unit,
+            },
+            UpvarRef { var_hir_id: id, .. } => match self.alias.get(&id.0.local_id) {
                 Some(VarValue::Mutable) => {
                     let borrow = AnfValue::Borrow(AnfPlace::mut_var(self.var(*id)).into());
                     bind_var(stmts, AnfOp::read((borrow, expr.span)))
@@ -1068,6 +1092,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 let val = self.a_normal_form_expr(source, stmts)?;
                 AnfValue::Unsize(val.0.into())
             }
+            Closure(closure) => self.closure(closure.closure_id),
             kind => {
                 return Err(self.unsupported_syntax_with_note(
                     expr.span,
@@ -1077,6 +1102,15 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
             }
         };
         Ok((value, expr.span))
+    }
+
+    fn closure(&self, id: LocalDefId) -> AnfValue<'tcx> {
+        let (thir, expr) = self.tcx.thir_body(id).unwrap();
+        let thir = thir.borrow();
+        let mut self_ = self.new_thir(id, &thir);
+        let pattern = self_.a_normal_form_args().ok().unwrap();
+        let body = self_.a_normal_form_expr_block_(expr, pattern, Vec::new(), None).unwrap();
+        AnfValue::Closure(Box::new(body))
     }
 
     fn unscope(&self, mut expr_id: ExprId) -> &ExprKind<'tcx> {
@@ -1117,19 +1151,19 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
             }
             _ => {
                 let v = self.a_normal_form_expr(expr_id, stmts)?;
-                if let AnfValue::Var(Var::ExprId(expr_id2)) = v.0
+                if let AnfValue::Var(Var::ExprId(_, expr_id2)) = v.0
                     && expr_id2 == expr_id
                 {
                     // expr_id was just bound so we can use it as a place
-                    Ok(AnfPlace::mut_var(Var::ExprId(expr_id)))
+                    Ok(AnfPlace::mut_var(Var::ExprId(self.def_id, expr_id)))
                 } else {
                     // we create a place for expr_id
                     stmts.push(AnfStmt {
-                        pattern: AnfPattern::Var(Var::ExprId(expr_id)),
+                        pattern: AnfPattern::Var(Var::ExprId(self.def_id, expr_id)),
                         rhs: AnfOp::value(v),
                         span: expr.span,
                     });
-                    Ok(AnfPlace::mut_var(Var::ExprId(expr_id)))
+                    Ok(AnfPlace::mut_var(Var::ExprId(self.def_id, expr_id)))
                 }
             }
         }
@@ -1329,8 +1363,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
     }
 
     fn var(&self, hir_id: thir::LocalVarId) -> Var {
-        assert!(hir_id.0.owner.def_id == self.def_id);
-        Var::HirId(hir_id.0.local_id)
+        Var::HirId(hir_id.0)
     }
 }
 
@@ -1429,7 +1462,7 @@ impl<'tcx> EqualityChecker<'tcx> {
         EqualityChecker { tcx, def_id, level, equate_var, equate_label }
     }
 
-    fn equate_value(&self, v1: &AnfValue<'tcx>, v2: &AnfValue<'tcx>) -> bool {
+    fn equate_value(&mut self, v1: &AnfValue<'tcx>, v2: &AnfValue<'tcx>) -> bool {
         use AnfValue::*;
         match (v1, v2) {
             (Unit, Unit) => true,
@@ -1441,6 +1474,7 @@ impl<'tcx> EqualityChecker<'tcx> {
             (Const(p1), Const(p2)) => p1 == p2,
             (Borrow(place1), Borrow(place2)) => self.equate_place(place1, place2),
             (RawBorrow(place1), RawBorrow(place2)) => self.equate_place(place1, place2),
+            (Closure(c1), Closure(c2)) => self.equate(c1, c2).is_ok(),
             (Ctor(c1, args1), Ctor(c2, args2)) => {
                 c1 == c2
                     && args1.len() == args2.len()
@@ -1463,7 +1497,7 @@ impl<'tcx> EqualityChecker<'tcx> {
         }
     }
 
-    fn equate_place(&self, p1: &AnfPlace<'tcx>, p2: &AnfPlace<'tcx>) -> bool {
+    fn equate_place(&mut self, p1: &AnfPlace<'tcx>, p2: &AnfPlace<'tcx>) -> bool {
         let equate_base = match (&p1.base, &p2.base) {
             (AnfPlaceBase::MutVar(v1), AnfPlaceBase::MutVar(v2)) => {
                 let Some(v1_) = self.equate_var.get(v1) else { return false };
@@ -1682,7 +1716,7 @@ impl<'tcx> PrintAnf<'tcx> {
         self.print_indent(f)?;
         if let Some(label) = body.label {
             write!(f, "'")?;
-            self.print_hir_id(label.local_id, f)?;
+            self.print_local_id(label.local_id, f)?;
             write!(f, ": ")?;
         }
         self.print_pattern(&body.pattern, f)?;
@@ -1751,7 +1785,7 @@ impl<'tcx> PrintAnf<'tcx> {
     fn print_var(&self, var: Var, f: &mut Formatter) -> Result<(), std::fmt::Error> {
         match var {
             Var::HirId(hir_id) => self.print_hir_id(hir_id, f),
-            Var::ExprId(expr_id) => write!(f, "#e{}", expr_id.as_u32()),
+            Var::ExprId(_, expr_id) => write!(f, "#e{}", expr_id.as_u32()),
         }
     }
 
@@ -1871,6 +1905,11 @@ impl<'tcx> PrintAnf<'tcx> {
                 write!(f, "&raw ")?;
                 self.print_place(place, f)
             }
+            Closure(b) => {
+                writeln!(f, "closure")?;
+                self.print_body(b, f)?;
+                Ok(())
+            }
             Ctor(ctor, args) => {
                 self.print_ctor(ctor, f)?;
                 if args.len() != 0 {
@@ -1913,12 +1952,17 @@ impl<'tcx> PrintAnf<'tcx> {
             }
             Label(label) => {
                 write!(f, "'")?;
-                self.print_hir_id(label.local_id, f)
+                self.print_local_id(label.local_id, f)?;
+                Ok(())
             }
         }
     }
 
-    fn print_hir_id(&self, local_id: ItemLocalId, f: &mut Formatter) -> std::fmt::Result {
+    fn print_hir_id(&self, hir_id: HirId, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.tcx.hir_name(hir_id))
+    }
+
+    fn print_local_id(&self, local_id: ItemLocalId, f: &mut Formatter) -> std::fmt::Result {
         match self.owner {
             Some(def_id) => {
                 let hir_id = rustc_hir::HirId { owner: rustc_hir::OwnerId { def_id }, local_id };
