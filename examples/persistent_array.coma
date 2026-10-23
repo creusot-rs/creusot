@@ -210,20 +210,20 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone (* <implementat
   
   function public_PA_T (self: t_NonAtomicInvariant_PA_T) : t_Id
   
-  function view_GhostShared_NonAtomicInvariant_PA_T [@inline:trivial] (self: t_NonAtomicInvariant_PA_T) : t_NonAtomicInvariant_PA_T
-   = self
-  
-  meta "rewrite_def" function view_GhostShared_NonAtomicInvariant_PA_T
-  
   function view_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
+  
+  function deref_Rc_PCell_Inner_T_Global [@inline:trivial] (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T =
+    view_Rc_PCell_Inner_T_Global self
+  
+  meta "rewrite_def" function deref_Rc_PCell_Inner_T_Global
   
   function namespace_PA_T (self: t_NonAtomicInvariant_PA_T) : t_Namespace
   
   predicate invariant_PersistentArray_T (self: t_PersistentArray_T) =
-    id_FMap_PCell_Inner_T_Ag_Seq_T self.frag = public_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv)
-    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
+    id_FMap_PCell_Inner_T_Ag_Seq_T self.frag = public_PA_T self.inv
+    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (deref_Rc_PCell_Inner_T_Global self.permcell)
       <> None'0
-    /\ namespace_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv) = Namespace_PARRAY 0
+    /\ namespace_PA_T self.inv = Namespace_PARRAY 0
   
   predicate resolve_NonAtomicInvariant_PA_T [@inline:trivial] (_1: t_NonAtomicInvariant_PA_T) = true
   
@@ -274,7 +274,7 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone (* <implementat
       end
   
   function view_PersistentArray_T [@inline:trivial] (self: t_PersistentArray_T) : Seq.seq t_T =
-    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0
+    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (deref_Rc_PCell_Inner_T_Global self.permcell))).f0
   
   meta "rewrite_def" function view_PersistentArray_T
   
@@ -331,11 +331,6 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone__refines (* <im
   
   function public_PA_T (self: t_NonAtomicInvariant_PA_T) : t_Id
   
-  function view_GhostShared_NonAtomicInvariant_PA_T [@inline:trivial] (self: t_NonAtomicInvariant_PA_T) : t_NonAtomicInvariant_PA_T
-   = self
-  
-  meta "rewrite_def" function view_GhostShared_NonAtomicInvariant_PA_T
-  
   type t_FMap_PCell_Inner_T_Ag_Seq_T
   
   type t_PCell_Inner_T
@@ -357,13 +352,18 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone__refines (* <im
   
   function view_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
   
+  function deref_Rc_PCell_Inner_T_Global [@inline:trivial] (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T =
+    view_Rc_PCell_Inner_T_Global self
+  
+  meta "rewrite_def" function deref_Rc_PCell_Inner_T_Global
+  
   function namespace_PA_T (self: t_NonAtomicInvariant_PA_T) : t_Namespace
   
   predicate invariant_PersistentArray_T (self: t_PersistentArray_T) =
-    id_FMap_PCell_Inner_T_Ag_Seq_T self.frag = public_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv)
-    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
+    id_FMap_PCell_Inner_T_Ag_Seq_T self.frag = public_PA_T self.inv
+    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (deref_Rc_PCell_Inner_T_Global self.permcell)
       <> None
-    /\ namespace_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv) = Namespace_PARRAY 0
+    /\ namespace_PA_T self.inv = Namespace_PARRAY 0
   
   predicate inv_Rc_PCell_Inner_T_Global (_1: t_Rc_PCell_Inner_T_Global)
   
@@ -428,7 +428,7 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone__refines (* <im
       end
   
   function view_PersistentArray_T [@inline:trivial] (self: t_PersistentArray_T) : Seq.seq t_T =
-    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0
+    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (deref_Rc_PCell_Inner_T_Global self.permcell))).f0
   
   meta "rewrite_def" function view_PersistentArray_T
   
@@ -1048,6 +1048,11 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
+  function deref_Rc_PCell_Inner_T_Global [@inline:trivial] (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T =
+    view_Rc_PCell_Inner_T_Global self
+  
+  meta "rewrite_def" function deref_Rc_PCell_Inner_T_Global
+  
   type t_Option_ref_Perm_PCell_Inner_T = None'3 | Some'3 t_Perm_PCell_Inner_T
   
   function map_Option_Perm_PCell_Inner_T (self: t_Option_Perm_PCell_Inner_T) (f: Map.map t_Perm_PCell_Inner_T t_Perm_PCell_Inner_T) : t_Option_ref_Perm_PCell_Inner_T
@@ -1071,11 +1076,11 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   let new_ref_Perm_PCell_Inner_T (x: t_Perm_PCell_Inner_T) (return (x'0: t_Perm_PCell_Inner_T)) = any
     [ return (result: t_Perm_PCell_Inner_T) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
-  let deref_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) (return (x: t_PCell_Inner_T)) =
+  let deref_Rc_PCell_Inner_T_Global'0 (self: t_Rc_PCell_Inner_T_Global) (return (x: t_PCell_Inner_T)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Rc_PCell_Inner_T_Global self}
     any
     [ return (result: t_PCell_Inner_T) -> {[@stop_split] [@expl:deref ensures] result
-      = view_Rc_PCell_Inner_T_Global self}
+      = deref_Rc_PCell_Inner_T_Global self}
       (! return {result}) ]
   
   predicate inv_T (_1: t_T)
@@ -1189,16 +1194,11 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
     forall _1: t_Guarded_refmut_PA_T_Public_PA_T [resolve_Guarded_refmut_PA_T_Public_PA_T _1]. resolve_Guarded_refmut_PA_T_Public_PA_T _1
       = resolve_refmut_PA_T _1.inner
   
-  function view_GhostShared_NonAtomicInvariant_PA_T [@inline:trivial] (self: t_NonAtomicInvariant_PA_T) : t_NonAtomicInvariant_PA_T
-   = self
-  
-  meta "rewrite_def" function view_GhostShared_NonAtomicInvariant_PA_T
-  
   predicate invariant_PersistentArray_T (self: t_PersistentArray_T) =
-    id_FMap_PCell_Inner_T_Ag_Seq_T'0 self.frag = public_PA_T'0 (view_GhostShared_NonAtomicInvariant_PA_T self.inv)
-    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
+    id_FMap_PCell_Inner_T_Ag_Seq_T'0 self.frag = public_PA_T'0 self.inv
+    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (deref_Rc_PCell_Inner_T_Global self.permcell)
       <> None
-    /\ namespace_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv) = Namespace_PARRAY 0
+    /\ namespace_PA_T self.inv = Namespace_PARRAY 0
   
   predicate inv_PersistentArray_T (_1: t_PersistentArray_T)
   
@@ -1216,7 +1216,7 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   meta "rewrite_def" predicate inv_ref_PersistentArray_T
   
   function view_PersistentArray_T [@inline:trivial] (self: t_PersistentArray_T) : Seq.seq t_T =
-    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0'0
+    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (deref_Rc_PCell_Inner_T_Global self.permcell))).f0'0
   
   meta "rewrite_def" function view_PersistentArray_T
   
@@ -1287,13 +1287,13 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       | s29 = into_inner_refmut_PA_T {pa} (fun (_x: MutBorrow.t t_PA_T) -> [ &_50 <- _x ] s30)
       | s30 = s31 [ _ck -> (! {[@expl:type invariant] inv_refmut_PA_T _50} any) ]
       | s31 = -{resolve_refmut_PA_T _50}- s32
-      | s32 = [ &_54 <- view_Rc_PCell_Inner_T_Global self.permcell ] s33
+      | s32 = [ &_54 <- deref_Rc_PCell_Inner_T_Global self.permcell ] s33
       | s33 = [ &_53 <- _54 ] s34
       | s34 = get_Snapshot_PCell_Inner_T {_50.current.perms} {_53}
           (fun (_x: t_Option_ref_Perm_PCell_Inner_T) -> [ &_48 <- _x ] s35)
       | s35 = unwrap_ref_Perm_PCell_Inner_T {_48} (fun (_x: t_Perm_PCell_Inner_T) -> [ &_47 <- _x ] s36)
       | s36 = new_ref_Perm_PCell_Inner_T {_47} (fun (_x: t_Perm_PCell_Inner_T) -> [ &perm <- _x ] s37)
-      | s37 = deref_Rc_PCell_Inner_T_Global {self.permcell} (fun (_x: t_PCell_Inner_T) -> [ &_61 <- _x ] s38)
+      | s37 = deref_Rc_PCell_Inner_T_Global'0 {self.permcell} (fun (_x: t_PCell_Inner_T) -> [ &_61 <- _x ] s38)
       | s38 = borrow_Inner_T {_61} {perm} (fun (_x: t_Inner_T) -> [ &_59 <- _x ] s39)
       | s39 = any
         [ br0 (x0: t_Vec_T_Global) -> {_59 = Direct x0} (! bb21)
@@ -1866,16 +1866,16 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
       = Seq.get (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (view_Rc_PCell_Inner_T_Global inner)).f0 (UInt64.t'int i))}
       (! return {result}) ]
   
-  function view_GhostShared_NonAtomicInvariant_PA_T [@inline:trivial] (self: t_NonAtomicInvariant_PA_T) : t_NonAtomicInvariant_PA_T
-   = self
+  function deref_Rc_PCell_Inner_T_Global [@inline:trivial] (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T =
+    view_Rc_PCell_Inner_T_Global self
   
-  meta "rewrite_def" function view_GhostShared_NonAtomicInvariant_PA_T
+  meta "rewrite_def" function deref_Rc_PCell_Inner_T_Global
   
   predicate invariant_PersistentArray_T (self: t_PersistentArray_T) =
-    id_FMap_PCell_Inner_T_Ag_Seq_T'0 self.frag = public_PA_T'0 (view_GhostShared_NonAtomicInvariant_PA_T self.inv)
-    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
+    id_FMap_PCell_Inner_T_Ag_Seq_T'0 self.frag = public_PA_T'0 self.inv
+    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (deref_Rc_PCell_Inner_T_Global self.permcell)
       <> None
-    /\ namespace_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv) = Namespace_PARRAY 0
+    /\ namespace_PA_T self.inv = Namespace_PARRAY 0
   
   predicate inv_PersistentArray_T (_1: t_PersistentArray_T)
   
@@ -1893,7 +1893,7 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
   meta "rewrite_def" predicate inv_ref_PersistentArray_T
   
   function view_PersistentArray_T [@inline:trivial] (self: t_PersistentArray_T) : Seq.seq t_T =
-    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0
+    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (deref_Rc_PCell_Inner_T_Global self.permcell))).f0
   
   meta "rewrite_def" function view_PersistentArray_T
   
@@ -1969,11 +1969,16 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
   
   function view_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
   
-  let deref_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) (return (x: t_PCell_Inner_T)) =
+  function deref_Rc_PCell_Inner_T_Global [@inline:trivial] (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T =
+    view_Rc_PCell_Inner_T_Global self
+  
+  meta "rewrite_def" function deref_Rc_PCell_Inner_T_Global
+  
+  let deref_Rc_PCell_Inner_T_Global'0 (self: t_Rc_PCell_Inner_T_Global) (return (x: t_PCell_Inner_T)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Rc_PCell_Inner_T_Global self}
     any
     [ return (result: t_PCell_Inner_T) -> {[@stop_split] [@expl:deref ensures] result
-      = view_Rc_PCell_Inner_T_Global self}
+      = deref_Rc_PCell_Inner_T_Global self}
       (! return {result}) ]
   
   type t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T
@@ -2294,7 +2299,7 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
     < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (view_Rc_PCell_Inner_T_Global inner)).f0)}
     (! bb0
     [ bb0 = s0
-      [ s0 = deref_Rc_PCell_Inner_T_Global {inner} (fun (_x: t_PCell_Inner_T) -> [ &_20 <- _x ] s1)
+      [ s0 = deref_Rc_PCell_Inner_T_Global'0 {inner} (fun (_x: t_PCell_Inner_T) -> [ &_20 <- _x ] s1)
       | s1 = deref_Ghost_ref_PA_T {pa} (fun (_x: t_PA_T) -> [ &_27 <- _x ] s2)
       | s2 = [ &_32 <- view_Rc_PCell_Inner_T_Global inner ] s3
       | s3 = [ &_30 <- _32 ] s4
@@ -3068,10 +3073,15 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
       /\ ([@stop_split] [@expl:new ensures] view_GhostShared_NonAtomicInvariant_PA_T result = val')}
       (! return {result}) ]
   
+  function deref_Rc_PCell_Inner_T_Global [@inline:trivial] (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T =
+    view_Rc_PCell_Inner_T_Global self
+  
+  meta "rewrite_def" function deref_Rc_PCell_Inner_T_Global
+  
   let new_PCell_Inner_T (value: t_PCell_Inner_T) (return (x: t_Rc_PCell_Inner_T_Global)) = any
     [ return (result: t_Rc_PCell_Inner_T_Global) ->
     {[@stop_split] [@expl:new_PCell_Inner_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Rc_PCell_Inner_T_Global result)
-      /\ ([@stop_split] [@expl:new ensures] view_Rc_PCell_Inner_T_Global result = value)}
+      /\ ([@stop_split] [@expl:new ensures] deref_Rc_PCell_Inner_T_Global result = value)}
       (! return {result}) ]
   
   type t_PersistentArray_T = {
@@ -3080,10 +3090,10 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
     inv: t_NonAtomicInvariant_PA_T }
   
   predicate invariant_PersistentArray_T (self: t_PersistentArray_T) =
-    id_FMap_PCell_Inner_T_Ag_Seq_T'1 self.frag = public_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv)
-    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
+    id_FMap_PCell_Inner_T_Ag_Seq_T'1 self.frag = public_PA_T self.inv
+    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (deref_Rc_PCell_Inner_T_Global self.permcell)
       <> None'0
-    /\ namespace_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv) = Namespace_PARRAY 0
+    /\ namespace_PA_T self.inv = Namespace_PARRAY 0
   
   predicate inv_PersistentArray_T (_1: t_PersistentArray_T)
   
@@ -3093,7 +3103,7 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
       /\ inv_Ghost_Fragment_FMap_PCell_Inner_T_Ag_Seq_T _1.frag /\ inv_Ghost_GhostShared_NonAtomicInvariant_PA_T _1.inv)
   
   function view_PersistentArray_T [@inline:trivial] (self: t_PersistentArray_T) : Seq.seq t_T =
-    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0
+    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (deref_Rc_PCell_Inner_T_Global self.permcell))).f0
   
   meta "rewrite_def" function view_PersistentArray_T
   
@@ -3394,11 +3404,16 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
   
   meta "rewrite_def" predicate inv_ref_Rc_PCell_Inner_T_Global
   
-  let deref_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) (return (x: t_PCell_Inner_T)) =
+  function deref_Rc_PCell_Inner_T_Global [@inline:trivial] (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T =
+    view_Rc_PCell_Inner_T_Global self
+  
+  meta "rewrite_def" function deref_Rc_PCell_Inner_T_Global
+  
+  let deref_Rc_PCell_Inner_T_Global'0 (self: t_Rc_PCell_Inner_T_Global) (return (x: t_PCell_Inner_T)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Rc_PCell_Inner_T_Global self}
     any
     [ return (result: t_PCell_Inner_T) -> {[@stop_split] [@expl:deref ensures] result
-      = view_Rc_PCell_Inner_T_Global self}
+      = deref_Rc_PCell_Inner_T_Global self}
       (! return {result}) ]
   
   let deref_mut_Ghost_Perm_PCell_Inner_T (self: MutBorrow.t t_Perm_PCell_Inner_T)
@@ -3846,7 +3861,7 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
       | s7 = -{resolve_refmut_refmut_PA_T _27}- s8
       | s8 = unwrap_Perm_PCell_Inner_T {_25} (fun (_x: t_Perm_PCell_Inner_T) -> [ &_24 <- _x ] s9)
       | s9 = new_Perm_PCell_Inner_T {_24} (fun (_x: t_Perm_PCell_Inner_T) -> [ &perm_cur <- _x ] s10)
-      | s10 = deref_Rc_PCell_Inner_T_Global {cur} (fun (_x: t_PCell_Inner_T) -> [ &_37 <- _x ] s11)
+      | s10 = deref_Rc_PCell_Inner_T_Global'0 {cur} (fun (_x: t_PCell_Inner_T) -> [ &_37 <- _x ] s11)
       | s11 = MutBorrow.borrow_mut <t_Perm_PCell_Inner_T> {perm_cur}
           (fun (_bor: MutBorrow.t t_Perm_PCell_Inner_T) -> [ &_45 <- _bor ] [ &perm_cur <- _bor.final ] s12)
       | s12 = MutBorrow.borrow_final <t_Perm_PCell_Inner_T> {_45.current} {MutBorrow.get_id _45}
@@ -4000,7 +4015,7 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
       | s40 = -{resolve_refmut_Perm_PCell_Inner_T _77}- s41
       | s41 = s42 [ _ck -> (! {[@expl:type invariant] inv_Rc_PCell_Inner_T_Global next'0} any) ]
       | s42 = -{resolve_Rc_PCell_Inner_T_Global next'0}- s43
-      | s43 = deref_Rc_PCell_Inner_T_Global {next'0} (fun (_x: t_PCell_Inner_T) -> [ &_92 <- _x ] s44)
+      | s43 = deref_Rc_PCell_Inner_T_Global'0 {next'0} (fun (_x: t_PCell_Inner_T) -> [ &_92 <- _x ] s44)
       | s44 = borrow_mut_Inner_T {_92} {perm_next} (fun (_x: MutBorrow.t t_Inner_T) -> [ &_90 <- _x ] s45)
       | s45 = MutBorrow.borrow_final <t_Inner_T> {_90.current} {MutBorrow.get_id _90}
           (fun (_bor: MutBorrow.t t_Inner_T) ->
@@ -4260,8 +4275,13 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   
   function view_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
   
+  function deref_Rc_PCell_Inner_T_Global [@inline:trivial] (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T =
+    view_Rc_PCell_Inner_T_Global self
+  
+  meta "rewrite_def" function deref_Rc_PCell_Inner_T_Global
+  
   function view_PersistentArray_T [@inline:trivial] (self: t_PersistentArray_T) : Seq.seq t_T =
-    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell))).f0
+    (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (deref_Rc_PCell_Inner_T_Global self.permcell))).f0
   
   meta "rewrite_def" function view_PersistentArray_T
   
@@ -4962,19 +4982,14 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   let new_PCell_Inner_T (value: t_PCell_Inner_T) (return (x: t_Rc_PCell_Inner_T_Global)) = any
     [ return (result: t_Rc_PCell_Inner_T_Global) ->
     {[@stop_split] [@expl:new_PCell_Inner_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Rc_PCell_Inner_T_Global result)
-      /\ ([@stop_split] [@expl:new ensures] view_Rc_PCell_Inner_T_Global result = value)}
+      /\ ([@stop_split] [@expl:new ensures] deref_Rc_PCell_Inner_T_Global result = value)}
       (! return {result}) ]
   
-  function view_GhostShared_NonAtomicInvariant_PA_T [@inline:trivial] (self: t_NonAtomicInvariant_PA_T) : t_NonAtomicInvariant_PA_T
-   = self
-  
-  meta "rewrite_def" function view_GhostShared_NonAtomicInvariant_PA_T
-  
   predicate invariant_PersistentArray_T (self: t_PersistentArray_T) =
-    id_FMap_PCell_Inner_T_Ag_Seq_T'0 self.frag = public_PA_T'0 (view_GhostShared_NonAtomicInvariant_PA_T self.inv)
-    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (view_Rc_PCell_Inner_T_Global self.permcell)
+    id_FMap_PCell_Inner_T_Ag_Seq_T'0 self.frag = public_PA_T'0 self.inv
+    /\ lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (deref_Rc_PCell_Inner_T_Global self.permcell)
       <> None
-    /\ namespace_PA_T (view_GhostShared_NonAtomicInvariant_PA_T self.inv) = Namespace_PARRAY 0
+    /\ namespace_PA_T self.inv = Namespace_PARRAY 0
   
   predicate inv_PersistentArray_T (_1: t_PersistentArray_T)
   
@@ -5060,7 +5075,7 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
       | s3 = insert_Snapshot_PCell_Inner_T {_62} {_63} {_66}
           (fun (_x: t_Option_Perm_PCell_Inner_T) -> [ &_61 <- _x ] s4)
       | s4 =
-        [ &_68 <- Map.set pa'0.current.depth permcell'0 (index_Mapping_PCell_Inner_T_Int pa'0.current.depth (view_Rc_PCell_Inner_T_Global self.permcell)
+        [ &_68 <- Map.set pa'0.current.depth permcell'0 (index_Mapping_PCell_Inner_T_Int pa'0.current.depth (deref_Rc_PCell_Inner_T_Global self.permcell)
         + 1) ] s5
       | s5 = [ &pa'0 <- { pa'0 with current = { pa'0.current with depth = _68 } } ] s6
       | s6 = id_FMap_PCell_Inner_T_Ag_Seq_T'1 {pa'0.current.auth} (fun (_x: t_Id) -> [ &_74 <- _x ] s7)
