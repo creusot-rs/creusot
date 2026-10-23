@@ -300,7 +300,7 @@ pub trait NumExt {
     fn trailing_ones_logic(self) -> u32;
 }
 
-macro_rules! spec_unsized {
+macro_rules! spec_unsigned {
     ($type:ty, $zero:expr, $one:expr) => {
         spec_type!($type);
 
@@ -681,12 +681,12 @@ macro_rules! spec_abs_diff {
 
 spec_bits!(bool);
 
-spec_unsized!(u8, 0u8, 1u8);
-spec_unsized!(u16, 0u16, 1u16);
-spec_unsized!(u32, 0u32, 1u32);
-spec_unsized!(u64, 0u64, 1u64);
-spec_unsized!(u128, 0u128, 1u128);
-spec_unsized!(usize, 0usize, 1usize);
+spec_unsigned!(u8, 0u8, 1u8);
+spec_unsigned!(u16, 0u16, 1u16);
+spec_unsigned!(u32, 0u32, 1u32);
+spec_unsigned!(u64, 0u64, 1u64);
+spec_unsigned!(u128, 0u128, 1u128);
+spec_unsigned!(usize, 0usize, 1usize);
 
 spec_type!(i8);
 spec_type!(i16);
