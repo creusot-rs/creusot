@@ -23,6 +23,10 @@ struct QueueCell<T> {
     status: AtomicUsize,
 }
 
+erase! {
+    type spec::QueueCell<T> => QueueCell;
+}
+
 impl<T: 'static> Queue<T> {
     #[erasure(spec::Queue::<T>::new)]
     pub fn new(length: usize) -> Self {
