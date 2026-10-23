@@ -688,6 +688,36 @@ macro_rules! spec_abs_diff {
                 #[check(ghost)]
                 #[ensures(result@ == self@.abs_diff(other@))]
                 fn abs_diff(self, other: $signed) -> $unsigned;
+
+                #[allow(dead_code)]
+                #[check(ghost)]
+                #[ensures(result == (self@ > 0))]
+                fn is_positive(self) -> bool;
+
+                #[allow(dead_code)]
+                #[check(ghost)]
+                #[ensures(result == (self@ < 0))]
+                fn is_negative(self) -> bool;
+
+                #[allow(dead_code)]
+                #[check(ghost)]
+                #[ensures(self@ >= 0 ==> result@ == self@)]
+                #[ensures(self@ < 0 ==> result@ == -self@)]
+                fn unsigned_abs(self) -> $unsigned;
+
+                #[allow(dead_code)]
+                #[check(ghost)]
+                #[ensures(self@ > 0 ==> result@ == 1)]
+                #[ensures(self@ == 0 ==> result@ == 0)]
+                #[ensures(self@ < 0 ==> result@ == -1)]
+                fn signum(self) -> Self;
+
+                #[allow(dead_code)]
+                #[check(ghost)]
+                #[requires(self@ != Self::MIN@)]
+                #[ensures(self@ >= 0 ==> result@ == self@)]
+                #[ensures(self@ < 0 ==> result@ == -self@)]
+                fn abs(self) -> Self;
             }
         }
     };
