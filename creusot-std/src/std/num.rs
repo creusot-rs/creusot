@@ -922,3 +922,12 @@ macro_rules! spec_wrapping {
 }
 
 spec_wrapping!(u8 u16 u32 u64 u128 usize i8 i16 i32 i64 i128 isize);
+
+impl DeepModel for core::num::ParseIntError {
+    type DeepModelTy = Self;
+
+    #[logic(open, inline)]
+    fn deep_model(self) -> Self::DeepModelTy {
+        self
+    }
+}
