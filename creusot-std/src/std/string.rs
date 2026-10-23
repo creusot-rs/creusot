@@ -181,6 +181,23 @@ extern_spec! {
         #[ensures(result.0@.concat(result.1@) == self@)]
         #[ensures(result.0@.to_bytes().len() == ix@)]
         fn split_at(&self, ix: usize) -> (&str, &str);
+
+        #[check(ghost)]
+        #[ensures(result == (forall<i> i >= 0 && i < self@.len() ==> self@[i]@ <= 127))]
+        fn is_ascii(&self) -> bool;
+
+        #[check(ghost)]
+        #[ensures(result@ == self@.to_bytes())]
+        fn as_bytes(&self) -> &[u8];
+    }
+
+    mod core {
+        mod str {
+            #[check(ghost)]
+            #[requires(exists<s: Seq<char>> s.to_bytes() == bytes@)]
+            #[ensures(result@.to_bytes() == bytes@)]
+            unsafe fn from_utf8_unchecked(bytes: &[u8]) -> &str;
+        }
     }
 }
 
