@@ -1,0 +1,61 @@
+(* logic::seq::Seq<T> *)
+
+use seq.Seq
+use map.Map
+use int.Int
+
+type t_T
+
+type t_U
+
+function index_Mapping_T_U [@inline:trivial] (self: Map.map t_T t_U) (a: t_T) : t_U = Map.get self a
+
+meta "rewrite_def" function index_Mapping_T_U
+
+function cons_U [@inline:trivial] (self: Seq.seq t_U) (x: t_U) : Seq.seq t_U = Seq.cons x self
+
+meta "rewrite_def" function cons_U
+
+type t_RangeFrom_Int = { start: int }
+
+function index_Seq_T [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeFrom_Int) : Seq.seq t_T =
+  Seq.([..]) self range.start (Seq.length self)
+
+meta "rewrite_def" function index_Seq_T
+
+function tail_T [@inline:trivial] (self: Seq.seq t_T) : Seq.seq t_T = index_Seq_T self { start = 1 }
+
+meta "rewrite_def" function tail_T
+
+function map_T (self: Seq.seq t_T) (m: Map.map t_T t_U) : Seq.seq t_U
+
+axiom map_T_def: forall self: Seq.seq t_T, m: Map.map t_T t_U [map_T self m]. map_T self m
+    = (if Seq.length self = 0 then
+      Seq.empty: Seq.seq t_U
+    else
+      cons_U (map_T (tail_T self) m) (Map.get m (Seq.get self 0))
+    )
+
+axiom map_T_spec: forall self: Seq.seq t_T, m: Map.map t_T t_U [map_T self m]. Seq.length (map_T self m)
+    = Seq.length self
+
+axiom map_T_spec'0: forall self: Seq.seq t_T, m: Map.map t_T t_U [map_T self m]. forall i: int. 0 <= i
+        /\ i < Seq.length self -> Seq.get (map_T self m) i = index_Mapping_T_U m (Seq.get self i)
+
+function cons_T [@inline:trivial] (self: Seq.seq t_T) (x: t_T) : Seq.seq t_T = Seq.cons x self
+
+meta "rewrite_def" function cons_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Seq.seq t_T
+
+constant x : t_T
+
+constant f : Map.map t_T t_U
+
+function cons_map_T (self: Seq.seq t_T) (x: t_T) (f: Map.map t_T t_U) : ()
+
+goal vc_cons_map_T: [@stop_split] [@expl:cons_map ensures] map_T (cons_T self x) f = cons_U (map_T self f) (Map.get f x)

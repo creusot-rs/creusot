@@ -301,14 +301,9 @@ impl<T> Seq<T> {
         }
     }
 
-    #[logic(open)]
-    #[variant(self.len())]
-    pub fn flat_map<U>(self, other: Mapping<T, Seq<U>>) -> Seq<U> {
-        if self.len() == 0 {
-            Seq::empty()
-        } else {
-            other.get(*self.index_logic_unsized(0)).concat(self.tail().flat_map(other))
-        }
+    #[logic(open, inline)]
+    pub fn flat_map<U>(self, f: Mapping<T, Seq<U>>) -> Seq<U> {
+        self.map(f).flatten()
     }
 
     /// Returns a new sequence, which is `self` in reverse order.
@@ -428,10 +423,9 @@ impl<T> Seq<T> {
         self.sorted_range(0, self.len())
     }
 
-    #[logic(open)]
-    #[ensures(forall<a: Seq<T>, b: Seq<T>, x>
-        a.concat(b).contains(x) == a.contains(x) || b.contains(x))]
-    pub fn concat_contains() {}
+    #[logic]
+    #[ensures(self.concat(other).contains(x) == self.contains(x) || other.contains(x))]
+    pub fn concat_contains(self, other: Self, x: T) {}
 
     #[logic]
     #[ensures(self.concat(other1).concat(other2) == self.concat(other1.concat(other2)))]
@@ -445,6 +439,49 @@ impl<T> Seq<T> {
     #[logic]
     #[ensures(self.concat(other).reverse() == other.reverse().concat(self.reverse()))]
     pub fn reverse_concat(self, other: Self) {}
+
+    #[logic]
+    #[ensures(Seq::singleton(x).map(f) == Seq::singleton(f.get(x)))]
+    pub fn singleton_map<U>(x: T, f: Mapping<T, U>) {
+        let _ = Self::ext_eq;
+    }
+
+    #[logic]
+    #[ensures(self.snoc(x).map(f) == self.map(f).snoc(f.get(x)))]
+    pub fn snoc_map<U>(self, x: T, f: Mapping<T, U>) {}
+
+    #[logic]
+    #[ensures(self.cons(x).map(f) == self.map(f).cons(f.get(x)))]
+    pub fn cons_map<U>(self, x: T, f: Mapping<T, U>) {}
+
+    #[logic]
+    #[ensures(self.concat(other).map(f) == self.map(f).concat(other.map(f)))]
+    pub fn concat_map<U>(self, other: Self, f: Mapping<T, U>) {}
+
+    #[logic]
+    #[ensures(Seq::singleton(x).flat_map(f) == f.get(x))]
+    pub fn singleton_flat_map<U>(x: T, f: Mapping<T, Seq<U>>) {}
+
+    #[logic]
+    #[ensures(self.snoc(x).flat_map(f) == self.flat_map(f).concat(f.get(x)))]
+    pub fn snoc_flat_map<U>(self, x: T, f: Mapping<T, Seq<U>>) {
+        let _ = Seq::<Seq<U>>::snoc_flatten;
+        let _ = Self::snoc_map::<Seq<U>>;
+    }
+
+    #[logic]
+    #[ensures(self.cons(x).flat_map(f) == f.get(x).concat(self.flat_map(f)))]
+    pub fn cons_flat_map<U>(self, x: T, f: Mapping<T, Seq<U>>) {
+        let _ = Seq::<Seq<U>>::cons_flatten;
+        let _ = Self::cons_map::<Seq<U>>;
+    }
+
+    #[logic]
+    #[ensures(self.concat(other).flat_map(f) == self.flat_map(f).concat(other.flat_map(f)))]
+    pub fn concat_flat_map<U>(self, other: Seq<T>, f: Mapping<T, Seq<U>>) {
+        let _ = Seq::<Seq<U>>::concat_flatten;
+        let _ = Self::concat_map::<Seq<U>>;
+    }
 }
 
 impl<T> Seq<Seq<T>> {
@@ -457,6 +494,35 @@ impl<T> Seq<Seq<T>> {
             self.index_logic_unsized(0).concat(self.tail().flatten())
         }
     }
+
+    #[logic]
+    #[ensures(Seq::singleton(x).flatten() == x)]
+    pub fn singleton_flatten(x: Seq<T>) {}
+
+    #[logic]
+    #[ensures(self.snoc(x).flatten() == self.flatten().concat(x))]
+    pub fn snoc_flatten(self, x: Seq<T>) {
+        proof_assert!(self.snoc(x) == self.concat(Seq::singleton(x)));
+        self.concat_flatten(Seq::singleton(x));
+        Self::singleton_flatten(x);
+    }
+
+    #[logic]
+    #[ensures(self.cons(x).flatten() == x.concat(self.flatten()))]
+    pub fn cons_flatten(self, x: Seq<T>) {}
+
+    #[logic]
+    #[ensures(self.concat(other).flatten() == self.flatten().concat(other.flatten()))]
+    #[variant(self.len())]
+    pub fn concat_flatten(self, other: Self) {
+        if self.len() > 0 {
+            self.tail().concat_flatten(other);
+        }
+    }
+
+    #[logic]
+    #[ensures(self.flatten() == self.flat_map(|s|s))]
+    pub fn flatten_flat_map(self) {}
 }
 
 impl<T> Seq<&T> {
@@ -534,7 +600,96 @@ impl<T> IndexLogic<RangeToInclusive<Int>> for Seq<T> {
     }
 }
 
+impl<T: PartialOrdLogic> PartialOrdLogic for Seq<T> {
+    #[logic(open)]
+    fn lt_log(self, other: Self) -> bool {
+        pearlite! {
+            (exists<i: Int> 0 <= i && i < self.len() && i < other.len() &&
+                (forall<j: Int> 0 <= j && j < i ==> self[j] == other[j]) &&
+                self[i] < other[i])
+            ||
+            self.len() < other.len() &&
+            (forall<i: Int> 0 <= i && i < self.len() ==> self[i] == other[i])
+        }
+    }
+
+    #[logic(law)]
+    #[ensures(!(self < self))]
+    fn irreflexive(self) {}
+
+    #[logic(law)]
+    #[requires(x < y)]
+    #[requires(y < z)]
+    #[ensures(x < z)]
+    fn transitive(x: Self, y: Self, z: Self) {}
+
+    #[logic(law)]
+    #[ensures((self <= other) == (self < other || self == other))]
+    fn le_lt_log(self, other: Self) {}
+}
+
+impl<T: OrdLogic> Seq<T> {
+    #[logic]
+    #[requires(self.len() > 0 && other.len() > 0)]
+    #[requires(self[0] == other[0])]
+    #[ensures((self < other) == (self[1..] < other[1..]))]
+    fn lt_log_tail(self, other: Self) {
+        pearlite! {
+            let _ = |i| {
+                if 0 <= i && i < self.len() && i < other.len() &&
+                        (forall<j: Int> 0 <= j && j < i ==> self[j] == other[j]) &&
+                        self[i] < other[i] {
+                    proof_assert!(forall<j: Int> 0 <= j && j < i-1 ==> self[1..][j] == other[1..][j]);
+                    proof_assert!(self[1..][i-1] < other[1..][i-1]);
+                }
+            };
+        }
+    }
+}
+
+impl<T: OrdLogic> OrdLogic for Seq<T> {
+    #[logic(law)]
+    #[ensures(self < other || self == other || other < self)]
+    #[variant(self.len())]
+    fn lt_log_total(self, other: Self) {
+        if self.len() > 0 && other.len() > 0 {
+            if self[0] == other[0] {
+                self[1..].lt_log_total(other[1..]);
+                self.lt_log_tail(other);
+                other.lt_log_tail(self);
+                proof_assert!(forall<i> 0 < i && i < self.len() ==> self[i] == self[1..][i-1]);
+                proof_assert!(forall<i> 0 < i && i < other.len() ==> other[i] == other[1..][i-1]);
+            } else {
+                self[0].lt_log_total(other[0]);
+            }
+        }
+    }
+}
+
 /// Ghost definitions
+
+impl<T> Invariant for Seq<T> {
+    #[logic(open, prophetic, inline)]
+    #[creusot::trusted_trivial_if_param_trivial]
+    fn invariant(self) -> bool {
+        pearlite! { forall<i> 0 <= i && i < self.len() ==> inv(self.index_logic_unsized(i)) }
+    }
+}
+
+impl<T> Resolve for Seq<T> {
+    #[logic(open, prophetic)]
+    #[creusot::trusted_trivial_if_param_trivial]
+    fn resolve(self) -> bool {
+        pearlite! { forall<i : Int> 0 <= i && i < self.len() ==> resolve(self[i]) }
+    }
+
+    #[trusted]
+    #[logic(prophetic)]
+    #[requires(structural_resolve(self))]
+    #[ensures(self.resolve())]
+    fn resolve_coherence(self) {}
+}
+
 impl<T> Seq<T> {
     /// Constructs a new, empty `Seq<T>`.
     ///
@@ -903,6 +1058,7 @@ impl<T> core::ops::Index<Int> for Seq<T> {
         self.get(index).unwrap()
     }
 }
+
 impl<T> core::ops::IndexMut<Int> for Seq<T> {
     #[check(ghost)]
     #[requires(0 <= index && index < self.len())]
@@ -974,80 +1130,6 @@ impl<T: Plain> Plain for Seq<T> {
                 i = i + 1int;
             }
             res
-        }
-    }
-}
-
-impl<T> Invariant for Seq<T> {
-    #[logic(open, prophetic, inline)]
-    #[creusot::trusted_trivial_if_param_trivial]
-    fn invariant(self) -> bool {
-        pearlite! { forall<i> 0 <= i && i < self.len() ==> inv(self.index_logic_unsized(i)) }
-    }
-}
-
-impl<T: PartialOrdLogic> PartialOrdLogic for Seq<T> {
-    #[logic(open)]
-    fn lt_log(self, other: Self) -> bool {
-        pearlite! {
-            (exists<i: Int> 0 <= i && i < self.len() && i < other.len() &&
-                (forall<j: Int> 0 <= j && j < i ==> self[j] == other[j]) &&
-                self[i] < other[i])
-            ||
-            self.len() < other.len() &&
-            (forall<i: Int> 0 <= i && i < self.len() ==> self[i] == other[i])
-        }
-    }
-
-    #[logic(law)]
-    #[ensures(!(self < self))]
-    fn irreflexive(self) {}
-
-    #[logic(law)]
-    #[requires(x < y)]
-    #[requires(y < z)]
-    #[ensures(x < z)]
-    fn transitive(x: Self, y: Self, z: Self) {}
-
-    #[logic(law)]
-    #[ensures((self <= other) == (self < other || self == other))]
-    fn le_lt_log(self, other: Self) {}
-}
-
-impl<T: OrdLogic> Seq<T> {
-    #[logic]
-    #[requires(self.len() > 0 && other.len() > 0)]
-    #[requires(self[0] == other[0])]
-    #[ensures((self < other) == (self[1..] < other[1..]))]
-    fn lt_log_tail(self, other: Self) {
-        pearlite! {
-            let _ = |i| {
-                if 0 <= i && i < self.len() && i < other.len() &&
-                        (forall<j: Int> 0 <= j && j < i ==> self[j] == other[j]) &&
-                        self[i] < other[i] {
-                    proof_assert!(forall<j: Int> 0 <= j && j < i-1 ==> self[1..][j] == other[1..][j]);
-                    proof_assert!(self[1..][i-1] < other[1..][i-1]);
-                }
-            };
-        }
-    }
-}
-
-impl<T: OrdLogic> OrdLogic for Seq<T> {
-    #[logic(law)]
-    #[ensures(self < other || self == other || other < self)]
-    #[variant(self.len())]
-    fn lt_log_total(self, other: Self) {
-        if self.len() > 0 && other.len() > 0 {
-            if self[0] == other[0] {
-                self[1..].lt_log_total(other[1..]);
-                self.lt_log_tail(other);
-                other.lt_log_tail(self);
-                proof_assert!(forall<i> 0 < i && i < self.len() ==> self[i] == self[1..][i-1]);
-                proof_assert!(forall<i> 0 < i && i < other.len() ==> other[i] == other[1..][i-1]);
-            } else {
-                self[0].lt_log_total(other[0]);
-            }
         }
     }
 }
@@ -1161,20 +1243,6 @@ impl<'a, T> IntoIterator for &'a mut Seq<T> {
     }
 }
 
-impl<T> Resolve for Seq<T> {
-    #[logic(open, prophetic)]
-    #[creusot::trusted_trivial_if_param_trivial]
-    fn resolve(self) -> bool {
-        pearlite! { forall<i : Int> 0 <= i && i < self.len() ==> resolve(self[i]) }
-    }
-
-    #[trusted]
-    #[logic(prophetic)]
-    #[requires(structural_resolve(self))]
-    #[ensures(self.resolve())]
-    fn resolve_coherence(self) {}
-}
-
 impl<T> Resolve for Iter<T> {
     #[logic(open, prophetic, inline)]
     #[creusot::trusted_trivial_if_param_trivial]
@@ -1186,21 +1254,4 @@ impl<T> Resolve for Iter<T> {
     #[requires(structural_resolve(self))]
     #[ensures(self.resolve())]
     fn resolve_coherence(self) {}
-}
-
-/// Properties
-impl<T> Seq<T> {
-    #[logic(open)]
-    #[ensures(Seq::singleton(x).flat_map(f) == f.get(x))]
-    pub fn flat_map_singleton<U>(x: T, f: Mapping<T, Seq<U>>) {}
-
-    #[logic(open)]
-    #[ensures(self.snoc(x).flat_map(f) == self.flat_map(f).concat(f.get(x)))]
-    #[variant(self.len())]
-    pub fn flat_map_push_back<U>(self, x: T, f: Mapping<T, Seq<U>>) {
-        if self.len() > 0 {
-            Self::flat_map_push_back::<U>(self.tail(), x, f);
-            proof_assert! { self.tail().snoc(x) == self.snoc(x).tail() }
-        }
-    }
 }
