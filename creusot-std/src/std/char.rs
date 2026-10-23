@@ -23,6 +23,12 @@ extern_spec! {
         #[ensures(result@ == 0)]
         fn default() -> char;
     }
+
+    impl char {
+        #[check(ghost)]
+        #[ensures(result == (self@ <= 127))]
+        fn is_ascii(&self) -> bool;
+    }
 }
 
 impl Plain for char {
