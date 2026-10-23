@@ -14,7 +14,7 @@ impl View for str {
 impl DeepModel for str {
     type DeepModelTy = Seq<char>;
 
-    #[logic]
+    #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
         self.view()
     }
@@ -34,7 +34,7 @@ impl View for String {
 impl DeepModel for String {
     type DeepModelTy = Seq<char>;
 
-    #[logic]
+    #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
         self.view()
     }
