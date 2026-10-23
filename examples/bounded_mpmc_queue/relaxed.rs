@@ -668,10 +668,13 @@ impl<T> Queue<T> {
     #[ensures(result.1@ == Seq::empty())]
     #[ensures(result.1.budget() == usize::MAX@ - 2 * length@ + 1)]
     pub fn new(length: usize) -> (Self, Ghost<PermQueue<T>>) {
-        let tokens_auth: Ghost<tokens::Authority<T>> = tokens::Authority::alloc();
-        let mut statuses_mono_auth: Ghost<Seq<statuses::Authority>> = Seq::new();
-        let mut cells_own: Ghost<Seq<Option<AtView<PermPCell<T>>>>> = Seq::new();
-        let mut statuses_own: Ghost<Seq<Perm<AtomicUsize>>> = Seq::new();
+        let tokens_auth: Ghost<tokens::Authority<T>> =
+            ghost! {tokens::Authority::alloc().into_inner()};
+        let mut statuses_mono_auth: Ghost<Seq<statuses::Authority>> =
+            ghost! {Seq::new().into_inner()};
+        let mut cells_own: Ghost<Seq<Option<AtView<PermPCell<T>>>>> =
+            ghost! {Seq::new().into_inner()};
+        let mut statuses_own: Ghost<Seq<Perm<AtomicUsize>>> = ghost! {Seq::new().into_inner()};
         let mut cells: Vec<QueueCell<T>> = Vec::new();
 
         #[invariant(cells@.len() == produced.len())]
@@ -705,7 +708,7 @@ impl<T> Queue<T> {
         for i in 0..length {
             let (item, item_own) = PCell::new(MaybeUninit::uninit());
 
-            let at_view = AtView::new(item_own);
+            let at_view = ghost! {AtView::new(item_own).into_inner()};
             let mut view = ghost!(at_view.0);
             let at_view = ghost!(at_view.into_inner().1);
 
