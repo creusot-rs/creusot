@@ -551,7 +551,7 @@ macro_rules! erase {
     // ```
     // Wrapping the function in a `const _` avoids name clashes.
     // Parsing the type parameter list makes this rule a bit awkward.
-    (type $a1:ident $(:: $a2:ident)* $(< $($i:ident $(: $bound:ty)?),* >)? => $b:path $(, $($rest:tt)*)?) => {
+    (type $a1:ident $(:: $a2:ident)* $(< $($i:ident $(: $bound:ty)?),* >)? => $b:path $(; $($rest:tt)*)?) => {
         const _: () = {
             #[creusot::no_translate]
             #[creusot::spec::erasure_type]
