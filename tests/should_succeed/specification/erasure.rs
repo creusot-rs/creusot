@@ -215,11 +215,17 @@ pub fn call_store_spec() {
 }
 
 #[erasure(store)]
-pub fn store_spec(x: usize, y: usize, z: Ghost<usize>) {}
+pub fn store_spec(_: usize, _: usize, _: Ghost<usize>) {}
 
-pub fn store(x: usize, y: usize) {}
+pub fn store(_: usize, _: usize) {}
 
 #[erasure(call_store_spec)]
 pub fn call_store() {
     store(1, 2)
+}
+
+pub struct RI<A>(A, A);
+
+erase! {
+    type RI<A> => ::std::ops::RangeInclusive<A>
 }
