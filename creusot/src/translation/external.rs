@@ -255,8 +255,8 @@ impl<'a, 'tcx> thir::visit::Visitor<'a, 'tcx> for ExtractExternItem<'a, 'tcx> {
 pub(crate) fn extract_erasure_from_item<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     local_def_id: LocalDefId,
-    (thir, expr): ThirExpr<'tcx>,
-) -> Option<(LocalDefId, Option<Erasure<'tcx>>)> {
+) -> Option<ErasureItem<'tcx>> {
+    let (thir, expr) = ctx.tcx.thir_body(local_def_id).unwrap_or_else(|err| err.raise_fatal());
     let def_id = local_def_id.to_def_id();
     let (id_this, (id_resolved, subst_resolved)) = match get_erasure(ctx.tcx, def_id) {
         None => return None,
@@ -307,12 +307,17 @@ pub(crate) fn extract_erasure_from_item<'tcx>(
                     format!("#[erasure(_)] requires the #[trusted] attribute"),
                 )
             }
-            return Some((local_def_id, None));
+            return Some(ErasureItem::FnErasure(local_def_id, None));
         }
     };
     let erased =
         build_erased(ctx.tcx, ctx.typing_env(id_this), id_this, id_resolved, subst_resolved);
-    Some((id_this.expect_local(), Some(erased)))
+    Some(ErasureItem::FnErasure(id_this.expect_local(), Some(erased)))
+}
+
+pub enum ErasureItem<'tcx> {
+    FnErasure(LocalDefId, Option<Erasure<'tcx>>),
+    TypeErasure(DefId, Vec<ErasureType>),
 }
 
 /// Extract erasure for nested items

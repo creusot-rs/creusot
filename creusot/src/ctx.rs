@@ -11,9 +11,9 @@ use crate::{
     translation::{
         self,
         external::{
-            ExternSpec, TrustedPositivity, extract_erasure_from_child, extract_erasure_from_item,
-            extract_extern_specs_from_item, extract_extern_trusted_positivity,
-            extract_trusted_positivity,
+            ErasureItem, ExternSpec, TrustedPositivity, extract_erasure_from_child,
+            extract_erasure_from_item, extract_extern_specs_from_item,
+            extract_extern_trusted_positivity, extract_trusted_positivity,
         },
         fmir,
         pearlite::{self, PIdent, Term, TermSort, TermWithTriggers},
@@ -28,6 +28,7 @@ use crate::{
 use creusot_args::options::Options;
 use indexmap::{IndexMap, IndexSet};
 use once_map::unsync::OnceMap;
+use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_ast::{
     AttrVec, Fn, FnSig, NodeId,
     visit::{FnKind, Visitor, walk_fn},
@@ -722,14 +723,19 @@ impl<'tcx> TranslationCtx<'tcx> {
 
     fn load_erasures(&mut self) {
         for def_id in self.tcx.hir_body_owners() {
-            let thir = self.tcx.thir_body(def_id).unwrap_or_else(|err| err.raise_fatal());
-            let Some((eraser, erasure)) = extract_erasure_from_item(self, def_id, thir) else {
+            let Some(e) = extract_erasure_from_item(self, def_id) else {
                 continue;
             };
-            self.erased_local_defid.insert(eraser, erasure);
-            if !is_trusted(self.tcx, eraser.to_def_id()) {
-                // erasure can't be None (`#[erasure(_)]` must be `#[trusted]`)
-                self.erasures_to_check.insert(eraser);
+            use ErasureItem::*;
+            match e {
+                FnErasure(erased, erasure) => {
+                    self.erased_local_defid.insert(erased, erasure);
+                    if !is_trusted(self.tcx, erased.to_def_id()) {
+                        // erasure can't be None (`#[erasure(_)]` must be `#[trusted]`)
+                        self.erasures_to_check.insert(erased);
+                    }
+                }
+                TypeErasure(erased, erasure) => todo!(),
             }
         }
         if self.erasures_to_check.is_empty() {
@@ -826,6 +832,10 @@ impl<'tcx> TranslationCtx<'tcx> {
         }
     }
 
+    pub(crate) fn erasure_type(&self, def_id: DefId, i: VariantIdx) -> Option<&ErasureType<'tcx>> {
+        self.externs.erasure_type(def_id, i)
+    }
+
     /// If `true`, the type is definitely non-zero sized. This is a best-effort underapproximation.
     pub fn is_nonzero_sized(&self, typing_env: TypingEnv<'tcx>, ty: Ty<'tcx>) -> bool {
         is_nonzero_sized(
@@ -855,6 +865,31 @@ pub struct Erasure<'tcx> {
     pub def: (DefId, GenericArgsRef<'tcx>),
     /// `true` for ghost arguments to erase
     pub erase_args: Vec<bool>,
+}
+
+pub struct ErasureType {
+    def: DefId,
+    variant: VariantIdx,
+    n_fields: usize,
+    erase_fields: Vec<Option<FieldIdx>>,
+}
+
+impl ErasureType {
+    pub(crate) fn def_id(&self) -> DefId {
+        self.def
+    }
+
+    pub(crate) fn variant(&self) -> VariantIdx {
+        self.variant
+    }
+
+    pub(crate) fn n_fields(&self) -> usize {
+        self.n_fields
+    }
+
+    pub(crate) fn field(&self, i: FieldIdx) -> Option<FieldIdx> {
+        self.erase_fields[i.as_usize()]
+    }
 }
 
 /// If `true`, the type is definitely non-zero sized. This is a best-effort underapproximation.

@@ -1,5 +1,5 @@
 use crate::{
-    ctx::Erasure,
+    ctx::{Erasure, ErasureType},
     translation::{
         external::{ExternSpec, TrustedPositivity},
         pearlite::Term,
@@ -10,6 +10,7 @@ use crate::{
 use creusot_metadata::{decode_metadata, encode_metadata};
 use indexmap::IndexMap;
 use once_map::unsync::OnceMap;
+use rustc_abi::VariantIdx;
 use rustc_hir::def_id::{CrateNum, DefId, DefPathHash, LOCAL_CRATE, LocalDefId};
 use rustc_index::bit_set::DenseBitSet;
 use rustc_macros::{TyDecodable, TyEncodable};
@@ -34,6 +35,7 @@ pub struct Metadata<'tcx> {
     trusted_positivity: ExternTypes<'tcx>,
     erased_thir: HashMap<DefId, AnfBlock<'tcx>>,
     erased_defid: HashMap<DefId, Option<Erasure<'tcx>>>,
+    erasure_type: HashMap<(DefId, VariantIdx), ErasureType>,
 }
 
 impl<'tcx> Metadata<'tcx> {
@@ -83,6 +85,10 @@ impl<'tcx> Metadata<'tcx> {
 
     pub(crate) fn erasure(&self, id: DefId) -> Option<&Option<Erasure<'tcx>>> {
         self.erased_defid.get(&id)
+    }
+
+    pub(crate) fn erasure_type(&self, id: DefId, i: VariantIdx) -> Option<&ErasureType> {
+        self.erasure_type.get(&(id, i))
     }
 
     pub(crate) fn load(&mut self, tcx: TyCtxt<'tcx>, overrides: &HashMap<String, PathBuf>) {

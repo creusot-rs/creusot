@@ -1023,14 +1023,50 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                     .collect::<Result<_, _>>()?;
                 AnfValue::Ctor(Ctor::Array, fields)
             }
-            Adt(box AdtExpr { adt_def, variant_index, fields, .. }) => {
+            // Erased constructor
+            &Adt(box AdtExpr { adt_def, variant_index, ref fields, .. })
+                if let Some(erased) =
+                    self.ctx.and_then(|ctx| ctx.erasure_type(adt_def.did(), variant_index)) =>
+            {
+                // Put the fields in a canonical order
+                let mut args: Vec<_> =
+                    vec![(AnfValue::Unit, Default::default()); erased.n_fields()];
+                // The side effects are resolved in order in `stmts`
+                for field in fields {
+                    let e = self.a_normal_form_expr(field.expr, stmts)?;
+                    let Some(i) = erased.field(field.name) else {
+                        continue;
+                    };
+                    args[i.as_usize()] = e;
+                }
+                AnfValue::Ctor(Ctor::Adt(erased.def_id(), variant_index), args)
+            }
+            &Adt(box AdtExpr { adt_def, variant_index, ref fields, .. }) => {
                 // Put the fields in a canonical order
                 let mut args: Vec<_> = vec![(AnfValue::Unit, Default::default()); fields.len()];
                 // The side effects are resolved in order in `stmts`
                 for field in fields {
                     args[field.name.as_usize()] = self.a_normal_form_expr(field.expr, stmts)?;
                 }
-                AnfValue::Ctor(Ctor::Adt(adt_def.did(), *variant_index), args)
+                AnfValue::Ctor(Ctor::Adt(adt_def.did(), variant_index), args)
+            }
+            // Erased field
+            &Field { lhs, variant_index, name }
+                if let Some(erased) = self.ctx.and_then(|ctx| {
+                    let ty::TyKind::Adt(adt_def, _) = self.thir[lhs].ty.kind() else { return None };
+                    ctx.erasure_type(adt_def.did(), variant_index)
+                }) =>
+            {
+                let value = self.a_normal_form_expr(lhs, stmts)?.0;
+                if let Some(i) = erased.field(name) {
+                    AnfValue::Field(erased.variant(), i, value.into())
+                } else {
+                    AnfValue::Unit
+                }
+            }
+            &Field { lhs, variant_index, name } => {
+                let value = self.a_normal_form_expr(lhs, stmts)?.0;
+                AnfValue::Field(variant_index, name, value.into())
             }
             NamedConst { def_id, args, .. } => bind_var(stmts, AnfOp::const_(*def_id, args)),
             PointerCoercion { cast: MutToConstPointer, source, .. } => {
@@ -1056,10 +1092,6 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 } else {
                     AnfValue::Cast(source_ty, expr.ty, value.into())
                 }
-            }
-            Field { lhs, variant_index, name } => {
-                let value = self.a_normal_form_expr(*lhs, stmts)?.0;
-                AnfValue::Field(*variant_index, *name, value.into())
             }
             ValueTypeAscription { source, .. } => self.a_normal_form_expr(*source, stmts)?.0,
             &Assign { lhs, rhs } => {
