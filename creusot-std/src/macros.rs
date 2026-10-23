@@ -536,3 +536,36 @@ pub use base_macros::erasure;
 pub use base_macros::constant;
 
 pub(crate) use base_macros::intrinsic;
+
+#[cfg(creusot)]
+#[macro_export]
+macro_rules! erase {
+    // `type A<T: U> => B<T>`
+    // expands to
+    // ```
+    // const _: () = {
+    //    #[creusot::no_translate]
+    //    #[creusot::erasure_type]
+    //    fn _erasure<T: U>(_: A<T>, _: B<T>) {}
+    // }
+    // ```
+    // Wrapping the function in a `const _` avoids name clashes.
+    // Parsing the type parameter list makes this rule a bit awkward.
+    (type $a1:ident $(:: $a2:ident)* $(< $($i:ident $(: $bound:ty)?),* >)? => $b:path $(, $($rest:tt)*)?) => {
+        const _: () = {
+            #[creusot::no_translate]
+            #[creusot::spec::erasure_type]
+            fn _erasure $(< $($i $(: $bound)?),* >)? (_: $a1 $(:: $a2)* $(< $($i),* >)?, _: $b) {}
+        };
+        $crate::erase!{$($($rest)*)?}
+    };
+    () => {};
+}
+
+#[cfg(not(feature = "creusot"))]
+#[macro_export]
+macro_rules! erase {
+    ($($_:tt)*) => {};
+}
+
+pub use erase;
