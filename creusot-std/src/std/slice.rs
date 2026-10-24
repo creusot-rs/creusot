@@ -345,10 +345,12 @@ extern_spec! {
         #[ensures((^self)@.exchange(self@, i@, j@))]
         fn swap(&mut self, i: usize, j: usize);
 
+        #[check(ghost)]
         #[ensures(ix.in_bounds(self@) ==> exists<r> result == Some(r) && ix.has_value(self@, *r))]
         #[ensures(ix.in_bounds(self@) || result == None)]
         fn get<I: SliceIndexSpec<[T]>>(&self, ix: I) -> Option<&<I as SliceIndex<[T]>>::Output>;
 
+        #[check(ghost)]
         #[ensures((^self)@.len() == self@.len())]
         #[ensures(ix.in_bounds(self@) ==> exists<r>
                     result == Some(r) &&
@@ -533,11 +535,13 @@ extern_spec! {
         fn binary_search(&self, x: &T) -> Result<usize, usize>
             where T: Ord + DeepModel,  T::DeepModelTy: OrdLogic,;
 
+        #[check(ghost)]
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]
         unsafe fn get_unchecked<I: SliceIndexSpec<[T]>>(&self, ix: I)
             -> &<I as SliceIndex<[T]>>::Output;
 
+        #[check(ghost)]
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]
         #[ensures(ix.has_value((^self)@, ^result))]

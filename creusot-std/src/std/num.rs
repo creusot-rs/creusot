@@ -300,7 +300,7 @@ pub trait NumExt {
     fn trailing_ones_logic(self) -> u32;
 }
 
-macro_rules! spec_unsized {
+macro_rules! spec_unsigned {
     ($type:ty, $zero:expr, $one:expr) => {
         spec_type!($type);
 
@@ -369,6 +369,9 @@ macro_rules! spec_unsized {
                     fn trailing_ones(self) -> u32;
             }
         }
+
+        spec_div_rem!{@nz Div, div, /, $type, $type, $type}
+        spec_div_rem!{@nz Rem, rem, %, $type, $type, $type}
     };
 }
 
@@ -516,6 +519,17 @@ macro_rules! spec_div_rem {
                 fn $divrem_method(self, rhs: $rhs) -> $type {
                     self $op rhs
                 }
+            }
+        }
+    };
+    (@nz $divrem_trait:ident, $divrem_method:ident, $op:tt, $type:ty, $lhs:ty, $rhs:ty) => {
+        extern_spec! {
+            impl $divrem_trait<NonZero<$rhs>> for $lhs {
+                // This has to be trusted because it's implemented by calling into an intrinsic
+                // that only has `Copy` bound which is not sufficient to specify the precondition.
+                #[requires(!(self@ == $type::MIN@ && rhs@ == -1))]
+                #[ensures(result@ == self@ $op rhs@)]
+                fn $divrem_method(self, rhs: NonZero<$rhs>) -> $type;
             }
         }
     };
@@ -674,6 +688,48 @@ macro_rules! spec_abs_diff {
                 #[check(ghost)]
                 #[ensures(result@ == self@.abs_diff(other@))]
                 fn abs_diff(self, other: $signed) -> $unsigned;
+
+                #[allow(dead_code)]
+                #[check(ghost)]
+                #[ensures(result == (self@ > 0))]
+                fn is_positive(self) -> bool;
+
+                #[allow(dead_code)]
+                #[check(ghost)]
+                #[ensures(result == (self@ < 0))]
+                fn is_negative(self) -> bool;
+
+                #[allow(dead_code)]
+                #[check(ghost)]
+                #[ensures(self@ >= 0 ==> result@ == self@)]
+                #[ensures(self@ < 0 ==> result@ == -self@)]
+                fn unsigned_abs(self) -> $unsigned;
+
+                #[allow(dead_code)]
+                #[check(ghost)]
+                #[ensures(self@ > 0 ==> result@ == 1)]
+                #[ensures(self@ == 0 ==> result@ == 0)]
+                #[ensures(self@ < 0 ==> result@ == -1)]
+                fn signum(self) -> Self;
+
+                #[allow(dead_code)]
+                #[check(ghost)]
+                #[requires(self@ != Self::MIN@)]
+                #[ensures(self@ >= 0 ==> result@ == self@)]
+                #[ensures(self@ < 0 ==> result@ == -self@)]
+                fn abs(self) -> Self;
+            }
+
+            impl TryFrom<$signed> for $unsigned {
+                #[check(ghost)]
+                #[ensures(match result { Ok(val) => val@ == value@, Err(_) => value@ < 0 })]
+                fn try_from(value: $signed) -> Result<Self, core::num::TryFromIntError>;
+            }
+
+            impl TryFrom<$unsigned> for $signed {
+                #[check(ghost)]
+                #[ensures(match result { Ok(val) => val@ == value@, Err(_) => value@ > Self::MAX@ })]
+                fn try_from(value: $unsigned) -> Result<Self, core::num::TryFromIntError>;
             }
         }
     };
@@ -681,12 +737,12 @@ macro_rules! spec_abs_diff {
 
 spec_bits!(bool);
 
-spec_unsized!(u8, 0u8, 1u8);
-spec_unsized!(u16, 0u16, 1u16);
-spec_unsized!(u32, 0u32, 1u32);
-spec_unsized!(u64, 0u64, 1u64);
-spec_unsized!(u128, 0u128, 1u128);
-spec_unsized!(usize, 0usize, 1usize);
+spec_unsigned!(u8, 0u8, 1u8);
+spec_unsigned!(u16, 0u16, 1u16);
+spec_unsigned!(u32, 0u32, 1u32);
+spec_unsigned!(u64, 0u64, 1u64);
+spec_unsigned!(u128, 0u128, 1u128);
+spec_unsigned!(usize, 0usize, 1usize);
 
 spec_type!(i8);
 spec_type!(i16);
@@ -866,3 +922,12 @@ macro_rules! spec_wrapping {
 }
 
 spec_wrapping!(u8 u16 u32 u64 u128 usize i8 i16 i32 i64 i128 isize);
+
+impl DeepModel for core::num::ParseIntError {
+    type DeepModelTy = Self;
+
+    #[logic(open, inline)]
+    fn deep_model(self) -> Self::DeepModelTy {
+        self
+    }
+}
