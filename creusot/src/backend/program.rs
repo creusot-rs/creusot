@@ -1176,6 +1176,15 @@ where
             false,
             [Defn { prototype: Prototype::new(k, [Param::Term(x, ty)]), body: tail }].into(),
         ),
+        IntermediateStmt::Any(id, ty) => Expr::Defn(
+            Expr::Any.boxed(),
+            false,
+            [Defn {
+                prototype: Prototype::new(Ident::fresh_local("any_"), [Param::Term(id, ty)]),
+                body: tail.black_box(),
+            }]
+            .into(),
+        ),
     })
 }
 
@@ -1193,6 +1202,7 @@ pub(crate) enum IntermediateStmt {
     Assert(Exp),
     // K [ _ck -> ! {E} any ]
     Check(Exp),
+    Any(Ident, Type),
 }
 
 impl IntermediateStmt {

@@ -572,7 +572,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     );
                     let byte_exps: Box<[Exp]> = bytes
                         .iter()
-                        .map(|&b| Constant::Uint(b as u128, Some(u8_ty.clone())).into())
+                        .map(|&b| Constant::IntDigits10(format!("{b}"), Some(u8_ty.clone())).into())
                         .collect();
                     Exp::qvar(name::seq_create())
                         .app([Exp::int(bytes.len() as i128), Exp::FunLiteral(byte_exps)])
