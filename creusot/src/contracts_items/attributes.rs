@@ -1,11 +1,12 @@
 //! Defines all the internal creusot attributes.
 
+use crate::ctx::{HasTyCtxt as _, TranslationCtx};
 use rustc_ast::{
-    LitKind, MetaItemInner, Param,
+    LitKind, MetaItemInner, Param, ast,
     token::TokenKind,
     tokenstream::{TokenStream, TokenTree},
 };
-use rustc_attr_ir::{AttrArgs, Attribute};
+use rustc_attr_ir::{AttrArgs, AttrItem, Attribute};
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::TyCtxt;
 use rustc_span::{Span, Symbol};
@@ -13,8 +14,6 @@ use why3::{
     Name,
     declaration::{Attribute as WAttribute, Meta, MetaArg, MetaIdent},
 };
-
-use crate::ctx::{HasTyCtxt as _, TranslationCtx};
 
 /// Helper macro, converts `creusot::foo::bar` into `["creusot", "foo", "bar"]`.
 macro_rules! path_to_str {
@@ -81,8 +80,7 @@ attribute_functions! {
 }
 
 pub(crate) fn get_invariant_expl(tcx: TyCtxt, def_id: DefId) -> Option<String> {
-    get_attr(tcx, def_id, &["creusot", "spec", "invariant"])
-        .map(|a| a.value_str().map_or("expl:loop invariant".to_string(), |s| s.to_string()))
+    get_attr(tcx, def_id, &["creusot", "spec", "invariant"]).map(|a| value_str(a).as_str().into())
 }
 
 pub(crate) fn is_pearlite(tcx: TyCtxt, def_id: DefId) -> bool {
@@ -109,33 +107,30 @@ pub(crate) fn get_builtin(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
     }
 
     let a = get_attr(tcx, def_id, &["creusot", "builtin"])?;
-    Some(a.value_str().unwrap_or_else(|| {
-        tcx.dcx().span_fatal(
-            a.span(),
-            "Attribute `creusot::builtin` should be followed by a string.".to_string(),
-        )
-    }))
+    Some(value_str(a))
 }
 
 pub(crate) fn get_intrinsic(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    Some(get_attr(tcx, def_id, &["creusot", "intrinsic"])?.value_str().unwrap())
+    Some(value_str(get_attr(tcx, def_id, &["creusot", "intrinsic"])?))
 }
 
 pub(crate) fn opacity_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    get_attr(tcx, def_id, &["creusot", "clause", "open"])
-        .map(|a| a.value_str().expect("invalid creusot::clause::open"))
+    get_attr(tcx, def_id, &["creusot", "clause", "open"]).map(|a| value_str(a))
 }
 
 pub(crate) fn indirect_witness_name(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    get_attr(tcx, def_id, &["creusot", "clause", "indirect"])
-        .map(|a| a.value_str().expect("invalid creusot::clause::indirect"))
+    get_attr(tcx, def_id, &["creusot", "clause", "indirect"]).map(|a| value_str(a))
 }
 
 pub(crate) fn why3_attrs(tcx: TyCtxt, def_id: DefId) -> Vec<WAttribute> {
     get_attrs(tcx, def_id, &["creusot", "why3_attr"])
         .into_iter()
-        .map(|a| WAttribute::Attr(a.value_str().unwrap().as_str().into()))
+        .map(|a| WAttribute::Attr(value_str(a).as_str().into()))
         .collect()
+}
+
+fn value_str(attr: &AttrItem) -> Symbol {
+    if let AttrArgs::Eq { expr, .. } = attr.args { expr.value_as_str().unwrap() } else { panic!() }
 }
 
 pub(crate) fn why3_metas(
@@ -144,13 +139,16 @@ pub(crate) fn why3_metas(
     ident: why3::Ident,
 ) -> impl Iterator<Item = Meta> {
     get_attrs(tcx, def_id, &["creusot", "why3_meta"]).into_iter().map(move |a| {
-        let Some(items) = &a.meta_item_list() else {
+        let span = a.span;
+        let crash = || {
             tcx.crash_and_error(
-                a.span(),
+                span,
                 "Invalid creusot::why3_meta attribute: missing arguments".to_string(),
             )
         };
-        tokenstream_to_meta(tcx, a.span(), ident, items.iter())
+        let AttrArgs::Delimited(ref d) = a.args else { crash() };
+        let Some(items) = ast::MetaItemKind::list_from_tokens(d.tokens.clone()) else { crash() };
+        tokenstream_to_meta(tcx, span, ident, items.iter())
     })
 }
 
@@ -196,7 +194,6 @@ pub(crate) enum ErasureKind {
 
 pub(crate) fn get_erasure(tcx: TyCtxt, def_id: DefId) -> Option<ErasureKind> {
     let attr = get_attrs(tcx, def_id, &["creusot", "spec", "erasure"]).pop()?;
-    let Attribute::Unparsed(attr) = attr else { unreachable!() };
     match &attr.args {
         AttrArgs::Delimited(args) => Some(parse_erasure_arg(tcx, def_id, &args.tokens)),
         AttrArgs::Empty => Some(ErasureKind::Parent),
@@ -236,18 +233,11 @@ pub(crate) fn creusot_clause_attrs<'tcx>(
     // Attributes are given in reverse order. So we need to rever the list of
     // attributes to make sure requires/ensures clauses appear in the same
     // order in WhyML code as they appear in Rust code.
-    get_attrs(tcx, def_id, &["creusot", "clause", clause])
-        .into_iter()
-        .rev()
-        .map(|a| &a.get_normal_item().args)
+    get_attrs(tcx, def_id, &["creusot", "clause", clause]).into_iter().rev().map(|a| &a.args)
 }
 
 pub(crate) fn get_creusot_item(tcx: TyCtxt, def_id: DefId) -> Option<Symbol> {
-    Some(
-        get_attr(tcx, def_id, &["creusot", "item"])?
-            .value_str()
-            .expect("invalid creusot::item attribute"),
-    )
+    Some(value_str(get_attr(tcx, def_id, &["creusot", "item"])?))
 }
 
 pub(crate) fn is_open_inv_param(tcx: TyCtxt, p: &Param) -> bool {
@@ -283,7 +273,6 @@ pub(crate) fn is_open_inv_param(tcx: TyCtxt, p: &Param) -> bool {
 
 pub(crate) fn get_trusted_positive(tcx: TyCtxt, def_id: DefId) -> Option<Vec<Symbol>> {
     let attr = get_attrs(tcx, def_id, &["creusot", "decl", "trusted_positive"]).pop()?;
-    let Attribute::Unparsed(attr) = attr else { unreachable!() };
     match &attr.args {
         AttrArgs::Delimited(args) => Some(parse_trusted_positive(&args.tokens)),
         _ => tcx.crash_and_error(tcx.def_span(def_id), "Bad #[trusted_positive] attribute"),
@@ -304,17 +293,30 @@ fn parse_trusted_positive(tokens: &TokenStream) -> Vec<Symbol> {
     params
 }
 
-fn get_attrs<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, path: &[&str]) -> Vec<&'tcx Attribute> {
+fn get_attrs<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, path: &[&str]) -> Vec<&'tcx AttrItem> {
     let path = path.iter().map(|s| Symbol::intern(s)).collect::<Vec<_>>();
-    tcx.get_attrs_by_path(def_id, &path).collect::<Vec<_>>()
+    #[allow(deprecated)] // FIXME
+    let attrs = tcx.get_all_attrs(def_id);
+    attrs
+        .into_iter()
+        .filter_map(|attr| {
+            if let &Attribute::Unparsed(ref u) = attr
+                && u.path.segments.iter().eq(&path)
+            {
+                Some(&**u)
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>()
 }
 
-fn get_attr<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, path: &[&str]) -> Option<&'tcx Attribute> {
+fn get_attr<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, path: &[&str]) -> Option<&'tcx AttrItem> {
     let matched = get_attrs(tcx, def_id, path);
     match matched.len() {
         0 => None,
         1 => Some(matched[0]),
-        _ => tcx.dcx().span_fatal(matched[0].span(), "Unexpected duplicate attribute.".to_string()),
+        _ => tcx.dcx().span_fatal(matched[0].span, "Unexpected duplicate attribute.".to_string()),
     }
 }
 
@@ -333,7 +335,7 @@ pub(crate) fn has_logic_alias(ctx: &TranslationCtx, def_id: DefId) -> Option<(Sp
                 if lattrs.is_empty() { ("prophetic", &pattrs) } else { ("logic", &lattrs) };
 
             ctx.dcx().span_err(
-                attrs.iter().map(|attr| attr.span()).collect::<Vec<_>>(),
+                attrs.iter().map(|attr| attr.span).collect::<Vec<_>>(),
                 format!("A function cannot have multiple {name} aliases"),
             );
 
@@ -342,11 +344,7 @@ pub(crate) fn has_logic_alias(ctx: &TranslationCtx, def_id: DefId) -> Option<(Sp
 
         (_, _) => {
             ctx.dcx().span_err(
-                lattrs
-                    .iter()
-                    .map(|attr| attr.span())
-                    .chain(pattrs.iter().map(|attr| attr.span()))
-                    .collect::<Vec<_>>(),
+                lattrs.iter().chain(&pattrs).map(|attr| attr.span).collect::<Vec<_>>(),
                 "Cannot use both `logic_alias` and `prophetic_alias` simultaneously",
             );
 
@@ -354,12 +352,12 @@ pub(crate) fn has_logic_alias(ctx: &TranslationCtx, def_id: DefId) -> Option<(Sp
         }
     };
 
-    let symbol = match &attr.get_normal_item().args {
+    let symbol = match &attr.args {
         AttrArgs::Eq { expr, .. } => expr.symbol,
         _ => unreachable!(),
     };
 
     let ensures_def_id = ctx.creusot_item(symbol).unwrap();
 
-    Some((attr.span(), ensures_def_id, is_prophetic))
+    Some((attr.span, ensures_def_id, is_prophetic))
 }

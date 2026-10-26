@@ -29,7 +29,7 @@ use syn::{
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
     spanned::Spanned as _,
-    *
+    *,
 };
 
 pub fn open_inv_result(_: TS1, tokens: TS1) -> TS1 {

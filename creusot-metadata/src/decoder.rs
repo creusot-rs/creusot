@@ -142,12 +142,16 @@ impl SpanDecoder for MetadataDecoder<'_, '_> {
     }
     fn decode_syntax_context(&mut self) -> SyntaxContext {
         let syntax_contexts = self.syntax_contexts;
-        rustc_span::hygiene::decode_syntax_context(self, &self.hygiene_context, |this, id| {
-            // This closure is invoked if we haven't already decoded the data for the `SyntaxContext` we are deserializing.
-            // We look up the position of the associated `SyntaxData` and decode it.
-            let pos = syntax_contexts.get(&id).unwrap();
-            this.with_position(pos.to_usize(), |decoder| SyntaxContextKey::decode(decoder))
-        })
+        rustc_span::hygiene::decode_syntax_context(
+            self,
+            &self.hygiene_context,
+            |this, external_ctx| {
+                // This closure is invoked if we haven't already decoded the data for the `SyntaxContext` we are deserializing.
+                // We look up the position of the associated `SyntaxData` and decode it.
+                let pos = syntax_contexts.get(&external_ctx.as_u32()).unwrap();
+                this.with_position(pos.to_usize(), |decoder| SyntaxContextKey::decode(decoder))
+            },
+        )
     }
     fn decode_crate_num(&mut self) -> CrateNum {
         let stable_id = StableCrateId::decode(self);

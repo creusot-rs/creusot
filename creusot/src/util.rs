@@ -12,7 +12,7 @@ use rustc_middle::{
     thir,
     ty::{self, GenericArgs, GenericArgsRef, TyCtxt},
 };
-use rustc_serialize::{Decodable, Decoder, Encodable, Encoder, ContextOrd};
+use rustc_serialize::{ContextOrd, Decodable, Decoder, Encodable, Encoder};
 use rustc_span::{RemapPathScopeComponents, Span, Symbol};
 
 use creusot_args::options::SpanMode;
@@ -227,11 +227,9 @@ fn equal_const_kinds<'tcx>(c1: ty::ConstKind<'tcx>, c2: ty::ConstKind<'tcx>) -> 
 #[repr(transparent)]
 pub struct Orphan<T>(pub T);
 
-impl<E> ContextOrd<E> for Orphan<Location> {
-}
+impl<E> ContextOrd<E> for Orphan<Location> {}
 
-impl<E> ContextOrd<E> for Orphan<BasicBlock> {
-}
+impl<E> ContextOrd<E> for Orphan<BasicBlock> {}
 
 pub trait ODecodable<D: Decoder> {
     fn odecode(d: &mut D) -> Self;

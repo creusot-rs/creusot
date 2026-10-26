@@ -24,10 +24,6 @@ use self::{
     terminates::validate_terminates,
     traits::{validate_impls, validate_traits},
 };
-use rustc_hir::HirId;
-use rustc_middle::ty::{Ty, TyCtxt, TyKind};
-use rustc_span::Symbol;
-
 use crate::{
     backend::is_trusted_item,
     contracts_items::{get_builtin, get_intrinsic, is_extern_spec, is_no_translate, is_spec},
@@ -37,6 +33,10 @@ use crate::{
         tokens_new::validate_tokens_new,
     },
 };
+use rustc_ast::attr::AttributeExt;
+use rustc_hir::HirId;
+use rustc_middle::ty::{Ty, TyCtxt, TyKind};
+use rustc_span::Symbol;
 
 fn is_ghost_block(tcx: TyCtxt, id: HirId) -> bool {
     let attrs = tcx.hir_attrs(id);

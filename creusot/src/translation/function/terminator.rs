@@ -36,7 +36,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             Goto { target, .. } => Terminator::Goto(*target),
             SwitchInt { discr, targets, .. } => {
                 let bbd = &self.body.basic_blocks[loc.block];
-                let real_discr = if  let Some(mir::Statement {
+                let real_discr = if let Some(mir::Statement {
                     kind: StatementKind::Assign((pl, Rvalue::Discriminant(real_discr))),
                     ..
                 }) = bbd.statements.last()

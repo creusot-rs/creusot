@@ -1,5 +1,6 @@
 //! Validate that `ghost!` does not modify program variables
 
+use rustc_ast::attr::AttributeExt;
 use rustc_hir::{
     Expr, ExprKind, HirId,
     intravisit::{Visitor, walk_expr},

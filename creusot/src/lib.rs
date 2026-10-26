@@ -3,6 +3,7 @@
 #![feature(try_blocks)]
 #![feature(alloc_slice_into_array)]
 #![feature(iter_intersperse, map_try_insert)]
+#![feature(default_field_values)]
 
 extern crate either;
 #[macro_use]

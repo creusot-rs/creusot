@@ -28,8 +28,8 @@ pub use decoder::decode_metadata;
 pub use encoder::encode_metadata;
 use rustc_data_structures::fx::FxHashMap;
 use rustc_middle::ty::TyCtxt;
-use rustc_span::{SourceFile, StableSourceFileId, def_id::StableCrateId};use rustc_span::SyntaxContext;
 use rustc_serialize::ContextOrd;
+use rustc_span::{SourceFile, StableSourceFileId, def_id::StableCrateId};
 use std::hash::Hash;
 
 #[derive(Encodable, Decodable, Eq, PartialEq, Hash, Clone, Copy, Debug)]
@@ -88,8 +88,6 @@ fn to_orphan_map<K, V>(x: FxHashMap<K, V>) -> FxHashMap<Orphan<K>, V> {
     unsafe { std::mem::transmute(x) }
 }
 
-impl<E> ContextOrd<E> for Orphan<SourceFileIndex> {
-}
+impl<E> ContextOrd<E> for Orphan<SourceFileIndex> {}
 
-impl<E> ContextOrd<E> for Orphan<(StableCrateId, u32)> {
-}
+impl<E> ContextOrd<E> for Orphan<(StableCrateId, u32)> {}
