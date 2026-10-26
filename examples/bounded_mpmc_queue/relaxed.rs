@@ -593,7 +593,7 @@ pub struct Queue<T> {
     inv: Ghost<AtomicInvariant<QueueInv<T>>>,
 }
 
-struct QueueCell<T> {
+pub(crate) struct QueueCell<T> {
     item: PCell<MaybeUninit<T>>,
     status: AtomicUsize,
 }

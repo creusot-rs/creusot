@@ -6,7 +6,11 @@
 #![recursion_limit = "256"]
 
 use core::mem::{MaybeUninit, replace};
-use creusot_std::{ghost::ErasedGhostFn, prelude::erasure, std::sync::SyncViewExt};
+use creusot_std::{
+    ghost::ErasedGhostFn,
+    prelude::{erase, erasure},
+    std::sync::SyncViewExt,
+};
 use std::{
     cell::SyncUnsafeCell,
     sync::atomic::{AtomicUsize, Ordering},
@@ -24,7 +28,7 @@ struct QueueCell<T> {
 }
 
 erase! {
-    type spec::QueueCell<T> => QueueCell;
+    type spec::QueueCell<T> => QueueCell<T>;
 }
 
 impl<T: 'static> Queue<T> {
