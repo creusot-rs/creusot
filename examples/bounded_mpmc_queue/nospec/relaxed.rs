@@ -28,6 +28,7 @@ struct QueueCell<T> {
 }
 
 erase! {
+    type spec::Queue<T> => Queue<T>;
     type spec::QueueCell<T> => QueueCell<T>;
 }
 
