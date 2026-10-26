@@ -103,7 +103,7 @@ impl<T: 'static> Queue<T> {
     }
 }
 
-mod spec {
+pub mod spec {
     include!("../relaxed.rs");
 
     pub struct ErasedQueue {}
