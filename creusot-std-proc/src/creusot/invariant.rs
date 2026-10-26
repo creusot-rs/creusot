@@ -270,7 +270,7 @@ fn desugar_for(
                             let #pat = #elem;
                             #body
                         },
-                    }
+                    };
                 }
             }
         }
