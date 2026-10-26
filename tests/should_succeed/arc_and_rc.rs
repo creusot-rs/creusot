@@ -5,7 +5,7 @@ use creusot_std::prelude::*;
 
 pub fn rc() {
     let rc = Rc::new(1);
-    proof_assert!(*rc@ == 1i32);
+    proof_assert!(rc@ == 1);
     let inner = rc.as_ref();
     proof_assert!(inner@ == 1);
 
@@ -23,7 +23,7 @@ pub fn rc() {
 
 pub fn arc() {
     let arc = Arc::new(1);
-    proof_assert!(*arc@ == 1i32);
+    proof_assert!(arc@ == 1);
     let inner = arc.as_ref();
     proof_assert!(inner@ == 1);
 

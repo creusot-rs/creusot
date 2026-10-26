@@ -11,15 +11,6 @@ unsafe impl<T: Sync> Send for GhostShared<T> {}
 #[trusted]
 unsafe impl<T: Sync> Sync for GhostShared<T> {}
 
-impl<T> View for GhostShared<T> {
-    type ViewTy = T;
-
-    #[logic(open, inline)]
-    fn view(self) -> T {
-        *self
-    }
-}
-
 impl<T> Invariant for GhostShared<T> {
     #[logic(open, prophetic)]
     fn invariant(self) -> bool {
@@ -34,7 +25,7 @@ impl<T> GhostShared<T> {
     /// function to [`resolve`] it (in `GhostShared`'s type invariant).
     #[trusted]
     #[check(ghost)]
-    #[ensures(result@ == *val)]
+    #[ensures(**result == *val)]
     #[allow(unused_variables)]
     pub fn new(val: Ghost<T>) -> Ghost<Self> {
         Ghost::conjure()

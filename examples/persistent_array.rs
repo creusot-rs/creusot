@@ -116,11 +116,11 @@ pub mod implementation {
                         Inner::Direct(v) => self.auth@[*pc].0 == v@,
                         Inner::Link { index, value, next } =>
                             // If `Link { next, .. }` is in the map, then `next` is also in the map.
-                            self.auth@.contains(&*next@) &&
+                            self.auth@.contains(&*next) &&
                             // The depth decreases when following the links
-                            self.depth[*pc] > self.depth[*next@] &&
-                            index@ < self.auth@[*next@].0.len() &&
-                            self.auth@[*pc].0 == self.auth@[*next@].0.set(index@, value)
+                            self.depth[*pc] > self.depth[*next] &&
+                            index@ < self.auth@[*next].0.len() &&
+                            self.auth@[*pc].0 == self.auth@[*next].0.set(index@, value)
                     }
             }
         }
@@ -206,15 +206,15 @@ pub mod implementation {
         }
 
         #[requires(pa.protocol())]
-        #[requires(pa.auth@.contains(&*inner@))]
-        #[requires(i@ < pa.auth@[*inner@].0.len())]
-        #[ensures(*result == pa.auth@[*inner@].0[i@])]
+        #[requires(pa.auth@.contains(inner))]
+        #[requires(i@ < pa.auth@[**inner].0.len())]
+        #[ensures(*result == pa.auth@[**inner].0[i@])]
         unsafe fn get_inner_immut<'a>(
             inner: &'a Rc<PCell<Inner<T>>>,
             i: usize,
             pa: Ghost<&'a PA<T>>,
         ) -> &'a T {
-            match unsafe { inner.borrow(ghost!(pa.perms.get(&&snapshot!(*inner@)).unwrap())) } {
+            match unsafe { inner.borrow(ghost!(pa.perms.get(&&snapshot!(**inner)).unwrap())) } {
                 Inner::Direct(v) => &v[i],
                 Inner::Link { index, value, .. } if i == *index => value,
                 Inner::Link { next, .. } => unsafe { Self::get_inner_immut(next, i, pa) },
@@ -247,27 +247,27 @@ pub mod implementation {
         /// Reroot the array: at the end of this function, `inner` will point directly
         /// to the underlying array.
         #[requires(pa.partial_invariant())]
-        #[requires(pa.auth@.contains(&*cur@))]
-        #[requires(forall<id> pa.auth@.contains(&id) && pa.depth[id] <= pa.depth[*cur@]
+        #[requires(pa.auth@.contains(cur))]
+        #[requires(forall<id> pa.auth@.contains(&id) && pa.depth[id] <= pa.depth[**cur]
             ==> pa.perms.contains(&Snapshot::new(id))
         )]
         #[ensures((^pa).partial_invariant())]
         #[ensures((^pa).auth == pa.auth)]
-        #[ensures(forall<id: Snapshot<_>> pa.depth[*id] > pa.depth[*cur@] ==>
+        #[ensures(forall<id: Snapshot<_>> pa.depth[*id] > pa.depth[**cur] ==>
             pa.perms.lookup(id) == (^pa).perms.lookup(id) && pa.depth[*id] == (^pa).depth[*id])]
         #[ensures(forall<id> (^pa).perms.contains(id) == pa.perms.contains(id))]
-        #[ensures(match (^pa).perms[Snapshot::new(*cur@)].val() {
+        #[ensures(match (^pa).perms[Snapshot::new(**cur)].val() {
             Inner::Direct(_) => true,
             Inner::Link { .. } => false,
         })]
         fn reroot(cur: &Rc<PCell<Inner<T>>>, mut pa: Ghost<&mut PA<T>>) {
             // We take ownership of cur
-            let mut perm_cur = ghost!(pa.perms.delete(&snapshot!(*cur@)).unwrap());
+            let mut perm_cur = ghost!(pa.perms.delete(&snapshot!(**cur)).unwrap());
             let bor_cur = unsafe { cur.borrow_mut(ghost!(&mut perm_cur)) };
 
             // If we are already at the root, we are done
             let Inner::Link { next, value, index } = bor_cur else {
-                ghost!(pa.perms.insert(snapshot!(*cur@), perm_cur.into_inner()));
+                ghost!(pa.perms.insert(snapshot!(**cur), perm_cur.into_inner()));
                 return;
             };
 
@@ -278,7 +278,7 @@ pub mod implementation {
             let next = std::mem::replace(next, cur.clone());
 
             // Take the ownership of next
-            let perm_next = ghost! { &mut *pa.perms.get_mut(&snapshot!(*next@)).unwrap() };
+            let perm_next = ghost! { &mut *pa.perms.get_mut(&snapshot!(*next)).unwrap() };
             let bor_next = unsafe { next.borrow_mut(perm_next) };
 
             // Exchange the value field witht the content of the array
@@ -289,10 +289,10 @@ pub mod implementation {
             std::mem::swap(bor_next, bor_cur);
 
             ghost! {
-                pa.perms.insert(snapshot!(*cur@), perm_cur.into_inner());
+                pa.perms.insert(snapshot!(**cur), perm_cur.into_inner());
 
-                let new_d = snapshot!(Int::min(pa.depth.get(*cur@), pa.depth.get(*next@) - 1));
-                pa.depth = snapshot!(pa.depth.set(*cur@, *new_d))
+                let new_d = snapshot!(Int::min(pa.depth.get(**cur), pa.depth.get(*next) - 1));
+                pa.depth = snapshot!(pa.depth.set(**cur, *new_d))
             };
         }
     }
