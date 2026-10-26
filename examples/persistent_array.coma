@@ -210,12 +210,7 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone (* <implementat
   
   function public_PA_T (self: t_NonAtomicInvariant_PA_T) : t_Id
   
-  function view_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
-  
-  function deref_Rc_PCell_Inner_T_Global [@inline:trivial] (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T =
-    view_Rc_PCell_Inner_T_Global self
-  
-  meta "rewrite_def" function deref_Rc_PCell_Inner_T_Global
+  function deref_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
   
   function namespace_PA_T (self: t_NonAtomicInvariant_PA_T) : t_Namespace
   
@@ -350,12 +345,7 @@ module M_implementation__impl_Clone_for_PersistentArray_T__clone__refines (* <im
   
   function view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T (self: t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T) : t_FMap_PCell_Inner_T_Ag_Seq_T
   
-  function view_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
-  
-  function deref_Rc_PCell_Inner_T_Global [@inline:trivial] (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T =
-    view_Rc_PCell_Inner_T_Global self
-  
-  meta "rewrite_def" function deref_Rc_PCell_Inner_T_Global
+  function deref_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
   
   function namespace_PA_T (self: t_NonAtomicInvariant_PA_T) : t_Namespace
   
@@ -648,7 +638,7 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   axiom view_Vec_T_Global_spec:
     forall self: t_Vec_T_Global [view_Vec_T_Global self]. Seq.length (view_Vec_T_Global self) <= UInt64.t'int const_MAX
   
-  function view_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
+  function deref_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
   
   predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
@@ -666,12 +656,12 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
       /\ match val_PCell_Inner_T (index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T self.perms pc) with
         | Direct v -> (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) pc).f0'0
         = view_Vec_T_Global v
-        | Link index value next -> contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)
-        /\ gt_log_Int (index_Mapping_PCell_Inner_T_Int self.depth pc) (index_Mapping_PCell_Inner_T_Int self.depth (view_Rc_PCell_Inner_T_Global next))
+        | Link index value next -> contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)
+        /\ gt_log_Int (index_Mapping_PCell_Inner_T_Int self.depth pc) (index_Mapping_PCell_Inner_T_Int self.depth (deref_Rc_PCell_Inner_T_Global next))
         /\ UInt64.t'int index
-          < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)).f0'0
+          < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)).f0'0
         /\ (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) pc).f0'0
-        = Seq.set (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)).f0'0 (UInt64.t'int index) value
+        = Seq.set (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)).f0'0 (UInt64.t'int index) value
         end
   
   meta "rewrite_def" predicate partial_invariant_T
@@ -1019,23 +1009,23 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
   {[@stop_split] [@expl:reroot_T requires] ([@stop_split] [@expl:reroot 'cur' type invariant] inv_ref_Rc_PCell_Inner_T_Global cur)
     /\ ([@stop_split] [@expl:reroot 'pa' type invariant] inv_Ghost_refmut_PA_T pa)
     /\ ([@stop_split] [@expl:reroot requires #0] partial_invariant_T pa.current)
-    /\ ([@stop_split] [@expl:reroot requires #1] contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.current.auth) (view_Rc_PCell_Inner_T_Global cur))
+    /\ ([@stop_split] [@expl:reroot requires #1] contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.current.auth) (deref_Rc_PCell_Inner_T_Global cur))
     /\ ([@stop_split] [@expl:reroot requires #2] forall id: t_PCell_Inner_T. contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.current.auth) id
         /\ index_Mapping_PCell_Inner_T_Int pa.current.depth id
-        <= index_Mapping_PCell_Inner_T_Int pa.current.depth (view_Rc_PCell_Inner_T_Global cur)
+        <= index_Mapping_PCell_Inner_T_Int pa.current.depth (deref_Rc_PCell_Inner_T_Global cur)
       -> contains_Snapshot_PCell_Inner_T pa.current.perms id)}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:reroot_T ensures] ([@stop_split] [@expl:reroot ensures #0] partial_invariant_T (fin_Ghost_refmut_PA_T pa))
       /\ ([@stop_split] [@expl:reroot ensures #1] (fin_Ghost_refmut_PA_T pa).auth = pa.current.auth)
-      /\ ([@stop_split] [@expl:reroot ensures #2] forall id: t_PCell_Inner_T. gt_log_Int (index_Mapping_PCell_Inner_T_Int pa.current.depth id) (index_Mapping_PCell_Inner_T_Int pa.current.depth (view_Rc_PCell_Inner_T_Global cur))
+      /\ ([@stop_split] [@expl:reroot ensures #2] forall id: t_PCell_Inner_T. gt_log_Int (index_Mapping_PCell_Inner_T_Int pa.current.depth id) (index_Mapping_PCell_Inner_T_Int pa.current.depth (deref_Rc_PCell_Inner_T_Global cur))
           -> lookup_Snapshot_PCell_Inner_T pa.current.perms id
             = lookup_Snapshot_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
           /\ index_Mapping_PCell_Inner_T_Int pa.current.depth id
           = index_Mapping_PCell_Inner_T_Int (fin_Ghost_refmut_PA_T pa).depth id)
       /\ ([@stop_split] [@expl:reroot ensures #3] forall id: t_PCell_Inner_T. contains_Snapshot_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
           = contains_Snapshot_PCell_Inner_T pa.current.perms id)
-      /\ ([@stop_split] [@expl:reroot ensures #4] match val_PCell_Inner_T (index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms (view_Rc_PCell_Inner_T_Global cur)) with
+      /\ ([@stop_split] [@expl:reroot ensures #4] match val_PCell_Inner_T (index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms (deref_Rc_PCell_Inner_T_Global cur)) with
         | Direct _ -> true
         | Link _ _ _ -> false
         end)}
@@ -1048,11 +1038,6 @@ module M_implementation__impl_PersistentArray_T__get (* implementation::Persiste
     {[@stop_split] [@expl:into_inner_refmut_PA_T ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_refmut_PA_T result)
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
-  
-  function deref_Rc_PCell_Inner_T_Global [@inline:trivial] (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T =
-    view_Rc_PCell_Inner_T_Global self
-  
-  meta "rewrite_def" function deref_Rc_PCell_Inner_T_Global
   
   type t_Option_ref_Perm_PCell_Inner_T = None'3 | Some'3 t_Perm_PCell_Inner_T
   
@@ -1569,7 +1554,7 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
   axiom view_Vec_T_Global_spec:
     forall self: t_Vec_T_Global [view_Vec_T_Global self]. Seq.length (view_Vec_T_Global self) <= UInt64.t'int const_MAX
   
-  function view_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
+  function deref_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
   
   predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
@@ -1587,12 +1572,12 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
       /\ match val_PCell_Inner_T (index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T self.perms pc) with
         | Direct v -> (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) pc).f0
         = view_Vec_T_Global v
-        | Link index value next -> contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)
-        /\ gt_log_Int (index_Mapping_PCell_Inner_T_Int self.depth pc) (index_Mapping_PCell_Inner_T_Int self.depth (view_Rc_PCell_Inner_T_Global next))
+        | Link index value next -> contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)
+        /\ gt_log_Int (index_Mapping_PCell_Inner_T_Int self.depth pc) (index_Mapping_PCell_Inner_T_Int self.depth (deref_Rc_PCell_Inner_T_Global next))
         /\ UInt64.t'int index
-          < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)).f0
+          < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)).f0
         /\ (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) pc).f0
-        = Seq.set (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)).f0 (UInt64.t'int index) value
+        = Seq.set (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)).f0 (UInt64.t'int index) value
         end
   
   meta "rewrite_def" predicate partial_invariant_T
@@ -1857,20 +1842,15 @@ module M_implementation__impl_PersistentArray_T__get_immut (* implementation::Pe
   {[@stop_split] [@expl:get_inner_immut_T requires] ([@stop_split] [@expl:get_inner_immut 'inner' type invariant] inv_ref_Rc_PCell_Inner_T_Global inner)
     /\ ([@stop_split] [@expl:get_inner_immut 'pa' type invariant] inv_Ghost_ref_PA_T pa)
     /\ ([@stop_split] [@expl:get_inner_immut requires #0] protocol_PA_T pa)
-    /\ ([@stop_split] [@expl:get_inner_immut requires #1] contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (view_Rc_PCell_Inner_T_Global inner))
+    /\ ([@stop_split] [@expl:get_inner_immut requires #1] contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (deref_Rc_PCell_Inner_T_Global inner))
     /\ ([@stop_split] [@expl:get_inner_immut requires #2] UInt64.t'int i
-    < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (view_Rc_PCell_Inner_T_Global inner)).f0)}
+    < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (deref_Rc_PCell_Inner_T_Global inner)).f0)}
     any
     [ return (result: t_T) ->
     {[@stop_split] [@expl:get_inner_immut_T ensures] ([@stop_split] [@expl:get_inner_immut result type invariant] inv_ref_T result)
       /\ ([@stop_split] [@expl:get_inner_immut ensures] result
-      = Seq.get (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (view_Rc_PCell_Inner_T_Global inner)).f0 (UInt64.t'int i))}
+      = Seq.get (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (deref_Rc_PCell_Inner_T_Global inner)).f0 (UInt64.t'int i))}
       (! return {result}) ]
-  
-  function deref_Rc_PCell_Inner_T_Global [@inline:trivial] (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T =
-    view_Rc_PCell_Inner_T_Global self
-  
-  meta "rewrite_def" function deref_Rc_PCell_Inner_T_Global
   
   predicate invariant_PersistentArray_T (self: t_PersistentArray_T) =
     id_FMap_PCell_Inner_T_Ag_Seq_T'0 self.frag = public_PA_T'0 self.inv
@@ -1968,12 +1948,7 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
   
   meta "rewrite_def" predicate inv_ref_Rc_PCell_Inner_T_Global
   
-  function view_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
-  
-  function deref_Rc_PCell_Inner_T_Global [@inline:trivial] (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T =
-    view_Rc_PCell_Inner_T_Global self
-  
-  meta "rewrite_def" function deref_Rc_PCell_Inner_T_Global
+  function deref_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
   
   let deref_Rc_PCell_Inner_T_Global'0 (self: t_Rc_PCell_Inner_T_Global) (return (x: t_PCell_Inner_T)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Rc_PCell_Inner_T_Global self}
@@ -2222,12 +2197,12 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
       /\ match val_PCell_Inner_T (index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T self.perms pc) with
         | Direct v -> (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) pc).f0
         = view_Vec_T_Global v
-        | Link index value next -> contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)
-        /\ gt_log_Int (index_Mapping_PCell_Inner_T_Int self.depth pc) (index_Mapping_PCell_Inner_T_Int self.depth (view_Rc_PCell_Inner_T_Global next))
+        | Link index value next -> contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)
+        /\ gt_log_Int (index_Mapping_PCell_Inner_T_Int self.depth pc) (index_Mapping_PCell_Inner_T_Int self.depth (deref_Rc_PCell_Inner_T_Global next))
         /\ UInt64.t'int index
-          < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)).f0
+          < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)).f0
         /\ (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) pc).f0
-        = Seq.set (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)).f0 (UInt64.t'int index) value
+        = Seq.set (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)).f0 (UInt64.t'int index) value
         end
   
   meta "rewrite_def" predicate partial_invariant_T
@@ -2243,14 +2218,14 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
   {[@stop_split] [@expl:get_inner_immut_T requires] ([@stop_split] [@expl:get_inner_immut 'inner' type invariant] inv_ref_Rc_PCell_Inner_T_Global inner)
     /\ ([@stop_split] [@expl:get_inner_immut 'pa' type invariant] inv_Ghost_ref_PA_T pa)
     /\ ([@stop_split] [@expl:get_inner_immut requires #0] protocol_PA_T pa)
-    /\ ([@stop_split] [@expl:get_inner_immut requires #1] contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (view_Rc_PCell_Inner_T_Global inner))
+    /\ ([@stop_split] [@expl:get_inner_immut requires #1] contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (deref_Rc_PCell_Inner_T_Global inner))
     /\ ([@stop_split] [@expl:get_inner_immut requires #2] UInt64.t'int i
-    < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (view_Rc_PCell_Inner_T_Global inner)).f0)}
+    < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (deref_Rc_PCell_Inner_T_Global inner)).f0)}
     any
     [ return (result: t_T) ->
     {[@stop_split] [@expl:get_inner_immut_T ensures] ([@stop_split] [@expl:get_inner_immut result type invariant] inv_ref_T result)
       /\ ([@stop_split] [@expl:get_inner_immut ensures] result
-      = Seq.get (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (view_Rc_PCell_Inner_T_Global inner)).f0 (UInt64.t'int i))}
+      = Seq.get (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (deref_Rc_PCell_Inner_T_Global inner)).f0 (UInt64.t'int i))}
       (! return {result}) ]
   
   let elim_Direct (_x: t_Inner_T) (return (f0'0: t_Vec_T_Global)) = any
@@ -2295,14 +2270,14 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
   {[@stop_split] [@expl:get_inner_immut_T requires] ([@stop_split] [@expl:get_inner_immut 'inner' type invariant] inv_ref_Rc_PCell_Inner_T_Global inner)
     /\ ([@stop_split] [@expl:get_inner_immut 'pa' type invariant] inv_Ghost_ref_PA_T pa)
     /\ ([@stop_split] [@expl:get_inner_immut requires #0] protocol_PA_T pa)
-    /\ ([@stop_split] [@expl:get_inner_immut requires #1] contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (view_Rc_PCell_Inner_T_Global inner))
+    /\ ([@stop_split] [@expl:get_inner_immut requires #1] contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (deref_Rc_PCell_Inner_T_Global inner))
     /\ ([@stop_split] [@expl:get_inner_immut requires #2] UInt64.t'int i
-    < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (view_Rc_PCell_Inner_T_Global inner)).f0)}
+    < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (deref_Rc_PCell_Inner_T_Global inner)).f0)}
     (! bb0
     [ bb0 = s0
       [ s0 = deref_Rc_PCell_Inner_T_Global'0 {inner} (fun (_x: t_PCell_Inner_T) -> [ &_20 <- _x ] s1)
       | s1 = deref_Ghost_ref_PA_T {pa} (fun (_x: t_PA_T) -> [ &_27 <- _x ] s2)
-      | s2 = [ &_32 <- view_Rc_PCell_Inner_T_Global inner ] s3
+      | s2 = [ &_32 <- deref_Rc_PCell_Inner_T_Global inner ] s3
       | s3 = [ &_30 <- _32 ] s4
       | s4 = get_Snapshot_PCell_Inner_T {_27.perms} {_30}
           (fun (_x: t_Option_ref_Perm_PCell_Inner_T) -> [ &_25 <- _x ] s5)
@@ -2361,7 +2336,7 @@ module M_implementation__impl_PersistentArray_T__get_inner_immut (* implementati
     [ return (result: t_T) ->
     {[@stop_split] [@expl:get_inner_immut_T ensures] ([@stop_split] [@expl:get_inner_immut result type invariant] inv_ref_T result)
       /\ ([@stop_split] [@expl:get_inner_immut ensures] result
-      = Seq.get (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (view_Rc_PCell_Inner_T_Global inner)).f0 (UInt64.t'int i))}
+      = Seq.get (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.auth) (deref_Rc_PCell_Inner_T_Global inner)).f0 (UInt64.t'int i))}
       (! return {result}) ]
 end
 module M_implementation__impl_PersistentArray_T__new (* implementation::PersistentArray<T> *)
@@ -2979,7 +2954,7 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
   
   meta "rewrite_def" function index_FMap_PCell_Inner_T_Ag_Seq_T
   
-  function view_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
+  function deref_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
   
   predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
   
@@ -2997,12 +2972,12 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
       /\ match val_PCell_Inner_T (index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T self.perms pc) with
         | Direct v -> (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) pc).f0
         = view_Vec_T_Global v
-        | Link index value next -> contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)
-        /\ gt_log_Int (index_Mapping_PCell_Inner_T_Int self.depth pc) (index_Mapping_PCell_Inner_T_Int self.depth (view_Rc_PCell_Inner_T_Global next))
+        | Link index value next -> contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)
+        /\ gt_log_Int (index_Mapping_PCell_Inner_T_Int self.depth pc) (index_Mapping_PCell_Inner_T_Int self.depth (deref_Rc_PCell_Inner_T_Global next))
         /\ UInt64.t'int index
-          < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)).f0
+          < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)).f0
         /\ (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) pc).f0
-        = Seq.set (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)).f0 (UInt64.t'int index) value
+        = Seq.set (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)).f0 (UInt64.t'int index) value
         end
   
   meta "rewrite_def" predicate partial_invariant_T
@@ -3063,21 +3038,11 @@ module M_implementation__impl_PersistentArray_T__new (* implementation::Persiste
   
   meta "rewrite_def" predicate inv_Ghost_GhostShared_NonAtomicInvariant_PA_T
   
-  function view_GhostShared_NonAtomicInvariant_PA_T [@inline:trivial] (self: t_NonAtomicInvariant_PA_T) : t_NonAtomicInvariant_PA_T
-   = self
-  
-  meta "rewrite_def" function view_GhostShared_NonAtomicInvariant_PA_T
-  
   let new_NonAtomicInvariant_PA_T'0 (val': t_NonAtomicInvariant_PA_T) (return (x: t_NonAtomicInvariant_PA_T)) = any
     [ return (result: t_NonAtomicInvariant_PA_T) ->
     {[@stop_split] [@expl:new_NonAtomicInvariant_PA_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_GhostShared_NonAtomicInvariant_PA_T result)
-      /\ ([@stop_split] [@expl:new ensures] view_GhostShared_NonAtomicInvariant_PA_T result = val')}
+      /\ ([@stop_split] [@expl:new ensures] result = val')}
       (! return {result}) ]
-  
-  function deref_Rc_PCell_Inner_T_Global [@inline:trivial] (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T =
-    view_Rc_PCell_Inner_T_Global self
-  
-  meta "rewrite_def" function deref_Rc_PCell_Inner_T_Global
   
   let new_PCell_Inner_T (value: t_PCell_Inner_T) (return (x: t_Rc_PCell_Inner_T_Global)) = any
     [ return (result: t_Rc_PCell_Inner_T_Global) ->
@@ -3331,7 +3296,7 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
   
   type t_Rc_PCell_Inner_T_Global
   
-  function view_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
+  function deref_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
   
   type t_Perm_PCell_Inner_T
   
@@ -3404,11 +3369,6 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
     invariant_ref_Rc_PCell_Inner_T_Global _1
   
   meta "rewrite_def" predicate inv_ref_Rc_PCell_Inner_T_Global
-  
-  function deref_Rc_PCell_Inner_T_Global [@inline:trivial] (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T =
-    view_Rc_PCell_Inner_T_Global self
-  
-  meta "rewrite_def" function deref_Rc_PCell_Inner_T_Global
   
   let deref_Rc_PCell_Inner_T_Global'0 (self: t_Rc_PCell_Inner_T_Global) (return (x: t_PCell_Inner_T)) =
   {[@stop_split] [@expl:deref 'self' type invariant] inv_ref_Rc_PCell_Inner_T_Global self}
@@ -3641,12 +3601,12 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
       /\ match val_PCell_Inner_T (index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T self.perms pc) with
         | Direct v -> (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) pc).f0
         = view_Vec_T_Global v
-        | Link index value next -> contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)
-        /\ gt_log_Int (index_Mapping_PCell_Inner_T_Int self.depth pc) (index_Mapping_PCell_Inner_T_Int self.depth (view_Rc_PCell_Inner_T_Global next))
+        | Link index value next -> contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)
+        /\ gt_log_Int (index_Mapping_PCell_Inner_T_Int self.depth pc) (index_Mapping_PCell_Inner_T_Int self.depth (deref_Rc_PCell_Inner_T_Global next))
         /\ UInt64.t'int index
-          < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)).f0
+          < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)).f0
         /\ (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) pc).f0
-        = Seq.set (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)).f0 (UInt64.t'int index) value
+        = Seq.set (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)).f0 (UInt64.t'int index) value
         end
   
   meta "rewrite_def" predicate partial_invariant_T
@@ -3659,23 +3619,23 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
   {[@stop_split] [@expl:reroot_T requires] ([@stop_split] [@expl:reroot 'cur' type invariant] inv_ref_Rc_PCell_Inner_T_Global cur)
     /\ ([@stop_split] [@expl:reroot 'pa' type invariant] inv_Ghost_refmut_PA_T pa)
     /\ ([@stop_split] [@expl:reroot requires #0] partial_invariant_T pa.current)
-    /\ ([@stop_split] [@expl:reroot requires #1] contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.current.auth) (view_Rc_PCell_Inner_T_Global cur))
+    /\ ([@stop_split] [@expl:reroot requires #1] contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.current.auth) (deref_Rc_PCell_Inner_T_Global cur))
     /\ ([@stop_split] [@expl:reroot requires #2] forall id: t_PCell_Inner_T. contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.current.auth) id
         /\ index_Mapping_PCell_Inner_T_Int pa.current.depth id
-        <= index_Mapping_PCell_Inner_T_Int pa.current.depth (view_Rc_PCell_Inner_T_Global cur)
+        <= index_Mapping_PCell_Inner_T_Int pa.current.depth (deref_Rc_PCell_Inner_T_Global cur)
       -> contains_Snapshot_PCell_Inner_T pa.current.perms id)}
     any
     [ return (result: ()) ->
     {[@stop_split] [@expl:reroot_T ensures] ([@stop_split] [@expl:reroot ensures #0] partial_invariant_T (fin_Ghost_refmut_PA_T pa))
       /\ ([@stop_split] [@expl:reroot ensures #1] (fin_Ghost_refmut_PA_T pa).auth = pa.current.auth)
-      /\ ([@stop_split] [@expl:reroot ensures #2] forall id: t_PCell_Inner_T. gt_log_Int (index_Mapping_PCell_Inner_T_Int pa.current.depth id) (index_Mapping_PCell_Inner_T_Int pa.current.depth (view_Rc_PCell_Inner_T_Global cur))
+      /\ ([@stop_split] [@expl:reroot ensures #2] forall id: t_PCell_Inner_T. gt_log_Int (index_Mapping_PCell_Inner_T_Int pa.current.depth id) (index_Mapping_PCell_Inner_T_Int pa.current.depth (deref_Rc_PCell_Inner_T_Global cur))
           -> lookup_Snapshot_PCell_Inner_T pa.current.perms id
             = lookup_Snapshot_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
           /\ index_Mapping_PCell_Inner_T_Int pa.current.depth id
           = index_Mapping_PCell_Inner_T_Int (fin_Ghost_refmut_PA_T pa).depth id)
       /\ ([@stop_split] [@expl:reroot ensures #3] forall id: t_PCell_Inner_T. contains_Snapshot_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
           = contains_Snapshot_PCell_Inner_T pa.current.perms id)
-      /\ ([@stop_split] [@expl:reroot ensures #4] match val_PCell_Inner_T (index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms (view_Rc_PCell_Inner_T_Global cur)) with
+      /\ ([@stop_split] [@expl:reroot ensures #4] match val_PCell_Inner_T (index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms (deref_Rc_PCell_Inner_T_Global cur)) with
         | Direct _ -> true
         | Link _ _ _ -> false
         end)}
@@ -3838,10 +3798,10 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
   {[@stop_split] [@expl:reroot_T requires] ([@stop_split] [@expl:reroot 'cur' type invariant] inv_ref_Rc_PCell_Inner_T_Global cur)
     /\ ([@stop_split] [@expl:reroot 'pa' type invariant] inv_Ghost_refmut_PA_T pa)
     /\ ([@stop_split] [@expl:reroot requires #0] partial_invariant_T pa.current)
-    /\ ([@stop_split] [@expl:reroot requires #1] contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.current.auth) (view_Rc_PCell_Inner_T_Global cur))
+    /\ ([@stop_split] [@expl:reroot requires #1] contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.current.auth) (deref_Rc_PCell_Inner_T_Global cur))
     /\ ([@stop_split] [@expl:reroot requires #2] forall id: t_PCell_Inner_T. contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T pa.current.auth) id
         /\ index_Mapping_PCell_Inner_T_Int pa.current.depth id
-        <= index_Mapping_PCell_Inner_T_Int pa.current.depth (view_Rc_PCell_Inner_T_Global cur)
+        <= index_Mapping_PCell_Inner_T_Int pa.current.depth (deref_Rc_PCell_Inner_T_Global cur)
       -> contains_Snapshot_PCell_Inner_T pa.current.perms id)}
     (! bb0
     [ bb0 = s0
@@ -3850,7 +3810,7 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
             [ &_28 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
             [ &pa <- _bor.final ] s1) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_PA_T pa} any) ]
       | s1 = deref_mut_Ghost_refmut_PA_T {_28} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_27 <- _x ] s2)
-      | s2 = [ &_31 <- view_Rc_PCell_Inner_T_Global cur ] s3
+      | s2 = [ &_31 <- deref_Rc_PCell_Inner_T_Global cur ] s3
       | s3 = [ &_30 <- _31 ] s4
       | s4 = MutBorrow.borrow_mut <t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T> {_27.current.current.perms}
           (fun (_bor: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) ->
@@ -3903,7 +3863,7 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
             [ &_51 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
             [ &pa <- _bor.final ] s3) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_PA_T pa} any) ]
       | s3 = deref_mut_Ghost_refmut_PA_T {_51} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_50 <- _x ] s4)
-      | s4 = [ &_52 <- view_Rc_PCell_Inner_T_Global cur ] s5
+      | s4 = [ &_52 <- deref_Rc_PCell_Inner_T_Global cur ] s5
       | s5 = into_inner_Perm_PCell_Inner_T {perm_cur} (fun (_x: t_Perm_PCell_Inner_T) -> [ &_55 <- _x ] s6)
       | s6 = MutBorrow.borrow_mut <t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T> {_50.current.current.perms}
           (fun (_bor: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) ->
@@ -3988,7 +3948,7 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
             [ &_83 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
             [ &pa <- _bor.final ] s26) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_PA_T pa} any) ]
       | s26 = deref_mut_Ghost_refmut_PA_T {_83} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_82 <- _x ] s27)
-      | s27 = [ &_86 <- view_Rc_PCell_Inner_T_Global next'0 ] s28
+      | s27 = [ &_86 <- deref_Rc_PCell_Inner_T_Global next'0 ] s28
       | s28 = [ &_85 <- _86 ] s29
       | s29 = MutBorrow.borrow_mut <t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T> {_82.current.current.perms}
           (fun (_bor: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) ->
@@ -4099,7 +4059,7 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
             [ &_113 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
             [ &pa <- _bor.final ] s24) [ _ck -> (! {[@expl:type invariant] inv_Ghost_refmut_PA_T pa} any) ]
       | s24 = deref_mut_Ghost_refmut_PA_T {_113} (fun (_x: MutBorrow.t (MutBorrow.t t_PA_T)) -> [ &_112 <- _x ] s25)
-      | s25 = [ &_114 <- view_Rc_PCell_Inner_T_Global cur ] s26
+      | s25 = [ &_114 <- deref_Rc_PCell_Inner_T_Global cur ] s26
       | s26 = into_inner_Perm_PCell_Inner_T {perm_cur} (fun (_x: t_Perm_PCell_Inner_T) -> [ &_117 <- _x ] s27)
       | s27 = MutBorrow.borrow_mut <t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T> {_112.current.current.perms}
           (fun (_bor: MutBorrow.t t_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T) ->
@@ -4111,9 +4071,9 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
       | s29 = s30 [ _ck -> (! {[@expl:type invariant] inv_refmut_refmut_PA_T _112} any) ]
       | s30 = -{resolve_refmut_refmut_PA_T _112}- s31
       | s31 =
-        [ &new_d <- MinMax.min (Map.get pa.current.depth (view_Rc_PCell_Inner_T_Global cur)) (Map.get pa.current.depth (view_Rc_PCell_Inner_T_Global next'0)
+        [ &new_d <- MinMax.min (Map.get pa.current.depth (deref_Rc_PCell_Inner_T_Global cur)) (Map.get pa.current.depth (deref_Rc_PCell_Inner_T_Global next'0)
         - 1) ] s32
-      | s32 = [ &_124 <- Map.set pa.current.depth (view_Rc_PCell_Inner_T_Global cur) new_d ] s33
+      | s32 = [ &_124 <- Map.set pa.current.depth (deref_Rc_PCell_Inner_T_Global cur) new_d ] s33
       | s33 = MutBorrow.borrow_mut <MutBorrow.t t_PA_T> {pa}
           (fun (_bor: MutBorrow.t (MutBorrow.t t_PA_T)) ->
             [ &_130 <- _bor ] -{inv_Ghost_refmut_PA_T _bor.final}-
@@ -4210,14 +4170,14 @@ module M_implementation__impl_PersistentArray_T__reroot (* implementation::Persi
     [ return (result: ()) ->
     {[@stop_split] [@expl:reroot_T ensures] ([@stop_split] [@expl:reroot ensures #0] partial_invariant_T (fin_Ghost_refmut_PA_T pa))
       /\ ([@stop_split] [@expl:reroot ensures #1] (fin_Ghost_refmut_PA_T pa).auth = pa.current.auth)
-      /\ ([@stop_split] [@expl:reroot ensures #2] forall id: t_PCell_Inner_T. gt_log_Int (index_Mapping_PCell_Inner_T_Int pa.current.depth id) (index_Mapping_PCell_Inner_T_Int pa.current.depth (view_Rc_PCell_Inner_T_Global cur))
+      /\ ([@stop_split] [@expl:reroot ensures #2] forall id: t_PCell_Inner_T. gt_log_Int (index_Mapping_PCell_Inner_T_Int pa.current.depth id) (index_Mapping_PCell_Inner_T_Int pa.current.depth (deref_Rc_PCell_Inner_T_Global cur))
           -> lookup_Snapshot_PCell_Inner_T pa.current.perms id
             = lookup_Snapshot_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
           /\ index_Mapping_PCell_Inner_T_Int pa.current.depth id
           = index_Mapping_PCell_Inner_T_Int (fin_Ghost_refmut_PA_T pa).depth id)
       /\ ([@stop_split] [@expl:reroot ensures #3] forall id: t_PCell_Inner_T. contains_Snapshot_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms id
           = contains_Snapshot_PCell_Inner_T pa.current.perms id)
-      /\ ([@stop_split] [@expl:reroot ensures #4] match val_PCell_Inner_T (index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms (view_Rc_PCell_Inner_T_Global cur)) with
+      /\ ([@stop_split] [@expl:reroot ensures #4] match val_PCell_Inner_T (index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T (fin_Ghost_refmut_PA_T pa).perms (deref_Rc_PCell_Inner_T_Global cur)) with
         | Direct _ -> true
         | Link _ _ _ -> false
         end)}
@@ -4274,12 +4234,7 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
   
   function view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T (self: t_Fragment_FMap_PCell_Inner_T_Ag_Seq_T) : t_FMap_PCell_Inner_T_Ag_Seq_T
   
-  function view_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
-  
-  function deref_Rc_PCell_Inner_T_Global [@inline:trivial] (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T =
-    view_Rc_PCell_Inner_T_Global self
-  
-  meta "rewrite_def" function deref_Rc_PCell_Inner_T_Global
+  function deref_Rc_PCell_Inner_T_Global (self: t_Rc_PCell_Inner_T_Global) : t_PCell_Inner_T
   
   function view_PersistentArray_T [@inline:trivial] (self: t_PersistentArray_T) : Seq.seq t_T =
     (unwrap_Option_Ag_Seq_T (lookup_PCell_Inner_T (view_Fragment_FMap_PCell_Inner_T_Ag_Seq_T self.frag) (deref_Rc_PCell_Inner_T_Global self.permcell))).f0
@@ -4524,12 +4479,12 @@ module M_implementation__impl_PersistentArray_T__set (* implementation::Persiste
       /\ match val_PCell_Inner_T (index_FMap_Snapshot_PCell_Inner_T_Perm_PCell_Inner_T self.perms pc) with
         | Direct v -> (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) pc).f0
         = view_Vec_T_Global v
-        | Link index value next -> contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)
-        /\ gt_log_Int (index_Mapping_PCell_Inner_T_Int self.depth pc) (index_Mapping_PCell_Inner_T_Int self.depth (view_Rc_PCell_Inner_T_Global next))
+        | Link index value next -> contains_PCell_Inner_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)
+        /\ gt_log_Int (index_Mapping_PCell_Inner_T_Int self.depth pc) (index_Mapping_PCell_Inner_T_Int self.depth (deref_Rc_PCell_Inner_T_Global next))
         /\ UInt64.t'int index
-          < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)).f0
+          < Seq.length (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)).f0
         /\ (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) pc).f0
-        = Seq.set (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (view_Rc_PCell_Inner_T_Global next)).f0 (UInt64.t'int index) value
+        = Seq.set (index_FMap_PCell_Inner_T_Ag_Seq_T (view_Authority_FMap_PCell_Inner_T_Ag_Seq_T self.auth) (deref_Rc_PCell_Inner_T_Global next)).f0 (UInt64.t'int index) value
         end
   
   meta "rewrite_def" predicate partial_invariant_T

@@ -70,7 +70,7 @@ mod implementation {
             pearlite! {
                 forall<e> self.domain().contains(&e) ==>
                     self.0.perms.contains(&Snapshot::new(e)) &&
-                    *self.0.perms[Snapshot::new(e)].ward() == *e.0.view() &&
+                    *self.0.perms[Snapshot::new(e)].ward() == *e.0 &&
                     self.domain().contains(&self.0.roots[e]) &&
                     self.0.roots[self.0.roots[e]] == self.0.roots[e] &&
                     match self.0.perms[Snapshot::new(e)].val() {

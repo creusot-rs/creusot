@@ -37,24 +37,15 @@ impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Arc<T, A> {
     type DeepModelTy = T::DeepModelTy;
     #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { *self.view().deep_model() }
-    }
-}
-
-#[cfg(feature = "nightly")]
-impl<T: ?Sized, A: Allocator> View for Arc<T, A> {
-    type ViewTy = Box<T>;
-    #[logic(opaque)]
-    fn view(self) -> Self::ViewTy {
-        dead
+        pearlite! { (*self).deep_model() }
     }
 }
 
 #[cfg(feature = "nightly")]
 impl<T: ?Sized, A: Allocator> DerefLogic for Arc<T, A> {
-    #[logic(open, inline)]
+    #[logic(opaque)]
     fn deref_logic(&self) -> &T {
-        &*self.view()
+        dead
     }
 }
 
@@ -100,11 +91,6 @@ extern_spec! {
 #[cfg(not(feature = "nightly"))]
 impl<T: DeepModel + ?Sized> DeepModel for Arc<T> {
     type DeepModelTy = T::DeepModelTy;
-}
-
-#[cfg(not(feature = "nightly"))]
-impl<T: ?Sized> View for Arc<T> {
-    type ViewTy = Box<T>;
 }
 
 #[cfg(not(feature = "nightly"))]

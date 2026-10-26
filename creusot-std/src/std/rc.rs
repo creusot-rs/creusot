@@ -1,11 +1,11 @@
 #[cfg(creusot)]
 use crate::std::ptr::PointerExt as _;
 use crate::{logic::ops::DerefLogic, prelude::*};
+#[cfg(feature = "nightly")]
+use std::alloc::Allocator;
 #[cfg(creusot)]
 use std::ops::Deref;
 use std::rc::Rc;
-#[cfg(feature = "nightly")]
-use std::{alloc::Allocator, boxed::Box};
 
 /// Extension trait for [`Rc`].
 pub trait RcExt {
@@ -33,24 +33,15 @@ impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Rc<T, A> {
     type DeepModelTy = T::DeepModelTy;
     #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { *self.view().deep_model() }
-    }
-}
-
-#[cfg(feature = "nightly")]
-impl<T: ?Sized, A: Allocator> View for Rc<T, A> {
-    type ViewTy = Box<T>;
-    #[logic(opaque)]
-    fn view(self) -> Self::ViewTy {
-        dead
+        pearlite! { (*self).deep_model() }
     }
 }
 
 #[cfg(feature = "nightly")]
 impl<T: ?Sized, A: Allocator> DerefLogic for Rc<T, A> {
-    #[logic(open, inline)]
+    #[logic(opaque)]
     fn deref_logic(&self) -> &T {
-        &*self.view()
+        dead
     }
 }
 
@@ -103,11 +94,6 @@ extern_spec! {
 #[cfg(not(feature = "nightly"))]
 impl<T: DeepModel + ?Sized> DeepModel for Rc<T> {
     type DeepModelTy = T::DeepModelTy;
-}
-
-#[cfg(not(feature = "nightly"))]
-impl<T: ?Sized> View for Rc<T> {
-    type ViewTy = Box<T>;
 }
 
 #[cfg(not(feature = "nightly"))]

@@ -9,11 +9,7 @@ module M_arc
   
   predicate inv_Arc_i32_Global (_1: t_Arc_i32_Global)
   
-  function view_Arc_i32_Global (self: t_Arc_i32_Global) : Int32.t
-  
-  function deref_Arc_i32_Global [@inline:trivial] (self: t_Arc_i32_Global) : Int32.t = view_Arc_i32_Global self
-  
-  meta "rewrite_def" function deref_Arc_i32_Global
+  function deref_Arc_i32_Global (self: t_Arc_i32_Global) : Int32.t
   
   let new_i32 (data: Int32.t) (return (x: t_Arc_i32_Global)) = any
     [ return (result: t_Arc_i32_Global) ->
@@ -72,7 +68,7 @@ module M_arc
   let arc (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = new_i32 {(1: Int32.t)} (fun (_x: t_Arc_i32_Global) -> [ &arc <- _x ] s1)
-      | s1 = {[@expl:assertion] view_Arc_i32_Global arc = (1: Int32.t)} s2
+      | s1 = {[@expl:assertion] Int32.to_int (deref_Arc_i32_Global arc) = 1} s2
       | s2 = as_ref_Arc_i32_Global {arc} (fun (_x: Int32.t) -> [ &inner <- _x ] s3)
       | s3 = {[@expl:assertion] Int32.to_int inner = 1} s4
       | s4 = clone_Arc_i32_Global {arc} (fun (_x: t_Arc_i32_Global) -> [ &arc2 <- _x ] s5)
@@ -115,11 +111,7 @@ module M_rc
   
   predicate inv_Rc_i32_Global (_1: t_Rc_i32_Global)
   
-  function view_Rc_i32_Global (self: t_Rc_i32_Global) : Int32.t
-  
-  function deref_Rc_i32_Global [@inline:trivial] (self: t_Rc_i32_Global) : Int32.t = view_Rc_i32_Global self
-  
-  meta "rewrite_def" function deref_Rc_i32_Global
+  function deref_Rc_i32_Global (self: t_Rc_i32_Global) : Int32.t
   
   let new_i32 (value: Int32.t) (return (x: t_Rc_i32_Global)) = any
     [ return (result: t_Rc_i32_Global) ->
@@ -169,7 +161,7 @@ module M_rc
   let rc (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = new_i32 {(1: Int32.t)} (fun (_x: t_Rc_i32_Global) -> [ &rc <- _x ] s1)
-      | s1 = {[@expl:assertion] view_Rc_i32_Global rc = (1: Int32.t)} s2
+      | s1 = {[@expl:assertion] Int32.to_int (deref_Rc_i32_Global rc) = 1} s2
       | s2 = as_ref_Rc_i32_Global {rc} (fun (_x: Int32.t) -> [ &inner <- _x ] s3)
       | s3 = {[@expl:assertion] Int32.to_int inner = 1} s4
       | s4 = clone_Rc_i32_Global {rc} (fun (_x: t_Rc_i32_Global) -> [ &rc2 <- _x ] s5)
