@@ -11,7 +11,7 @@ pub const WHY3_CONFIG_MAGIC_NUMBER: &'static str = "14";
 pub const WHY3FIND_VERSION: &'static str = "1.3.0"; // For the real version, see creusot-deps.opam
 // tools with binary releases
 pub const ALTERGO_VERSION: &'static str = "2.6.4";
-pub const Z3_VERSION: &'static str = "5.1.0";
+pub const Z3_VERSION: &'static str = "5.3.2";
 pub const CVC4_VERSION: &'static str = "1.8";
 pub const CVC5_VERSION: &'static str = "1.4.1";
 
@@ -22,8 +22,8 @@ pub const URLS: Urls = Urls {
         sha256: "80d41dd9cf4b024be7412e499f81960ddc63978f5d78a29311a05aaab125681a",
     }),
     z3: Some(Url {
-        url: "https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-x64-glibc-2.39.zip",
-        sha256: "f47be8d27d3230e823bf1eeede2fe0abaca55bb78d0b59974370e6689a92284a",
+        url: "https://github.com/Z3Prover/z3/releases/download/z3-5.3.2/z3-5.3.2-x64-glibc-2.39.zip",
+        sha256: "26d463cddad3901cbf86e3868c784914539f4e3f9b4de1a0b8dc2969806d60e2",
     }),
     cvc4: Some(Url {
         url: "https://github.com/CVC4/CVC4-archived/releases/download/1.8/cvc4-1.8-x86_64-linux-opt",
@@ -41,8 +41,8 @@ pub const URLS: Urls = Urls {
     // `opam install alt-ergo` plus `--external alt-ergo` covers it.
     altergo: None,
     z3: Some(Url {
-        url: "https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-arm64-glibc-2.38.zip",
-        sha256: "2832cfd43c6862fbaf78834b5f1e35d031b4a87e85456b696c1c6f609cd5609e",
+        url: "https://github.com/Z3Prover/z3/releases/download/z3-5.3.2/z3-5.3.2-arm64-glibc-2.38.zip",
+        sha256: "30b6a718a6cfe1b2db056038cc32eda5410f6d02e5937622b5238645347f59d5",
     }),
     // CVC4 is archived upstream (last release 2020) and never shipped an
     // aarch64-linux binary. CVC5 supersedes it.
@@ -60,8 +60,8 @@ pub const URLS: Urls = Urls {
         sha256: "083d2d432d4954a2c234b1ca88a97b8c7e98bcbd3dcbae1753be401eb1633196",
     }),
     z3: Some(Url {
-        url: "https://github.com/Z3Prover/z3/releases/download/z3-5.1.0/z3-5.1.0-arm64-osx-13.3.zip",
-        sha256: "81d29e934fd863079a74af35eecaeaef8047e0e12414d33ca322b358d68383db",
+        url: "https://github.com/Z3Prover/z3/releases/download/z3-5.3.2/z3-5.3.2-arm64-osx-13.3.zip",
+        sha256: "524290057c943a044ec3d1372db65a9c93f333d9817d58191154c4719ff7f8ad",
     }),
     // CVC4 only has a macos x86_64 binary; we rely on rosetta for compatibility
     cvc4: Some(Url {
