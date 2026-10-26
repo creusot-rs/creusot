@@ -725,9 +725,11 @@ impl<T> Queue<T> {
             cells.push(QueueCell { item, status })
         }
 
-        let (head, head_own) = AtomicUsize::new(0, SyncView::new().borrow_mut());
+        let mut head_view = ghost! { SyncView::new().into_inner() };
+        let (head, head_own) = AtomicUsize::new(0, head_view.borrow_mut());
         let head_ts = snapshot!(such_that(|t| head_own.val().contains(&t)));
-        let (tail, tail_own) = AtomicUsize::new(0, SyncView::new().borrow_mut());
+        let mut tail_view = ghost! { SyncView::new().into_inner() };
+        let (tail, tail_own) = AtomicUsize::new(0, tail_view.borrow_mut());
         let tail_ts = snapshot!(such_that(|t| tail_own.val().contains(&t)));
 
         let statuses_mono_auth_wards =
@@ -742,7 +744,7 @@ impl<T> Queue<T> {
         )
         .split();
 
-        let inv = AtomicInvariant::new(
+        let inv = ghost! { AtomicInvariant::new(
             ghost!(QueueInv {
                 head_own: head_own.into_inner(),
                 tail_own: tail_own.into_inner(),
@@ -760,7 +762,7 @@ impl<T> Queue<T> {
                 statuses_mono_auth_wards,
             }),
             snapshot!(BOUNDED_MPMC_QUEUE()),
-        );
+        ).into_inner() };
 
         let queue = Queue { cells, head, tail, inv };
 
