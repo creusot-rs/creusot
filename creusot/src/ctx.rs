@@ -577,25 +577,31 @@ impl<'tcx> TranslationCtx<'tcx> {
             // TODO: normalize predicates, somehow...
             let mut additional_predicates = es.predicates_for(self.tcx, subst);
             for pre in additional_predicates.iter_mut() {
-                let Some(c) = pre.as_clause() else { continue; };
+                let Some(c) = pre.as_clause() else {
+                    continue;
+                };
+                use rustc_type_ir::{
+                    ClauseKind, IsRigid, PredicateKind, ProjectionClause, TermKind,
+                };
                 use ty::TyKind;
-                use rustc_type_ir::{ClauseKind, TermKind, IsRigid, PredicateKind, ProjectionClause};
                 match c.kind().skip_binder() {
-                    ClauseKind::Projection(c) => {
-                        match c.term.kind() {
-                            TermKind::Ty(ty) => {
-                            match ty.kind() { TyKind::Alias(rigid, a) => {
+                    ClauseKind::Projection(c) => match c.term.kind() {
+                        TermKind::Ty(ty) => match ty.kind() {
+                            TyKind::Alias(rigid, a) => {
                                 let ty = Ty::new_alias(self.tcx, IsRigid::Yes, *a);
-                                *pre = self.tcx.mk_predicate(pre.kind().map_bound(|_| PredicateKind::Clause(ClauseKind::Projection(ProjectionClause {
-                                    projection_term: c.projection_term,
-                                    term: ty::Term::from(ty),
-                                }))));
+                                *pre = self.tcx.mk_predicate(pre.kind().map_bound(|_| {
+                                    PredicateKind::Clause(ClauseKind::Projection(
+                                        ProjectionClause {
+                                            projection_term: c.projection_term,
+                                            term: ty::Term::from(ty),
+                                        },
+                                    ))
+                                }));
                             }
                             _ => {}
-                            }}
-                            _ => {}
-                        }
-                    }
+                        },
+                        _ => {}
+                    },
                     _ => {}
                 }
             }

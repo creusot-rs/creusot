@@ -74,7 +74,8 @@ pub struct BorrowData<'tcx> {
     /// The `Location` of the original MIR `Call` terminator becomes the `Location` of the FMIR
     /// `Call` statement, and the successor `Location` is the FMIR `Goto` terminator.
     resolved_at: HashMap<Orphan<Location>, Resolves<'tcx>>,
-    resolved_between_blocks: HashMap<Orphan<BasicBlock>, HashMap<Orphan<BasicBlock>, Resolves<'tcx>>>,
+    resolved_between_blocks:
+        HashMap<Orphan<BasicBlock>, HashMap<Orphan<BasicBlock>, Resolves<'tcx>>>,
     /// Locations where final borrows are created.
     final_borrows: HashMap<Orphan<Location>, DerefPos>,
     /// Locations where two-phase borrows are created.

@@ -136,7 +136,7 @@ impl SpanEncoder for MetadataEncoder<'_, '_> {
         eid.local_id.as_u32().encode(self);
     }
     fn encode_syntax_context(&mut self, ctx: SyntaxContext) {
-        let idx = self.hygiene_context.borrow_mut().enqueue_syntax_context_for_encoding(ctx);
+        self.hygiene_context.borrow_mut().enqueue_syntax_context_for_encoding(ctx);
         self.emit_u32(ctx.as_u32());
     }
     fn encode_crate_num(&mut self, cnum: CrateNum) {
@@ -258,7 +258,11 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
 
     // Encode the file footer.
     let footer_pos = encoder.position() as u64;
-    let footer = Footer { file_index_to_stable_id, syntax_contexts, expn_data: super::to_orphan_map(expn_data) };
+    let footer = Footer {
+        file_index_to_stable_id,
+        syntax_contexts,
+        expn_data: super::to_orphan_map(expn_data),
+    };
     footer.encode(&mut encoder);
 
     // Encode the position of the footer as the last 8 bytes of the
