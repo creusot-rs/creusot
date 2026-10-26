@@ -148,8 +148,8 @@ fn equate_anf<'tcx>(
     let r = checker.equate(&left, &right);
     if r.is_err() {
         let tcx = ctx.tcx;
-        debug!("Left:\n{:#?}", Pretty { tcx, owner: Some(left_id), body: left });
-        debug!("Right:\n{:#?}", Pretty { tcx, owner: None, body: right });
+        debug!("Left:\n{:#?}", Pretty { tcx, body: left });
+        debug!("Right:\n{:#?}", Pretty { tcx, body: right });
     }
     r
 }
@@ -1691,12 +1691,18 @@ impl<'tcx> EqualityChecker<'tcx> {
         if self.equate_value(&left.ret.0, &right.ret.0) {
             Ok(())
         } else {
-            Err(self.error(
+            self.error(
                 left.ret.1,
                 "#[erasure] side (mismatched value)",
                 right.ret.1,
                 "target side",
-            ))
+            );
+            debug!(
+                "{:?} /= {:?}",
+                Pretty { tcx: self.tcx, body: left },
+                Pretty { tcx: self.tcx, body: right }
+            );
+            Err(())
         }
     }
 
@@ -1723,13 +1729,12 @@ impl<'tcx> EqualityChecker<'tcx> {
 
 struct Pretty<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
-    owner: Option<LocalDefId>,
     body: &'a AnfBlock<'tcx>,
 }
 
 impl<'a, 'tcx> std::fmt::Debug for Pretty<'a, 'tcx> {
     fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
-        let printer = PrintAnf::new(self.tcx, self.owner);
+        let printer = PrintAnf::new(self.tcx);
         printer.print_body(&self.body, f)
     }
 }
@@ -1737,13 +1742,12 @@ impl<'a, 'tcx> std::fmt::Debug for Pretty<'a, 'tcx> {
 /// Pretty printer of ANF terms.
 struct PrintAnf<'tcx> {
     tcx: TyCtxt<'tcx>,
-    owner: Option<LocalDefId>,
     indent: usize,
 }
 
 impl<'tcx> PrintAnf<'tcx> {
-    fn new(tcx: TyCtxt<'tcx>, owner: Option<LocalDefId>) -> Self {
-        PrintAnf { tcx, owner, indent: 0 }
+    fn new(tcx: TyCtxt<'tcx>) -> Self {
+        PrintAnf { tcx, indent: 0 }
     }
 
     fn indent(&self) -> Self {
