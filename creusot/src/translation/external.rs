@@ -12,7 +12,7 @@ use crate::{
     util::{eq_nameless_generic_args, erased_identity_for_item, forge_def_id, forge_def_id_from},
     validate::is_ghost_or_snap,
 };
-use rustc_abi::VariantIdx;
+use rustc_abi::FieldIdx;
 use rustc_hir::{
     def::DefKind,
     def_id::{DefId, LocalDefId},
@@ -340,20 +340,15 @@ pub(crate) fn extract_erasure_type<'tcx>(
         .iter_enumerated()
         .zip(bv)
         .map(|((variant, a), b)| {
-            if a.fields.len() != b.fields.len() {
-                unimplemented!()
-            }
             let erase_fields = a
                 .fields
                 .iter()
-                .zip(b.fields.iter_enumerated())
-                .map(
-                    |(a, (i, b))| {
-                        if a.name != b.name { panic!("mismatched field names") } else { Some(i) }
-                    },
-                )
-                .collect();
-            ErasureType { def, variant, n_fields: b.fields.len(), erase_fields }
+                .map(|a| {
+                    b.fields.iter().position(|b| a.name == b.name).map(|i| FieldIdx::from_usize(i))
+                })
+                .collect::<Vec<_>>();
+            let n_fields = erase_fields.iter().filter(|i| i.is_some()).count();
+            ErasureType { def, variant, n_fields, erase_fields }
         })
         .collect();
     ErasureItem::TypeErasure(a.def_id(), erasure)
