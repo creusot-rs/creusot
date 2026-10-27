@@ -22,7 +22,7 @@ extern_spec! {
             }
 
             #[check(ghost)]
-            #[ensures(result == discriminant_value_logic(*v))]
+            #[logic_alias(discriminant_value_logic(*v))]
             fn discriminant_value<T>(v: &T) -> <T as core::marker::DiscriminantKind>::Discriminant;
 
             // This intrinsic is used by the constant `SizedTypeProperties::SIZE`

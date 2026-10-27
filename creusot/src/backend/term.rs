@@ -8,7 +8,7 @@ use crate::{
             ty_to_prelude, uty_to_prelude,
         },
     },
-    contracts_items::{is_builtin_ascription, is_new_namespace},
+    contracts_items::{Intrinsic, is_builtin_ascription, is_new_namespace},
     ctx::*,
     naming::name,
     resolution::TraitResolved,
@@ -24,7 +24,7 @@ use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::PlaceTy,
-    ty::{self, Ty, TyCtxt, TyKind},
+    ty::{self, GenericArg, Ty, TyCtxt, TyKind},
 };
 use rustc_span::Span;
 use rustc_type_ir::IntTy;
@@ -212,8 +212,12 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                             }
                         }
                     }
-                    TyKind::Adt(..) => {
-                        let discr = self.names.discriminant(argty);
+                    TyKind::Adt(..) if term.ty.is_integral() => {
+                        let discr = Exp::Var(self.names.item(
+                            self.ctx.intrinsic2did[&Intrinsic::DiscriminantValueLogic],
+                            self.ctx.mk_args(&[GenericArg::from(argty)]),
+                        ))
+                        .app([arg]);
                         cast_int(
                             self.names,
                             self.ctx.normalize_erasing_regions(
@@ -221,7 +225,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                                 ty::Unnormalized::new(argty.discriminant_ty(self.ctx.tcx)),
                             ),
                             term.ty,
-                            Exp::Call(Box::new(Exp::var(discr)), Box::new([arg])),
+                            discr,
                         )
                     }
                     _ => unsupported_cast(self.ctx, term.span, argty, term.ty),
@@ -229,9 +233,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             TermKind::Discriminant { arg } => {
                 let argty = arg.ty;
-                let arg = self.lower_term(arg);
-                let discr = self.names.discriminant(argty);
-                Exp::Call(Box::new(Exp::var(discr)), Box::new([arg]))
+                Exp::Var(self.names.item(
+                    self.ctx.intrinsic2did[&Intrinsic::DiscriminantValueLogic],
+                    self.ctx.mk_args(&[GenericArg::from(argty)]),
+                ))
+                .app([self.lower_term(arg)])
             }
             TermKind::Coerce { arg } => self.lower_term(arg),
             &TermKind::ConstItem { id, subst } => Exp::Var(self.names.item(id, subst)),

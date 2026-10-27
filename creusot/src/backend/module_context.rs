@@ -21,7 +21,7 @@ use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
-    self, GenericArgsRef, List, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitableExt, TypingEnv,
+    GenericArgsRef, List, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitableExt, TypingEnv,
     Unnormalized,
 };
 use rustc_span::Span;
@@ -211,15 +211,6 @@ pub(crate) trait Namer<'tcx> {
 
     fn dependency(&self, dep: Dependency<'tcx>) -> &Kind {
         self.raw_dependency(dep.erase_and_anonymize_regions(self.tcx()))
-    }
-
-    fn discriminant(&self, ty: Ty<'tcx>) -> Ident {
-        let discr_ty = ty.discriminant_ty(self.tcx());
-        if matches!(discr_ty.kind(), ty::Alias(_, ty::AliasTy { kind: ty::Projection { .. }, .. }))
-        {
-            self.ty(discr_ty);
-        }
-        self.dependency(Dependency::Discriminant(ty)).ident()
     }
 
     fn register_constant_setter(&mut self, setter: Ident);
@@ -691,7 +682,6 @@ fn display_cycle_<'tcx>(
             &PreMod(pre_mod) => write!(f, "PreMod::{pre_mod:?}"),
             &Eliminator(def_id, _args) => write!(f, "eliminator {}", tcx.def_path_str(def_id)),
             &DynCast(ty1, ty2) => write!(f, "dyncast {ty1} -> {ty2}"),
-            &Discriminant(ty) => write!(f, "discriminant {ty}"),
             &PrivateFields(def_id, _args) => {
                 write!(f, "private fields {}", tcx.def_path_str(def_id))
             }

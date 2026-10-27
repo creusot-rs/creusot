@@ -13,7 +13,7 @@ module M_logic
   
   meta "rewrite_def" function discr
   
-  function discriminant_Foo (x: t_Foo) : Int64.t = match x with
+  function discriminant_value_logic_Foo (x: t_Foo) : Int64.t = match x with
       | A -> (0: Int64.t)
       | B -> (3: Int64.t)
       | C -> (4: Int64.t)
@@ -28,7 +28,8 @@ module M_logic
   
   function logic (f: t_Foo) : UInt32.t
   
-  goal vc_logic: [@stop_split] [@expl:logic ensures] UInt32.t'int (UInt32.of_int (Int64.to_int (discriminant_Foo f)))
+  goal vc_logic:
+    [@stop_split] [@expl:logic ensures] UInt32.t'int (UInt32.of_int (Int64.to_int (discriminant_value_logic_Foo f)))
     = discr f
 end
 module M_program
@@ -38,7 +39,7 @@ module M_program
   
   type t_Foo = A | B | C | D
   
-  function discriminant_Foo (x: t_Foo) : Int64.t = match x with
+  function discriminant_value_logic_Foo (x: t_Foo) : Int64.t = match x with
       | A -> (0: Int64.t)
       | B -> (3: Int64.t)
       | C -> (4: Int64.t)
@@ -61,7 +62,7 @@ module M_program
   let program (f: t_Foo) (return (x: UInt32.t)) = (! bb0
     [ bb0 = s0
       [ s0 = [ &_4 <- f ] s1
-      | s1 = [ &_5 <- discriminant_Foo _4 ] s2
+      | s1 = [ &_5 <- discriminant_value_logic_Foo _4 ] s2
       | s2 = [ &_ret <- UInt32.of_int (Int64.to_int _5) ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: UInt32.t = Any.any_l () | & f: t_Foo = f | & _4: t_Foo = Any.any_l () | & _5: Int64.t = Any.any_l () ])
@@ -87,20 +88,14 @@ module M_use_intrinsic
   
   predicate inv_Discriminant (_1: t_Discriminant)
   
-  type t_Discriminant'0
+  function discriminant_value_logic_T (x: t_T) : t_Discriminant
   
-  function discriminant_T (x: t_T) : t_Discriminant
-  
-  function discriminant_value_T [@inline:trivial] (_1: t_T) : t_Discriminant = discriminant_T _1
-  
-  meta "rewrite_def" function discriminant_value_T
-  
-  let discriminant_value_T'0 (v: t_T) (return (x: t_Discriminant)) =
+  let discriminant_value_T (v: t_T) (return (x: t_Discriminant)) =
   {[@stop_split] [@expl:discriminant_value 'v' type invariant] inv_ref_T v}
     any
     [ return (result: t_Discriminant) ->
     {[@stop_split] [@expl:discriminant_value_T ensures] ([@stop_split] [@expl:discriminant_value result type invariant] inv_Discriminant result)
-      /\ ([@stop_split] [@expl:discriminant_value ensures] result = discriminant_value_T v)}
+      /\ ([@stop_split] [@expl:discriminant_value ensures] result = discriminant_value_logic_T v)}
       (! return {result}) ]
   
   meta "compute_max_steps" 1000000
@@ -110,8 +105,7 @@ module M_use_intrinsic
   let use_intrinsic_T (v: t_T) (return (x: t_Discriminant)) =
   {[@stop_split] [@expl:use_intrinsic 'v' type invariant] inv_ref_T v}
     (! bb0
-    [ bb0 = s0
-      [ s0 = discriminant_value_T'0 {v} (fun (_x: t_Discriminant) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ bb0 = s0 [ s0 = discriminant_value_T {v} (fun (_x: t_Discriminant) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: t_Discriminant = Any.any_l () | & v: t_T = v ])
     [ return (result: t_Discriminant) ->
     {[@stop_split] [@expl:use_intrinsic result type invariant] inv_Discriminant result}

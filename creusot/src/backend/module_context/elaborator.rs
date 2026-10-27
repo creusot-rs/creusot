@@ -31,7 +31,8 @@ use rustc_abi::Size;
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{
-    self, AliasTyKind, Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypingEnv,
+    self, AliasTyKind, Const, GenericArg, GenericArgKind, GenericArgsRef, TraitRef, Ty, TyCtxt,
+    TyKind, TypingEnv,
 };
 use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_type_ir::{AliasTy, ClosureKind, ConstKind, EarlyBinder};
@@ -47,6 +48,7 @@ use why3::{
         Axiom, Decl, DeclKind, LogicDecl, LogicDefn, Meta, MetaArg, MetaIdent, Signature, TyDecl,
         Use,
     },
+    exp::Constant,
     ty::Type,
 };
 
@@ -312,6 +314,10 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     fn expand_logic(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Vec<Decl> {
         let dep = Dependency::Item(def_id, subst);
         let ctx = self.ctx;
+        if let Intrinsic::DiscriminantValueLogic = ctx.intrinsic(def_id) {
+            let GenericArgKind::Type(source) = subst[0].kind() else { panic!() };
+            return self.expand_discriminant(source);
+        }
 
         let mut add_edge = |axiom| self.dep_graph.add_edge(dep, Strength::Weak, axiom);
         match ctx.intrinsic(def_id) {
@@ -696,13 +702,16 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     }
 
     fn expand_discriminant(&mut self, source: Ty<'tcx>) -> Vec<Decl> {
-        let dep = Dependency::Discriminant(source);
+        let dep = Dependency::Item(
+            self.ctx.intrinsic2did[&Intrinsic::DiscriminantValueLogic],
+            self.ctx.mk_args(&[source.into()]),
+        );
         let ctx = self.ctx;
         let typing_env = self.typing_env;
         let names = self.namer(dep);
         let name = names.dependency(dep).ident();
         let arg = (Ident::fresh_local("x"), translate_ty(ctx, &names, DUMMY_SP, source));
-        let ty = translate_ty(
+        let discr_ty = translate_ty(
             ctx,
             &names,
             DUMMY_SP,
@@ -711,55 +720,52 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 ty::Unnormalized::new(source.discriminant_ty(ctx.tcx)),
             ),
         );
-        let sig =
-            Signature { name, attrs: vec![], retty: Some(ty.clone()), args: [arg.clone()].into() };
+        let sig = Signature {
+            name,
+            attrs: vec![],
+            retty: Some(discr_ty.clone()),
+            args: [arg.clone()].into(),
+        };
 
         match *source.kind() {
-            TyKind::Adt(def, args) => Vec::from_iter([Decl::LogicDefn(LogicDefn {
-                sig,
-                body: Exp::match_(Exp::var(arg.0), {
+            TyKind::Adt(def, args) if def.is_enum() => {
+                let branches =
                     def.variants().iter_enumerated().map(|(variant_idx, variant_def)| {
                         let discr = source.discriminant_for_variant(ctx.tcx, variant_idx).unwrap();
-                        (
-                            lower_pat(
-                                ctx,
-                                &names,
-                                &Pattern::constructor(
-                                    variant_idx,
-                                    variant_def.fields.iter_enumerated().map(|(f, field_def)| {
-                                        (
-                                            f,
-                                            Pattern::wildcard(ctx.normalize_erasing_regions(
-                                                typing_env,
-                                                field_def.ty(ctx.tcx, args),
-                                            )),
-                                        )
-                                    }),
-                                    source,
-                                ),
-                            ),
-                            Exp::Const(why3::exp::Constant::IntDigits10(
-                                match *discr.ty.kind() {
-                                    TyKind::Int(ity) => {
-                                        let size = Size::from_bits(
-                                            ity.normalize(ctx.sess.target.pointer_width)
-                                                .bit_width()
-                                                .unwrap(),
-                                        );
-                                        let bits = size.sign_extend(discr.val);
-                                        bits.to_string()
-                                    }
-                                    _ => discr.val.to_string(),
-                                },
-                                Some(ty.clone()),
-                            )),
-                        )
-                    })
-                }),
-            })]),
+                        let fields = variant_def.fields.iter_enumerated().map(|(f, field_def)| {
+                            let ty = ctx
+                                .normalize_erasing_regions(typing_env, field_def.ty(ctx.tcx, args));
+
+                            (f, Pattern::wildcard(ty))
+                        });
+                        let pat = lower_pat(
+                            ctx,
+                            &names,
+                            &Pattern::constructor(variant_idx, fields, source),
+                        );
+                        let discr_value = match *discr.ty.kind() {
+                            TyKind::Int(ity) => {
+                                let size = Size::from_bits(
+                                    ity.normalize(ctx.sess.target.pointer_width)
+                                        .bit_width()
+                                        .unwrap(),
+                                );
+                                let bits = size.sign_extend(discr.val);
+                                bits.to_string()
+                            }
+                            _ => discr.val.to_string(),
+                        };
+                        let arm =
+                            Exp::Const(Constant::IntDigits10(discr_value, Some(discr_ty.clone())));
+                        (pat, arm)
+                    });
+                let defn = LogicDefn { sig, body: Exp::match_(Exp::var(arg.0), branches) };
+                Vec::from_iter([Decl::LogicDefn(defn)])
+            }
 
             TyKind::Bool
             | TyKind::Char
+            | TyKind::Adt { .. }
             | TyKind::Int { .. }
             | TyKind::Uint { .. }
             | TyKind::Float { .. }
@@ -778,10 +784,8 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             | TyKind::Never { .. }
             | TyKind::Tuple { .. } => Vec::from_iter([Decl::LogicDefn(LogicDefn {
                 sig,
-                body: Exp::Const(why3::exp::Constant::IntDigits10(
-                    "0".to_string(),
-                    Some(ty.clone()),
-                )),
+                // https://doc.rust-lang.org/std/intrinsics/fn.discriminant_value.html
+                body: Exp::Const(Constant::IntDigits10("0".to_string(), Some(discr_ty.clone()))),
             })]),
             _ => {
                 Vec::from_iter([Decl::LogicDecl(LogicDecl { sig, kind: Some(DeclKind::Function) })])
@@ -853,7 +857,6 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 vec![eliminator(ctx, &self.namer(dep), def_id, subst)]
             }
             Dependency::DynCast(source, target) => self.expand_dyn_cast(source, target),
-            Dependency::Discriminant(source) => self.expand_discriminant(source),
             Dependency::PrivateResolve(def_id, subst) | Dependency::PrivateTyInv(def_id, subst) => {
                 let namer = self.namer(dep);
                 let sig = Signature {
