@@ -144,6 +144,8 @@ extern_spec! {
         #[check(ghost)]
         #[ensures(*result == (*self)@[i@])]
         #[ensures(^result == (^self)@[i@])]
+        #[ensures((^self)@.len() == (*self)@.len())]
+        #[ensures(forall<j> 0 <= j && j < (*self)@.len() && j != i@ ==> (^self)@[j] == (*self)@[j])]
         fn index_mut(&mut self, i: usize) -> &mut T;
     }
 
