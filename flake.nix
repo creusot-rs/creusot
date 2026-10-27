@@ -70,9 +70,9 @@
             };
 
             z3 = {
-              version = "5.1.0";
-              sha256 = "sha256-F46bADHVe6ssQrj6oXPSi3KRGBaX//pXO3+4bMFi8Ag=";
-            };
+              version = "5.3.2";
+              sha256 = "sha256-vKNrsm09LGu8pgkX5Yv0XlY3u/MAawoma3BIeavS8So=";
+           };
           };
         in
         {
