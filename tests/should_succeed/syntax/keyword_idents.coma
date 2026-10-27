@@ -1,0 +1,41 @@
+module M_then
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Keywords = {
+    then': UInt64.t;
+    theory': UInt64.t;
+    so': UInt64.t;
+    begin': UInt64.t;
+    downto': UInt64.t;
+    partial': UInt64.t;
+    pure': UInt64.t;
+    raises': UInt64.t }
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  function sum (k: t_Keywords) : int = match k with
+      | {then' = then''0; theory' = theory''0; so' = so''0; begin' = begin''0; downto' = downto''0; partial' = partial''0; pure' = pure''0; raises' = raises''0} -> UInt64.t'int then''0
+                  + UInt64.t'int theory''0
+                + UInt64.t'int so''0
+              + UInt64.t'int begin''0
+            + UInt64.t'int downto''0
+          + UInt64.t'int partial''0
+        + UInt64.t'int pure''0
+      + UInt64.t'int raises''0
+      end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let then''0 (k: t_Keywords) (return (x: UInt64.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &then''0 <- k.then' ] s1 | s1 = [ &_ret <- then''0 ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l () | & k: t_Keywords = k | & then''0: UInt64.t = Any.any_l () ])
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:then ensures] UInt64.t'int result = UInt64.t'int k.then'
+      /\ ge_log_Int (sum k) (UInt64.t'int result)}
+      (! return {result}) ]
+end
