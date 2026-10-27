@@ -1,3 +1,75 @@
+module M_index_mut_keeps_the_rest
+  use creusot.prelude.MutBorrow
+  use creusot.int.UInt32
+  use seq.Seq
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_VecDeque_u32_Global
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_VecDeque_u32_Global (self: t_VecDeque_u32_Global) : Seq.seq UInt32.t
+  
+  axiom view_VecDeque_u32_Global_spec:
+    forall self: t_VecDeque_u32_Global [view_VecDeque_u32_Global self]. Seq.length (view_VecDeque_u32_Global self)
+      <= UInt64.t'int const_MAX
+  
+  let index_mut_VecDeque_u32_Global (self: MutBorrow.t t_VecDeque_u32_Global) (index: UInt64.t)
+    (return (x: MutBorrow.t UInt32.t)) = any
+    [ return (result: MutBorrow.t UInt32.t) ->
+    {[@stop_split] [@expl:index_mut_VecDeque_u32_Global ensures] ([@stop_split] [@expl:index_mut ensures #0] result.current
+        = Seq.get (view_VecDeque_u32_Global self.current) (UInt64.t'int index))
+      /\ ([@stop_split] [@expl:index_mut ensures #1] result.final
+        = Seq.get (view_VecDeque_u32_Global self.final) (UInt64.t'int index))
+      /\ ([@stop_split] [@expl:index_mut ensures #2] Seq.length (view_VecDeque_u32_Global self.final)
+        = Seq.length (view_VecDeque_u32_Global self.current))
+      /\ ([@stop_split] [@expl:index_mut ensures #3] forall j: int. 0 <= j
+          /\ j < Seq.length (view_VecDeque_u32_Global self.current) /\ j <> UInt64.t'int index
+        -> Seq.get (view_VecDeque_u32_Global self.final) j = Seq.get (view_VecDeque_u32_Global self.current) j)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_u32
+  
+  predicate resolve_refmut_VecDeque_u32_Global [@inline:trivial] (_1: MutBorrow.t t_VecDeque_u32_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_VecDeque_u32_Global
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let index_mut_keeps_the_rest (deque: MutBorrow.t t_VecDeque_u32_Global) (return (x: ())) =
+  {[@stop_split] [@expl:index_mut_keeps_the_rest requires] Seq.length (view_VecDeque_u32_Global deque.current) = 2}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = any
+        [ any_ (_dest: UInt32.t) ->
+        (! -{([@stop_split] [@expl:view ensures] Seq.length (view_VecDeque_u32_Global deque.current)
+            <= UInt64.t'int const_MAX)
+          /\ _dest = Seq.get (view_VecDeque_u32_Global deque.current) 0}-
+          [ &first <- _dest ] s1) ] [ _ck -> (! any) ]
+      | s1 = MutBorrow.borrow_final <t_VecDeque_u32_Global> {deque.current} {MutBorrow.get_id deque}
+          (fun (_bor: MutBorrow.t t_VecDeque_u32_Global) ->
+            [ &_8 <- _bor ] [ &deque <- { deque with current = _bor.final } ] s2)
+      | s2 = index_mut_VecDeque_u32_Global {_8} {(1: UInt64.t)} (fun (_x: MutBorrow.t UInt32.t) -> [ &_7 <- _x ] s3)
+      | s3 = [ &_7 <- { _7 with current = (7: UInt32.t) } ] s4
+      | s4 = -{resolve_refmut_u32 _7}- s5
+      | s5 = -{resolve_refmut_VecDeque_u32_Global deque}- s6
+      | s6 = {[@expl:assertion] Seq.length (view_VecDeque_u32_Global deque.current) = 2} s7
+      | s7 = {[@expl:assertion] Seq.get (view_VecDeque_u32_Global deque.current) 0 = first} s8
+      | s8 = {[@expl:assertion] Seq.get (view_VecDeque_u32_Global deque.current) 1 = (7: UInt32.t)} s9
+      | s9 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & deque: MutBorrow.t t_VecDeque_u32_Global = deque
+    | & first: UInt32.t = Any.any_l ()
+    | & _7: MutBorrow.t UInt32.t = Any.any_l ()
+    | & _8: MutBorrow.t t_VecDeque_u32_Global = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
 module M_test_deque
   use creusot.int.UInt64
   use seq.Seq
