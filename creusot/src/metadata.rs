@@ -278,8 +278,10 @@ fn load_binary_metadata<'tcx>(
             return None;
         }
     }
-
-    Some(decode_metadata(tcx, &blob))
+    eprintln!("{path:?}");
+    let r = Some(decode_metadata(tcx, cnum, &blob));
+    eprintln!("{path:?}");
+    r
 }
 
 fn creusot_metadata_path(
@@ -334,7 +336,7 @@ pub fn encode_def_ids<'a>(
 /// Skip `DefId`s from other crates
 fn decode_local_def_ids(tcx: TyCtxt, file: &Path) -> Result<Vec<LocalDefId>, std::io::Error> {
     let contents = std::fs::read(file)?;
-    let hashes: Vec<DefPathHash> = decode_metadata(tcx, &contents);
+    let hashes: Vec<DefPathHash> = decode_metadata(tcx, LOCAL_CRATE, &contents);
     Ok(hashes.into_iter().filter_map(|hash| def_path_hash_to_local_id(tcx, hash)).collect())
 }
 
