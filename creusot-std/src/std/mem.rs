@@ -14,6 +14,9 @@ extern_spec! {
     mod core {
         mod mem {
             #[check(ghost)]
+            fn discriminant<T>(v: &T) -> Discriminant<T>;
+
+            #[check(ghost)]
             #[ensures(^dest == src)]
             #[ensures(result == *dest)]
             fn replace<T>(dest: &mut T, src: T) -> T {

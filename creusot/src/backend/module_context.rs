@@ -255,7 +255,7 @@ pub enum Kind {
 }
 
 impl Kind {
-    fn ident(&self) -> Ident {
+    pub(super) fn ident(&self) -> Ident {
         match self {
             Kind::Unnamed => panic!("Unnamed item"),
             Kind::Named(nm) => *nm,

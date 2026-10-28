@@ -1,3 +1,4 @@
+use creusot.int.Int64
 use creusot.prelude.Any
 
 type t_T
@@ -7,6 +8,13 @@ type t_E
 type t_Result_T_E = Ok t_T | Err t_E
 
 type t_Option_Result_T_E = None | Some t_Result_T_E
+
+function discriminant_value_logic_Result_T_E [@inline:trivial] (_1: t_Result_T_E) : Int64.t = match _1 with
+    | Ok _ -> (0: Int64.t)
+    | Err _ -> (1: Int64.t)
+    end
+
+meta "rewrite_def" function discriminant_value_logic_Result_T_E
 
 let elim_Some (_x: t_Option_Result_T_E) (return (f0: t_Result_T_E)) = any
   [ _k (f0: t_Result_T_E) -> {Some f0 = _x} (! return {f0})
@@ -101,8 +109,11 @@ let extern_spec_T_E_Option_Result_T_E_transpose_body_T (self_: t_Option_Result_T
 {[@stop_split] [@expl:extern_spec_T_E_Option_Result_T_E_transpose_body 'self_' type invariant] inv_Option_Result_T_E self_}
   (! bb0
   [ bb0 = any [ br0 -> {self_ = None} (! bb2) | br1 (x0: t_Result_T_E) -> {self_ = Some x0} (! bb3) ]
-  | bb3 = elim_Some {self_}
-      (fun (r0: t_Result_T_E) -> any [ br0 (x0: t_T) -> {r0 = Ok x0} (! bb4) | br1 (x0: t_E) -> {r0 = Err x0} (! bb5) ])
+  | bb3 = s0
+    [ s0 = elim_Some {self_} (fun (r0: t_Result_T_E) -> [ &_4 <- discriminant_value_logic_Result_T_E r0 ] s1)
+    | s1 = elim_Some {self_}
+        (fun (r0: t_Result_T_E) ->
+          any [ br0 (x0: t_T) -> {r0 = Ok x0} (! bb4) | br1 (x0: t_E) -> {r0 = Err x0} (! bb5) ]) ]
   | bb5 = s0
     [ s0 = s1
       [ _ck -> (! {[@expl:type invariant] match self_ with
@@ -142,6 +153,7 @@ let extern_spec_T_E_Option_Result_T_E_transpose_body_T (self_: t_Option_Result_T
     | s4 = return {_ret} ] ]
   [ & _ret: t_Result_Option_T_E = Any.any_l ()
   | & self_: t_Option_Result_T_E = self_
+  | & _4: Int64.t = Any.any_l ()
   | & _6: t_Option_T = Any.any_l ()
   | & ok: t_T = Any.any_l ()
   | & _8: t_Option_T = Any.any_l ()

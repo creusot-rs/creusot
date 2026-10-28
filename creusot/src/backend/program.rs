@@ -939,6 +939,17 @@ impl<'tcx> RValue<'tcx> {
 
                 Exp::var(ptr_ident)
             }
+            RValue::Discriminant(pl) => {
+                let pl_ty = pl.ty(lower.ctx.tcx, lower.locals);
+                let discr = lower.names.item(
+                    Intrinsic::DiscriminantValueLogic.get(lower.ctx),
+                    lower.ctx.mk_args(&[pl_ty.into()]),
+                );
+                Exp::Call(
+                    Box::new(Exp::Var(discr)),
+                    Box::new([lower.rplace_to_expr(&pl, istmts, span)]),
+                )
+            }
         }
     }
 }

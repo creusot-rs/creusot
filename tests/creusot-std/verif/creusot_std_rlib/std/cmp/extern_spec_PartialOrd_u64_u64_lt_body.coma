@@ -1,4 +1,5 @@
 use creusot.int.UInt64
+use creusot.int.Int8
 use creusot.prelude.Any
 use int.Int
 
@@ -21,6 +22,14 @@ let partial_cmp_u64 (self: UInt64.t) (other: UInt64.t) (return (x: t_Option_Orde
     = partial_cmp_log_Int (deep_model_u64 self) (deep_model_u64 other)}
     (! return {result}) ]
 
+function discriminant_value_logic_Ordering [@inline:trivial] (_1: t_Ordering) : Int8.t = match _1 with
+    | Less -> (-1: Int8.t)
+    | Equal -> (0: Int8.t)
+    | Greater -> (1: Int8.t)
+    end
+
+meta "rewrite_def" function discriminant_value_logic_Ordering
+
 let elim_Some (_x: t_Option_Ordering) (return (f0: t_Ordering)) = any
   [ _k (f0: t_Ordering) -> {Some f0 = _x} (! return {f0})
   | _chk -> (! {[@expl:elim Some] match _x with
@@ -41,15 +50,18 @@ let extern_spec_PartialOrd_u64_u64_lt_body (self_: UInt64.t) (other: UInt64.t) (
   [ bb0 = s0
     [ s0 = partial_cmp_u64 {self_} {other} (fun (_x: t_Option_Ordering) -> [ &_6 <- _x ] s1)
     | s1 = any [ br0 -> {_6 = None} (! bb2) | br1 (x0: t_Ordering) -> {_6 = Some x0} (! bb3) ] ]
-  | bb3 = elim_Some {_6}
-      (fun (r0: t_Ordering) ->
-        any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb2) ])
+  | bb3 = s0
+    [ s0 = elim_Some {_6} (fun (r0: t_Ordering) -> [ &_9 <- discriminant_value_logic_Ordering r0 ] s1)
+    | s1 = elim_Some {_6}
+        (fun (r0: t_Ordering) ->
+          any [ br0 -> {r0 = Less} (! bb5) | br1 -> {r0 = Equal} (! bb2) | br2 -> {r0 = Greater} (! bb2) ]) ]
   | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ]
   | bb5 = s0 [ s0 = [ &_ret <- true ] s1 | s1 = return {_ret} ] ]
   [ & _ret: bool = Any.any_l ()
   | & self_: UInt64.t = self_
   | & other: UInt64.t = other
-  | & _6: t_Option_Ordering = Any.any_l () ])
+  | & _6: t_Option_Ordering = Any.any_l ()
+  | & _9: Int8.t = Any.any_l () ])
   [ return (result: bool) -> {[@stop_split] [@expl:extern_spec_PartialOrd_u64_u64_lt_body ensures] result
     = (deep_model_ref_u64 self_ < deep_model_ref_u64 other)}
     (! return {result}) ]

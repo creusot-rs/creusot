@@ -100,7 +100,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     return;
                 }
             },
-            Rvalue::Discriminant(_) => return,
+            Rvalue::Discriminant(place) => RValue::Discriminant(self.translate_place(*place, span)),
             Rvalue::BinaryOp(op, box (l, r)) => {
                 RValue::BinOp(*op, self.translate_operand(l, span), self.translate_operand(r, span))
             }

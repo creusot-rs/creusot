@@ -84,6 +84,9 @@ impl<'tcx> Dependency<'tcx> {
                 _ if Intrinsic::SizeOfLogic.is(ctx, did) => {
                     Some(Symbol::intern(&type_string(ctx.tcx, "size_of".into(), subst.type_at(0))))
                 }
+                _ if Intrinsic::DiscriminantValueLogic.is(ctx, did) => Some(Symbol::intern(
+                    &type_string(ctx.tcx, "discriminant_value_logic".into(), subst.type_at(0)),
+                )),
                 DefKind::Const { .. } | DefKind::AssocConst { .. } | DefKind::ConstParam => ctx
                     .opt_item_name(did)
                     .map(|name| Symbol::intern(&lowercase_prefix("const_", name.as_str()))),
