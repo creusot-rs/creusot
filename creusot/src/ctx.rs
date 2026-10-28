@@ -574,38 +574,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         {
             let base_predicates =
                 self.tcx.param_env(def_id).caller_bounds().into_iter().map(Clause::as_predicate);
-            // TODO: normalize predicates, somehow...
-            let mut additional_predicates = es.predicates_for(self.tcx, subst);
-            for pre in additional_predicates.iter_mut() {
-                let Some(c) = pre.as_clause() else {
-                    continue;
-                };
-                use rustc_type_ir::{
-                    ClauseKind, IsRigid, PredicateKind, ProjectionClause, TermKind,
-                };
-                use ty::TyKind;
-                match c.kind().skip_binder() {
-                    ClauseKind::Projection(c) => match c.term.kind() {
-                        TermKind::Ty(ty) => match ty.kind() {
-                            TyKind::Alias(rigid, a) => {
-                                let ty = Ty::new_alias(self.tcx, IsRigid::Yes, *a);
-                                *pre = self.tcx.mk_predicate(pre.kind().map_bound(|_| {
-                                    PredicateKind::Clause(ClauseKind::Projection(
-                                        ProjectionClause {
-                                            projection_term: c.projection_term,
-                                            term: ty::Term::from(ty),
-                                        },
-                                    ))
-                                }));
-                            }
-                            _ => {}
-                        },
-                        _ => {}
-                    },
-                    _ => {}
-                }
-            }
-            // eprintln!("param_env: {subst:?}\n{additional_predicates:?}");
+            let additional_predicates = es.predicates_for(self.tcx, subst);
             let clauses =
                 base_predicates.chain(additional_predicates).map(Predicate::expect_clause);
             let res = ParamEnv::new(self.tcx, self.mk_clauses_from_iter(clauses));
