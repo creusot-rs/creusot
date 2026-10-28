@@ -1,11 +1,11 @@
-use crate::prelude::*;
 #[cfg(creusot)]
 use crate::std::ptr::PointerExt as _;
+use crate::{logic::ops::DerefLogic, prelude::*};
+#[cfg(feature = "nightly")]
+use std::alloc::Allocator;
 #[cfg(creusot)]
 use std::ops::Deref;
 use std::rc::Rc;
-#[cfg(feature = "nightly")]
-use std::{alloc::Allocator, boxed::Box};
 
 /// Extension trait for [`Rc`].
 pub trait RcExt {
@@ -33,15 +33,14 @@ impl<T: DeepModel + ?Sized, A: Allocator> DeepModel for Rc<T, A> {
     type DeepModelTy = T::DeepModelTy;
     #[logic(open, inline)]
     fn deep_model(self) -> Self::DeepModelTy {
-        pearlite! { *self.view().deep_model() }
+        pearlite! { (*self).deep_model() }
     }
 }
 
 #[cfg(feature = "nightly")]
-impl<T: ?Sized, A: Allocator> View for Rc<T, A> {
-    type ViewTy = Box<T>;
+impl<T: ?Sized, A: Allocator> DerefLogic for Rc<T, A> {
     #[logic(opaque)]
-    fn view(self) -> Self::ViewTy {
+    fn deref_logic(&self) -> &T {
         dead
     }
 }
@@ -55,7 +54,7 @@ extern_spec! {
         /// [`crate::ghost::GhostShared`].
         #[check(terminates)] // Not ghost, to avoid exhausting all possible `Rc`
                              // addresses. This could be observed by `ptr_eq`.
-        #[ensures(*result@ == value)]
+        #[ensures(*result == value)]
         fn new(value: T) -> Self;
     }
 
@@ -74,7 +73,7 @@ extern_spec! {
 
     impl<T, A: Allocator> AsRef<T> for Rc<T, A> {
         #[check(ghost)]
-        #[ensures(*result == *(*self)@)]
+        #[ensures(*result == **self)]
         fn as_ref(&self) -> &T;
     }
 
@@ -86,18 +85,16 @@ extern_spec! {
 
     impl<T: ?Sized, A: Allocator> Deref for Rc<T, A> {
         #[check(ghost)]
-        #[ensures(*result == *(*self)@)]
+        #[logic_alias(self.deref_logic())]
         fn deref(&self) -> &T { self.as_ref() }
     }
 }
 
 /// Dummy impls that don't use the unstable trait Allocator
 #[cfg(not(feature = "nightly"))]
-impl<T: DeepModel> DeepModel for Rc<T> {
+impl<T: DeepModel + ?Sized> DeepModel for Rc<T> {
     type DeepModelTy = T::DeepModelTy;
 }
 
 #[cfg(not(feature = "nightly"))]
-impl<T> View for Rc<T> {
-    type ViewTy = T;
-}
+impl<T: ?Sized> DerefLogic for Rc<T> {}

@@ -1,5 +1,5 @@
+use crate::{logic::ops::DerefLogic, prelude::*};
 use core::{marker::PhantomData, ops::Deref};
-use creusot_std::prelude::*;
 
 /// A type for sharing ghost data immutably.
 #[builtin("identity")]
@@ -11,19 +11,10 @@ unsafe impl<T: Sync> Send for GhostShared<T> {}
 #[trusted]
 unsafe impl<T: Sync> Sync for GhostShared<T> {}
 
-impl<T> View for GhostShared<T> {
-    type ViewTy = T;
-
-    #[logic(open, inline)]
-    fn view(self) -> T {
-        self.val()
-    }
-}
-
 impl<T> Invariant for GhostShared<T> {
     #[logic(open, prophetic)]
     fn invariant(self) -> bool {
-        resolve(self.val()) && inv(self.val())
+        resolve(*self) && inv(*self)
     }
 }
 
@@ -34,7 +25,7 @@ impl<T> GhostShared<T> {
     /// function to [`resolve`] it (in `GhostShared`'s type invariant).
     #[trusted]
     #[check(ghost)]
-    #[ensures(result@ == *val)]
+    #[ensures(**result == *val)]
     #[allow(unused_variables)]
     pub fn new(val: Ghost<T>) -> Ghost<Self> {
         Ghost::conjure()
@@ -42,13 +33,6 @@ impl<T> GhostShared<T> {
 }
 
 impl<T> GhostShared<T> {
-    /// The logical value contained in this `GhostShared`.
-    #[logic]
-    #[builtin("identity")]
-    pub fn val(self) -> T {
-        dead
-    }
-
     /// Access the value of the `GhostShared` immutably.
     ///
     /// # Note on lifetimes
@@ -59,7 +43,7 @@ impl<T> GhostShared<T> {
     /// `'a`.
     #[trusted]
     #[check(ghost)]
-    #[ensures(*result == self.val())]
+    #[ensures(*result == *self)]
     pub fn to_ref<'a>(self) -> &'a T {
         unreachable!("ghost only")
     }
@@ -67,7 +51,7 @@ impl<T> GhostShared<T> {
 
 impl<T> AsRef<T> for GhostShared<T> {
     #[check(ghost)]
-    #[ensures(*result == self.val())]
+    #[ensures(*result == **self)]
     fn as_ref(&self) -> &T {
         self.to_ref()
     }
@@ -86,8 +70,16 @@ impl<T> Deref for GhostShared<T> {
     type Target = T;
 
     #[check(ghost)]
-    #[ensures(*result == self.val())]
+    #[logic_alias(self.deref_logic())]
     fn deref(&self) -> &T {
         self.to_ref()
+    }
+}
+
+impl<T> DerefLogic for GhostShared<T> {
+    #[logic(opaque)]
+    #[builtin("identity")]
+    fn deref_logic(&self) -> &T {
+        dead
     }
 }
