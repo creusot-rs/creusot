@@ -25,7 +25,7 @@ use rustc_middle::{
     },
 };
 use rustc_span::{Span, Symbol};
-use rustc_type_ir::{ConstKind, inherent::AdtDef as _};
+use rustc_type_ir::{AliasTerm, ConstKind, inherent::AdtDef as _};
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub(crate) struct ExternSpec<'tcx> {
@@ -43,11 +43,32 @@ impl<'tcx> ExternSpec<'tcx> {
         &self,
         tcx: TyCtxt<'tcx>,
         sub: GenericArgsRef<'tcx>,
-    ) -> Vec<Predicate<'tcx>> {
-        // skip normalization: the instantiation should just be a renaming
-        EarlyBinder::bind(tcx, self.additional_predicates.clone())
-            .instantiate(tcx, sub)
-            .skip_normalization()
+    ) -> impl Iterator<Item = Predicate<'tcx>> {
+        use rustc_type_ir::{ClauseKind, PredicateKind, ProjectionClause};
+        self.additional_predicates.iter().cloned().filter_map(move |p| {
+            let p = EarlyBinder::bind(tcx, p).instantiate(tcx, sub).skip_normalization();
+            match p.kind().skip_binder() {
+                // Eliminate trivial equalities `T::Proj = T::Proj`
+                PredicateKind::Clause(ClauseKind::Projection(ProjectionClause {
+                    projection_term,
+                    term,
+                })) if eq_alias(projection_term, term) => None,
+                _ => Some(p),
+            }
+        })
+    }
+}
+
+fn eq_alias(lhs: AliasTerm<TyCtxt>, rhs: ty::Term) -> bool {
+    use rustc_type_ir::{AliasTermKind, AliasTyKind, TermKind, TyKind};
+    if let TermKind::Ty(rhs) = rhs.kind()
+        && let &TyKind::Alias(_, rhs) = rhs.kind()
+        && let AliasTyKind::Projection { def_id: rhs } = rhs.kind
+        && let AliasTermKind::ProjectionTy { def_id: lhs } = lhs.kind
+    {
+        lhs == rhs
+    } else {
+        false
     }
 }
 
