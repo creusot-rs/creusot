@@ -146,7 +146,7 @@ impl<'tcx, N: Namer<'tcx>> VCGen<'_, 'tcx, N> {
                     TyKind::Adt(..) if t.ty.is_integral() => {
                         self.build_wp(arg, &|arg| {
                             let discr = Exp::Var(self.names.item(
-                                self.ctx.intrinsic2did[&Intrinsic::DiscriminantValueLogic],
+                                Intrinsic::DiscriminantValueLogic.get(self.ctx),
                                 self.ctx.mk_args(&[GenericArg::from(argty)]),
                             ))
                             .app([arg]);
@@ -159,17 +159,6 @@ impl<'tcx, N: Namer<'tcx>> VCGen<'_, 'tcx, N> {
                     }
                     _ => unsupported_cast(self.ctx, t.span, argty, t.ty),
             }},
-            TermKind::Discriminant { arg } => {
-                let argty = arg.ty;
-                self.build_wp(arg, &|arg| {
-                    let discr = Exp::Var(self.names.item(
-                        self.ctx.intrinsic2did[&Intrinsic::DiscriminantValueLogic],
-                        self.ctx.mk_args(&[GenericArg::from(argty)]),
-                    ))
-                    .app([arg]);
-                    k(discr)
-                })
-            },
             TermKind::Coerce { arg } => self.build_wp(arg, k),
             // Items are just global names so
             // VC(i, Q) = Q(i)

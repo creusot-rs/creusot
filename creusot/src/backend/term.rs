@@ -214,7 +214,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     }
                     TyKind::Adt(..) if term.ty.is_integral() => {
                         let discr = Exp::Var(self.names.item(
-                            self.ctx.intrinsic2did[&Intrinsic::DiscriminantValueLogic],
+                            Intrinsic::DiscriminantValueLogic.get(self.ctx),
                             self.ctx.mk_args(&[GenericArg::from(argty)]),
                         ))
                         .app([arg]);
@@ -230,14 +230,6 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                     }
                     _ => unsupported_cast(self.ctx, term.span, argty, term.ty),
                 }
-            }
-            TermKind::Discriminant { arg } => {
-                let argty = arg.ty;
-                Exp::Var(self.names.item(
-                    self.ctx.intrinsic2did[&Intrinsic::DiscriminantValueLogic],
-                    self.ctx.mk_args(&[GenericArg::from(argty)]),
-                ))
-                .app([self.lower_term(arg)])
             }
             TermKind::Coerce { arg } => self.lower_term(arg),
             &TermKind::ConstItem { id, subst } => Exp::Var(self.names.item(id, subst)),

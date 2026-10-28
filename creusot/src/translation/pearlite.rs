@@ -150,9 +150,6 @@ pub enum TermKind<'tcx> {
     Cast {
         arg: Box<Term<'tcx>>,
     },
-    Discriminant {
-        arg: Box<Term<'tcx>>,
-    },
     Coerce {
         arg: Box<Term<'tcx>>,
     },
@@ -744,7 +741,6 @@ impl<'tcx> Term<'tcx> {
             | TermKind::ConstItem { .. } => {}
             TermKind::SeqLiteral(fields) => fields.iter_mut().for_each(|a| a.subst_(bound, subst)),
             TermKind::Cast { arg } => arg.subst_(bound, subst),
-            TermKind::Discriminant { arg } => arg.subst_(bound, subst),
             TermKind::Coerce { arg } => arg.subst_(bound, subst),
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.subst_(bound, subst);
@@ -838,7 +834,6 @@ impl<'tcx> Term<'tcx> {
                 fields.iter().for_each(|a| a.free_vars_inner(bound, free))
             }
             TermKind::Cast { arg } => arg.free_vars_inner(bound, free),
-            TermKind::Discriminant { arg } => arg.free_vars_inner(bound, free),
             TermKind::Coerce { arg } => arg.free_vars_inner(bound, free),
             TermKind::Binary { lhs, rhs, .. } => {
                 lhs.free_vars_inner(bound, free);

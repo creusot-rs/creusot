@@ -21,8 +21,8 @@ use crate::{
     translation::{
         constant::try_const_to_term,
         pearlite::{
-            BinOp, PIdent, Pattern, QuantKind, Substable as _, Term, TermKind, TermWithTriggers,
-            Trigger, normalize,
+            BinOp, Literal, PIdent, Pattern, QuantKind, Substable as _, Term, TermKind,
+            TermWithTriggers, Trigger, normalize,
         },
         specification::Condition,
     },
@@ -314,10 +314,6 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     fn expand_logic(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Vec<Decl> {
         let dep = Dependency::Item(def_id, subst);
         let ctx = self.ctx;
-        if let Intrinsic::DiscriminantValueLogic = ctx.intrinsic(def_id) {
-            let GenericArgKind::Type(source) = subst[0].kind() else { panic!() };
-            return self.expand_discriminant(source);
-        }
 
         let mut add_edge = |axiom| self.dep_graph.add_edge(dep, Strength::Weak, axiom);
         match ctx.intrinsic(def_id) {
@@ -699,98 +695,6 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             args: [(Ident::fresh_local("x"), translate_ty(ctx, &names, DUMMY_SP, source))].into(),
         };
         vec![Decl::LogicDecl(LogicDecl { kind: Some(DeclKind::Function), sig })]
-    }
-
-    fn expand_discriminant(&mut self, source: Ty<'tcx>) -> Vec<Decl> {
-        let dep = Dependency::Item(
-            self.ctx.intrinsic2did[&Intrinsic::DiscriminantValueLogic],
-            self.ctx.mk_args(&[source.into()]),
-        );
-        let ctx = self.ctx;
-        let typing_env = self.typing_env;
-        let names = self.namer(dep);
-        let name = names.dependency(dep).ident();
-        let arg = (Ident::fresh_local("x"), translate_ty(ctx, &names, DUMMY_SP, source));
-        let discr_ty = translate_ty(
-            ctx,
-            &names,
-            DUMMY_SP,
-            ctx.normalize_erasing_regions(
-                typing_env,
-                ty::Unnormalized::new(source.discriminant_ty(ctx.tcx)),
-            ),
-        );
-        let sig = Signature {
-            name,
-            attrs: vec![],
-            retty: Some(discr_ty.clone()),
-            args: [arg.clone()].into(),
-        };
-
-        match *source.kind() {
-            TyKind::Adt(def, args) if def.is_enum() => {
-                let branches =
-                    def.variants().iter_enumerated().map(|(variant_idx, variant_def)| {
-                        let discr = source.discriminant_for_variant(ctx.tcx, variant_idx).unwrap();
-                        let fields = variant_def.fields.iter_enumerated().map(|(f, field_def)| {
-                            let ty = ctx
-                                .normalize_erasing_regions(typing_env, field_def.ty(ctx.tcx, args));
-
-                            (f, Pattern::wildcard(ty))
-                        });
-                        let pat = lower_pat(
-                            ctx,
-                            &names,
-                            &Pattern::constructor(variant_idx, fields, source),
-                        );
-                        let discr_value = match *discr.ty.kind() {
-                            TyKind::Int(ity) => {
-                                let size = Size::from_bits(
-                                    ity.normalize(ctx.sess.target.pointer_width)
-                                        .bit_width()
-                                        .unwrap(),
-                                );
-                                let bits = size.sign_extend(discr.val);
-                                bits.to_string()
-                            }
-                            _ => discr.val.to_string(),
-                        };
-                        let arm =
-                            Exp::Const(Constant::IntDigits10(discr_value, Some(discr_ty.clone())));
-                        (pat, arm)
-                    });
-                let defn = LogicDefn { sig, body: Exp::match_(Exp::var(arg.0), branches) };
-                Vec::from_iter([Decl::LogicDefn(defn)])
-            }
-
-            TyKind::Bool
-            | TyKind::Char
-            | TyKind::Adt { .. }
-            | TyKind::Int { .. }
-            | TyKind::Uint { .. }
-            | TyKind::Float { .. }
-            | TyKind::Foreign { .. }
-            | TyKind::Str { .. }
-            | TyKind::Array { .. }
-            | TyKind::Pat { .. }
-            | TyKind::Slice { .. }
-            | TyKind::RawPtr { .. }
-            | TyKind::Ref { .. }
-            | TyKind::FnDef { .. }
-            | TyKind::FnPtr { .. }
-            | TyKind::UnsafeBinder { .. }
-            | TyKind::Dynamic { .. }
-            | TyKind::Closure { .. }
-            | TyKind::Never { .. }
-            | TyKind::Tuple { .. } => Vec::from_iter([Decl::LogicDefn(LogicDefn {
-                sig,
-                // https://doc.rust-lang.org/std/intrinsics/fn.discriminant_value.html
-                body: Exp::Const(Constant::IntDigits10("0".to_string(), Some(discr_ty.clone()))),
-            })]),
-            _ => {
-                Vec::from_iter([Decl::LogicDecl(LogicDecl { sig, kind: Some(DeclKind::Function) })])
-            }
-        }
     }
 
     /// # Parameters
@@ -1364,18 +1268,67 @@ fn discriminant_value_logic_term<'tcx>(
     typing_env: TypingEnv<'tcx>,
     inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
-    let &[(arg, span, ty)] = inputs else { panic!() };
+    let &[(arg, span, source)] = inputs else { panic!() };
 
-    Some(Term {
-        ty: ctx.normalize_erasing_regions(
-            typing_env,
-            ty::Unnormalized::new(ty.discriminant_ty(ctx.tcx)),
-        ),
-        kind: TermKind::Discriminant {
-            arg: Box::new(Term { ty, kind: TermKind::Var(arg), span: span }),
-        },
-        span: span,
-    })
+    let discr_ty = ctx.normalize_erasing_regions(
+        typing_env,
+        ty::Unnormalized::new(source.discriminant_ty(ctx.tcx)),
+    );
+
+    let mk_discr_value = |bits: u128| {
+        let discr_value = match *discr_ty.kind() {
+            TyKind::Int(ity) => {
+                let size = Size::from_bits(
+                    ity.normalize(ctx.sess.target.pointer_width).bit_width().unwrap(),
+                );
+                Literal::MachSigned(size.sign_extend(bits), ity)
+            }
+            TyKind::Uint(uty) => Literal::MachUnsigned(bits, uty),
+            _ => ctx.dcx().span_bug(span, "unexpected discriminant type"),
+        };
+        let kind = TermKind::Lit(discr_value);
+        Term { ty: discr_ty, kind, span: DUMMY_SP }
+    };
+
+    match *source.kind() {
+        TyKind::Adt(def, args) if def.is_enum() => {
+            let branches = def.variants().iter_enumerated().map(|(variant_idx, variant_def)| {
+                let discr = source.discriminant_for_variant(ctx.tcx, variant_idx).unwrap();
+                let fields = variant_def.fields.iter_enumerated().map(|(f, field_def)| {
+                    let ty = ctx.normalize_erasing_regions(typing_env, field_def.ty(ctx.tcx, args));
+
+                    (f, Pattern::wildcard(ty))
+                });
+                let pat = Pattern::constructor(variant_idx, fields, source);
+                (pat, mk_discr_value(discr.val))
+            });
+            Some(Term::match_(Term { ty: source, kind: TermKind::Var(arg), span }, branches))
+        }
+
+        // returns `0` if `T` has no discriminant
+        // https://doc.rust-lang.org/std/intrinsics/fn.discriminant_value.html
+        TyKind::Bool
+        | TyKind::Char
+        | TyKind::Adt { .. }
+        | TyKind::Int { .. }
+        | TyKind::Uint { .. }
+        | TyKind::Float { .. }
+        | TyKind::Foreign { .. }
+        | TyKind::Str { .. }
+        | TyKind::Array { .. }
+        | TyKind::Pat { .. }
+        | TyKind::Slice { .. }
+        | TyKind::RawPtr { .. }
+        | TyKind::Ref { .. }
+        | TyKind::FnDef { .. }
+        | TyKind::FnPtr { .. }
+        | TyKind::UnsafeBinder { .. }
+        | TyKind::Dynamic { .. }
+        | TyKind::Closure { .. }
+        | TyKind::Never { .. }
+        | TyKind::Tuple { .. } => Some(mk_discr_value(0)),
+        _ => None,
+    }
 }
 
 fn size_of_array<'tcx>(

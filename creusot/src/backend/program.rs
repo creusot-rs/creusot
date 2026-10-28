@@ -942,7 +942,7 @@ impl<'tcx> RValue<'tcx> {
             RValue::Discriminant(pl) => {
                 let pl_ty = pl.ty(lower.ctx.tcx, lower.locals);
                 let discr = lower.names.item(
-                    lower.ctx.intrinsic2did[&Intrinsic::DiscriminantValueLogic],
+                    Intrinsic::DiscriminantValueLogic.get(lower.ctx),
                     lower.ctx.mk_args(&[pl_ty.into()]),
                 );
                 Exp::Call(
