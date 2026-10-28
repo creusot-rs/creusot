@@ -3,13 +3,19 @@ use crate::{
     SourceFileIndex, TAG_FULL_SPAN, TAG_PARTIAL_SPAN,
 };
 use rustc_data_structures::fx::FxHashMap;
-use rustc_hir::def_id::{CrateNum, DefId, DefIndex};
+use rustc_hir::def_id::{CrateNum, DefId, DefIndex, LocalDefId};
 use rustc_middle::ty::{self, PredicateKind, Ty, TyCtxt, codec::TyEncoder};
 use rustc_serialize::{
     Encodable, Encoder,
     opaque::{FileEncoder, IntEncodedWithFixedSize},
 };
-use rustc_span::{ExpnId, SourceFile, Span, Symbol, SyntaxContext, hygiene::HygieneEncodeContext};
+use rustc_span::{
+    ExpnId, LocalExpnId, SourceFile, Span, Symbol, SyntaxContext,
+    hygiene::{
+        HygieneEncodeContext, HygieneRemapper as _, HygieneRemappingResults, LocalExpnIdRemapper,
+        SyntaxContextRemapper,
+    },
+};
 use std::{
     cell::RefCell,
     collections::hash_map::Entry,
@@ -27,6 +33,8 @@ pub struct MetadataEncoder<'a, 'tcx> {
     file_to_file_index: FxHashMap<*const SourceFile, SourceFileIndex>,
     hygiene_context: Rc<RefCell<HygieneEncodeContext>>,
     symbol_index_table: FxHashMap<u32, usize>,
+    syntax_context_remapping: HygieneRemappingResults<SyntaxContext, u32>,
+    local_expn_id_remapping: HygieneRemappingResults<LocalExpnId, u32>,
 }
 
 impl<'a, 'tcx> MetadataEncoder<'a, 'tcx> {
@@ -131,13 +139,19 @@ impl SpanEncoder for MetadataEncoder<'_, '_> {
         });
     }
     fn encode_expn_id(&mut self, eid: ExpnId) {
-        self.hygiene_context.borrow_mut().schedule_expn_data_for_encoding(eid);
+        if eid.krate == rustc_span::def_id::LOCAL_CRATE {
+            self.hygiene_context.borrow_mut().schedule_expn_data_for_encoding(eid);
+        }
         eid.krate.encode(self);
-        eid.local_id.as_u32().encode(self);
+        let raw_expn_index = match eid.as_local() {
+            Some(local_expn) => self.local_expn_id_remapping.map_id(local_expn),
+            None => eid.local_id.as_u32(),
+        };
+        raw_expn_index.encode(self);
     }
     fn encode_syntax_context(&mut self, ctx: SyntaxContext) {
         self.hygiene_context.borrow_mut().enqueue_syntax_context_for_encoding(ctx);
-        self.emit_u32(ctx.as_u32());
+        self.emit_u32(self.syntax_context_remapping.map_id(ctx));
     }
     fn encode_crate_num(&mut self, cnum: CrateNum) {
         self.tcx.stable_crate_id(cnum).encode(self)
@@ -146,7 +160,9 @@ impl SpanEncoder for MetadataEncoder<'_, '_> {
         panic!("encoding `DefIndex` without context");
     }
     fn encode_def_id(&mut self, id: DefId) {
-        self.tcx.def_path_hash(id).encode(self)
+        self.emit_u8(255);
+        self.tcx.def_path_hash(id).encode(self);
+        self.emit_u8(255);
     }
 }
 
@@ -222,6 +238,13 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
     };
 
     let hygiene_context = HygieneEncodeContext::default();
+    let (syntax_context_remapping, local_expn_id_remapping) =
+        tcx.with_stable_hashing_context(|mut ctx| {
+            (
+                SyntaxContextRemapper::with(|r| r.remapping_results(&mut ctx)),
+                LocalExpnIdRemapper::with(|r| r.remapping_results(&mut ctx)),
+            )
+        });
 
     let mut encoder = MetadataEncoder {
         tcx,
@@ -231,6 +254,8 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
         hygiene_context: Rc::new(RefCell::new(hygiene_context)),
         symbol_index_table: Default::default(),
         file_to_file_index,
+        syntax_context_remapping,
+        local_expn_id_remapping,
     };
     x.encode(&mut encoder);
 
@@ -242,27 +267,27 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
 
     HygieneEncodeContext::encode(
         &encoder.hygiene_context.clone(),
-        &mut encoder,
-        |encoder, index, ctxt_data| {
+        &mut (&mut encoder, &mut syntax_contexts, &mut expn_data),
+        |(encoder, syntax_contexts, _), index, ctxt_data| {
+            let context = encoder.syntax_context_remapping.map_id(index);
             let pos = AbsoluteBytePos::new(encoder.position());
-            ctxt_data.encode(encoder);
-            syntax_contexts.insert(index.as_u32(), pos);
+            ctxt_data.encode(*encoder);
+            syntax_contexts.insert(context, pos);
         },
-        |encoder, expn_id, data, hash| {
-            let pos = AbsoluteBytePos::new(encoder.position());
-            data.encode(encoder);
-            hash.encode(encoder);
-            expn_data.insert((tcx.stable_crate_id(expn_id.krate), expn_id.local_id.as_u32()), pos);
+        |(encoder, _, expn_data), expn_id, data, hash| {
+            if let Some(expn_id) = expn_id.as_local() {
+                let expn_index = encoder.local_expn_id_remapping.map_id(expn_id);
+                let pos = AbsoluteBytePos::new(encoder.position());
+                data.encode(*encoder);
+                hash.encode(*encoder);
+                expn_data.insert(expn_index, pos);
+            }
         },
     );
 
     // Encode the file footer.
     let footer_pos = encoder.position() as u64;
-    let footer = Footer {
-        file_index_to_stable_id,
-        syntax_contexts,
-        expn_data: super::to_orphan_map(expn_data),
-    };
+    let footer = Footer { file_index_to_stable_id, syntax_contexts, expn_data };
     footer.encode(&mut encoder);
 
     // Encode the position of the footer as the last 8 bytes of the

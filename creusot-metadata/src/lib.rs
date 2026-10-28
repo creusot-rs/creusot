@@ -4,6 +4,7 @@
 extern crate rustc_data_structures;
 extern crate rustc_driver;
 extern crate rustc_hir;
+extern crate rustc_index;
 extern crate rustc_metadata;
 extern crate rustc_middle;
 extern crate rustc_serialize;
@@ -29,7 +30,7 @@ pub use encoder::encode_metadata;
 use rustc_data_structures::fx::FxHashMap;
 use rustc_middle::ty::TyCtxt;
 use rustc_serialize::ContextOrd;
-use rustc_span::{SourceFile, StableSourceFileId, def_id::StableCrateId};
+use rustc_span::{SourceFile, StableSourceFileId, def_id::StableCrateId, hygiene::ExpnIndex};
 use std::hash::Hash;
 
 #[derive(Encodable, Decodable, Eq, PartialEq, Hash, Clone, Copy, Debug)]
@@ -73,11 +74,11 @@ impl EncodedSourceFileId {
 struct Footer {
     file_index_to_stable_id: FxHashMap<Orphan<SourceFileIndex>, EncodedSourceFileId>,
     syntax_contexts: FxHashMap<u32, AbsoluteBytePos>,
-    expn_data: FxHashMap<Orphan<(StableCrateId, u32)>, AbsoluteBytePos>,
+    expn_data: FxHashMap<u32, AbsoluteBytePos>,
 }
 
 #[derive(Decodable, Encodable, PartialEq, Eq, Hash)]
-#[repr(C)]
+#[repr(transparent)]
 struct Orphan<T>(T);
 
 fn from_orphan_map<K, V>(x: FxHashMap<Orphan<K>, V>) -> FxHashMap<K, V> {
