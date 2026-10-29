@@ -13,8 +13,8 @@ use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{
-    Attribute, Block, Expr, ExprBlock, Ident, ImplItem, Item, Pat, Path, ReturnType, Stmt, Token,
-    TraitItem, Type, parenthesized,
+    Attribute, Block, Expr, Ident, ImplItem, Item, Pat, Path, ReturnType, Stmt, Token, TraitItem,
+    Type, parenthesized,
     parse::{self, Parse},
     parse_macro_input, parse_quote,
     punctuated::Punctuated,
@@ -105,7 +105,7 @@ fn modify_visibility(attr: TS1, tokens: TS1, reveal: bool) -> TS1 {
                 let syn::Generics { lt_token, params, gt_token, where_clause } = &item.generics;
                 let ty = &item.self_ty;
 
-                if let Some((_, trait_, _)) = &item.trait_ {
+                if let Some(_) = &item.trait_ {
                     quote! {
                         #[creusot::no_translate]
                         #[creusot::item=#name_tag]
