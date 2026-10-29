@@ -349,6 +349,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         );
         // The other case are impossible, because that would mean we are not guaranteed to have an instance
 
+        let concealed = !ctx.revealed_from(self.namer.source_id().expect_local(), def_id, subst);
         let opaque = matches!(trait_resol, TraitResolved::UnknownFound | TraitResolved::BuiltinDyn)
             || !ctx.is_transparent_from(def_id, self.namer.source_id());
 
@@ -360,9 +361,9 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             Some(_) if sig.why_sig.args.is_empty() => DeclKind::Constant,
             _ => DeclKind::Function,
         };
-        let mut decls = if !opaque
-            && let Some(term) = term(ctx, &names, def_id, subst, &pre_sig.inputs)
-        {
+        let mut decls = if concealed {
+            vec![Decl::LogicDecl(LogicDecl { kind: Some(kind), sig: sig.why_sig })]
+        } else if !opaque && let Some(term) = term(ctx, &names, def_id, subst, &pre_sig.inputs) {
             lower_logical_defn(
                 ctx,
                 &names,
@@ -485,6 +486,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     fn expand_constant(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Vec<Decl> {
         let dep = Dependency::Item(def_id, subst);
 
+        let source_id = self.namer.source_id();
         let typing_env = self.typing_env;
         let ctx = self.ctx;
         let trait_resol = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst);
@@ -505,11 +507,14 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         sig_add_type_invariant_spec(ctx, typing_env, names.source_id(), &mut pre_sig, def_id);
         let sig = lower_logic_sig(ctx, &names, name, &pre_sig, def_id);
 
+        let concealed = !ctx.revealed_from(source_id.expect_local(), def_id, subst);
         let opaque = is_self
             || pre_sig.contract.has_user_contract()
             || pre_sig.contract.const_param()
             || matches!(trait_resol, TraitResolved::UnknownFound);
-        if opaque {
+        if concealed {
+            vec![Decl::LogicDecl(LogicDecl { kind: Some(DeclKind::Constant), sig: sig.why_sig })]
+        } else if opaque {
             val(sig, DeclKind::Constant)
         } else if let Some(term) =
             try_const_to_term(def_id, subst, ctx, typing_env, names.source_id())
@@ -1396,6 +1401,9 @@ fn term<'tcx>(
     subst: GenericArgsRef<'tcx>,
     inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
+    if !ctx.revealed_from(names.source_id().expect_local(), def_id, subst) {
+        return None;
+    }
     let typing_env = names.typing_env();
     match ctx.intrinsic(def_id) {
         Intrinsic::Resolve => {

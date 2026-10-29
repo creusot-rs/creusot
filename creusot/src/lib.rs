@@ -41,6 +41,7 @@ pub mod callbacks;
 mod analysis;
 mod backend;
 mod cleanup_spec_closures;
+mod conceal;
 mod contracts_items;
 mod ctx;
 mod extended_location;

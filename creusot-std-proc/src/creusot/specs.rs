@@ -13,13 +13,141 @@ use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{
-    Attribute, Block, Expr, Ident, Item, Pat, Path, ReturnType, Stmt, Token, Type, parenthesized,
+    Attribute, Block, Expr, ExprBlock, Ident, ImplItem, Item, Pat, Path, ReturnType, Stmt, Token,
+    TraitItem, Type, parenthesized,
     parse::{self, Parse},
     parse_macro_input, parse_quote,
     punctuated::Punctuated,
     spanned::Spanned as _,
     token::{self, Comma},
 };
+
+fn modify_visibility(attr: TS1, tokens: TS1, reveal: bool) -> TS1 {
+    let attr = TokenStream::from(attr);
+
+    let prefix = if reveal { "reveal" } else { "conceal" };
+    let name =
+        crate::creusot::generate_unique_ident(prefix, Span::from(proc_macro::Span::def_site()));
+    let name_tag = name.to_string();
+
+    if let Ok(item) = syn::parse::<ContractSubject>(tokens.clone()) {
+        use ContractSubject::*;
+        let reveal_tokens = quote! {
+            #[allow(let_underscore_drop)]
+            let _ =
+                #[creusot::no_translate]
+                #[creusot::item=#name_tag]
+                #[creusot::spec]
+                || { let _ = #attr; }
+            ;
+        };
+
+        match item {
+            FnOrMethod(mut fn_or_meth) => {
+                let ty_result = match fn_or_meth.sig.output {
+                    ReturnType::Default => parse_quote! { () },
+                    ReturnType::Type(_, ref ty) => (**ty).clone(),
+                };
+                let attrs = std::mem::take(&mut fn_or_meth.attrs);
+
+                let mut companion = TokenStream::new();
+                if let Some(b) = fn_or_meth.body.as_mut() {
+                    b.stmts.insert(0, Stmt::Item(Item::Verbatim(reveal_tokens)));
+                } else {
+                    assert!(fn_or_meth.is_trait_signature());
+                    let mut sig = fn_or_meth.sig.clone();
+                    sig.ident = name.clone();
+                    // Make sure the spec method has a prototype which is very similar to the original one,
+                    // To guarantee that they have the same ParamEnv
+                    // (in particular, they have the same early/late bound variables)
+                    sig.output = parse_quote! { -> ::core::marker::PhantomData<#ty_result> };
+
+                    companion = quote! {
+                        #[creusot::no_translate]
+                        #[doc(hidden)]
+                        #sig {
+                            #reveal_tokens
+                            ::core::marker::PhantomData
+                        }
+                    };
+                }
+
+                TS1::from(quote! {
+                    #companion
+
+                    #[creusot::clause::reveal=#name_tag]
+                    #(#attrs)*
+                    #fn_or_meth
+                })
+            }
+            Const(item) => {
+                syn::Error::new(item.span(), format!("Unexpected `{prefix}` on const item"))
+                    .to_compile_error()
+                    .into()
+            }
+            Closure(clos) => {
+                syn::Error::new(clos.span(), format!("Unexpected `{prefix}` on closure"))
+                    .to_compile_error()
+                    .into()
+            }
+        }
+    } else {
+        let assoc_tokens = quote! {
+            #[creusot::no_translate]
+            #[creusot::item=#name_tag]
+            #[creusot::spec]
+            const #name: () = { let _ = #attr; };
+        };
+
+        match parse_macro_input!(tokens as Item) {
+            Item::Impl(mut item) => {
+                item.attrs.insert(0, parse_quote! { #[creusot::clause::reveal=#name_tag] });
+                let syn::Generics { lt_token, params, gt_token, where_clause } = &item.generics;
+                let ty = &item.self_ty;
+
+                if let Some((_, trait_, _)) = &item.trait_ {
+                    quote! {
+                        #[creusot::no_translate]
+                        #[creusot::item=#name_tag]
+                        #[creusot::spec]
+                        fn #name #lt_token #params #gt_token(
+                            _: ::core::marker::PhantomData<#ty>,
+                        ) #where_clause {
+                            let _ = #attr;
+                        }
+                        #item
+                    }
+                    .into()
+                } else {
+                    item.items.push(ImplItem::Verbatim(assoc_tokens));
+                    quote! {#item}.into()
+                }
+            }
+            Item::Trait(mut item) => {
+                item.attrs.insert(0, parse_quote! { #[creusot::clause::reveal=#name_tag] });
+                item.items.push(TraitItem::Verbatim(assoc_tokens));
+                quote! {#item}.into()
+            }
+            Item::Mod(mut item) => {
+                item.attrs.insert(0, parse_quote! { #[creusot::clause::reveal=#name_tag] });
+                quote! {
+                    #assoc_tokens
+                    #item
+                }
+                .into()
+            }
+            item => quote! {#item}.into(),
+        }
+    }
+}
+
+pub fn conceal(attr: TS1, tokens: TS1) -> TS1 {
+    modify_visibility(attr, tokens, false)
+}
+
+pub fn reveal(attr: TS1, tokens: TS1) -> TS1 {
+    modify_visibility(attr, tokens, true)
+}
 
 pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
     const REQUIRES_LEN: usize = "#[requires(".len();
