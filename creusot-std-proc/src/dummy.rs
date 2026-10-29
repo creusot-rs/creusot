@@ -5,6 +5,16 @@ use syn::{Block, parse_macro_input, visit_mut::VisitMut};
 
 // #[proc_macro]
 
+pub fn conceal(attr: TS1, tokens: TS1) -> TS1 {
+    let _ = attr;
+    tokens
+}
+
+pub fn reveal(attr: TS1, tokens: TS1) -> TS1 {
+    let _ = attr;
+    tokens
+}
+
 pub fn pearlite(_: TS1) -> TS1 {
     TS1::new()
 }

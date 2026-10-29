@@ -67,6 +67,8 @@ proc_macro_attributes! {
     constant
     logic_alias
     prophetic_alias
+    conceal
+    reveal
 }
 
 macro_rules! proc_macros {
