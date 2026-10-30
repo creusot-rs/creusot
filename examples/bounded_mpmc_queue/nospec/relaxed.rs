@@ -1,9 +1,10 @@
+// RECURSION_LIMIT 256
+
 //! This implementation is an adaption from:
 //! https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
 
 #![feature(sync_unsafe_cell)]
 #![allow(creusot::contractless_external_function)]
-#![recursion_limit = "256"]
 
 use core::mem::{MaybeUninit, replace};
 use creusot_std::{
