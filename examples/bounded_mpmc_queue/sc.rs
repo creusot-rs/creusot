@@ -1,14 +1,15 @@
-//! This implementation is an adaption from:
-//! https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
+// RECURSION_LIMIT 256
 
-#![recursion_limit = "256"]
+// This implementation is an adaption from:
+// https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
 
-use core::mem::MaybeUninit;
+use core::{mem::MaybeUninit, sync::atomic::Ordering};
+
 use creusot_std::{
     cell::PCell,
     ghost::{
         FnGhost,
-        invariant::{AtomicInvariant, Protocol, Tokens, declare_namespace},
+        invariant::{AtomicInvariantSC, Protocol, Tokens, declare_namespace},
         perm::Perm,
     },
     logic::Id,
@@ -525,10 +526,10 @@ pub struct Queue<T> {
     cells: Vec<QueueCell<T>>,
     head: AtomicUsize,
     tail: AtomicUsize,
-    inv: Ghost<AtomicInvariant<QueueInv<T>>>,
+    inv: Ghost<AtomicInvariantSC<QueueInv<T>>>,
 }
 
-struct QueueCell<T> {
+pub struct QueueCell<T> {
     item: PCell<MaybeUninit<T>>,
     status: AtomicUsize,
 }
@@ -603,10 +604,12 @@ impl<T> Queue<T> {
     #[ensures(result.1@ == Seq::empty())]
     #[ensures(result.1.budget() == usize::MAX@ - 2 * length@ + 1)]
     pub fn new(length: usize) -> (Self, Ghost<PermQueue<T>>) {
-        let tokens_auth: Ghost<tokens::Authority<T>> = tokens::Authority::alloc();
-        let mut statuses_mono_auth: Ghost<Seq<statuses::Authority>> = Seq::new();
-        let mut cells_own: Ghost<Seq<Option<PermPCell<T>>>> = Seq::new();
-        let mut statuses_own: Ghost<Seq<Perm<AtomicUsize>>> = Seq::new();
+        let tokens_auth: Ghost<tokens::Authority<T>> =
+            ghost!(tokens::Authority::alloc().into_inner());
+        let mut statuses_mono_auth: Ghost<Seq<statuses::Authority>> =
+            ghost!(Seq::new().into_inner());
+        let mut cells_own: Ghost<Seq<Option<PermPCell<T>>>> = ghost!(Seq::new().into_inner());
+        let mut statuses_own: Ghost<Seq<Perm<AtomicUsize>>> = ghost!(Seq::new().into_inner());
         let mut cells: Vec<QueueCell<T>> = Vec::new();
 
         #[invariant(cells@.len() == produced.len())]
@@ -658,21 +661,24 @@ impl<T> Queue<T> {
         )
         .split();
 
-        let inv = AtomicInvariant::new(
-            ghost!(QueueInv {
-                head_own: head_own.into_inner(),
-                tail_own: tail_own.into_inner(),
-                cells_own: cells_own.into_inner(),
-                statuses_own: statuses_own.into_inner(),
+        let inv = ghost!(
+            AtomicInvariantSC::new(
+                ghost!(QueueInv {
+                    head_own: head_own.into_inner(),
+                    tail_own: tail_own.into_inner(),
+                    cells_own: cells_own.into_inner(),
+                    statuses_own: statuses_own.into_inner(),
 
-                values_auth: values_auth.into_inner(),
-                statuses_mono_auth: statuses_mono_auth.into_inner(),
-                tokens_auth: tokens_auth.into_inner(),
+                    values_auth: values_auth.into_inner(),
+                    statuses_mono_auth: statuses_mono_auth.into_inner(),
+                    tokens_auth: tokens_auth.into_inner(),
 
-                cells: snapshot!(cells@),
-                statuses_mono_auth_wards,
-            }),
-            snapshot!(BOUNDED_MPMC_QUEUE()),
+                    cells: snapshot!(cells@),
+                    statuses_mono_auth_wards,
+                }),
+                snapshot!(BOUNDED_MPMC_QUEUE()),
+            )
+            .into_inner()
         );
 
         let queue = Queue { cells, head, tail, inv };
@@ -753,7 +759,7 @@ impl<T> Queue<T> {
             let cell_own = inv.cells_own[head_mod].take().unwrap();
 
             let token = tokens::TokenW::alloc(
-                Ghost::new(&mut inv.tokens_auth),
+                ghost!(&mut inv.tokens_auth),
                 *head.into_ghost(),
                 item,
             );
@@ -797,7 +803,7 @@ impl<T> Queue<T> {
 
             c.shoot_store(&mut inv.statuses_own[index_mod]);
 
-            tokens::TokenW::discard(token, Ghost::new(&mut inv.tokens_auth));
+            tokens::TokenW::discard(token, ghost!(&mut inv.tokens_auth));
 
             let status = snapshot!(c.val_store()@);
             inv.statuses_mono_auth[index_mod].increase(status);
@@ -825,30 +831,36 @@ impl<T> Queue<T> {
     {
         let mut witness: Ghost<Option<statuses::Fragment>> = ghost!(None);
 
-        let head = self.head.load(ghost! { |c: &Committer<_, _, SeqCst, _>| {
-            self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                c.shoot_load(&inv.head_own);
-            });
-        } });
+        let head = self.head.load(
+            Ordering::SeqCst,
+            ghost! { |c: &Committer<_, _, SeqCst, _>| {
+                self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                    c.shoot_load(&inv.head_own);
+                });
+            } },
+        );
 
         let head_mod = head % self.cells.len();
         proof_assert!(head_mod@ == head@.rem_euclid(self.cells@.len()));
 
         let cell = &self.cells[head_mod];
-        let status = cell.status.load(ghost! { |c: &Committer<_, _, SeqCst, _>| {
-            self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                let old_inv = snapshot!(*inv);
-                let head_mod_ghost: Ghost<Int> = snapshot!(head_mod@).into_ghost();
-                c.shoot_load(&inv.statuses_own[*head_mod_ghost]);
+        let status = cell.status.load(
+            Ordering::SeqCst,
+            ghost! { |c: &Committer<_, _, SeqCst, _>| {
+                self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                    let old_inv = snapshot!(*inv);
+                    let head_mod_ghost: Ghost<Int> = snapshot!(head_mod@).into_ghost();
+                    c.shoot_load(&inv.statuses_own[*head_mod_ghost]);
 
-                let status = snapshot!(c.val_load()@);
-                *witness = Some(inv.statuses_mono_auth[*head_mod_ghost].get_fragment(status));
-                proof_assert!(inv.head() == old_inv.head());
-                proof_assert!(inv.tail() == old_inv.tail());
-                proof_assert!(inv.len() == old_inv.len());
-                proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
-            });
-        } });
+                    let status = snapshot!(c.val_load()@);
+                    *witness = Some(inv.statuses_mono_auth[*head_mod_ghost].get_fragment(status));
+                    proof_assert!(inv.head() == old_inv.head());
+                    proof_assert!(inv.tail() == old_inv.tail());
+                    proof_assert!(inv.len() == old_inv.len());
+                    proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
+                });
+            } },
+        );
 
         if 2 * head != status {
             return false;
@@ -859,14 +871,16 @@ impl<T> Queue<T> {
         let res = self.head.compare_exchange_weak::<_>(
             head,
             head + 1,
+            Ordering::SeqCst,
+            Ordering::SeqCst,
             ghost! { |c: Result<&mut Committer<_, _, SeqCst, SeqCst>, &_>| {
                 let Ok(c) = c else { return; };
 
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                     let item_snap = snapshot!(item);
                     let (t, co) = self.try_enqueue_cas_inv(
-                        Ghost::new(inv),
-                        Ghost::new(c),
+                        ghost!(inv),
+                        ghost!(c),
                         item_snap,
                         f,
                         witness.take().unwrap(),
@@ -882,17 +896,20 @@ impl<T> Queue<T> {
             return false;
         }
 
-        unsafe { cell.item.set(ghost!(cell_own.as_mut().unwrap()), MaybeUninit::new(item)) };
+        unsafe {
+            *cell.item.borrow_mut(ghost!(cell_own.as_mut().unwrap())) = MaybeUninit::new(item)
+        };
 
         cell.status.store(
             2 * head + 1,
+            Ordering::SeqCst,
             ghost! { |c: &mut Committer<_, _, _, SeqCst>| {
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                     Self::try_enqueue_store_inv(
-                        Ghost::new(inv),
-                        Ghost::new(c),
-                        Ghost::new(token.take().unwrap()),
-                        Ghost::new(cell_own.take().unwrap()),
+                        ghost!(inv),
+                        ghost!(c),
+                        ghost!(token.take().unwrap()),
+                        ghost!(cell_own.take().unwrap()),
                     )
                 });
             }},
@@ -974,7 +991,7 @@ impl<T> Queue<T> {
             let cell_own = inv.cells_own[tail_mod].take().unwrap();
 
             let token = tokens::TokenR::alloc(
-                Ghost::new(&mut inv.tokens_auth),
+                ghost!(&mut inv.tokens_auth),
                 *tail_plus_len.into_ghost(),
             );
 
@@ -1015,7 +1032,7 @@ impl<T> Queue<T> {
 
             c.shoot_store(&mut inv.statuses_own[index_mod]);
 
-            tokens::TokenR::discard(token, Ghost::new(&mut inv.tokens_auth));
+            tokens::TokenR::discard(token, ghost!(&mut inv.tokens_auth));
 
             let status = snapshot!(c.val_store()@);
             inv.statuses_mono_auth[index_mod].increase(status);
@@ -1046,30 +1063,36 @@ impl<T> Queue<T> {
     {
         let mut witness: Ghost<Option<statuses::Fragment>> = ghost!(None);
 
-        let tail = self.tail.load(ghost! { |c: &Committer<_, _, SeqCst, _>| {
-            self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                c.shoot_load(&inv.tail_own);
-            });
-        } });
+        let tail = self.tail.load(
+            Ordering::SeqCst,
+            ghost! { |c: &Committer<_, _, SeqCst, _>| {
+                self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                    c.shoot_load(&inv.tail_own);
+                });
+            } },
+        );
 
         let tail_mod = tail % self.cells.len();
         proof_assert!(tail_mod@ == tail@.rem_euclid(self.cells@.len()));
 
         let cell = &self.cells[tail_mod];
-        let status = cell.status.load(ghost! { |c: &Committer<_, _, SeqCst, _>| {
-            self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                let old_inv = snapshot!(*inv);
-                let tail_mod_ghost: Ghost<Int> = snapshot!(tail_mod@).into_ghost();
-                c.shoot_load(&inv.statuses_own[*tail_mod_ghost]);
+        let status = cell.status.load(
+            Ordering::SeqCst,
+            ghost! { |c: &Committer<_, _, SeqCst, _>| {
+                self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                    let old_inv = snapshot!(*inv);
+                    let tail_mod_ghost: Ghost<Int> = snapshot!(tail_mod@).into_ghost();
+                    c.shoot_load(&inv.statuses_own[*tail_mod_ghost]);
 
-                let status = snapshot!(c.val_load()@);
-                *witness = Some(inv.statuses_mono_auth[*tail_mod_ghost].get_fragment(status));
-                proof_assert!(inv.head() == old_inv.head());
-                proof_assert!(inv.tail() == old_inv.tail());
-                proof_assert!(inv.len() == old_inv.len());
-                proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
-            });
-        } });
+                    let status = snapshot!(c.val_load()@);
+                    *witness = Some(inv.statuses_mono_auth[*tail_mod_ghost].get_fragment(status));
+                    proof_assert!(inv.head() == old_inv.head());
+                    proof_assert!(inv.tail() == old_inv.tail());
+                    proof_assert!(inv.len() == old_inv.len());
+                    proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
+                });
+            } },
+        );
 
         if 2 * tail + 1 != status {
             return None;
@@ -1080,13 +1103,15 @@ impl<T> Queue<T> {
         let res = self.tail.compare_exchange_weak::<_>(
             tail,
             tail + 1,
+            Ordering::SeqCst,
+            Ordering::SeqCst,
             ghost! { |c: Result<&mut Committer<_, _, SeqCst, SeqCst>, &_>| {
                 let Ok(c) = c else { return; };
 
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                    let (t, co) = self.try_dequeue_cas_inv(
-                        Ghost::new(inv),
-                        Ghost::new(c),
+                        ghost!(inv),
+                        ghost!(c),
                         f,
                         witness.take().unwrap(),
                     ).into_inner();
@@ -1102,20 +1127,21 @@ impl<T> Queue<T> {
         }
 
         let item = unsafe {
-            cell.item
-                .replace(ghost!(cell_own.as_mut().unwrap()), MaybeUninit::uninit())
-                .assume_init()
+            let cell_perm = ghost! { cell_own.as_mut().unwrap() };
+            let cell_bor = cell.item.borrow_mut(cell_perm);
+            core::mem::replace(cell_bor, MaybeUninit::uninit()).assume_init()
         };
 
         cell.status.store(
             2 * (tail + self.cells.len()),
+            Ordering::SeqCst,
             ghost! { |c: &mut Committer<_, _, _, SeqCst>| {
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                     Self::try_dequeue_store_inv(
-                        Ghost::new(inv),
-                        Ghost::new(c),
-                        Ghost::new(token.take().unwrap()),
-                        Ghost::new(cell_own.take().unwrap()),
+                        ghost!(inv),
+                        ghost!(c),
+                        ghost!(token.take().unwrap()),
+                        ghost!(cell_own.take().unwrap()),
                     )
                 });
             }},
@@ -1125,18 +1151,18 @@ impl<T> Queue<T> {
     }
 }
 
-// /* Checking whether QueueInv is `Send` + `Sync` */
-// #[cfg(creusot)]
-// #[allow(dead_code)]
-// fn test() {
-//     fn check_send<T: Send>() {}
-//     fn check_sync<T: Sync>() {}
+// Checking whether QueueInv is `Send` + `Sync`
+#[cfg(creusot)]
+#[allow(dead_code)]
+fn test() {
+    fn check_send<T: Send>() {}
+    fn check_sync<T: Sync>() {}
 
-//     fn foo<T: Send>() {
-//         check_send::<PermQueue<T>>();
-//         check_sync::<PermQueue<T>>();
+    fn foo<T: Send>() {
+        check_send::<PermQueue<T>>();
+        check_sync::<PermQueue<T>>();
 
-//         check_send::<Queue<T>>();
-//         check_sync::<Queue<T>>();
-//     }
-// }
+        check_send::<Queue<T>>();
+        check_sync::<Queue<T>>();
+    }
+}
