@@ -85,8 +85,9 @@ pub fn message_passing() {
         s.spawn(|tokens: Ghost<Tokens>| {
             unsafe { *data.borrow_mut(ghost!(&mut *data_perm)) = 42 }
 
-            let (mut sync_view, data_perm) = AtView::new(ghost!(data_perm.into_inner())).split();
-            let rel_view = fence_release(sync_view);
+            let (mut view, data_perm) =
+                ghost!(AtView::new(ghost!(data_perm.into_inner())).into_inner()).split();
+            let rel_view = fence_release(Ordering::Release, view);
 
             flag.store(
                 true,
@@ -97,7 +98,7 @@ pub fn message_passing() {
                         swap(&mut inv.write_token, &mut *write_excl);
 
                         inv.data_perm = Some(data_perm.into_inner());
-                        c.shoot_store(&mut inv.flag_perm, &mut sync_view, *rel_view);
+                        c.shoot_store(&mut inv.flag_perm, &mut view, *rel_view);
                     })
                 }},
             );
@@ -121,15 +122,15 @@ pub fn message_passing() {
                         read_excl.valid_op_lemma(&inv.read_token);
                         swap(&mut inv.read_token, &mut *read_excl);
 
-                        let mut sync_view = *SyncView::new();
-                        *acq_view = Some(c.shoot_load(&inv.flag_perm, &mut sync_view));
+                        let mut view = *SyncView::new();
+                        *acq_view = Some(c.shoot_load(&inv.flag_perm, &mut view));
                         *data_perm = Some(inv.data_perm.take().unwrap())
                     })
                 }},
             ) {}
 
-            let sync_view = fence_acquire(ghost!(acq_view.unwrap()));
-            let mut data_perm = ghost!(data_perm.into_inner().unwrap().sync(*sync_view));
+            let view = fence_acquire(Ordering::Acquire, ghost!(acq_view.unwrap()));
+            let mut data_perm = ghost!(data_perm.into_inner().unwrap().sync(*view));
             let res = unsafe { *data.borrow_mut(ghost!(&mut *data_perm)) };
             assert!(res == 42);
         });

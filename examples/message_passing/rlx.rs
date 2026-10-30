@@ -80,7 +80,8 @@ impl Protocol for MPInv {
 }
 
 pub fn message_passing() {
-    let (flag, flag_perm) = AtomicBool::new(false, SyncView::new().borrow_mut());
+    let mut view = ghost!(SyncView::new().into_inner());
+    let (flag, flag_perm) = AtomicBool::new(false, view.borrow_mut());
     let (data, mut data_perm) = PCell::new(0i32);
     let mut write_excl = ghost!(Resource::alloc(snapshot!(Excl(()))).into_inner());
     let mut read_excl = ghost!(Some(Resource::alloc(snapshot!(Excl(()))).into_inner()));
@@ -98,8 +99,8 @@ pub fn message_passing() {
         s.spawn(|tokens: Ghost<Tokens>| {
             unsafe { *data.borrow_mut(ghost!(&mut *data_perm)) = 42 }
 
-            let (mut sync_view, data_perm) = AtView::new(ghost!(data_perm.into_inner())).split();
-            let rel_view = fence_release(sync_view);
+            let (mut view, data_perm) = ghost!(AtView::new(ghost!(data_perm.into_inner())).into_inner()).split();
+            let rel_view = fence_release(Ordering::Release, view);
 
             flag.store(
                 true,
@@ -113,7 +114,7 @@ pub fn message_passing() {
                         }
 
                         inv.state = State::Synchronisation(data_perm.into_inner(), write_excl.into_inner());
-                        c.shoot_store(&mut inv.flag_perm, &mut sync_view, *rel_view);
+                        c.shoot_store(&mut inv.flag_perm, &mut view, *rel_view);
                     })
                 }},
             );
@@ -134,8 +135,8 @@ pub fn message_passing() {
                             return
                         }
 
-                        let mut sync_view = *SyncView::new();
-                        *acq_view = Some(c.shoot_load(&inv.flag_perm, &mut sync_view));
+                        let mut view = *SyncView::new();
+                        *acq_view = Some(c.shoot_load(&inv.flag_perm, &mut view));
 
                         if let State::Readable(_, read_token) = &inv.state {
                             read_excl.as_mut().unwrap().valid_op_lemma(read_token);
@@ -152,8 +153,8 @@ pub fn message_passing() {
                 }},
             ) {}
 
-            let sync_view = fence_acquire(ghost!(acq_view.unwrap()));
-            let mut data_perm = ghost!(data_perm.into_inner().unwrap().sync(*sync_view));
+            let view = fence_acquire(Ordering::Acquire, ghost!(acq_view.unwrap()));
+            let mut data_perm = ghost!(data_perm.into_inner().unwrap().sync(*view));
             let res = unsafe { *data.borrow_mut(ghost!(&mut *data_perm)) };
             assert!(res == 42);
         });

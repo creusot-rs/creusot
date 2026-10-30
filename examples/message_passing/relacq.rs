@@ -83,7 +83,8 @@ impl Protocol for MPInv {
 }
 
 pub fn message_passing() {
-    let (flag, flag_perm) = AtomicBool::new(false, SyncView::new().borrow_mut());
+    let mut view = ghost!(SyncView::new().into_inner());
+    let (flag, flag_perm) = AtomicBool::new(false, view.borrow_mut());
     let (data, mut data_perm) = PCell::new(0i32);
     let mut write_excl = ghost!(Resource::alloc(snapshot!(Excl(()))).into_inner());
     let mut read_excl = ghost!(Some(Resource::alloc(snapshot!(Excl(()))).into_inner()));

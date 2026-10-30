@@ -324,26 +324,35 @@ impl_atomic_int!((i64, AtomicI64), (u64, AtomicU64));
 #[cfg(target_has_atomic = "ptr")]
 impl_atomic_int!((isize, AtomicIsize), (usize, AtomicUsize));
 
+#[requires(ordering == Ordering::Release)]
 #[ensures(*sync_view == result@)]
 #[trusted]
+#[erasure(core::sync::atomic::fence)]
 #[allow(unused_variables)]
-pub fn fence_release(sync_view: Ghost<SyncView>) -> Ghost<ReleaseSyncView> {
+pub fn fence_release(ordering: Ordering, sync_view: Ghost<SyncView>) -> Ghost<ReleaseSyncView> {
     fence(Ordering::Release);
     Ghost::conjure()
 }
 
+#[requires(ordering == Ordering::Acquire)]
 #[ensures(acq_view@ == *result)]
 #[trusted]
+#[erasure(core::sync::atomic::fence)]
 #[allow(unused_variables)]
-pub fn fence_acquire(acq_view: Ghost<AcquireSyncView>) -> Ghost<SyncView> {
+pub fn fence_acquire(ordering: Ordering, acq_view: Ghost<AcquireSyncView>) -> Ghost<SyncView> {
     fence(Ordering::Acquire);
     Ghost::conjure()
 }
 
+#[requires(ordering == Ordering::AcqRel)]
 #[ensures(acq_view@ == result@)]
 #[trusted]
+#[erasure(core::sync::atomic::fence)]
 #[allow(unused_variables)]
-pub fn fence_acqrel(acq_view: Ghost<AcquireSyncView>) -> Ghost<ReleaseSyncView> {
+pub fn fence_acqrel(
+    ordering: Ordering,
+    acq_view: Ghost<AcquireSyncView>,
+) -> Ghost<ReleaseSyncView> {
     fence(Ordering::AcqRel);
     Ghost::conjure()
 }

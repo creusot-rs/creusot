@@ -9,7 +9,7 @@ use std::{
     thread,
 };
 
-use creusot_std::prelude::erasure;
+use creusot_std::{prelude::erasure, std::sync::SyncViewExt};
 
 #[erasure(spec::message_passing)]
 pub fn message_passing() {
@@ -18,14 +18,14 @@ pub fn message_passing() {
 
     thread::scope(|s| {
         s.spawn(|| {
-            unsafe { *data.get() = 42 };
+            unsafe { *data.borrow_mut() = 42 };
             flag.store(true, Ordering::Release);
         });
 
         s.spawn(|| {
             while !flag.load(Ordering::Acquire) {}
 
-            let res = unsafe { *data.get() };
+            let res = unsafe { *data.borrow_mut() };
             assert!(res == 42);
         });
     });
