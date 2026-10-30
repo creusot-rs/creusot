@@ -15,6 +15,12 @@ module M_message_passing
   
   let new (return (x: t_SyncView)) = any [ return (result: t_SyncView) -> (! return {result}) ]
   
+  let into_inner_SyncView (self: t_SyncView) (return (x: t_SyncView)) = any
+    [ return (result: t_SyncView) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
+  
+  let new_SyncView (x: t_SyncView) (return (x'0: t_SyncView)) = any
+    [ return (result: t_SyncView) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
   let borrow_mut_SyncView (self: MutBorrow.t t_SyncView) (return (x: MutBorrow.t t_SyncView)) = any
     [ return (result: MutBorrow.t t_SyncView) -> {[@stop_split] [@expl:borrow_mut ensures] result = self}
       (! return {result}) ]
@@ -1565,93 +1571,97 @@ module M_message_passing
       (set_ORDERING
         (bb0
         [ bb0 = s0
-          [ s0 = new (fun (_x: t_SyncView) -> [ &_6 <- _x ] s1)
-          | s1 = MutBorrow.borrow_mut <t_SyncView> {_6}
-              (fun (_bor: MutBorrow.t t_SyncView) -> [ &_5 <- _bor ] [ &_6 <- _bor.final ] s2)
-          | s2 = borrow_mut_SyncView {_5} (fun (_x: MutBorrow.t t_SyncView) -> [ &_4 <- _x ] s3)
-          | s3 = new'0 {false} {_4} (fun (_x: tup2_AtomicBool_Ghost_Perm_AtomicBool) -> [ &_3 <- _x ] s4)
-          | s4 = [ &flag <- _3.f0 ] s5
-          | s5 = [ &flag_perm'0 <- _3.f1 ] s6
-          | s6 = new_i32 {(0: Int32.t)} (fun (_x: tup2_PCell_i32_Ghost_Perm_PCell_i32) -> [ &_9 <- _x ] s7)
-          | s7 = [ &data <- _9.f0'1 ] s8
-          | s8 = [ &data_perm'0 <- _9.f1'1 ] s9
-          | s9 = [ &_13 <- Some'0 { f0'2 = () } ] s10
-          | s10 = alloc_Option_Excl_unit {_13} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_12 <- _x ] s11)
-          | s11 = into_inner_Resource_Option_Excl_unit {_12}
-              (fun (_x: t_Resource_Option_Excl_unit) -> [ &_11 <- _x ] s12)
-          | s12 = new_Resource_Option_Excl_unit {_11}
-              (fun (_x: t_Resource_Option_Excl_unit) -> [ &write_excl <- _x ] s13)
-          | s13 = [ &_18 <- Some'0 { f0'2 = () } ] s14
-          | s14 = alloc_Option_Excl_unit {_18} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_17 <- _x ] s15)
-          | s15 = into_inner_Resource_Option_Excl_unit {_17}
-              (fun (_x: t_Resource_Option_Excl_unit) -> [ &_16 <- _x ] s16)
-          | s16 = new_Resource_Option_Excl_unit {_16}
-              (fun (_x: t_Resource_Option_Excl_unit) -> [ &read_excl <- _x ] s17)
-          | s17 = into_inner_Perm_AtomicBool {flag_perm'0} (fun (_x: t_Perm_AtomicBool) -> [ &_24 <- _x ] s18)
-          | s18 = [ &_26 <- None'1 ] s19
-          | s19 = deref_Ghost_Resource_Option_Excl_unit {write_excl}
-              (fun (_x: t_Resource_Option_Excl_unit) -> [ &_30 <- _x ] s20)
-          | s20 = id_Option_Excl_unit'0 {_30} (fun (_x: t_Id) -> [ &_28 <- _x ] s21)
-          | s21 = new_unit_Option_Excl_unit {_28} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_27 <- _x ] s22)
-          | s22 = deref_Ghost_Resource_Option_Excl_unit {read_excl}
-              (fun (_x: t_Resource_Option_Excl_unit) -> [ &_35 <- _x ] s23)
-          | s23 = id_Option_Excl_unit'0 {_35} (fun (_x: t_Id) -> [ &_33 <- _x ] s24)
-          | s24 = new_unit_Option_Excl_unit {_33} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_32 <- _x ] s25)
-          | s25 = [ &_37 <- data ] s26
-          | s26 = [ &_23 <- { flag_perm = _24;
-                              data_perm = _26;
-                              write_token = _27;
-                              read_token = _32;
-                              public_data = _37 } ] s27
-          | s27 = new_MPInv {_23} (fun (_x: t_MPInv) -> [ &_22 <- _x ] s28)
-          | s28 = [ &_40 <- Namespace_MESSAGE_PASSING 0 ] s29
-          | s29 = new_MPInv'0 {_22} {_40} (fun (_x: t_AtomicInvariant_MPInv) -> [ &_21 <- _x ] s30)
-          | s30 = new_Ghost_AtomicInvariant_MPInv {_21} (fun (_x: t_AtomicInvariant_MPInv) -> [ &inv <- _x ] s31)
-          | s31 = s32 [ _ck -> (! {[@expl:type invariant] inv_AtomicBool flag} any) ]
-          | s32 = -{resolve_AtomicBool flag}- s33
-          | s33 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {write_excl}
+          [ s0 = new (fun (_x: t_SyncView) -> [ &_3 <- _x ] s1)
+          | s1 = into_inner_SyncView {_3} (fun (_x: t_SyncView) -> [ &_2 <- _x ] s2)
+          | s2 = new_SyncView {_2} (fun (_x: t_SyncView) -> [ &view <- _x ] s3)
+          | s3 = MutBorrow.borrow_mut <t_SyncView> {view}
+              (fun (_bor: MutBorrow.t t_SyncView) -> [ &_8 <- _bor ] [ &view <- _bor.final ] s4)
+          | s4 = borrow_mut_SyncView {_8} (fun (_x: MutBorrow.t t_SyncView) -> [ &_7 <- _x ] s5)
+          | s5 = new'0 {false} {_7} (fun (_x: tup2_AtomicBool_Ghost_Perm_AtomicBool) -> [ &_6 <- _x ] s6)
+          | s6 = [ &flag <- _6.f0 ] s7
+          | s7 = [ &flag_perm'0 <- _6.f1 ] s8
+          | s8 = new_i32 {(0: Int32.t)} (fun (_x: tup2_PCell_i32_Ghost_Perm_PCell_i32) -> [ &_11 <- _x ] s9)
+          | s9 = [ &data <- _11.f0'1 ] s10
+          | s10 = [ &data_perm'0 <- _11.f1'1 ] s11
+          | s11 = [ &_15 <- Some'0 { f0'2 = () } ] s12
+          | s12 = alloc_Option_Excl_unit {_15} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_14 <- _x ] s13)
+          | s13 = into_inner_Resource_Option_Excl_unit {_14}
+              (fun (_x: t_Resource_Option_Excl_unit) -> [ &_13 <- _x ] s14)
+          | s14 = new_Resource_Option_Excl_unit {_13}
+              (fun (_x: t_Resource_Option_Excl_unit) -> [ &write_excl <- _x ] s15)
+          | s15 = [ &_20 <- Some'0 { f0'2 = () } ] s16
+          | s16 = alloc_Option_Excl_unit {_20} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_19 <- _x ] s17)
+          | s17 = into_inner_Resource_Option_Excl_unit {_19}
+              (fun (_x: t_Resource_Option_Excl_unit) -> [ &_18 <- _x ] s18)
+          | s18 = new_Resource_Option_Excl_unit {_18}
+              (fun (_x: t_Resource_Option_Excl_unit) -> [ &read_excl <- _x ] s19)
+          | s19 = into_inner_Perm_AtomicBool {flag_perm'0} (fun (_x: t_Perm_AtomicBool) -> [ &_26 <- _x ] s20)
+          | s20 = [ &_28 <- None'1 ] s21
+          | s21 = deref_Ghost_Resource_Option_Excl_unit {write_excl}
+              (fun (_x: t_Resource_Option_Excl_unit) -> [ &_32 <- _x ] s22)
+          | s22 = id_Option_Excl_unit'0 {_32} (fun (_x: t_Id) -> [ &_30 <- _x ] s23)
+          | s23 = new_unit_Option_Excl_unit {_30} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_29 <- _x ] s24)
+          | s24 = deref_Ghost_Resource_Option_Excl_unit {read_excl}
+              (fun (_x: t_Resource_Option_Excl_unit) -> [ &_37 <- _x ] s25)
+          | s25 = id_Option_Excl_unit'0 {_37} (fun (_x: t_Id) -> [ &_35 <- _x ] s26)
+          | s26 = new_unit_Option_Excl_unit {_35} (fun (_x: t_Resource_Option_Excl_unit) -> [ &_34 <- _x ] s27)
+          | s27 = [ &_39 <- data ] s28
+          | s28 = [ &_25 <- { flag_perm = _26;
+                              data_perm = _28;
+                              write_token = _29;
+                              read_token = _34;
+                              public_data = _39 } ] s29
+          | s29 = new_MPInv {_25} (fun (_x: t_MPInv) -> [ &_24 <- _x ] s30)
+          | s30 = [ &_42 <- Namespace_MESSAGE_PASSING 0 ] s31
+          | s31 = new_MPInv'0 {_24} {_42} (fun (_x: t_AtomicInvariant_MPInv) -> [ &_23 <- _x ] s32)
+          | s32 = new_Ghost_AtomicInvariant_MPInv {_23} (fun (_x: t_AtomicInvariant_MPInv) -> [ &inv <- _x ] s33)
+          | s33 = s34 [ _ck -> (! {[@expl:type invariant] inv_AtomicBool flag} any) ]
+          | s34 = -{resolve_AtomicBool flag}- s35
+          | s35 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {write_excl}
               (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) ->
-                [ &_47 <- _bor ] [ &write_excl <- _bor.final ] s34)
-          | s34 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {read_excl}
-              (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) -> [ &_48 <- _bor ] [ &read_excl <- _bor.final ] s35)
-          | s35 = [ &_43 <- { c0 = data; c1 = data_perm'0; c2 = flag; c3 = inv; c4 = _47; c5 = _48 } ] s36
-          | s36 = scope_closure0 {_43} (fun (_x: ()) -> [ &_42 <- _x ] s37)
-          | s37 = return {_ret} ] ]
+                [ &_49 <- _bor ] [ &write_excl <- _bor.final ] s36)
+          | s36 = MutBorrow.borrow_mut <t_Resource_Option_Excl_unit> {read_excl}
+              (fun (_bor: MutBorrow.t t_Resource_Option_Excl_unit) -> [ &_50 <- _bor ] [ &read_excl <- _bor.final ] s37)
+          | s37 = [ &_45 <- { c0 = data; c1 = data_perm'0; c2 = flag; c3 = inv; c4 = _49; c5 = _50 } ] s38
+          | s38 = scope_closure0 {_45} (fun (_x: ()) -> [ &_44 <- _x ] s39)
+          | s39 = return {_ret} ] ]
         [ & _ret: () = Any.any_l ()
+        | & view: t_SyncView = Any.any_l ()
+        | & _2: t_SyncView = Any.any_l ()
+        | & _3: t_SyncView = Any.any_l ()
         | & flag: t_AtomicBool = Any.any_l ()
         | & flag_perm'0: t_Perm_AtomicBool = Any.any_l ()
-        | & _3: tup2_AtomicBool_Ghost_Perm_AtomicBool = Any.any_l ()
-        | & _4: MutBorrow.t t_SyncView = Any.any_l ()
-        | & _5: MutBorrow.t t_SyncView = Any.any_l ()
-        | & _6: t_SyncView = Any.any_l ()
+        | & _6: tup2_AtomicBool_Ghost_Perm_AtomicBool = Any.any_l ()
+        | & _7: MutBorrow.t t_SyncView = Any.any_l ()
+        | & _8: MutBorrow.t t_SyncView = Any.any_l ()
         | & data: t_PCell_i32 = Any.any_l ()
         | & data_perm'0: t_Perm_PCell_i32 = Any.any_l ()
-        | & _9: tup2_PCell_i32_Ghost_Perm_PCell_i32 = Any.any_l ()
+        | & _11: tup2_PCell_i32_Ghost_Perm_PCell_i32 = Any.any_l ()
         | & write_excl: t_Resource_Option_Excl_unit = Any.any_l ()
-        | & _11: t_Resource_Option_Excl_unit = Any.any_l ()
-        | & _12: t_Resource_Option_Excl_unit = Any.any_l ()
-        | & _13: t_Option_Excl_unit = Any.any_l ()
+        | & _13: t_Resource_Option_Excl_unit = Any.any_l ()
+        | & _14: t_Resource_Option_Excl_unit = Any.any_l ()
+        | & _15: t_Option_Excl_unit = Any.any_l ()
         | & read_excl: t_Resource_Option_Excl_unit = Any.any_l ()
-        | & _16: t_Resource_Option_Excl_unit = Any.any_l ()
-        | & _17: t_Resource_Option_Excl_unit = Any.any_l ()
-        | & _18: t_Option_Excl_unit = Any.any_l ()
+        | & _18: t_Resource_Option_Excl_unit = Any.any_l ()
+        | & _19: t_Resource_Option_Excl_unit = Any.any_l ()
+        | & _20: t_Option_Excl_unit = Any.any_l ()
         | & inv: t_AtomicInvariant_MPInv = Any.any_l ()
-        | & _21: t_AtomicInvariant_MPInv = Any.any_l ()
-        | & _22: t_MPInv = Any.any_l ()
-        | & _23: t_MPInv = Any.any_l ()
-        | & _24: t_Perm_AtomicBool = Any.any_l ()
-        | & _26: t_Option_AtView_Perm_PCell_i32 = Any.any_l ()
-        | & _27: t_Resource_Option_Excl_unit = Any.any_l ()
-        | & _28: t_Id = Any.any_l ()
-        | & _30: t_Resource_Option_Excl_unit = Any.any_l ()
+        | & _23: t_AtomicInvariant_MPInv = Any.any_l ()
+        | & _24: t_MPInv = Any.any_l ()
+        | & _25: t_MPInv = Any.any_l ()
+        | & _26: t_Perm_AtomicBool = Any.any_l ()
+        | & _28: t_Option_AtView_Perm_PCell_i32 = Any.any_l ()
+        | & _29: t_Resource_Option_Excl_unit = Any.any_l ()
+        | & _30: t_Id = Any.any_l ()
         | & _32: t_Resource_Option_Excl_unit = Any.any_l ()
-        | & _33: t_Id = Any.any_l ()
-        | & _35: t_Resource_Option_Excl_unit = Any.any_l ()
-        | & _37: t_PCell_i32 = Any.any_l ()
-        | & _40: t_Namespace = Any.any_l ()
-        | & _42: () = Any.any_l ()
-        | & _43: closure0 = Any.any_l ()
-        | & _47: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
-        | & _48: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l () ])))
+        | & _34: t_Resource_Option_Excl_unit = Any.any_l ()
+        | & _35: t_Id = Any.any_l ()
+        | & _37: t_Resource_Option_Excl_unit = Any.any_l ()
+        | & _39: t_PCell_i32 = Any.any_l ()
+        | & _42: t_Namespace = Any.any_l ()
+        | & _44: () = Any.any_l ()
+        | & _45: closure0 = Any.any_l ()
+        | & _49: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l ()
+        | & _50: MutBorrow.t t_Resource_Option_Excl_unit = Any.any_l () ])))
     [ return (result: ()) -> (! return {result}) ]
 end
