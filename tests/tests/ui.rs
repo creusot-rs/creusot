@@ -1,5 +1,6 @@
 use clap::Parser;
 use libc::{STDOUT_FILENO, TIOCGWINSZ, c_ushort, ioctl};
+use regex::Regex;
 use serde_json;
 use std::{
     env,
@@ -431,6 +432,13 @@ fn run_creusot(
     if header_line.contains("SHORT_ERROR") {
         cmd.arg("--error-format=short");
     }
+
+    let rec_limit_re = Regex::new(r"RECURSION_LIMIT ((\d|\.)+)").unwrap();
+    let rec_limit = rec_limit_re.captures_iter(&header_line).next().map(|c| c[1].to_owned());
+    if let Some(rec_limit) = rec_limit {
+        cmd.arg(format!("-Zmin-recursion-limit={}", rec_limit));
+    }
+
     cmd.args([
         "--",
         "--stdout",
