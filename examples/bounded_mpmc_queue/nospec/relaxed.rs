@@ -1,7 +1,7 @@
-// RECURSION_LIMIT 256
+// RECURSION_LIMIT 256 WHY3SKIP
 
-//! This implementation is an adaption from:
-//! https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
+// This implementation is an adaption from:
+// https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
 
 #![feature(sync_unsafe_cell)]
 #![allow(creusot::contractless_external_function)]
