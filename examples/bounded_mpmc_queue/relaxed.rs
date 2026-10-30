@@ -1,4 +1,4 @@
-// DEPTH 10
+// DEPTH 10 RECURSION_LIMIT 256
 
 // This implementation is an adaption from:
 // https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
@@ -669,12 +669,12 @@ impl<T> Queue<T> {
     #[ensures(result.1.budget() == usize::MAX@ - 2 * length@ + 1)]
     pub fn new(length: usize) -> (Self, Ghost<PermQueue<T>>) {
         let tokens_auth: Ghost<tokens::Authority<T>> =
-            ghost! {tokens::Authority::alloc().into_inner()};
+            ghost!(tokens::Authority::alloc().into_inner());
         let mut statuses_mono_auth: Ghost<Seq<statuses::Authority>> =
-            ghost! {Seq::new().into_inner()};
+            ghost!(Seq::new().into_inner());
         let mut cells_own: Ghost<Seq<Option<AtView<PermPCell<T>>>>> =
-            ghost! {Seq::new().into_inner()};
-        let mut statuses_own: Ghost<Seq<Perm<AtomicUsize>>> = ghost! {Seq::new().into_inner()};
+            ghost!(Seq::new().into_inner());
+        let mut statuses_own: Ghost<Seq<Perm<AtomicUsize>>> = ghost!(Seq::new().into_inner());
         let mut cells: Vec<QueueCell<T>> = Vec::new();
 
         #[invariant(cells@.len() == produced.len())]
@@ -744,25 +744,28 @@ impl<T> Queue<T> {
         )
         .split();
 
-        let inv = ghost! { AtomicInvariant::new(
-            ghost!(QueueInv {
-                head_own: head_own.into_inner(),
-                tail_own: tail_own.into_inner(),
-                cells_own: cells_own.into_inner(),
-                statuses_own: statuses_own.into_inner(),
+        let inv = ghost!(
+            AtomicInvariant::new(
+                ghost!(QueueInv {
+                    head_own: head_own.into_inner(),
+                    tail_own: tail_own.into_inner(),
+                    cells_own: cells_own.into_inner(),
+                    statuses_own: statuses_own.into_inner(),
 
-                values_auth: values_auth.into_inner(),
-                statuses_mono_auth: statuses_mono_auth.into_inner(),
-                tokens_auth: tokens_auth.into_inner(),
+                    values_auth: values_auth.into_inner(),
+                    statuses_mono_auth: statuses_mono_auth.into_inner(),
+                    tokens_auth: tokens_auth.into_inner(),
 
-                head_last_ts: *head_ts.into_ghost(),
-                tail_last_ts: *tail_ts.into_ghost(),
+                    head_last_ts: *head_ts.into_ghost(),
+                    tail_last_ts: *tail_ts.into_ghost(),
 
-                cells: snapshot!(cells@),
-                statuses_mono_auth_wards,
-            }),
-            snapshot!(BOUNDED_MPMC_QUEUE()),
-        ).into_inner() };
+                    cells: snapshot!(cells@),
+                    statuses_mono_auth_wards,
+                }),
+                snapshot!(BOUNDED_MPMC_QUEUE()),
+            )
+            .into_inner()
+        );
 
         let queue = Queue { cells, head, tail, inv };
 
@@ -1258,7 +1261,7 @@ impl<T> Queue<T> {
     }
 }
 
-/* Checking whether QueueInv is `Objective` */
+// Checking whether QueueInv is `Send` + `Sync` + `Objective`
 #[cfg(creusot)]
 #[allow(dead_code)]
 fn test() {
