@@ -95,3 +95,42 @@ module M_module__no_bar_ref_unit
     -> (let result = foo + bar_ref_unit + bar_u32 + baz_unit in [@stop_split] [@expl:no_bar_ref_unit ensures] result
     = result)
 end
+module M_no_division
+  function div_Int (self: int) (other: int) : int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : int
+  
+  function no_division (x: int) : int
+  
+  goal vc_no_division: [@stop_split] [@expl:no_division ensures] div_Int x 1 = div_Int x 1
+end
+module M_recursive__cyclic
+  use int.Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
+  
+  meta "rewrite_def" predicate well_founded_relation_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : int
+  
+  function cyclic (x: int) : ()
+  
+  goal vc_cyclic: if gt_log_Int x 0 then [@expl:variant decreases] well_founded_relation_Int x (x - 1) else true
+end

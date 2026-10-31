@@ -1,6 +1,7 @@
 use crate::{
     backend::{
         Why3Generator,
+        dependency::Dependency,
         module_context::{Namer, PreMod},
         program::{PtrCastKind, ptr_cast_kind},
         projections::{borrow_generated_id, projections_term},
@@ -171,7 +172,7 @@ impl<'tcx, N: Namer<'tcx>> VCGen<'_, 'tcx, N> {
             // ))
             &TermKind::Call { id, subst, ref args } => self.build_wp_slice(args, &|args| {
                 let mut sig = self.ctx.sig(id).clone();
-                if !self.ctx.revealed_from(self.names.source_id().expect_local(), id, subst) {
+                if self.names.reveal_modifier(Dependency::Item( id, subst)).is_conceal() {
                     sig.contract.ensures.clear();
                     sig.contract.alias = None;
                     sig.contract.alias_id = None;

@@ -15,7 +15,7 @@ use crate::{
         ty_inv::{TyInvDef, elaborate_tyinv_def, inv_call, sig_add_type_invariant_spec},
     },
     contracts_items::{Intrinsic, get_builtin, is_law, is_logic, why3_metas},
-    ctx::{BodyId, HasTyCtxt, ItemType},
+    ctx::{BodyId, HasTyCtxt, ItemType, RevealModifier},
     naming::name,
     resolution::TraitResolved,
     translation::{
@@ -96,6 +96,10 @@ impl<'tcx> Namer<'tcx> for ExpansionProxy<'_, '_, 'tcx> {
 
     fn source_id(&self) -> DefId {
         self.namer.source_id()
+    }
+
+    fn reveal_modifier(&self, dep: Dependency<'tcx>) -> RevealModifier {
+        self.namer.reveal_modifier(dep)
     }
 
     fn typing_env(&self) -> TypingEnv<'tcx> {
@@ -310,6 +314,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     fn expand_logic(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Vec<Decl> {
         let dep = Dependency::Item(def_id, subst);
         let ctx = self.ctx;
+        let concealed = self.namer.reveal_modifier(Dependency::Item(def_id, subst)).is_conceal();
 
         let mut add_edge = |axiom| self.dep_graph.add_edge(dep, Strength::Weak, axiom);
         match ctx.intrinsic(def_id) {
@@ -318,7 +323,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             _ => (),
         }
 
-        if get_builtin(ctx.tcx, def_id).is_some() {
+        if !concealed && get_builtin(ctx.tcx, def_id).is_some() {
             match self.namer.dependency(dep) {
                 Kind::Named(_) => return vec![],
                 Kind::UsedBuiltin(qname) => {
@@ -349,7 +354,6 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         );
         // The other case are impossible, because that would mean we are not guaranteed to have an instance
 
-        let concealed = !ctx.revealed_from(self.namer.source_id().expect_local(), def_id, subst);
         let opaque = matches!(trait_resol, TraitResolved::UnknownFound | TraitResolved::BuiltinDyn)
             || !ctx.is_transparent_from(def_id, self.namer.source_id());
 
@@ -485,8 +489,8 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     /// In the final declaration of each module, we wrap the body with calls to all constant setters.
     fn expand_constant(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Vec<Decl> {
         let dep = Dependency::Item(def_id, subst);
+        let concealed = self.namer.reveal_modifier(Dependency::Item(def_id, subst)).is_conceal();
 
-        let source_id = self.namer.source_id();
         let typing_env = self.typing_env;
         let ctx = self.ctx;
         let trait_resol = TraitResolved::resolve_item(ctx.tcx, typing_env, def_id, subst);
@@ -507,7 +511,6 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         sig_add_type_invariant_spec(ctx, typing_env, names.source_id(), &mut pre_sig, def_id);
         let sig = lower_logic_sig(ctx, &names, name, &pre_sig, def_id);
 
-        let concealed = !ctx.revealed_from(source_id.expect_local(), def_id, subst);
         let opaque = is_self
             || pre_sig.contract.has_user_contract()
             || pre_sig.contract.const_param()
@@ -1401,7 +1404,7 @@ fn term<'tcx>(
     subst: GenericArgsRef<'tcx>,
     inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
-    if !ctx.revealed_from(names.source_id().expect_local(), def_id, subst) {
+    if names.reveal_modifier(Dependency::Item(def_id, subst)).is_conceal() {
         return None;
     }
     let typing_env = names.typing_env();
