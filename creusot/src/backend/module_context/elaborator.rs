@@ -15,7 +15,7 @@ use crate::{
         ty_inv::{TyInvDef, elaborate_tyinv_def, inv_call, sig_add_type_invariant_spec},
     },
     contracts_items::{Intrinsic, get_builtin, is_law, is_logic, why3_metas},
-    ctx::{BodyId, HasTyCtxt, ItemType},
+    ctx::{BodyId, HasTyCtxt, ItemType, RevealModifier},
     naming::name,
     resolution::TraitResolved,
     translation::{
@@ -96,6 +96,10 @@ impl<'tcx> Namer<'tcx> for ExpansionProxy<'_, '_, 'tcx> {
 
     fn source_id(&self) -> DefId {
         self.namer.source_id()
+    }
+
+    fn reveal_modifier(&self, dep: Dependency<'tcx>) -> RevealModifier {
+        self.namer.reveal_modifier(dep)
     }
 
     fn typing_env(&self) -> TypingEnv<'tcx> {
@@ -310,6 +314,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     fn expand_logic(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Vec<Decl> {
         let dep = Dependency::Item(def_id, subst);
         let ctx = self.ctx;
+        let concealed = self.namer.reveal_modifier(Dependency::Item(def_id, subst)).is_conceal();
 
         let mut add_edge = |axiom| self.dep_graph.add_edge(dep, Strength::Weak, axiom);
         match ctx.intrinsic(def_id) {
@@ -318,7 +323,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             _ => (),
         }
 
-        if get_builtin(ctx.tcx, def_id).is_some() {
+        if !concealed && get_builtin(ctx.tcx, def_id).is_some() {
             match self.namer.dependency(dep) {
                 Kind::Named(_) => return vec![],
                 Kind::UsedBuiltin(qname) => {
@@ -360,9 +365,9 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             Some(_) if sig.why_sig.args.is_empty() => DeclKind::Constant,
             _ => DeclKind::Function,
         };
-        let mut decls = if !opaque
-            && let Some(term) = term(ctx, &names, def_id, subst, &pre_sig.inputs)
-        {
+        let mut decls = if concealed {
+            vec![Decl::LogicDecl(LogicDecl { kind: Some(kind), sig: sig.why_sig })]
+        } else if !opaque && let Some(term) = term(ctx, &names, def_id, subst, &pre_sig.inputs) {
             lower_logical_defn(
                 ctx,
                 &names,
@@ -484,6 +489,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     /// In the final declaration of each module, we wrap the body with calls to all constant setters.
     fn expand_constant(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Vec<Decl> {
         let dep = Dependency::Item(def_id, subst);
+        let concealed = self.namer.reveal_modifier(Dependency::Item(def_id, subst)).is_conceal();
 
         let typing_env = self.typing_env;
         let ctx = self.ctx;
@@ -509,7 +515,9 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
             || pre_sig.contract.has_user_contract()
             || pre_sig.contract.const_param()
             || matches!(trait_resol, TraitResolved::UnknownFound);
-        if opaque {
+        if concealed {
+            vec![Decl::LogicDecl(LogicDecl { kind: Some(DeclKind::Constant), sig: sig.why_sig })]
+        } else if opaque {
             val(sig, DeclKind::Constant)
         } else if let Some(term) =
             try_const_to_term(def_id, subst, ctx, typing_env, names.source_id())
@@ -1396,6 +1404,9 @@ fn term<'tcx>(
     subst: GenericArgsRef<'tcx>,
     inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
+    if names.reveal_modifier(Dependency::Item(def_id, subst)).is_conceal() {
+        return None;
+    }
     let typing_env = names.typing_env();
     match ctx.intrinsic(def_id) {
         Intrinsic::Resolve => {

@@ -17,7 +17,8 @@ pub(crate) use self::{
     logic::{logic, pearlite},
     proof::{ghost, ghost_let, invariant, proof_assert, proof_assert_, snapshot},
     specs::{
-        bitwise_proof, check, ensures, logic_alias, maintains, prophetic_alias, requires, variant,
+        bitwise_proof, check, conceal, ensures, logic_alias, maintains, prophetic_alias, requires,
+        reveal, variant,
     },
 };
 

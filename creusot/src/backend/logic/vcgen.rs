@@ -1,6 +1,7 @@
 use crate::{
     backend::{
         Why3Generator,
+        dependency::Dependency,
         module_context::{Namer, PreMod},
         program::{PtrCastKind, ptr_cast_kind},
         projections::{borrow_generated_id, projections_term},
@@ -170,7 +171,14 @@ impl<'tcx, N: Namer<'tcx>> VCGen<'_, 'tcx, N> {
             //  pre(f)(a0..an) /\ variant(f)(a0..an) /\ (post(f)(a0..an, F(a0..an)) -> Q(F a0..an))
             // ))
             &TermKind::Call { id, subst, ref args } => self.build_wp_slice(args, &|args| {
-                let pre_sig = EarlyBinder::bind(self.ctx.tcx, self.ctx.sig(id).clone())
+                let mut sig = self.ctx.sig(id).clone();
+                if self.names.reveal_modifier(Dependency::Item( id, subst)).is_conceal() {
+                    sig.contract.ensures.clear();
+                    sig.contract.alias = None;
+                    sig.contract.alias_id = None;
+                }
+
+                let pre_sig = EarlyBinder::bind(self.ctx.tcx, sig)
                     .instantiate(self.ctx.tcx, subst)
                     .skip_normalization().normalize_contract(self.ctx, self.names.typing_env());
 
