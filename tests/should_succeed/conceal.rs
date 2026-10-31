@@ -100,3 +100,15 @@ pub mod recursive {
         }
     }
 }
+
+#[conceal(Int::div_logic)]
+#[reveal(Int::div_logic)]
+pub mod conceal_then_reveal {
+    use super::*;
+
+    #[logic]
+    #[ensures(result == x)]
+    pub fn div1(x: Int) -> Int {
+        x / 1
+    }
+}
