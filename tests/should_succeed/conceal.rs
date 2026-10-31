@@ -1,4 +1,4 @@
-use creusot_std::prelude::*;
+use creusot_std::{logic::ops::*, prelude::*};
 
 #[logic]
 pub fn foo() -> Int {
@@ -76,6 +76,27 @@ pub mod module {
             fn assoc() -> Int {
                 bar::<&T>()
             }
+        }
+    }
+}
+
+#[logic]
+#[conceal(Int::div_logic)]
+#[conceal(Int::rem_logic)]
+#[ensures(result == x / 1)]
+pub fn no_division(x: Int) -> Int {
+    x / 1
+}
+
+#[conceal(recursive::cyclic)]
+pub mod recursive {
+    use super::*;
+
+    #[logic]
+    #[variant(x)]
+    pub fn cyclic(x: Int) {
+        if x > 0 {
+            cyclic(x - 1);
         }
     }
 }

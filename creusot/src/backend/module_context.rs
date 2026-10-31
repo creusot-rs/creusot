@@ -18,6 +18,7 @@ use itertools::{Either, Itertools};
 use once_map::unsync::OnceMap;
 use petgraph::prelude::DiGraphMap;
 use rustc_abi::{FieldIdx, VariantIdx};
+use rustc_data_structures::fx::FxHashMap;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
@@ -220,6 +221,8 @@ pub(crate) trait Namer<'tcx> {
     /// The main item being translated
     fn source_id(&self) -> DefId;
 
+    fn reveal_modifier(&self, dep: Dependency<'tcx>) -> RevealModifier;
+
     fn source_subst(&self) -> GenericArgsRef<'tcx> {
         erased_identity_for_item(self.tcx(), self.source_id())
     }
@@ -274,6 +277,22 @@ impl Kind {
     }
 }
 
+#[derive(Copy, Clone)]
+pub enum RevealModifier {
+    Reveal,
+    Conceal,
+}
+
+impl RevealModifier {
+    pub fn is_reveal(self) -> bool {
+        matches!(self, Self::Reveal)
+    }
+
+    pub fn is_conceal(self) -> bool {
+        matches!(self, Self::Conceal)
+    }
+}
+
 /// The context information used for the generation of one Coma module
 /// It maintain the mappings from Rust objects to Coma names
 pub(crate) struct ModuleContext<'a, 'tcx> {
@@ -297,6 +316,7 @@ pub(crate) struct ModuleContext<'a, 'tcx> {
     ///
     /// It is reset at the start of each function.
     namespaces: OnceMap<DefId, Box<Ident>>,
+    reveal_modifiers: FxHashMap<Dependency<'tcx>, RevealModifier>,
 }
 
 impl<'a, 'tcx> ModuleContext<'a, 'tcx> {
@@ -311,6 +331,7 @@ impl<'a, 'tcx> ModuleContext<'a, 'tcx> {
             spans: Default::default(),
             constant_setters: Setters::new(),
             namespaces: Default::default(),
+            reveal_modifiers: ctx.compute_reveal_modifiers(source_id),
         }
     }
 
@@ -358,6 +379,7 @@ impl<'a, 'tcx> Namer<'tcx> for ModuleContext<'a, 'tcx> {
         self.names.insert(key, |_| {
             if let Some((did, _)) = key.did()
                 && let Some(why3_modl) = get_builtin(self.tcx(), did)
+                && self.reveal_modifier(key).is_reveal()
             {
                 let why3_modl =
                     why3_modl.as_str().replace("$BW$", if self.bitwise_mode { "BW" } else { "" });
@@ -368,6 +390,13 @@ impl<'a, 'tcx> Namer<'tcx> for ModuleContext<'a, 'tcx> {
                 Kind::Named(Ident::fresh(crate_name(self.tcx()), base.as_str()))
             }))
         })
+    }
+
+    fn reveal_modifier(&self, dep: Dependency<'tcx>) -> RevealModifier {
+        match self.reveal_modifiers.get(&dep) {
+            Some(RevealModifier::Conceal) => RevealModifier::Conceal,
+            _ => RevealModifier::Reveal,
+        }
     }
 
     fn register_constant_setter(&mut self, setter: Ident) {
@@ -461,6 +490,10 @@ impl<'a, 'tcx> Namer<'tcx> for Dependencies<'a, 'tcx> {
 
     fn source_id(&self) -> DefId {
         self.names.source_id()
+    }
+
+    fn reveal_modifier(&self, dep: Dependency<'tcx>) -> RevealModifier {
+        self.names.reveal_modifier(dep)
     }
 
     fn typing_env(&self) -> TypingEnv<'tcx> {
