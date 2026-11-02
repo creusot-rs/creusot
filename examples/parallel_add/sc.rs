@@ -1,4 +1,4 @@
-extern crate creusot_std;
+use core::sync::atomic::Ordering;
 
 use creusot_std::{
     ghost::{
@@ -19,24 +19,26 @@ use creusot_std::{
 
 declare_namespace! { PARALLEL_ADD }
 
-struct ParallelAddAtomicInv {
-    own: Perm<AtomicI32>,
+type UpdateCommitter = Committer<AtomicI32, i32, SeqCst, SeqCst>;
+
+struct PAInv {
+    perm: Perm<AtomicI32>,
     auth1: Authority<Option<Excl<bool>>>,
     auth2: Authority<Option<Excl<bool>>>,
 }
 
-impl Protocol for ParallelAddAtomicInv {
+impl Protocol for PAInv {
     type Public = (AtomicI32, Id, Id);
 
     #[logic]
     fn public(self) -> Self::Public {
-        (*self.own.ward(), self.auth1.id(), self.auth2.id())
+        (*self.perm.ward(), self.auth1.id(), self.auth2.id())
     }
 
     #[logic(inline)]
     fn protocol(self) -> bool {
         pearlite! {
-            self.own.val()@ ==
+            self.perm.val()@ ==
                 if self.auth1@ == Some(Excl(true)) { 2 } else { 0 } +
                 if self.auth2@ == Some(Excl(true)) { 2 } else { 0 }
         }
@@ -44,11 +46,10 @@ impl Protocol for ParallelAddAtomicInv {
 }
 
 pub fn parallel_add() {
-    let (atomic, own) = AtomicI32::new(0);
+    let (atomic, perm) = AtomicI32::new(0);
 
-    // Create our ghost state
-    let mut auth1 = Authority::alloc();
-    let mut auth2 = Authority::alloc();
+    let mut auth1 = ghost!(Authority::alloc().into_inner());
+    let mut auth2 = ghost!(Authority::alloc().into_inner());
     let mut frag1 = ghost!(Fragment::new_unit(auth1.id()));
     let mut frag2 = ghost!(Fragment::new_unit(auth2.id()));
     ghost! {
@@ -56,46 +57,42 @@ pub fn parallel_add() {
         auth2.update(&mut frag2, snapshot!((Some(Excl(false)), Some(Excl(false)))));
     };
 
-    // Initialize our invariant
-    let inv = AtomicInvariantSC::new(
-        ghost!(ParallelAddAtomicInv {
-            own: own.into_inner(),
-            auth1: auth1.into_inner(),
-            auth2: auth2.into_inner()
-        }),
-        snapshot!(PARALLEL_ADD()),
+    let inv = ghost!(
+        AtomicInvariantSC::new(
+            ghost!(PAInv {
+                perm: perm.into_inner(),
+                auth1: auth1.into_inner(),
+                auth2: auth2.into_inner(),
+            }),
+            snapshot!(PARALLEL_ADD()),
+        )
+        .into_inner()
     );
 
     thread::scope(|s| {
-        // We use move closures to make sure that they do not contain borrows of `Ghost<_>`, since
-        // such a borrow would unnecesary consume space in these closures. So, we create the borrows
-        // here.
-        let mut frag1: Ghost<&mut _> = frag1.borrow_mut();
-        let mut frag2: Ghost<&mut _> = frag2.borrow_mut();
-        let inv: Ghost<&_> = inv.borrow();
-        let atomic = &atomic;
-
-        let t1 = s.spawn(move |tokens: Ghost<Tokens>| {
+        let t1 = s.spawn(|tokens: Ghost<Tokens>| {
             atomic.fetch_add(
                 2,
-                ghost! { |c: &mut Committer<_, _, SeqCst, SeqCst>| {
-                    inv.open(tokens.into_inner(), |inv: &mut ParallelAddAtomicInv| {
-                        inv.auth1.update(*frag1, snapshot!((Some(Excl(true)), Some(Excl(true)))));
-                        c.shoot_load(&inv.own);
-                        c.shoot_store(&mut inv.own);
+                Ordering::SeqCst,
+                ghost! { |c: &mut UpdateCommitter| {
+                    inv.open(tokens.into_inner(), |inv: &mut PAInv| {
+                        inv.auth1.update(&mut *frag1, snapshot!((Some(Excl(true)), Some(Excl(true)))));
+                        c.shoot_load(&inv.perm);
+                        c.shoot_store(&mut inv.perm);
                     })
                 }},
             );
         });
 
-        let t2 = s.spawn(move |tokens: Ghost<Tokens>| {
+        let t2 = s.spawn(|tokens: Ghost<Tokens>| {
             atomic.fetch_add(
                 2,
-                ghost! { |c: &mut Committer<_, _, SeqCst, SeqCst>| {
-                    inv.open(tokens.into_inner(), |inv: &mut ParallelAddAtomicInv| {
-                        inv.auth2.update(*frag2, snapshot!((Some(Excl(true)), Some(Excl(true)))));
-                        c.shoot_load(&inv.own);
-                        c.shoot_store(&mut inv.own);
+                Ordering::SeqCst,
+                ghost! { |c: &mut UpdateCommitter| {
+                    inv.open(tokens.into_inner(), |inv: &mut PAInv| {
+                        inv.auth2.update(&mut *frag2, snapshot!((Some(Excl(true)), Some(Excl(true)))));
+                        c.shoot_load(&inv.perm);
+                        c.shoot_store(&mut inv.perm);
                     })
                 }},
             );
@@ -105,13 +102,13 @@ pub fn parallel_add() {
         let _ = t2.join_unwrap();
     });
 
-    let own = ghost! {
-        // Destroy the invariant, get back the ownership of the atomic
+    let perm = ghost! {
         let inv = inv.into_inner().into_inner();
         inv.auth1.frag_lemma(&frag1);
         inv.auth2.frag_lemma(&frag2);
-        inv.own
+        inv.perm
     };
-    let n = atomic.into_inner(own); // Non-atomically read the atomic
-    proof_assert!(n == 4i32)
+
+    let n = atomic.into_inner(perm);
+    assert!(n == 4i32);
 }
