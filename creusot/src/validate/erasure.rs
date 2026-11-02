@@ -1137,6 +1137,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 ));
             }
         };
+        let value = if expr.ty.is_unit() { AnfValue::Unit } else { value };
         Ok((value, expr.span))
     }
 
