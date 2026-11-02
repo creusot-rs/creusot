@@ -238,7 +238,7 @@ pub fn decode_metadata<'tcx, T: for<'a> Decodable<MetadataDecoder<'a, 'tcx>>>(
         cnum,
         tcx,
         ty_rcache: Default::default(),
-        file_index_to_stable_id: super::from_orphan_map(footer.file_index_to_stable_id),
+        file_index_to_stable_id: footer.file_index_to_stable_id,
         file_index_to_file: Default::default(),
         syntax_contexts: &footer.syntax_contexts,
         expn_data: footer.expn_data,

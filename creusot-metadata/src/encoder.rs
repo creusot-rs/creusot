@@ -232,7 +232,7 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
             file_index_to_stable_id.insert(index, source_file_id);
         }
 
-        (file_to_file_index, super::to_orphan_map(file_index_to_stable_id))
+        (file_to_file_index, file_index_to_stable_id)
     };
 
     let hygiene_context = HygieneEncodeContext::default();

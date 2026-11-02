@@ -72,23 +72,9 @@ impl EncodedSourceFileId {
 
 #[derive(Decodable, Encodable)]
 struct Footer {
-    file_index_to_stable_id: FxHashMap<Orphan<SourceFileIndex>, EncodedSourceFileId>,
+    file_index_to_stable_id: FxHashMap<SourceFileIndex, EncodedSourceFileId>,
     syntax_contexts: FxHashMap<u32, AbsoluteBytePos>,
     expn_data: FxHashMap<u32, AbsoluteBytePos>,
 }
 
-#[derive(Decodable, Encodable, PartialEq, Eq, Hash)]
-#[repr(transparent)]
-struct Orphan<T>(T);
-
-fn from_orphan_map<K, V>(x: FxHashMap<Orphan<K>, V>) -> FxHashMap<K, V> {
-    unsafe { std::mem::transmute(x) }
-}
-
-fn to_orphan_map<K, V>(x: FxHashMap<K, V>) -> FxHashMap<Orphan<K>, V> {
-    unsafe { std::mem::transmute(x) }
-}
-
-impl<E> ContextOrd<E> for Orphan<SourceFileIndex> {}
-
-impl<E> ContextOrd<E> for Orphan<(StableCrateId, u32)> {}
+impl<E> ContextOrd<E> for SourceFileIndex {}
