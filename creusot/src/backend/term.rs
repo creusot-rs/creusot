@@ -8,7 +8,7 @@ use crate::{
             ty_to_prelude, uty_to_prelude,
         },
     },
-    contracts_items::{is_builtin_ascription, is_new_namespace},
+    contracts_items::{Intrinsic, is_builtin_ascription, is_new_namespace},
     ctx::*,
     naming::name,
     resolution::TraitResolved,
@@ -24,7 +24,7 @@ use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::PlaceTy,
-    ty::{self, Ty, TyCtxt, TyKind},
+    ty::{self, GenericArg, Ty, TyCtxt, TyKind},
 };
 use rustc_span::Span;
 use rustc_type_ir::IntTy;
@@ -211,6 +211,22 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                                 unsupported_cast(self.ctx, term.span, argty, term.ty)
                             }
                         }
+                    }
+                    TyKind::Adt(..) if term.ty.is_integral() => {
+                        let discr = Exp::Var(self.names.item(
+                            Intrinsic::DiscriminantValueLogic.get(self.ctx),
+                            self.ctx.mk_args(&[GenericArg::from(argty)]),
+                        ))
+                        .app([arg]);
+                        cast_int(
+                            self.names,
+                            self.ctx.normalize_erasing_regions(
+                                self.names.typing_env(),
+                                ty::Unnormalized::new(argty.discriminant_ty(self.ctx.tcx)),
+                            ),
+                            term.ty,
+                            discr,
+                        )
                     }
                     _ => unsupported_cast(self.ctx, term.span, argty, term.ty),
                 }

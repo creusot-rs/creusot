@@ -134,11 +134,41 @@ impl NotLogic for bool {
     }
 }
 
+/// Trait for dereference in logic.
+///
+/// Implementing this trait does _not_ automatically unlock dereference syntax
+/// (`&*x`); you also need to have a _logical alias_:
+/// ```
+/// use creusot_std::{logic::ops::DerefLogic, prelude::*};
+/// use std::ops::Deref;
+///
+/// struct MyInt(Int);
+///
+/// impl DerefLogic for MyInt {
+///     #[logic]
+///     fn deref_logic(&self) -> &Self::Target {
+///         &self.0
+///     }
+/// }
+///
+/// impl Deref for MyInt {
+///     type Target = Int;
+///     #[check(ghost)]
+///     #[logic_alias(self.deref_logic())]
+///     fn deref(&self) -> &Self::Target {
+///         &self.0
+///     }
+/// }
+///
+/// #[requires(*x == 1int)]
+/// fn foo(x: MyInt) {}
+/// ```
 pub trait DerefLogic: Deref {
     #[logic]
     fn deref_logic(&self) -> &Self::Target;
 }
 
+/// Same as [`DerefLogic`], but for mutable borrows.
 pub trait DerefMutLogic: DerefMut + DerefLogic {
     #[logic]
     fn deref_mut_logic(&mut self) -> &mut Self::Target;
