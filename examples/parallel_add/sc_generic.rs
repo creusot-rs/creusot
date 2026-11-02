@@ -1,4 +1,4 @@
-extern crate creusot_std;
+use core::sync::atomic::Ordering;
 
 use creusot_std::{
     ghost::{
@@ -20,6 +20,8 @@ use std::thread::ScopedJoinHandle;
 
 declare_namespace! { PARALLEL_ADD }
 
+type UpdateCommitter = Committer<AtomicI32, i32, SeqCst, SeqCst>;
+
 #[logic]
 fn fraction(i: Int, n: Int) -> PR {
     pearlite! { PR::from_int(i) / PR::from_int(n+1) }
@@ -38,52 +40,48 @@ fn fraction_add(a: Int, b: Int, n: Int) {
     let _ = PR::ext_eq;
 }
 
-struct ParallelAddAtomicInv {
-    own: Perm<AtomicI32>,
+struct PAInv {
+    perm: Perm<AtomicI32>,
     auth: Authority<Option<(PR, Int)>>,
 }
 
-impl Protocol for ParallelAddAtomicInv {
+impl Protocol for PAInv {
     type Public = (AtomicI32, Id);
 
     #[logic(inline)]
     fn public(self) -> Self::Public {
-        (*self.own.ward(), self.auth.id())
+        (*self.perm.ward(), self.auth.id())
     }
 
     #[logic(inline)]
     fn protocol(self) -> bool {
         pearlite! {
             exists<k: Int>
-              self.auth@ == Some((PR::from_int(1), k * Int::pow2(32) + self.own.val()@))
+              self.auth@ == Some((PR::from_int(1), k * Int::pow2(32) + self.perm.val()@))
         }
     }
 }
 
 #[requires(n@ >= 0)]
 pub fn parallel_add(n: i32) {
-    let (atomic, own) = AtomicI32::new(0);
+    let (atomic, perm) = AtomicI32::new(0);
     let _ = snapshot!((fraction_1, fraction_add));
 
-    // Create our ghost state
-    let mut auth = Authority::alloc();
+    let mut auth = ghost!(Authority::alloc().into_inner());
     let mut frag = ghost!(Fragment::new_unit(auth.id()));
     ghost! {
         auth.update(&mut frag, snapshot!((Some((PR::from_int(1), 0)), Some((PR::from_int(1), 0)))));
     };
 
-    // Initialize our invariant
-    let inv = AtomicInvariantSC::new(
-        ghost!(ParallelAddAtomicInv { own: own.into_inner(), auth: auth.into_inner() }),
-        snapshot!(PARALLEL_ADD()),
+    let inv = ghost!(
+        AtomicInvariantSC::new(
+            ghost!(PAInv { perm: perm.into_inner(), auth: auth.into_inner() }),
+            snapshot!(PARALLEL_ADD()),
+        )
+        .into_inner()
     );
 
     thread::scope(|s| {
-        let inv: Ghost<&_> = inv.borrow();
-        let atomic = &atomic;
-
-        // Spawn the threads
-
         // I wish we could build the handles vector with a map iterator, but the proof
         // goals end up being too large, and the SMT solvers just give up proving.
         let mut handles: Vec<ScopedJoinHandle<_>> = vec![];
@@ -99,14 +97,15 @@ pub fn parallel_add(n: i32) {
             let f1 = snapshot! { Some((fraction(1, n@), 0)) };
             let f2 = snapshot! { Some((fraction(n@+1-produced.len(), n@), 0)) };
             let mut frag = ghost! { frag.split_off(f1, f2) };
-            let h = s.spawn(move |tokens: Ghost<Tokens>| {
+            let h = s.spawn(|tokens: Ghost<Tokens>| {
                 atomic.fetch_add(
                     1,
-                    ghost! { |c: &mut Committer<_, _, SeqCst, SeqCst>| {
-                        inv.open(tokens.into_inner(), |inv: &mut ParallelAddAtomicInv| {
+                    Ordering::SeqCst,
+                    ghost! { |c: &mut UpdateCommitter| {
+                        inv.open(tokens.into_inner(), |inv: &mut PAInv| {
                             inv.auth.update(&mut *frag, OptionLocalUpdate(((), 1int)));
-                            c.shoot_load(&inv.own);
-                            c.shoot_store(&mut inv.own);
+                            c.shoot_load(&inv.perm);
+                            c.shoot_store(&mut inv.perm);
                         })
                     }},
                 );
@@ -118,23 +117,22 @@ pub fn parallel_add(n: i32) {
 
         let handles_ = snapshot!(handles);
 
-        // Join the threads
         #[invariant(frag.id() == inv.public().1)]
         #[invariant(frag@ == Some((fraction(produced.len()+1, n@), produced.len())))]
         for h in handles {
             proof_assert!(h == handles_[produced.len() - 1]);
-            let f = h.join_unwrap();
+            let f = h.join().unwrap();
             ghost! { frag.join_in(f.into_inner()) };
         }
         proof_assert!(frag@ == Some((PR::from_int(1), n@)));
     });
 
-    let own = ghost! {
-        // Destroy the invariant, get back the ownership of the atomic
+    let perm = ghost! {
         let inv = inv.into_inner().into_inner();
         inv.auth.frag_lemma(&frag);
-        inv.own
+        inv.perm
     };
-    let x = atomic.into_inner(own); // Non-atomically read the atomic
-    proof_assert!(n == x)
+
+    let x = atomic.into_inner(perm);
+    assert!(n == x);
 }
