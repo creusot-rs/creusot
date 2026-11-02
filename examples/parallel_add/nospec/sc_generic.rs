@@ -17,16 +17,16 @@ pub fn parallel_add(n: i32) {
     thread::scope(|s| {
         let mut handles: Vec<ScopedJoinHandle<_>> = vec![];
 
-        let _ = for _ in 0..n {
+        for _ in 0..n {
             let h = s.spawn(|| {
                 atomic.fetch_add(1, Ordering::SeqCst);
             });
             handles.push(h);
-        };
+        }
 
-        let _ = for h in handles {
+        for h in handles {
             h.join().unwrap();
-        };
+        }
     });
 
     let x = atomic.into_inner();
