@@ -35,8 +35,8 @@ pub fn pair<T, U>(a: T, b: U) -> Pair<T, U> {
     Pair(a, b)
 }
 
-#[requires(a@@ == 0)]
+#[requires(a@ == 0)]
 pub fn test_arc(a: std::sync::Arc<usize>) {}
 
-#[requires(v@@ == 0)]
+#[requires(v@ == 0)]
 pub fn test_rc(v: std::rc::Rc<usize>) {}
