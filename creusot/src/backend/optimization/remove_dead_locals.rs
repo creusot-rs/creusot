@@ -83,7 +83,7 @@ impl<'tcx> FmirVisitor<'tcx> for LocalReads<'_, 'tcx> {
 
     fn visit_rvalue(&mut self, r: &RValue<'tcx>) {
         super_visit_rvalue(self, r);
-        if let RValue::Ptr(p) = r {
+        if let RValue::Ptr(p) | RValue::Discriminant(p) = r {
             self.live.insert(p.local);
         }
     }
@@ -187,7 +187,8 @@ impl<'tcx> FmirVisitor<'tcx> for PurityVisitor<'_, 'tcx> {
             | RValue::Tuple(_)
             | RValue::Array(_)
             | RValue::Repeat(_, _)
-            | RValue::Ptr(_) => {}
+            | RValue::Ptr(_)
+            | RValue::Discriminant(_) => {}
             _ => self.pure = false,
         }
     }

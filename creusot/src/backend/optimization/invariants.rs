@@ -689,7 +689,11 @@ impl TyInvState {
 
         match rv {
             RValue::Operand(op) => ty_inv_op(op),
-            RValue::BinOp(..) | RValue::UnaryOp(..) | RValue::Cast(..) | RValue::Ptr(_) => {
+            RValue::BinOp(..)
+            | RValue::UnaryOp(..)
+            | RValue::Cast(..)
+            | RValue::Ptr(_)
+            | RValue::Discriminant(_) => {
                 unreachable!("binary op / unary op / casts / ptr should return trivial tyinv")
             }
             RValue::Constructor(.., ops) => {

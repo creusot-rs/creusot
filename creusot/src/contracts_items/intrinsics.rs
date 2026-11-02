@@ -108,6 +108,7 @@ impl Intrinsic {
             Intrinsic::Resolve
                 | Intrinsic::Inv
                 | Intrinsic::StructuralResolve
+                | Intrinsic::DiscriminantValueLogic
                 | Intrinsic::SizeOfLogic
                 | Intrinsic::SizeOfValLogic
                 | Intrinsic::AlignOfLogic
@@ -169,6 +170,7 @@ contracts_items! {
     "resolve_method"            ResolveMethod
     "seq_literal"               SeqLiteral
     "int_literal"               IntLiteral
+    "discriminant_value_logic"  DiscriminantValueLogic
     "size_of_logic"             SizeOfLogic
     "size_of_val_logic"         SizeOfValLogic
     "size_of_val_logic_sized"   SizeOfValLogicSized

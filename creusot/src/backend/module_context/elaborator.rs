@@ -7,7 +7,7 @@ use crate::{
         program,
         resolve::{ResolveDef, elaborate_resolve_def, structural_resolve},
         signature::{LogicSignature, lower_logic_sig, lower_program_sig},
-        term::{lower_pure, lower_pure_weakdep},
+        term::{lower_pat, lower_pure, lower_pure_weakdep},
         ty::{
             constructor, eliminator, translate_adtdecl, translate_closure_ty, translate_tuple_ty,
             translate_ty,
@@ -21,16 +21,18 @@ use crate::{
     translation::{
         constant::try_const_to_term,
         pearlite::{
-            BinOp, PIdent, Pattern, QuantKind, Substable as _, Term, TermWithTriggers, Trigger,
-            normalize,
+            BinOp, Literal, PIdent, Pattern, QuantKind, Substable as _, Term, TermKind,
+            TermWithTriggers, Trigger, normalize,
         },
         specification::Condition,
     },
 };
+use rustc_abi::Size;
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{
-    self, AliasTyKind, Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypingEnv,
+    self, AliasTyKind, Const, GenericArg, GenericArgKind, GenericArgsRef, TraitRef, Ty, TyCtxt,
+    TyKind, TypingEnv,
 };
 use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_type_ir::{AliasTy, ClosureKind, ConstKind, EarlyBinder};
@@ -43,8 +45,10 @@ use why3::{
     Exp, Ident, Name,
     coma::{Defn, Expr, Param, Prototype},
     declaration::{
-        Axiom, Decl, DeclKind, LogicDecl, Meta, MetaArg, MetaIdent, Signature, TyDecl, Use,
+        Axiom, Decl, DeclKind, LogicDecl, LogicDefn, Meta, MetaArg, MetaIdent, Signature, TyDecl,
+        Use,
     },
+    exp::Constant,
     ty::Type,
 };
 
@@ -1258,6 +1262,75 @@ fn size_of_logic_term<'tcx>(
     }
 }
 
+/// std::intrinsics::discriminant_value
+fn discriminant_value_logic_term<'tcx>(
+    ctx: &Why3Generator<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    inputs: &[(PIdent, Span, Ty<'tcx>)],
+) -> Option<Term<'tcx>> {
+    let &[(arg, span, source)] = inputs else { panic!() };
+
+    let discr_ty = ctx.normalize_erasing_regions(
+        typing_env,
+        ty::Unnormalized::new(source.discriminant_ty(ctx.tcx)),
+    );
+
+    let mk_discr_value = |bits: u128| {
+        let discr_value = match *discr_ty.kind() {
+            TyKind::Int(ity) => {
+                let size = Size::from_bits(
+                    ity.normalize(ctx.sess.target.pointer_width).bit_width().unwrap(),
+                );
+                Literal::MachSigned(size.sign_extend(bits), ity)
+            }
+            TyKind::Uint(uty) => Literal::MachUnsigned(bits, uty),
+            _ => ctx.dcx().span_bug(span, "unexpected discriminant type"),
+        };
+        let kind = TermKind::Lit(discr_value);
+        Term { ty: discr_ty, kind, span: DUMMY_SP }
+    };
+
+    match *source.kind() {
+        TyKind::Adt(def, args) if def.is_enum() => {
+            let branches = def.variants().iter_enumerated().map(|(variant_idx, variant_def)| {
+                let discr = source.discriminant_for_variant(ctx.tcx, variant_idx).unwrap();
+                let fields = variant_def.fields.iter_enumerated().map(|(f, field_def)| {
+                    let ty = ctx.normalize_erasing_regions(typing_env, field_def.ty(ctx.tcx, args));
+
+                    (f, Pattern::wildcard(ty))
+                });
+                let pat = Pattern::constructor(variant_idx, fields, source);
+                (pat, mk_discr_value(discr.val))
+            });
+            Some(Term::match_(Term { ty: source, kind: TermKind::Var(arg), span }, branches))
+        }
+
+        // returns `0` if `T` has no discriminant
+        // https://doc.rust-lang.org/std/intrinsics/fn.discriminant_value.html
+        TyKind::Bool
+        | TyKind::Char
+        | TyKind::Adt { .. }
+        | TyKind::Int { .. }
+        | TyKind::Uint { .. }
+        | TyKind::Float { .. }
+        | TyKind::Foreign { .. }
+        | TyKind::Str { .. }
+        | TyKind::Array { .. }
+        | TyKind::Pat { .. }
+        | TyKind::Slice { .. }
+        | TyKind::RawPtr { .. }
+        | TyKind::Ref { .. }
+        | TyKind::FnDef { .. }
+        | TyKind::FnPtr { .. }
+        | TyKind::UnsafeBinder { .. }
+        | TyKind::Dynamic { .. }
+        | TyKind::Closure { .. }
+        | TyKind::Never { .. }
+        | TyKind::Tuple { .. } => Some(mk_discr_value(0)),
+        _ => None,
+    }
+}
+
 fn size_of_array<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
@@ -1428,6 +1501,7 @@ fn term<'tcx>(
         Intrinsic::Postcondition => postcondition_term(ctx, names, subst, inputs),
         Intrinsic::Precondition => precondition_term(ctx, names, subst, inputs),
         Intrinsic::HistInv => fn_mut_hist_inv_term(ctx, typing_env, subst, inputs),
+        Intrinsic::DiscriminantValueLogic => discriminant_value_logic_term(ctx, typing_env, inputs),
         Intrinsic::SizeOfLogic => size_of_logic_term(ctx, typing_env, def_id, subst.type_at(0)),
         Intrinsic::SizeOfValLogic => size_of_val_logic_term(ctx, names, subst, inputs),
         Intrinsic::AlignOfLogic => align_of_logic_term(ctx, typing_env, def_id, subst.type_at(0)),

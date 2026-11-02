@@ -11,7 +11,7 @@ use crate::{
         },
         ty::{constructor, translate_ty, ty_to_prelude},
     },
-    contracts_items::{is_builtin_ascription, is_new_namespace},
+    contracts_items::{Intrinsic, is_builtin_ascription, is_new_namespace},
     ctx::HasTyCtxt,
     naming::name,
     translation::pearlite::{BinOp, Literal, Pattern, Term, TermKind, UnOp},
@@ -20,7 +20,7 @@ use crate::{
 use rustc_hir::def_id::DefId;
 use rustc_middle::{
     mir::{PlaceTy, ProjectionElem},
-    ty::{EarlyBinder, Ty, TyCtxt, TyKind},
+    ty::{self, EarlyBinder, GenericArg, Ty, TyCtxt, TyKind},
 };
 use rustc_span::Span;
 use std::{cell::Cell, collections::HashMap, iter::repeat_n};
@@ -142,6 +142,20 @@ impl<'tcx, N: Namer<'tcx>> VCGen<'_, 'tcx, N> {
                             }),
                             PtrCastKind::Unknown => unsupported_cast(self.ctx, t.span, argty, t.ty),
                         }
+                    }
+                    TyKind::Adt(..) if t.ty.is_integral() => {
+                        self.build_wp(arg, &|arg| {
+                            let discr = Exp::Var(self.names.item(
+                                Intrinsic::DiscriminantValueLogic.get(self.ctx),
+                                self.ctx.mk_args(&[GenericArg::from(argty)]),
+                            ))
+                            .app([arg]);
+                            let discr_ty = self.ctx.normalize_erasing_regions(
+                                self.names.typing_env(),
+                                ty::Unnormalized::new(argty.discriminant_ty(self.ctx.tcx)),
+                            );
+                            k(cast_int(self.names, discr_ty, t.ty, discr))
+                        })
                     }
                     _ => unsupported_cast(self.ctx, t.span, argty, t.ty),
             }},
