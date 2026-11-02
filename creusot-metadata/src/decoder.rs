@@ -100,8 +100,7 @@ impl BlobDecoder for MetadataDecoder<'_, '_> {
         panic!("trying to decode `DefIndex` outside the context of a `DefId`")
     }
     fn decode_local_def_id(&mut self) -> LocalDefId {
-        self.decode_def_id().expect_local()
-        // LocalDefId { local_def_index: Decodable::decode(self) }
+        unimplemented!()
     }
 }
 
@@ -132,20 +131,21 @@ impl SpanDecoder for MetadataDecoder<'_, '_> {
         let cnum = self.tcx.stable_crate_id_to_crate_num(stable_id);
         let index = u32::decode(self);
 
-        rustc_span::hygiene::decode_expn_id(cnum, index, |expn_id| {
-            let ExpnId { krate: cnum, local_id: index } = expn_id;
-            assert_ne!(cnum, rustc_span::def_id::LOCAL_CRATE);
-            if cnum == self.cnum {
+        assert_ne!(cnum, rustc_span::def_id::LOCAL_CRATE);
+        if cnum == self.cnum {
+            rustc_span::hygiene::decode_expn_id(cnum, index, |expn_id| {
+                let ExpnId { krate: cnum, local_id: index } = expn_id;
+
                 let pos = self.expn_data.get(&index.as_u32()).unwrap();
                 self.with_position(pos.to_usize(), |decoder| {
                     let data = ExpnData::decode(decoder);
                     let hash = ExpnHash::decode(decoder);
                     (data, hash)
                 })
-            } else {
-                todo!()
-            }
-        })
+            })
+        } else {
+            ExpnId { krate: cnum, local_id: ExpnIndex::from_u32(index) }
+        }
     }
     fn decode_syntax_context(&mut self) -> SyntaxContext {
         let syntax_contexts = self.syntax_contexts;
@@ -169,11 +169,8 @@ impl SpanDecoder for MetadataDecoder<'_, '_> {
     // compilation sessions. We use the `DefPathHash`, which is stable across
     // sessions, to map the old `DefId` to the new one.
     fn decode_def_id(&mut self) -> DefId {
-        assert_eq!(u8::decode(self), 255);
         let def_path_hash = DefPathHash::decode(self);
-        let i = self.tcx.def_path_hash_to_def_id(def_path_hash).expect("Cannot resolve crate.");
-        assert_eq!(u8::decode(self), 255);
-        i
+        self.tcx.def_path_hash_to_def_id(def_path_hash).expect("Cannot resolve crate.")
     }
 
     fn decode_attr_id(&mut self) -> AttrId {

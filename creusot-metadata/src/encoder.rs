@@ -160,9 +160,7 @@ impl SpanEncoder for MetadataEncoder<'_, '_> {
         panic!("encoding `DefIndex` without context");
     }
     fn encode_def_id(&mut self, id: DefId) {
-        self.emit_u8(255);
         self.tcx.def_path_hash(id).encode(self);
-        self.emit_u8(255);
     }
 }
 

@@ -278,10 +278,7 @@ fn load_binary_metadata<'tcx>(
             return None;
         }
     }
-    eprintln!("{path:?}");
-    let r = Some(decode_metadata(tcx, cnum, &blob));
-    eprintln!("{path:?}");
-    r
+    Some(decode_metadata(tcx, cnum, &blob))
 }
 
 fn creusot_metadata_path(
