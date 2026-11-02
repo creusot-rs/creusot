@@ -278,7 +278,7 @@ pub fn encode_metadata<'tcx, T: for<'a> Encodable<MetadataEncoder<'a, 'tcx>>>(
             if let Some(expn_id) = expn_id.as_local() {
                 let expn_index = encoder.local_expn_id_remapping.map_id(expn_id);
                 let pos = AbsoluteBytePos::new(encoder.position());
-                data.encode(*encoder);
+                data.unwrap().encode(*encoder);
                 hash.encode(*encoder);
                 expn_data.insert(expn_index, pos);
             }
