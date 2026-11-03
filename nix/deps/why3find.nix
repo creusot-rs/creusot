@@ -33,9 +33,11 @@ ocamlPackages.buildDunePackage {
     zeromq
   ]
   ++ (with ocamlPackages; [
+    cpu
     dune-site
     terminal_size
     yojson
+    xdg
     zmq
   ]);
 }
