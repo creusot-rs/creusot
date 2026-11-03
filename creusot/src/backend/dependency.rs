@@ -6,7 +6,6 @@ use rustc_span::Symbol;
 use rustc_type_ir::{AliasTy, AliasTyKind};
 
 use crate::{
-    contracts_items::Intrinsic,
     ctx::{PreMod, TranslationCtx},
     naming::{ascii_item_name, field_name, lowercase_prefix, type_string, uppercase_prefix},
 };

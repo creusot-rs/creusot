@@ -131,9 +131,8 @@ fn cargo_build(target: &str, force_color: bool) {
     if force_color {
         cargo.args(["--color", "always"]);
     }
-    let output = cargo.output().unwrap();
-    if !output.status.success() {
-        std::io::stdout().write_all(&output.stderr).unwrap();
+    // Inherit stdout/stderr so that warnings and progress are shown, not just errors.
+    if !cargo.status().unwrap().success() {
         std::process::exit(1)
     }
 }

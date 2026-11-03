@@ -7,7 +7,7 @@ use crate::{
         program,
         resolve::{ResolveDef, elaborate_resolve_def, structural_resolve},
         signature::{LogicSignature, lower_logic_sig, lower_program_sig},
-        term::{lower_pat, lower_pure, lower_pure_weakdep},
+        term::{lower_pure, lower_pure_weakdep},
         ty::{
             constructor, eliminator, translate_adtdecl, translate_closure_ty, translate_tuple_ty,
             translate_ty,
@@ -31,8 +31,7 @@ use rustc_abi::Size;
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{
-    self, AliasTyKind, Const, GenericArg, GenericArgKind, GenericArgsRef, TraitRef, Ty, TyCtxt,
-    TyKind, TypingEnv,
+    self, AliasTyKind, Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypingEnv,
 };
 use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_type_ir::{AliasTy, ClosureKind, ConstKind, EarlyBinder};
@@ -45,10 +44,8 @@ use why3::{
     Exp, Ident, Name,
     coma::{Defn, Expr, Param, Prototype},
     declaration::{
-        Axiom, Decl, DeclKind, LogicDecl, LogicDefn, Meta, MetaArg, MetaIdent, Signature, TyDecl,
-        Use,
+        Axiom, Decl, DeclKind, LogicDecl, Meta, MetaArg, MetaIdent, Signature, TyDecl, Use,
     },
-    exp::Constant,
     ty::Type,
 };
 
