@@ -117,11 +117,17 @@ pub use arc::*;
 
 #[cfg(feature = "nightly")]
 pub trait SyncViewExt<T: ?Sized> {
+    unsafe fn borrow<'a>(&'a self) -> &'a T;
     unsafe fn borrow_mut<'a>(&'a self) -> &'a mut T;
 }
 
 #[cfg(feature = "nightly")]
 impl<T: ?Sized> SyncViewExt<T> for core::cell::SyncUnsafeCell<T> {
+    #[trusted]
+    unsafe fn borrow<'a>(&'a self) -> &'a T {
+        unsafe { &*self.get() }
+    }
+
     #[trusted]
     unsafe fn borrow_mut<'a>(&'a self) -> &'a mut T {
         unsafe { &mut *self.get() }
