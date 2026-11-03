@@ -116,6 +116,7 @@ impl<T: ?Sized> PCell<T> {
     #[check(terminates)]
     #[requires(self == *perm.ward())]
     #[ensures(result == perm.val())]
+    #[erasure(core::cell::SyncUnsafeCell::<T>::into_inner)]
     pub fn into_inner(self, perm: Ghost<Perm<PCell<T>>>) -> T
     where
         T: Sized,
@@ -140,6 +141,7 @@ impl<T: ?Sized> PCell<T> {
     #[check(terminates)]
     #[requires(self == perm.ward())]
     #[ensures(*result == *perm.val_unsized())]
+    #[erasure(core::cell::SyncUnsafeCell::<T>::borrow)]
     pub unsafe fn borrow<'a>(&'a self, perm: Ghost<&'a Perm<PCell<T>>>) -> &'a T {
         let _ = perm;
         unsafe { &*self.0.get() }
