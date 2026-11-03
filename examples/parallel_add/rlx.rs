@@ -14,7 +14,7 @@ use creusot_std::{
             committer::Committer,
             view::{ReleaseSyncView, SyncView, Timestamp},
         },
-        thread,
+        thread::{self, JoinHandleExt},
     },
 };
 
@@ -80,7 +80,7 @@ pub fn parallel_add() {
     );
 
     thread::scope(|s| {
-        s.spawn(|tokens: Ghost<Tokens>| {
+        let t1 = s.spawn(|tokens: Ghost<Tokens>| {
             atomic.fetch_add::<_, Relaxed>(
                 2,
                 Ordering::Relaxed,
@@ -97,7 +97,7 @@ pub fn parallel_add() {
             );
         });
 
-        s.spawn(|tokens: Ghost<Tokens>| {
+        let t2 = s.spawn(|tokens: Ghost<Tokens>| {
             atomic.fetch_add::<_, Relaxed>(
                 2,
                 Ordering::Relaxed,
@@ -113,6 +113,9 @@ pub fn parallel_add() {
                 }},
             );
         });
+
+        let _ = t1.join_unwrap();
+        let _ = t2.join_unwrap();
     });
 
     let perm = ghost! {

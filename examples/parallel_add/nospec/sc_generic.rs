@@ -4,11 +4,10 @@
 
 use std::{
     sync::atomic::{AtomicI32, Ordering},
-    thread,
-    thread::ScopedJoinHandle,
+    thread::{self, ScopedJoinHandle},
 };
 
-use creusot_std::prelude::erasure;
+use creusot_std::{prelude::erasure, std::thread::JoinHandleExt};
 
 #[erasure(spec::parallel_add)]
 pub fn parallel_add(n: i32) {
@@ -25,7 +24,7 @@ pub fn parallel_add(n: i32) {
         }
 
         for h in handles {
-            h.join().unwrap();
+            h.join_unwrap();
         }
     });
 

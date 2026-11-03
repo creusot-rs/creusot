@@ -70,15 +70,7 @@ pub fn parallel_add() {
     );
 
     thread::scope(|s| {
-        // We use move closures to make sure that they do not contain borrows of `Ghost<_>`, since
-        // such a borrow would unnecesary consume space in these closures. So, we create the borrows
-        // here.
-        let mut frag1: Ghost<&mut _> = frag1.borrow_mut();
-        let mut frag2: Ghost<&mut _> = frag2.borrow_mut();
-        let inv: Ghost<&_> = inv.borrow();
-        let atomic = &atomic;
-
-        let t1 = s.spawn(move |tokens: Ghost<Tokens>| {
+        let t1 = s.spawn(|tokens: Ghost<Tokens>| {
             atomic.fetch_add(
                 2,
                 Ordering::SeqCst,
@@ -92,7 +84,7 @@ pub fn parallel_add() {
             );
         });
 
-        let t2 = s.spawn(move |tokens: Ghost<Tokens>| {
+        let t2 = s.spawn(|tokens: Ghost<Tokens>| {
             atomic.fetch_add(
                 2,
                 Ordering::SeqCst,

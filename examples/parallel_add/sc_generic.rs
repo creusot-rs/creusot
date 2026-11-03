@@ -121,7 +121,7 @@ pub fn parallel_add(n: i32) {
         #[invariant(frag@ == Some((fraction(produced.len()+1, n@), produced.len())))]
         for h in handles {
             proof_assert!(h == handles_[produced.len() - 1]);
-            let f = h.join().unwrap();
+            let f = h.join_unwrap();
             ghost! { frag.join_in(f.into_inner()) };
         }
         proof_assert!(frag@ == Some((PR::from_int(1), n@)));

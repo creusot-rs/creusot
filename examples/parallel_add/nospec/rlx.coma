@@ -1146,8 +1146,6 @@ module M_spec__parallel_add
         /\ (forall r: (). valid_result_ScopedJoinHandle_unit result r -> postcondition_once_closure0'1 f t r))}
       (! return {result}) ]
   
-  predicate resolve_ScopedJoinHandle_unit (_1: t_ScopedJoinHandle_unit)
-  
   type closure1 = { c0'3: t_AtomicI32; c1'3: t_AtomicInvariant_PAInv; c2'3: MutBorrow.t t_Fragment_Option_Excl_bool }
   
   type closure0'3 = { c0'4: t_AtomicInvariant_PAInv; c1'4: t_Tokens; c2'4: MutBorrow.t t_Fragment_Option_Excl_bool }
@@ -1549,6 +1547,12 @@ module M_spec__parallel_add
         /\ (forall r: (). valid_result_ScopedJoinHandle_unit result r -> postcondition_once_closure1 f t r))}
       (! return {result}) ]
   
+  let join_unwrap_ScopedJoinHandle_unit (self: t_ScopedJoinHandle_unit) (return (x: ())) =
+  {[@stop_split] [@expl:join_unwrap 'self' type invariant] inv_ScopedJoinHandle_unit self}
+    any
+    [ return (result: ()) -> {[@stop_split] [@expl:join_unwrap ensures] valid_result_ScopedJoinHandle_unit self result}
+      (! return {result}) ]
+  
   predicate inv_closure0'4 [@inline:trivial] (_1: closure0) =
     let {c0 = x0; c1 = x1; c2 = x2; c3 = x3} = _1 in inv_ref_AtomicI32 x0
     /\ inv_refmut_Ghost_Fragment_Option_Excl_bool x2 /\ inv_refmut_Ghost_Fragment_Option_Excl_bool x3
@@ -1573,36 +1577,36 @@ module M_spec__parallel_add
             [ &self <- { self with c2 = { self.c2 with current = _bor.final } } ] s3)
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Fragment_Option_Excl_bool self.c2.current} any) ]
       | s3 = [ &_5 <- { c0'0 = _6; c1'0 = _7; c2'0 = _8 } ] s4
-      | s4 = spawn_closure0 {s} {_5} (fun (_x: t_ScopedJoinHandle_unit) -> [ &_3 <- _x ] s5)
-      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_ScopedJoinHandle_unit _3} any) ]
-      | s6 = -{resolve_ScopedJoinHandle_unit _3}- s7
-      | s7 = [ &_12 <- self.c0 ] s8
-      | s8 = [ &_13 <- self.c1 ] s9
-      | s9 = MutBorrow.borrow_final <t_Fragment_Option_Excl_bool> {self.c3.current} {MutBorrow.get_id self.c3}
+      | s4 = spawn_closure0 {s} {_5} (fun (_x: t_ScopedJoinHandle_unit) -> [ &t1 <- _x ] s5)
+      | s5 = [ &_12 <- self.c0 ] s6
+      | s6 = [ &_13 <- self.c1 ] s7
+      | s7 = MutBorrow.borrow_final <t_Fragment_Option_Excl_bool> {self.c3.current} {MutBorrow.get_id self.c3}
           (fun (_bor: MutBorrow.t t_Fragment_Option_Excl_bool) ->
             [ &_14 <- _bor ] -{inv_Ghost_Fragment_Option_Excl_bool _bor.final}-
-            [ &self <- { self with c3 = { self.c3 with current = _bor.final } } ] s10)
+            [ &self <- { self with c3 = { self.c3 with current = _bor.final } } ] s8)
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Fragment_Option_Excl_bool self.c3.current} any) ]
-      | s10 = [ &_11 <- { c0'3 = _12; c1'3 = _13; c2'3 = _14 } ] s11
-      | s11 = spawn_closure1 {s} {_11} (fun (_x: t_ScopedJoinHandle_unit) -> [ &_9 <- _x ] s12)
-      | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_ScopedJoinHandle_unit _9} any) ]
-      | s13 = -{resolve_ScopedJoinHandle_unit _9}- s14
-      | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_closure0'4 self} any) ]
-      | s15 = -{resolve_closure0'2 self}- s16
-      | s16 = return {_ret} ] ]
+      | s8 = [ &_11 <- { c0'3 = _12; c1'3 = _13; c2'3 = _14 } ] s9
+      | s9 = spawn_closure1 {s} {_11} (fun (_x: t_ScopedJoinHandle_unit) -> [ &t2 <- _x ] s10)
+      | s10 = join_unwrap_ScopedJoinHandle_unit {t1} (fun (_x: ()) -> [ &_15 <- _x ] s11)
+      | s11 = join_unwrap_ScopedJoinHandle_unit {t2} (fun (_x: ()) -> [ &_17 <- _x ] s12)
+      | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_closure0'4 self} any) ]
+      | s13 = -{resolve_closure0'2 self}- s14
+      | s14 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: closure0 = self
     | & s: t_Scope = s
-    | & _3: t_ScopedJoinHandle_unit = Any.any_l ()
+    | & t1: t_ScopedJoinHandle_unit = Any.any_l ()
     | & _5: closure0'0 = Any.any_l ()
     | & _6: t_AtomicI32 = Any.any_l ()
     | & _7: t_AtomicInvariant_PAInv = Any.any_l ()
     | & _8: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
-    | & _9: t_ScopedJoinHandle_unit = Any.any_l ()
+    | & t2: t_ScopedJoinHandle_unit = Any.any_l ()
     | & _11: closure1 = Any.any_l ()
     | & _12: t_AtomicI32 = Any.any_l ()
     | & _13: t_AtomicInvariant_PAInv = Any.any_l ()
-    | & _14: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l () ] [ return (result: ()) -> return {result} ]
+    | & _14: MutBorrow.t t_Fragment_Option_Excl_bool = Any.any_l ()
+    | & _15: () = Any.any_l ()
+    | & _17: () = Any.any_l () ] [ return (result: ()) -> return {result} ]
   
   meta "rewrite_def" predicate closure0'4'pre
   

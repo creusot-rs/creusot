@@ -1582,41 +1582,14 @@ module M_spec__parallel_add
   
   meta "rewrite_def" function index_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global
   
-  type dyn_Any
-  
-  type t_Result_Ghost_Fragment_Option_tup2_PositiveReal_Int_Box_dyn_Any_Global =
-    | Ok t_Fragment_Option_tup2_PositiveReal_Int
-    | Err dyn_Any
-  
-  predicate inv_Result_Ghost_Fragment_Option_tup2_PositiveReal_Int_Box_dyn_Any_Global (_1: t_Result_Ghost_Fragment_Option_tup2_PositiveReal_Int_Box_dyn_Any_Global)
-  
-  axiom inv_axiom'5 [@rewrite]:
-    forall _1: t_Result_Ghost_Fragment_Option_tup2_PositiveReal_Int_Box_dyn_Any_Global [inv_Result_Ghost_Fragment_Option_tup2_PositiveReal_Int_Box_dyn_Any_Global _1]. inv_Result_Ghost_Fragment_Option_tup2_PositiveReal_Int_Box_dyn_Any_Global _1
-      = match _1 with
-        | Ok f0'13 -> inv_Ghost_Fragment_Option_tup2_PositiveReal_Int f0'13
-        | Err f0'13 -> true
-        end
-  
-  let join_Ghost_Fragment_Option_tup2_PositiveReal_Int
+  let join_unwrap_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int
     (self: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int)
-    (return (x: t_Result_Ghost_Fragment_Option_tup2_PositiveReal_Int_Box_dyn_Any_Global)) =
-  {[@stop_split] [@expl:join 'self' type invariant] inv_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int self}
-    any
-    [ return (result: t_Result_Ghost_Fragment_Option_tup2_PositiveReal_Int_Box_dyn_Any_Global) ->
-    {[@stop_split] [@expl:join_Ghost_Fragment_Option_tup2_PositiveReal_Int ensures] ([@stop_split] [@expl:join result type invariant] inv_Result_Ghost_Fragment_Option_tup2_PositiveReal_Int_Box_dyn_Any_Global result)
-      /\ ([@stop_split] [@expl:join ensures] exists r: t_Fragment_Option_tup2_PositiveReal_Int. result = Ok r
-        /\ valid_result_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int self r)}
-      (! return {result}) ]
-  
-  let unwrap_Ghost_Fragment_Option_tup2_PositiveReal_Int
-    (self: t_Result_Ghost_Fragment_Option_tup2_PositiveReal_Int_Box_dyn_Any_Global)
     (return (x: t_Fragment_Option_tup2_PositiveReal_Int)) =
-  {[@stop_split] [@expl:unwrap_Ghost_Fragment_Option_tup2_PositiveReal_Int requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_Result_Ghost_Fragment_Option_tup2_PositiveReal_Int_Box_dyn_Any_Global self)
-    /\ ([@stop_split] [@expl:unwrap requires] exists t: t_Fragment_Option_tup2_PositiveReal_Int. self = Ok t)}
+  {[@stop_split] [@expl:join_unwrap 'self' type invariant] inv_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int self}
     any
     [ return (result: t_Fragment_Option_tup2_PositiveReal_Int) ->
-    {[@stop_split] [@expl:unwrap_Ghost_Fragment_Option_tup2_PositiveReal_Int ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_Ghost_Fragment_Option_tup2_PositiveReal_Int result)
-      /\ ([@stop_split] [@expl:unwrap ensures] Ok result = self)}
+    {[@stop_split] [@expl:join_unwrap_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int ensures] ([@stop_split] [@expl:join_unwrap result type invariant] inv_Ghost_Fragment_Option_tup2_PositiveReal_Int result)
+      /\ ([@stop_split] [@expl:join_unwrap ensures] valid_result_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int self result)}
       (! return {result}) ]
   
   let into_inner_Fragment_Option_tup2_PositiveReal_Int (self: t_Fragment_Option_tup2_PositiveReal_Int)
@@ -1817,30 +1790,27 @@ module M_spec__parallel_add
             = index_Vec_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int_Global handles_ (Seq.length produced'0
             - 1)}
             s5
-          | s5 = join_Ghost_Fragment_Option_tup2_PositiveReal_Int {h'0}
-              (fun (_x: t_Result_Ghost_Fragment_Option_tup2_PositiveReal_Int_Box_dyn_Any_Global) -> [ &_121 <- _x ] s6)
-          | s6 = unwrap_Ghost_Fragment_Option_tup2_PositiveReal_Int {_121}
-              (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &f <- _x ] s7)
-          | s7 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {self.c1.current}
+          | s5 = join_unwrap_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int {h'0}
+              (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &f <- _x ] s6)
+          | s6 = MutBorrow.borrow_mut <t_Fragment_Option_tup2_PositiveReal_Int> {self.c1.current}
               (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
-                [ &_127 <- _bor ] -{inv_Ghost_Fragment_Option_tup2_PositiveReal_Int _bor.final}-
-                [ &self <- { self with c1 = { self.c1 with current = _bor.final } } ] s8)
+                [ &_126 <- _bor ] -{inv_Ghost_Fragment_Option_tup2_PositiveReal_Int _bor.final}-
+                [ &self <- { self with c1 = { self.c1 with current = _bor.final } } ] s7)
             [ _ck -> (! {[@expl:type invariant] inv_Ghost_Fragment_Option_tup2_PositiveReal_Int self.c1.current} any) ]
-          | s8 = deref_mut_Ghost_Fragment_Option_tup2_PositiveReal_Int {_127}
-              (fun (_x: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_126 <- _x ] s9)
-          | s9 = into_inner_Fragment_Option_tup2_PositiveReal_Int {f}
-              (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_128 <- _x ] s10)
-          | s10 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_126.current}
-              {MutBorrow.get_id _126}
+          | s7 = deref_mut_Ghost_Fragment_Option_tup2_PositiveReal_Int {_126}
+              (fun (_x: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_125 <- _x ] s8)
+          | s8 = into_inner_Fragment_Option_tup2_PositiveReal_Int {f}
+              (fun (_x: t_Fragment_Option_tup2_PositiveReal_Int) -> [ &_127 <- _x ] s9)
+          | s9 = MutBorrow.borrow_final <t_Fragment_Option_tup2_PositiveReal_Int> {_125.current} {MutBorrow.get_id _125}
               (fun (_bor: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int) ->
-                [ &_125 <- _bor ] -{inv_Fragment_Option_tup2_PositiveReal_Int _bor.final}-
-                [ &_126 <- { _126 with current = _bor.final } ] s11)
-            [ _ck -> (! {[@expl:type invariant] inv_Fragment_Option_tup2_PositiveReal_Int _126.current} any) ]
-          | s11 = join_in_Option_tup2_PositiveReal_Int {_125} {_128} (fun (_x: ()) -> [ &_124 <- _x ] s12)
-          | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_Fragment_Option_tup2_PositiveReal_Int _126} any) ]
-          | s13 = -{resolve_refmut_Fragment_Option_tup2_PositiveReal_Int _126}- s14
-          | s14 = new_unit {_124} (fun (_x: ()) -> [ &_123 <- _x ] s15)
-          | s15 = bb25 ] ] ]
+                [ &_124 <- _bor ] -{inv_Fragment_Option_tup2_PositiveReal_Int _bor.final}-
+                [ &_125 <- { _125 with current = _bor.final } ] s10)
+            [ _ck -> (! {[@expl:type invariant] inv_Fragment_Option_tup2_PositiveReal_Int _125.current} any) ]
+          | s10 = join_in_Option_tup2_PositiveReal_Int {_124} {_127} (fun (_x: ()) -> [ &_123 <- _x ] s11)
+          | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_Fragment_Option_tup2_PositiveReal_Int _125} any) ]
+          | s12 = -{resolve_refmut_Fragment_Option_tup2_PositiveReal_Int _125}- s13
+          | s13 = new_unit {_123} (fun (_x: ()) -> [ &_122 <- _x ] s14)
+          | s14 = bb25 ] ] ]
     | bb29 = s0
       [ s0 = s1
         [ _ck ->
@@ -1892,13 +1862,12 @@ module M_spec__parallel_add
     | & _110: Seq.seq t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & h'0: t_ScopedJoinHandle_Ghost_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & f: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & _121: t_Result_Ghost_Fragment_Option_tup2_PositiveReal_Int_Box_dyn_Any_Global = Any.any_l ()
+    | & _122: () = Any.any_l ()
     | & _123: () = Any.any_l ()
-    | & _124: () = Any.any_l ()
+    | & _124: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & _125: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & _126: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & _127: MutBorrow.t t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
-    | & _128: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
+    | & _127: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & _old: Int32.t = Any.any_l ()
     | & _old'0: t_Fragment_Option_tup2_PositiveReal_Int = Any.any_l ()
     | & _old'1: t_AtomicInvariantSC_PAInv = Any.any_l ()

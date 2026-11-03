@@ -2,13 +2,12 @@
 
 #![allow(creusot::contractless_external_function)]
 
-use creusot_std::std::thread::JoinHandleExt;
 use std::{
     sync::atomic::{AtomicI32, Ordering},
     thread,
 };
 
-use creusot_std::prelude::erasure;
+use creusot_std::{prelude::erasure, std::thread::JoinHandleExt};
 
 #[erasure(spec::parallel_add)]
 pub fn parallel_add() {

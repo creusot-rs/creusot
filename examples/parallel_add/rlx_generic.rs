@@ -98,9 +98,6 @@ pub fn parallel_add(n: i32) {
     );
 
     thread::scope(|s| {
-        let inv: Ghost<&_> = inv.borrow();
-        let atomic = &atomic;
-
         let mut handles: Vec<ScopedJoinHandle<_>> = vec![];
 
         #[invariant(frag.id() == inv.public().1)]
@@ -114,7 +111,7 @@ pub fn parallel_add(n: i32) {
             let f1 = snapshot! { Some((fraction(1, n@), 0)) };
             let f2 = snapshot! { Some((fraction(n@+1-produced.len(), n@), 0)) };
             let mut frag = ghost! { frag.split_off(f1, f2) };
-            let h = s.spawn(move |tokens: Ghost<Tokens>| {
+            let h = s.spawn(|tokens: Ghost<Tokens>| {
                 atomic.fetch_add::<_, Relaxed>(
                     1,
                     Ordering::Relaxed,
