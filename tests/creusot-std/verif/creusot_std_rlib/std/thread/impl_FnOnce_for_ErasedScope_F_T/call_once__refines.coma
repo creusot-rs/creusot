@@ -1,0 +1,36 @@
+(* <std::thread::ErasedScope<'env, F, T> as std::ops::FnOnce<(&'scope std::thread::Scope<'scope, 'a>,)>> *)
+
+type t_ErasedScope_F_T = { f0: () }
+
+type t_Scope
+
+predicate inv_Scope (_1: t_Scope)
+
+predicate invariant_ref_Scope [@inline:trivial] (self: t_Scope) = inv_Scope self
+
+meta "rewrite_def" predicate invariant_ref_Scope
+
+predicate inv_ref_Scope [@inline:trivial] (_1: t_Scope) = invariant_ref_Scope _1
+
+meta "rewrite_def" predicate inv_ref_Scope
+
+predicate inv_tup1_ref_Scope [@inline:trivial] (_1: t_Scope) = inv_ref_Scope _1
+
+meta "rewrite_def" predicate inv_tup1_ref_Scope
+
+predicate precondition_ErasedScope_F_T (self: t_ErasedScope_F_T) (args: t_Scope)
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate postcondition_once_ErasedScope_F_T (self: t_ErasedScope_F_T) (args: t_Scope) (result: t_T)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_ErasedScope_F_T, args: t_Scope. inv_tup1_ref_Scope args
+    -> precondition_ErasedScope_F_T self args
+    -> inv_tup1_ref_Scope args
+    /\ (forall result: t_T. inv_T result -> inv_T result /\ postcondition_once_ErasedScope_F_T self args result)

@@ -3,6 +3,8 @@ module M_fetch_add
   use creusot.int.Int32
   use creusot.prelude.MutBorrow
   
+  type t_Ordering = Relaxed | Release | Acquire | AcqRel | SeqCst
+  
   type t_Committer_AtomicI32_i32_SeqCst_unit
   
   let closure2 [@coma:extspec] (self: ()) (_0: t_Committer_AtomicI32_i32_SeqCst_unit) (return (x: ())) = bb0
@@ -59,9 +61,11 @@ module M_fetch_add
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure2
   
-  let load_FnGhostWrapper_closure2 (self: t_AtomicI32) (f: t_FnGhostWrapper_closure2) (return (x: Int32.t)) =
+  let load_FnGhostWrapper_closure2 (self: t_AtomicI32) (order: t_Ordering) (f: t_FnGhostWrapper_closure2)
+    (return (x: Int32.t)) =
   {[@stop_split] [@expl:load_FnGhostWrapper_closure2 requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicI32 self)
-    /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicI32_i32_SeqCst_unit. not shot_store_AtomicI32 c
+    /\ ([@stop_split] [@expl:load requires #0] order = SeqCst)
+    /\ ([@stop_split] [@expl:load requires #1] forall c: t_Committer_AtomicI32_i32_SeqCst_unit. not shot_store_AtomicI32 c
       -> ward_AtomicI32 c = self -> precondition_FnGhostWrapper_closure2 f c)}
     any
     [ return (result: Int32.t) ->
@@ -360,16 +364,17 @@ module M_fetch_add
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure6
   
   let compare_exchange_weak_FnGhostWrapper_closure6 (self: t_AtomicI32) (current': Int32.t) (new: Int32.t)
-    (f: t_FnGhostWrapper_closure6) (return (x: t_Result_i32_i32)) =
+    (success: t_Ordering) (failure: t_Ordering) (f: t_FnGhostWrapper_closure6) (return (x: t_Result_i32_i32)) =
   {[@stop_split] [@expl:compare_exchange_weak_FnGhostWrapper_closure6 requires] ([@stop_split] [@expl:compare_exchange_weak 'self' type invariant] inv_ref_AtomicI32 self)
     /\ ([@stop_split] [@expl:compare_exchange_weak 'f' type invariant] inv_Ghost_FnGhostWrapper_closure6 f)
-    /\ ([@stop_split] [@expl:compare_exchange_weak requires #0] forall c: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst. not shot_store_AtomicI32'0 c.current
+    /\ ([@stop_split] [@expl:compare_exchange_weak requires #0] success = SeqCst /\ failure = SeqCst)
+    /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst. not shot_store_AtomicI32'0 c.current
         -> ward_AtomicI32'0 c.current = self
         -> deep_model_i32 (val_load_AtomicI32'0 c.current) = deep_model_i32 current'
         -> val_store_AtomicI32 c.current = new
         -> precondition_FnGhostWrapper_closure6 f (Ok c)
         /\ (postcondition_once_FnGhostWrapper_closure6 f (Ok c) () -> shot_store_AtomicI32'0 c.final))
-    /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicI32_i32_SeqCst_unit. not shot_store_AtomicI32 c
+    /\ ([@stop_split] [@expl:compare_exchange_weak requires #2] forall c: t_Committer_AtomicI32_i32_SeqCst_unit. not shot_store_AtomicI32 c
       -> ward_AtomicI32 c = self -> precondition_FnGhostWrapper_closure6 f (Err c))}
     any
     [ return (result: t_Result_i32_i32) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
@@ -423,32 +428,35 @@ module M_fetch_add
       -> precondition_F f c /\ (postcondition_once_F f c () -> shot_store_AtomicI32'0 c.final))}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_16 <- () ] s1
-      | s1 = __new_closure2 {_16} (fun (_x: t_FnGhostWrapper_closure2) -> [ &_15 <- _x ] s2)
-      | s2 = new_FnGhostWrapper_closure2 {_15} (fun (_x: t_FnGhostWrapper_closure2) -> [ &_14 <- _x ] s3)
-      | s3 = load_FnGhostWrapper_closure2 {at'} {_14} (fun (_x: Int32.t) -> [ &old' <- _x ] s4)
-      | s4 = [ &old_f <- f ] s5
-      | s5 = into_inner_F {f} (fun (_x: t_F) -> [ &_22 <- _x ] s6)
-      | s6 = [ &_21 <- Some _22 ] s7
-      | s7 = new_Option_F {_21} (fun (_x: t_Option_F) -> [ &f'0 <- _x ] s8)
-      | s8 = bb8 ]
+      [ s0 = [ &_14 <- SeqCst ] s1
+      | s1 = [ &_17 <- () ] s2
+      | s2 = __new_closure2 {_17} (fun (_x: t_FnGhostWrapper_closure2) -> [ &_16 <- _x ] s3)
+      | s3 = new_FnGhostWrapper_closure2 {_16} (fun (_x: t_FnGhostWrapper_closure2) -> [ &_15 <- _x ] s4)
+      | s4 = load_FnGhostWrapper_closure2 {at'} {_14} {_15} (fun (_x: Int32.t) -> [ &old' <- _x ] s5)
+      | s5 = [ &old_f <- f ] s6
+      | s6 = into_inner_F {f} (fun (_x: t_F) -> [ &_23 <- _x ] s7)
+      | s7 = [ &_22 <- Some _23 ] s8
+      | s8 = new_Option_F {_22} (fun (_x: t_Option_F) -> [ &f'0 <- _x ] s9)
+      | s9 = bb8 ]
     | bb8 = bb8
       [ bb8 = {[@expl:inferred invariant: type invariant] inv_Ghost_Option_F f'0}
         {[@expl:loop invariant] f'0 = Some old_f}
         (! s0)
-        [ s0 = wrapping_add {old'} {val'} (fun (_x: Int32.t) -> [ &_33 <- _x ] s1)
-        | s1 = MutBorrow.borrow_mut <t_Option_F> {f'0}
+        [ s0 = wrapping_add {old'} {val'} (fun (_x: Int32.t) -> [ &_34 <- _x ] s1)
+        | s1 = [ &_37 <- SeqCst ] s2
+        | s2 = [ &_38 <- SeqCst ] s3
+        | s3 = MutBorrow.borrow_mut <t_Option_F> {f'0}
             (fun (_bor: MutBorrow.t t_Option_F) ->
-              [ &_39 <- _bor ] -{inv_Ghost_Option_F _bor.final}-
-              [ &f'0 <- _bor.final ] s2) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_F f'0} any) ]
-        | s2 = [ &_38 <- { c0 = _39 } ] s3
-        | s3 = __new_closure6 {_38} (fun (_x: t_FnGhostWrapper_closure6) -> [ &_37 <- _x ] s4)
-        | s4 = new_FnGhostWrapper_closure6 {_37} (fun (_x: t_FnGhostWrapper_closure6) -> [ &_36 <- _x ] s5)
-        | s5 = compare_exchange_weak_FnGhostWrapper_closure6 {at'} {old'} {_33} {_36}
-            (fun (_x: t_Result_i32_i32) -> [ &_30 <- _x ] s6)
-        | s6 = any [ br0 (x0: Int32.t) -> {_30 = Ok'0 x0} (! bb16) | br1 (x0: Int32.t) -> {_30 = Err'0 x0} (! bb15) ] ]
+              [ &_42 <- _bor ] -{inv_Ghost_Option_F _bor.final}-
+              [ &f'0 <- _bor.final ] s4) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_F f'0} any) ]
+        | s4 = [ &_41 <- { c0 = _42 } ] s5
+        | s5 = __new_closure6 {_41} (fun (_x: t_FnGhostWrapper_closure6) -> [ &_40 <- _x ] s6)
+        | s6 = new_FnGhostWrapper_closure6 {_40} (fun (_x: t_FnGhostWrapper_closure6) -> [ &_39 <- _x ] s7)
+        | s7 = compare_exchange_weak_FnGhostWrapper_closure6 {at'} {old'} {_34} {_37} {_38} {_39}
+            (fun (_x: t_Result_i32_i32) -> [ &_31 <- _x ] s8)
+        | s8 = any [ br0 (x0: Int32.t) -> {_31 = Ok'0 x0} (! bb16) | br1 (x0: Int32.t) -> {_31 = Err'0 x0} (! bb15) ] ]
         [ bb15 = s0
-          [ s0 = elim_Err {_30} (fun (r0: Int32.t) -> [ &o <- r0 ] s1) | s1 = [ &old' <- o ] s2 | s2 = bb8 ] ] ]
+          [ s0 = elim_Err {_31} (fun (r0: Int32.t) -> [ &o <- r0 ] s1) | s1 = [ &old' <- o ] s2 | s2 = bb8 ] ] ]
     | bb16 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_F f'0} any) ]
       | s1 = -{resolve_Ghost_Option_F'0 f'0}- s2
@@ -459,19 +467,22 @@ module M_fetch_add
     | & val': Int32.t = val'
     | & f: t_F = f
     | & old': Int32.t = Any.any_l ()
-    | & _14: t_FnGhostWrapper_closure2 = Any.any_l ()
+    | & _14: t_Ordering = Any.any_l ()
     | & _15: t_FnGhostWrapper_closure2 = Any.any_l ()
-    | & _16: () = Any.any_l ()
+    | & _16: t_FnGhostWrapper_closure2 = Any.any_l ()
+    | & _17: () = Any.any_l ()
     | & old_f: t_F = Any.any_l ()
     | & f'0: t_Option_F = Any.any_l ()
-    | & _21: t_Option_F = Any.any_l ()
-    | & _22: t_F = Any.any_l ()
-    | & _30: t_Result_i32_i32 = Any.any_l ()
-    | & _33: Int32.t = Any.any_l ()
-    | & _36: t_FnGhostWrapper_closure6 = Any.any_l ()
-    | & _37: t_FnGhostWrapper_closure6 = Any.any_l ()
-    | & _38: closure6 = Any.any_l ()
-    | & _39: MutBorrow.t t_Option_F = Any.any_l ()
+    | & _22: t_Option_F = Any.any_l ()
+    | & _23: t_F = Any.any_l ()
+    | & _31: t_Result_i32_i32 = Any.any_l ()
+    | & _34: Int32.t = Any.any_l ()
+    | & _37: t_Ordering = Any.any_l ()
+    | & _38: t_Ordering = Any.any_l ()
+    | & _39: t_FnGhostWrapper_closure6 = Any.any_l ()
+    | & _40: t_FnGhostWrapper_closure6 = Any.any_l ()
+    | & _41: closure6 = Any.any_l ()
+    | & _42: MutBorrow.t t_Option_F = Any.any_l ()
     | & o: Int32.t = Any.any_l () ])
     [ return (result: Int32.t) ->
     {[@stop_split] [@expl:fetch_add ensures] exists c: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst. not shot_store_AtomicI32'0 c.current
