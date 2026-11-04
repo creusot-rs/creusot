@@ -45,6 +45,9 @@ impl Plain for char {
 pub trait CharExt {
     #[logic]
     pub fn to_utf8(self) -> Seq<u8>;
+
+    #[logic]
+    pub fn from_int(num: Int) -> Self;
 }
 
 impl CharExt for char {
@@ -54,6 +57,13 @@ impl CharExt for char {
     #[ensures((self@ <= 127) == (result.len() == 1))]
     #[ensures(self@ <= 127 ==> result[0]@ == self@)]
     fn to_utf8(self) -> Seq<u8> {
+        dead
+    }
+
+    #[trusted]
+    #[logic]
+    #[builtin("creusot.prelude.Char.of_int")]
+    fn from_int(_: Int) -> Self {
         dead
     }
 }
