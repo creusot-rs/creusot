@@ -331,7 +331,7 @@ impl<'a, 'tcx> ModuleContext<'a, 'tcx> {
             spans: Default::default(),
             constant_setters: Setters::new(),
             namespaces: Default::default(),
-            reveal_modifiers: ctx.compute_reveal_modifiers(source_id),
+            reveal_modifiers: ctx.collect_conceal_reveal_items(source_id),
         }
     }
 
@@ -527,7 +527,18 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
         debug!("cloning self: {:?}", self_id);
         let names = ModuleContext::new(ctx, self_id);
         let dep_graph = RefCell::new(DepGraphBuilder::default());
-        Dependencies { names, dep_graph }
+        let names = Dependencies { names, dep_graph };
+
+        for dep in ctx.collect_import_items(self_id) {
+            if let Dependency::Item(did, _) = dep
+                && ctx.should_check_variant_decreases(self_id, did)
+            {
+                continue;
+            }
+
+            names.dependency(dep);
+        }
+        names
     }
 
     /// Use this to avoid expanding the body of a recursive logic function as a dependency of its own VC.

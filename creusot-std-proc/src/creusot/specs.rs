@@ -22,17 +22,19 @@ use syn::{
     token::{self, Comma},
 };
 
-fn modify_visibility(attr: TS1, tokens: TS1, reveal: bool) -> TS1 {
+fn scope_item(attr: TS1, tokens: TS1, clause_prefix: &str, item_prefix: &str) -> TS1 {
     let attr = TokenStream::from(attr);
 
-    let prefix = if reveal { "reveal" } else { "conceal" };
-    let name =
-        crate::creusot::generate_unique_ident(prefix, Span::from(proc_macro::Span::def_site()));
+    let name = crate::creusot::generate_unique_ident(
+        item_prefix,
+        Span::from(proc_macro::Span::def_site()),
+    );
     let name_tag = name.to_string();
+    let clause_prefix = Ident::new(clause_prefix, Span::mixed_site());
 
     if let Ok(item) = syn::parse::<ContractSubject>(tokens.clone()) {
         use ContractSubject::*;
-        let reveal_tokens = quote! {
+        let tokens = quote! {
             #[allow(let_underscore_drop)]
             let _ =
                 #[creusot::no_translate]
@@ -52,7 +54,7 @@ fn modify_visibility(attr: TS1, tokens: TS1, reveal: bool) -> TS1 {
 
                 let mut companion = TokenStream::new();
                 if let Some(b) = fn_or_meth.body.as_mut() {
-                    b.stmts.insert(0, Stmt::Item(Item::Verbatim(reveal_tokens)));
+                    b.stmts.insert(0, Stmt::Item(Item::Verbatim(tokens)));
                 } else {
                     assert!(fn_or_meth.is_trait_signature());
                     let mut sig = fn_or_meth.sig.clone();
@@ -66,7 +68,7 @@ fn modify_visibility(attr: TS1, tokens: TS1, reveal: bool) -> TS1 {
                         #[creusot::no_translate]
                         #[doc(hidden)]
                         #sig {
-                            #reveal_tokens
+                            #tokens
                             ::core::marker::PhantomData
                         }
                     };
@@ -75,18 +77,18 @@ fn modify_visibility(attr: TS1, tokens: TS1, reveal: bool) -> TS1 {
                 TS1::from(quote! {
                     #companion
 
-                    #[creusot::clause::reveal=#name_tag]
+                    #[creusot::clause::#clause_prefix=#name_tag]
                     #(#attrs)*
                     #fn_or_meth
                 })
             }
             Const(item) => {
-                syn::Error::new(item.span(), format!("Unexpected `{prefix}` on const item"))
+                syn::Error::new(item.span(), format!("Unexpected `{item_prefix}` on const item"))
                     .to_compile_error()
                     .into()
             }
             Closure(clos) => {
-                syn::Error::new(clos.span(), format!("Unexpected `{prefix}` on closure"))
+                syn::Error::new(clos.span(), format!("Unexpected `{item_prefix}` on closure"))
                     .to_compile_error()
                     .into()
             }
@@ -101,7 +103,7 @@ fn modify_visibility(attr: TS1, tokens: TS1, reveal: bool) -> TS1 {
 
         match parse_macro_input!(tokens as Item) {
             Item::Impl(mut item) => {
-                item.attrs.insert(0, parse_quote! { #[creusot::clause::reveal=#name_tag] });
+                item.attrs.insert(0, parse_quote! { #[creusot::clause::#clause_prefix=#name_tag] });
                 let syn::Generics { lt_token, params, gt_token, where_clause } = &item.generics;
                 let ty = &item.self_ty;
 
@@ -124,12 +126,12 @@ fn modify_visibility(attr: TS1, tokens: TS1, reveal: bool) -> TS1 {
                 }
             }
             Item::Trait(mut item) => {
-                item.attrs.insert(0, parse_quote! { #[creusot::clause::reveal=#name_tag] });
+                item.attrs.insert(0, parse_quote! { #[creusot::clause::#clause_prefix=#name_tag] });
                 item.items.push(TraitItem::Verbatim(assoc_tokens));
                 quote! {#item}.into()
             }
             Item::Mod(mut item) => {
-                item.attrs.insert(0, parse_quote! { #[creusot::clause::reveal=#name_tag] });
+                item.attrs.insert(0, parse_quote! { #[creusot::clause::#clause_prefix=#name_tag] });
                 quote! {
                     #assoc_tokens
                     #item
@@ -139,6 +141,14 @@ fn modify_visibility(attr: TS1, tokens: TS1, reveal: bool) -> TS1 {
             item => quote! {#item}.into(),
         }
     }
+}
+
+fn modify_visibility(attr: TS1, tokens: TS1, reveal: bool) -> TS1 {
+    scope_item(attr, tokens, "vis_modifier", if reveal { "reveal" } else { "conceal" })
+}
+
+pub fn import(attr: TS1, tokens: TS1) -> TS1 {
+    scope_item(attr, tokens, "import", "import")
 }
 
 pub fn conceal(attr: TS1, tokens: TS1) -> TS1 {

@@ -69,6 +69,7 @@ proc_macro_attributes! {
     prophetic_alias
     conceal
     reveal
+    import
 }
 
 macro_rules! proc_macros {
