@@ -1,0 +1,34 @@
+(* <std::cell::SyncUnsafeCell<T> as std::sync::SyncViewExt<T>> *)
+
+use creusot.prelude.MutBorrow
+
+type t_SyncUnsafeCell_T
+
+predicate inv_SyncUnsafeCell_T (_1: t_SyncUnsafeCell_T)
+
+predicate invariant_ref_SyncUnsafeCell_T [@inline:trivial] (self: t_SyncUnsafeCell_T) = inv_SyncUnsafeCell_T self
+
+meta "rewrite_def" predicate invariant_ref_SyncUnsafeCell_T
+
+predicate inv_ref_SyncUnsafeCell_T [@inline:trivial] (_1: t_SyncUnsafeCell_T) = invariant_ref_SyncUnsafeCell_T _1
+
+meta "rewrite_def" predicate inv_ref_SyncUnsafeCell_T
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_refmut_T [@inline:trivial] (self: MutBorrow.t t_T) = inv_T self.current /\ inv_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_T
+
+predicate inv_refmut_T [@inline:trivial] (_1: MutBorrow.t t_T) = invariant_refmut_T _1
+
+meta "rewrite_def" predicate inv_refmut_T
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_SyncUnsafeCell_T. inv_ref_SyncUnsafeCell_T self
+    -> inv_ref_SyncUnsafeCell_T self /\ (forall result: MutBorrow.t t_T. inv_refmut_T result -> inv_refmut_T result)

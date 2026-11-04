@@ -95,6 +95,8 @@ impl<T, A, R> private::_Sealed for ErasedGhostFn<T, A, R> {}
 impl<'a, T: 'a, A: ErasedGhostFnArg, R> FnOnce<(&mut A::Ty<'a, T>,)> for ErasedGhostFn<T, A, R> {
     type Output = R;
 
+    #[trusted]
+    #[trusted(ghost)]
     extern "rust-call" fn call_once(self, _args: (&mut A::Ty<'a, T>,)) -> R {
         unimplemented!()
     }

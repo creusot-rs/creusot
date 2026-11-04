@@ -1,3 +1,5 @@
+use core::sync::atomic::Ordering;
+
 use creusot_std::{
     ghost::FnGhost,
     prelude::*,
@@ -6,6 +8,8 @@ use creusot_std::{
         committer::Committer,
     },
 };
+
+type UpdateCommitter = Committer<AtomicI32, i32, SeqCst, SeqCst>;
 
 #[requires(forall<c: &mut Committer<AtomicI32, i32, SeqCst, SeqCst>>
     !c.shot_store() ==> c.ward() == *at ==> c.val_store() == val + c.val_load() ==>
@@ -22,7 +26,7 @@ where
     // compare_exchange operation fails.
     F: FnGhost + FnOnce(&mut Committer<AtomicI32, i32, SeqCst, SeqCst>),
 {
-    let mut old = at.load(ghost!(|_: &_| {}));
+    let mut old = at.load(Ordering::SeqCst, ghost!(|_: &_| {}));
     let old_f = snapshot!(f);
     let mut f = ghost!(Some(f.into_inner()));
 
@@ -30,7 +34,9 @@ where
     while let Err(o) = at.compare_exchange_weak(
         old,
         old.wrapping_add(val),
-        ghost!(|c: Result<&mut Committer<AtomicI32, i32, SeqCst, SeqCst>, &_>| {
+        Ordering::SeqCst,
+        Ordering::SeqCst,
+        ghost!(|c: Result<&mut UpdateCommitter, &_>| {
             if let Ok(c) = c {
                 f.take().unwrap()(c)
             }
