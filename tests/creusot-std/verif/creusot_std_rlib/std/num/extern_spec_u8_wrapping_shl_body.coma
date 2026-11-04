@@ -1,0 +1,35 @@
+use creusot.int.UInt32BW
+use creusot.int.UInt8BW
+use creusot.prelude.Any
+
+constant const_BITS: UInt32BW.t = (8: UInt32BW.t)
+
+function shl_u8 [@inline:trivial] (self: UInt8BW.t) (rhs: UInt32BW.t) : UInt8BW.t =
+  UInt8BW.shl self (UInt8BW.of_BV256 (UInt32BW.to_BV256 rhs))
+
+meta "rewrite_def" function shl_u8
+
+let unchecked_shl (self: UInt8BW.t) (rhs: UInt32BW.t) (return (x: UInt8BW.t)) =
+{[@stop_split] [@expl:unchecked_shl requires] UInt32BW.lt rhs const_BITS}
+  any
+  [ return (result: UInt8BW.t) -> {[@stop_split] [@expl:unchecked_shl ensures] result = shl_u8 self rhs}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_u8_wrapping_shl_body (self_: UInt8BW.t) (rhs: UInt32BW.t) (return (x: UInt8BW.t)) = (! bb0
+  [ bb0 = s0
+    [ s0 = UInt32BW.sub {const_BITS} {(1: UInt32BW.t)} (fun (_x: UInt32BW.t) -> [ &_9 <- _x ] s1)
+    | s1 = [ &_7 <- UInt32BW.bw_and rhs _9 ] s2
+    | s2 = unchecked_shl {self_} {_7} (fun (_x: UInt8BW.t) -> [ &_ret <- _x ] s3)
+    | s3 = return {_ret} ] ]
+  [ & _ret: UInt8BW.t = Any.any_l ()
+  | & self_: UInt8BW.t = self_
+  | & rhs: UInt32BW.t = rhs
+  | & _7: UInt32BW.t = Any.any_l ()
+  | & _9: UInt32BW.t = Any.any_l () ])
+  [ return (result: UInt8BW.t) -> {[@stop_split] [@expl:extern_spec_u8_wrapping_shl_body ensures] result
+    = shl_u8 self_ (UInt32BW.bw_and rhs (UInt32BW.sub const_BITS (1: UInt32BW.t)))}
+    (! return {result}) ]
