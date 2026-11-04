@@ -3,6 +3,8 @@
 import os
 import sys
 
+CREUSOT_DEBUG = os.getenv("CREUSOT_DEBUG", None)
+
 def remove_blocks(lines, *, matching_with, opening, closing):
     is_inside_block = False
     depth_block = 0
@@ -61,20 +63,20 @@ def remove_rust_annotations(lines):
         closing = "]"
     )
 
+def remove_rust_use(lines):
+    yield from remove_blocks(
+        lines,
+        matching_with = lambda s: s.startswith("use "),
+        opening = "",
+        closing = ";",
+    )
+
 def remove_creusot_annotations(lines):
     yield from remove_blocks(
         lines,
         matching_with = lambda s: s.startswith("#[erasure"),
         opening = "[",
         closing = "]"
-    )
-
-def remove_creusot_use(lines):
-    yield from remove_blocks(
-        lines,
-        matching_with = lambda s: s.startswith("use creusot"),
-        opening = "",
-        closing = ";",
     )
 
 def remove_creusot_spec(lines):
@@ -93,12 +95,7 @@ def apply_phases(lines, phases):
     yield from result
 
 
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print(f"Usage: {sys.argv[0]} <file_path>")
-        sys.exit(1)
-
-    filename = sys.argv[1]
+def get_stat_of(filename):
     basename = os.path.basename(filename)
     filename_nospec = filename.replace(basename, f"nospec/{basename}")
 
@@ -109,10 +106,15 @@ if __name__ == "__main__":
             remove_block_comments,
             remove_test_fn,
             remove_rust_annotations,
+            remove_rust_use,
         ]
 
-        length = len(list(apply_phases(file, phases)))
-        print(f"Number of lines before simplification: {length}")
+        lines = list(apply_phases(file, phases))
+
+        if CREUSOT_DEBUG:
+            print("".join(lines))
+
+        length_spec = len(lines)
 
     with open(filename_nospec, "r") as file:
         phases = [
@@ -121,10 +123,25 @@ if __name__ == "__main__":
             remove_block_comments,
             remove_test_fn,
             remove_rust_annotations,
+            remove_rust_use,
             remove_creusot_annotations,
-            remove_creusot_use,
             remove_creusot_spec,
         ]
 
-        length = len(list(apply_phases(file, phases)))
-        print(f"Number of lines after simplification:  {length}")
+        lines = list(apply_phases(file, phases))
+
+        if CREUSOT_DEBUG:
+            print("".join(lines))
+
+        length_nospec = len(lines)
+
+
+    print(f"{filename} -- without specs: {length_nospec} - with specs: {length_spec}")
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print(f"Usage: {sys.argv[0]} [file_path..]")
+        sys.exit(1)
+
+    for filename in sys.argv[1:]:
+        get_stat_of(filename)
