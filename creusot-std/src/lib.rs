@@ -669,6 +669,7 @@ pub mod macros {
     ///
     /// #[conceal(identity::<Int>)]
     /// mod outer {
+    ///     # use creusot_std::prelude::*;
     ///     use super::*;
     ///
     ///     #[logic]
@@ -682,6 +683,7 @@ pub mod macros {
     ///     // undoes the effect of the previous `conceal` attribute.
     ///     #[reveal(identity::<Int>)]
     ///     mod inner {
+    ///         # use creusot_std::prelude::*;
     ///         use super::*;
     ///
     ///         #[logic]
@@ -706,6 +708,7 @@ pub mod macros {
     ///
     /// #[import(commutative)]
     /// mod A {
+    ///     # use creusot_std::prelude::*;
     ///     use super::*;
     ///
     ///     #[logic]
