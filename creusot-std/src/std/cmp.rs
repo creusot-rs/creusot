@@ -117,6 +117,28 @@ extern_spec! {
             }
         }
     }
+
+    impl Ordering {
+        #[check(ghost)]
+        #[ensures(result == (self == Self::Greater))]
+        fn is_gt(self) -> bool;
+
+        #[check(ghost)]
+        #[ensures(result == (self == Self::Greater || self == Self::Equal))]
+        fn is_ge(self) -> bool;
+
+        #[check(ghost)]
+        #[ensures(result == (self == Self::Less))]
+        fn is_lt(self) -> bool;
+
+        #[check(ghost)]
+        #[ensures(result == (self == Self::Less || self == Self::Equal))]
+        fn is_le(self) -> bool;
+
+        #[check(ghost)]
+        #[ensures(result == (self != Self::Equal))]
+        fn is_ne(self) -> bool;
+    }
 }
 
 // Make equality and comparisons on integers pure operations.
