@@ -1,0 +1,79 @@
+module M_direct__all_good
+  function gen_key (seed: int) : int
+  
+  predicate is_secure (pkey: int)
+  
+  function lemma_all_good (seed: int) : ()
+  
+  axiom lemma_all_good_spec: forall seed: int [gen_key seed]. is_secure (gen_key seed)
+  
+  constant rng_seed : int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  function all_good : ()
+  
+  goal vc_all_good: [@stop_split] [@expl:all_good ensures] is_secure (gen_key rng_seed)
+end
+module M_law__all_good
+  function gen_key (seed: int) : int
+  
+  predicate is_secure (pkey: int)
+  
+  function lemma_all_good (seed: int) : ()
+  
+  axiom lemma_all_good_spec: forall seed: int [gen_key seed]. is_secure (gen_key seed)
+  
+  function lemma_all_good_unit (seed: int) : () = let _ = lemma_all_good seed in ()
+  
+  axiom lemma_all_good_unit_spec: forall seed: int [gen_key seed]. is_secure (gen_key seed)
+  
+  constant assoc_unit: () = ()
+  
+  constant rng_seed : int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  function all_good : ()
+  
+  goal vc_all_good: [@stop_split] [@expl:all_good ensures] is_secure (gen_key rng_seed)
+end
+module M_private__lemma_all_good
+  function gen_key (seed: int) : int = let _ = seed in 4
+  
+  predicate is_secure (pkey: int) = let _ = pkey in true
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant seed : int
+  
+  function lemma_all_good (seed: int) : ()
+  
+  goal vc_lemma_all_good: [@stop_split] [@expl:lemma_all_good ensures] is_secure (gen_key seed)
+end
+module M_trait_Axiom__lemma_all_good
+  function gen_key (seed: int) : int
+  
+  predicate is_secure (pkey: int)
+  
+  function lemma_all_good (seed: int) : ()
+  
+  axiom lemma_all_good_spec: forall seed: int [gen_key seed]. is_secure (gen_key seed)
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant seed : int
+  
+  function lemma_all_good_Self (seed: int) : ()
+  
+  goal vc_lemma_all_good_Self: ([@stop_split] [@expl:lemma_all_good ensures] is_secure (gen_key seed))
+    -> ([@stop_split] [@expl:lemma_all_good ensures] is_secure (gen_key seed))
+end

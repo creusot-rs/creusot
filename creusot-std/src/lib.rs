@@ -653,6 +653,8 @@ pub mod macros {
     pub(crate) use base_macros::intrinsic;
 
     pub use base_macros::{conceal, reveal};
+
+    pub use base_macros::import;
 }
 
 #[doc(hidden)]
