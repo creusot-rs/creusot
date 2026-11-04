@@ -9,6 +9,10 @@ use crate::{
 use core::num::Wrapping;
 // Resolve links like [`i8::add`] in the generated documentation
 #[cfg(creusot)]
+use crate::std::mem::size_of_logic;
+#[cfg(creusot)]
+use core::mem::size_of;
+#[cfg(creusot)]
 use core::ops::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign,
     Mul, MulAssign, Neg, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
@@ -25,6 +29,26 @@ pub trait NthBitLogic {
 
 macro_rules! mach_int {
     ($t:ty, $ty_nm:expr, $zero:expr, $to_int:literal) => {
+        extern_spec! {
+            impl $t {
+                #[check(ghost)]
+                #[ensures(forall<i: u32> i@ >= 0 && i@ < size_of_logic::<Self>() ==> result@[i@] == (self >> (Self::BITS - 8u32 * i - 8u32)) as u8)]
+                fn to_be_bytes(self) -> [u8; size_of::<Self>()];
+
+                #[check(ghost)]
+                #[ensures(forall<i: u32> i@ >= 0 && i@ < size_of_logic::<Self>() ==> result@[i@] == (self >> (8u32 * i)) as u8)]
+                fn to_le_bytes(self) -> [u8; size_of::<Self>()];
+
+                #[check(ghost)]
+                #[ensures(forall<i: u32> i@ >= 0 && i@ < size_of_logic::<Self>() ==> bytes@[i@] == (result >> (Self::BITS - 8u32 * i - 8u32)) as u8)]
+                fn from_be_bytes(bytes: [u8; size_of::<Self>()]) -> Self;
+
+                #[check(ghost)]
+                #[ensures(forall<i: u32> i@ >= 0 && i@ < size_of_logic::<Self>() ==> bytes@[i@] == (result >> (8u32 * i)) as u8)]
+                fn from_le_bytes(bytes: [u8; size_of::<Self>()]) -> Self;
+            }
+        }
+
         impl View for $t {
             type ViewTy = Int;
             #[logic]
