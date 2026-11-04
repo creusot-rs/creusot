@@ -688,7 +688,7 @@ mod base_prelude {
         // pattern is not enough to force rustc to use our version, but at least
         // we get an error message).
         clone::Clone,
-        cmp::PartialEq,
+        cmp::{Ord, PartialEq, PartialOrd},
         default::Default,
     };
 
