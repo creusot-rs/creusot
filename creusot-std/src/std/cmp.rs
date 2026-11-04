@@ -2,10 +2,10 @@ use crate::{partial_ord_laws_impl, prelude::*};
 use core::cmp::*;
 
 #[cfg(creusot)]
-pub use creusot_std_proc::PartialEq;
+pub use creusot_std_proc::{Eq, Ord, PartialEq, PartialOrd};
 
 #[cfg(not(creusot))]
-pub use core::cmp::PartialEq;
+pub use core::cmp::{Eq, Ord, PartialEq, PartialOrd};
 
 extern_spec! {
     mod core {
