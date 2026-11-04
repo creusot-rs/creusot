@@ -1,4 +1,4 @@
-use super::visibility;
+use super::visibility::{self, VisibilityExt};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, quote_spanned};
 use syn::{
@@ -45,27 +45,12 @@ pub fn derive_deep_model(input: proc_macro::TokenStream) -> proc_macro::TokenStr
     let most_restrictive_vis_so_far = vis.clone();
     let most_restrictive_vis = match input.data {
         Data::Struct(data) => {
-            let most_restrictive_vis_so_far = if non_exhaustive_attr.is_some() {
-                visibility::intersection(most_restrictive_vis_so_far, &parse_quote!(pub(crate)))
-            } else {
-                most_restrictive_vis_so_far
-            };
-            data.fields.iter().fold(most_restrictive_vis_so_far, |acc, field| {
-                visibility::intersection(acc, &field.vis)
-            })
+            visibility::struct_intersection(vis.clone(), non_exhaustive_attr.is_some(), &data)
         }
         _ => most_restrictive_vis_so_far,
     };
 
-    let open = match most_restrictive_vis {
-        syn::Visibility::Public(_) => quote!(open),
-        syn::Visibility::Restricted(res) => {
-            let in_token = &res.in_token;
-            let path = &res.path;
-            quote!(open(#in_token #path))
-        }
-        syn::Visibility::Inherited => quote!(open(self)),
-    };
+    let open = most_restrictive_vis.format_openess();
 
     let expanded = quote! {
         #ty
