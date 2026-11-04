@@ -637,10 +637,45 @@ macro_rules! spec_bits {
 macro_rules! spec_shifts {
     ($type:ty) => {
         spec_shifts! {$type, u8 u16 u32 u64 u128 usize i8 i16 i32 i64 i128 isize}
+        spec_shifts! {
+            @inherent $type, >>, unchecked_shr, wrapping_shr, unbounded_shr,
+            { unsafe { self.unchecked_shr(Self::BITS - 1) } }, { self >> (Self::BITS - 1u32) }
+        }
+        spec_shifts! {
+            @inherent $type, <<, unchecked_shl, wrapping_shl, unbounded_shl,
+            { 0 }, { (0u8 as $type) }
+        }
     };
     ($type:ty, $($rhs:ty)*) => {
         $(spec_shifts! {$type, $rhs, >>, Shr, shr, ShrAssign, shr_assign})*
         $(spec_shifts! {$type, $rhs, <<, Shl, shl, ShlAssign, shl_assign})*
+    };
+    (@inherent $type:ty, $op:tt, $unc:ident, $w:ident, $ub:ident, {$($ubp:tt)*}, {$($ubl:tt)*}) => {
+        extern_spec! {
+            impl $type {
+                #[check(ghost)]
+                #[requires(rhs < Self::BITS)]
+                #[ensures(result == self $op rhs)]
+                unsafe fn $unc(self, rhs: u32) -> Self;
+
+                #[check(ghost)]
+                #[ensures(result == self $op (rhs & (Self::BITS - 1u32)))]
+                #[bitwise_proof]
+                fn $w(self, rhs: u32) -> Self {
+                    unsafe { self.$unc(rhs & (Self::BITS - 1)) }
+                }
+
+                #[check(ghost)]
+                #[ensures(result == if rhs < Self::BITS { self $op rhs } else { $($ubl)* })]
+                fn $ub(self, rhs: u32) -> Self {
+                    if rhs < Self::BITS {
+                        unsafe { self.$unc(rhs) }
+                    } else {
+                        $($ubp)*
+                    }
+                }
+            }
+        }
     };
     ($type:ty, $rhs:ty, $op:tt, $tr:ident, $f:ident, $tr_assign:ident, $f_assign:ident) => {
         extern_spec! {
