@@ -65,6 +65,9 @@ fn partial_eq(base_ident: &Ident, data: &Data) -> syn::Result<TokenStream> {
             }
         }),
         Data::Enum(ref data) => {
+            if data.variants.is_empty() {
+                return Ok(quote! { match *self {} });
+            }
             let arms = data.variants.iter().map(|v| {
                 let ident = &v.ident;
                 match &v.fields {
