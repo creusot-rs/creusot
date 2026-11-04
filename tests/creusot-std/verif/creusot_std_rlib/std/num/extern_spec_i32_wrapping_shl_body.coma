@@ -1,0 +1,34 @@
+use creusot.int.UInt32BW
+use creusot.int.Int32BW
+use creusot.prelude.Any
+
+constant const_BITS: UInt32BW.t = (32: UInt32BW.t)
+
+function shl_i32 [@inline:trivial] (self: Int32BW.t) (rhs: UInt32BW.t) : Int32BW.t = Int32BW.shl self rhs
+
+meta "rewrite_def" function shl_i32
+
+let unchecked_shl (self: Int32BW.t) (rhs: UInt32BW.t) (return (x: Int32BW.t)) =
+{[@stop_split] [@expl:unchecked_shl requires] UInt32BW.lt rhs const_BITS}
+  any
+  [ return (result: Int32BW.t) -> {[@stop_split] [@expl:unchecked_shl ensures] result = shl_i32 self rhs}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_i32_wrapping_shl_body (self_: Int32BW.t) (rhs: UInt32BW.t) (return (x: Int32BW.t)) = (! bb0
+  [ bb0 = s0
+    [ s0 = UInt32BW.sub {const_BITS} {(1: UInt32BW.t)} (fun (_x: UInt32BW.t) -> [ &_9 <- _x ] s1)
+    | s1 = [ &_7 <- UInt32BW.bw_and rhs _9 ] s2
+    | s2 = unchecked_shl {self_} {_7} (fun (_x: Int32BW.t) -> [ &_ret <- _x ] s3)
+    | s3 = return {_ret} ] ]
+  [ & _ret: Int32BW.t = Any.any_l ()
+  | & self_: Int32BW.t = self_
+  | & rhs: UInt32BW.t = rhs
+  | & _7: UInt32BW.t = Any.any_l ()
+  | & _9: UInt32BW.t = Any.any_l () ])
+  [ return (result: Int32BW.t) -> {[@stop_split] [@expl:extern_spec_i32_wrapping_shl_body ensures] result
+    = shl_i32 self_ (UInt32BW.bw_and rhs (UInt32BW.sub const_BITS (1: UInt32BW.t)))}
+    (! return {result}) ]
