@@ -87,6 +87,42 @@ module M_baz
     [ bb0 = s0 [ s0 = [ &_ret <- const_N ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () ])
     [ return (result: Int32.t) -> (! return {result}) ]
 end
+module M_call_store
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  let store (_1: UInt64.t) (_2: UInt64.t) (return (x: ())) = any [ return (result: ()) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let call_store (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = store {(1: UInt64.t)} {(2: UInt64.t)} (fun (_x: ()) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_call_store_spec
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  
+  let new_usize (x: UInt64.t) (return (x'0: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
+  let store_spec (_1: UInt64.t) (_2: UInt64.t) (_3: UInt64.t) (return (x: ())) = any
+    [ return (result: ()) -> (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let call_store_spec (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = new_usize {(3: UInt64.t)} (fun (_x: UInt64.t) -> [ &_1 <- _x ] s1)
+      | s1 = store_spec {(1: UInt64.t)} {(2: UInt64.t)} {_1} (fun (_x: ()) -> [ &_ret <- _x ] s2)
+      | s2 = return {_ret} ] ] [ & _ret: () = Any.any_l () | & _1: UInt64.t = Any.any_l () ])
+    [ return (result: ()) -> (! return {result}) ]
+end
 module M_foo
   use creusot.int.Int32
   use creusot.prelude.Any
@@ -126,10 +162,10 @@ module M_foog
   
   let foog (x: Int32.t) (return (x'0: tup2_i32_Ghost_i32)) = (! bb0
     [ bb0 = s0
-      [ s0 = new_i32 {x} (fun (_x: Int32.t) -> [ &_5 <- _x ] s1)
-      | s1 = [ &_ret <- { f0 = x; f1 = _5 } ] s2
+      [ s0 = new_i32 {x} (fun (_x: Int32.t) -> [ &_4 <- _x ] s1)
+      | s1 = [ &_ret <- { f0 = x; f1 = _4 } ] s2
       | s2 = return {_ret} ] ]
-    [ & _ret: tup2_i32_Ghost_i32 = Any.any_l () | & x: Int32.t = x | & _5: Int32.t = Any.any_l () ])
+    [ & _ret: tup2_i32_Ghost_i32 = Any.any_l () | & x: Int32.t = x | & _4: Int32.t = Any.any_l () ])
     [ return (result: tup2_i32_Ghost_i32) -> (! return {result}) ]
 end
 module M_ghost_split
@@ -189,6 +225,32 @@ module M_impl_Quux_for_i32__quux (* <i32 as Quux> *)
     [ bb0 = s0 [ s0 = foo {self} (fun (_x: Int32.t) -> [ &_2 <- _x ] s1) | s1 = return {_ret} ] ]
     [ & _ret: () = Any.any_l () | & self: Int32.t = self | & _2: Int32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
+end
+module M_impl_RI_Idx__new (* RI<Idx> *)
+  use creusot.prelude.Any
+  
+  type t_Idx
+  
+  type t_RI_Idx = { start: t_Idx; end': t_Idx; exhausted: bool }
+  
+  predicate inv_Idx (_1: t_Idx)
+  
+  predicate inv_RI_Idx (_1: t_RI_Idx)
+  
+  axiom inv_axiom [@rewrite]: forall _1: t_RI_Idx [inv_RI_Idx _1]. inv_RI_Idx _1 = (inv_Idx _1.start /\ inv_Idx _1.end')
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let new_Idx (start'0: t_Idx) (end''0: t_Idx) (return (x: t_RI_Idx)) =
+  {[@stop_split] [@expl:new_Idx requires] ([@stop_split] [@expl:new 'start' type invariant] inv_Idx start'0)
+    /\ ([@stop_split] [@expl:new 'end' type invariant] inv_Idx end''0)}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- { start = start'0; end' = end''0; exhausted = false } ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_RI_Idx = Any.any_l () | & start'0: t_Idx = start'0 | & end''0: t_Idx = end''0 ])
+    [ return (result: t_RI_Idx) -> {[@stop_split] [@expl:new result type invariant] inv_RI_Idx result}
+      (! return {result}) ]
 end
 module M_impl_Tr_for_i32__takes_ref (* <i32 as Tr> *)
   use creusot.int.Int32
@@ -287,6 +349,32 @@ module M_no_specs
     | bb5 = return {_ret} ] [ & _ret: () = Any.any_l () | & _1: Int32.t = Any.any_l () ])
     [ return (result: ()) -> (! return {result}) ]
 end
+module M_ops__impl_RI_Idx__new (* ops::RI<Idx> *)
+  use creusot.prelude.Any
+  
+  type t_Idx
+  
+  type t_RI_Idx = { start: t_Idx; end': t_Idx; exhausted: bool }
+  
+  predicate inv_Idx (_1: t_Idx)
+  
+  predicate inv_RI_Idx (_1: t_RI_Idx)
+  
+  axiom inv_axiom [@rewrite]: forall _1: t_RI_Idx [inv_RI_Idx _1]. inv_RI_Idx _1 = (inv_Idx _1.start /\ inv_Idx _1.end')
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let new_Idx (start'0: t_Idx) (end''0: t_Idx) (return (x: t_RI_Idx)) =
+  {[@stop_split] [@expl:new_Idx requires] ([@stop_split] [@expl:new 'start' type invariant] inv_Idx start'0)
+    /\ ([@stop_split] [@expl:new 'end' type invariant] inv_Idx end''0)}
+    (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- { start = start'0; end' = end''0; exhausted = false } ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: t_RI_Idx = Any.any_l () | & start'0: t_Idx = start'0 | & end''0: t_Idx = end''0 ])
+    [ return (result: t_RI_Idx) -> {[@stop_split] [@expl:new result type invariant] inv_RI_Idx result}
+      (! return {result}) ]
+end
 module M_quux2
   use creusot.int.Int32
   use creusot.int.Int128
@@ -309,17 +397,17 @@ module M_quux2
   
   let quux2 (x: Int32.t) (y: int) (return (x'0: int)) = (! bb0
     [ bb0 = s0
-      [ s0 = foo2 {x} {y} (fun (_x: Int32.t) -> [ &_5 <- _x ] s1)
-      | s1 = new {(0: Int128.t)} (fun (_x: int) -> [ &_9 <- _x ] s2)
-      | s2 = into_inner_Int {_9} (fun (_x: int) -> [ &_8 <- _x ] s3)
-      | s3 = new_Int {_8} (fun (_x: int) -> [ &_ret <- _x ] s4)
+      [ s0 = foo2 {x} {y} (fun (_x: Int32.t) -> [ &_4 <- _x ] s1)
+      | s1 = new {(0: Int128.t)} (fun (_x: int) -> [ &_8 <- _x ] s2)
+      | s2 = into_inner_Int {_8} (fun (_x: int) -> [ &_7 <- _x ] s3)
+      | s3 = new_Int {_7} (fun (_x: int) -> [ &_ret <- _x ] s4)
       | s4 = return {_ret} ] ]
     [ & _ret: int = Any.any_l ()
     | & x: Int32.t = x
     | & y: int = y
-    | & _5: Int32.t = Any.any_l ()
-    | & _8: int = Any.any_l ()
-    | & _9: int = Any.any_l () ]) [ return (result: int) -> (! return {result}) ]
+    | & _4: Int32.t = Any.any_l ()
+    | & _7: int = Any.any_l ()
+    | & _8: int = Any.any_l () ]) [ return (result: int) -> (! return {result}) ]
 end
 module M_slice_as_mut_ptr
   use creusot.prelude.MutBorrow
@@ -575,17 +663,17 @@ module M_slice_as_mut_ptr_perm
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_final <Slice64.slice t_T> {s.current} {MutBorrow.get_id s}
           (fun (_bor: MutBorrow.t (Slice64.slice t_T)) ->
-            [ &_4 <- _bor ] -{inv_slice_T _bor.final}-
+            [ &_3 <- _bor ] -{inv_slice_T _bor.final}-
             [ &s <- { s with current = _bor.final } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_slice_T s.current} any) ]
-      | s1 = as_mut_ptr_perm_slice_T {_4}
+      | s1 = as_mut_ptr_perm_slice_T {_3}
           (fun (_x: tup2_ptr_T_Ghost_Guarded_refmut_Perm_ptr_slice_T_ptr_slice_T) -> [ &_ret <- _x ] s2)
       | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T s} any) ]
       | s3 = -{resolve_refmut_slice_T s}- s4
       | s4 = return {_ret} ] ]
     [ & _ret: tup2_ptr_T_Ghost_Guarded_refmut_Perm_ptr_slice_T_ptr_slice_T = Any.any_l ()
     | & s: MutBorrow.t (Slice64.slice t_T) = s
-    | & _4: MutBorrow.t (Slice64.slice t_T) = Any.any_l () ])
+    | & _3: MutBorrow.t (Slice64.slice t_T) = Any.any_l () ])
     [ return (result: tup2_ptr_T_Ghost_Guarded_refmut_Perm_ptr_slice_T_ptr_slice_T) ->
     {[@stop_split] [@expl:slice_as_mut_ptr_perm result type invariant] inv_tup2_ptr_T_Ghost_Guarded_refmut_Perm_ptr_slice_T_ptr_slice_T result}
       (! return {result}) ]
@@ -790,6 +878,28 @@ module M_specs
     [ & _ret: () = Any.any_l () | & x: int = x | & _7: Int32.t = Any.any_l () | & _8: int = Any.any_l () ])
     [ return (result: ()) -> {[@stop_split] [@expl:specs ensures] false} (! return {result}) ]
 end
+module M_store
+  use creusot.prelude.Any
+  use creusot.int.UInt64
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let store (_1: UInt64.t) (_2: UInt64.t) (return (x: ())) = (! bb0
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_store_spec
+  use creusot.prelude.Any
+  use creusot.int.UInt64
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let store_spec (_1: UInt64.t) (_2: UInt64.t) (_3: UInt64.t) (return (x: ())) = (! bb0
+    [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
 module M_takes_ref
   use creusot.int.Int32
   use creusot.prelude.Any
@@ -828,8 +938,8 @@ module M_takes_ref_test2
   
   let takes_ref_test2 (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &_5 <- x ] s1 | s1 = takes_ref {_5} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2) | s2 = return {_ret} ] ]
-    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x | & _5: Int32.t = Any.any_l () ])
+      [ s0 = [ &_4 <- x ] s1 | s1 = takes_ref {_4} (fun (_x: Int32.t) -> [ &_ret <- _x ] s2) | s2 = return {_ret} ] ]
+    [ & _ret: Int32.t = Any.any_l () | & x: Int32.t = x | & _4: Int32.t = Any.any_l () ])
     [ return (result: Int32.t) -> (! return {result}) ]
 end
 module M_test_foo
@@ -908,19 +1018,19 @@ module M_test_foo2
       | s3 = [ &p <- { f0 = (0: Int32.t); f1 = (1: Int32.t) } ] s4
       | s4 = [ &p <- { p with f1 = p.f0 } ] s5
       | s5 = Int32.add {p.f0} {p.f1} (fun (_x: Int32.t) -> [ &p <- { p with f0 = _x } ] s6)
-      | s6 = [ &_16 <- p.f0 ] s7
-      | s7 = quux2 {_16} {y} (fun (_x: int) -> [ &_14 <- _x ] s8)
-      | s8 = [ &_18 <- Int32.lt (-10: Int32.t) a ] s9
-      | s9 = any [ br0 -> {_18 = false} (! bb13) | br1 -> {_18} (! bb5) ] ]
+      | s6 = [ &_15 <- p.f0 ] s7
+      | s7 = quux2 {_15} {y} (fun (_x: int) -> [ &_13 <- _x ] s8)
+      | s8 = [ &_17 <- Int32.lt (-10: Int32.t) a ] s9
+      | s9 = any [ br0 -> {_17 = false} (! bb13) | br1 -> {_17} (! bb5) ] ]
     | bb5 = s0
-      [ s0 = [ &_20 <- Int32.lt a (10: Int32.t) ] s1
-      | s1 = any [ br0 -> {_20 = false} (! bb13) | br1 -> {_20} (! bb6) ] ]
+      [ s0 = [ &_19 <- Int32.lt a (10: Int32.t) ] s1
+      | s1 = any [ br0 -> {_19 = false} (! bb13) | br1 -> {_19} (! bb6) ] ]
     | bb6 = s0
-      [ s0 = [ &_22 <- Int32.lt (-10: Int32.t) b ] s1
-      | s1 = any [ br0 -> {_22 = false} (! bb13) | br1 -> {_22} (! bb7) ] ]
+      [ s0 = [ &_21 <- Int32.lt (-10: Int32.t) b ] s1
+      | s1 = any [ br0 -> {_21 = false} (! bb13) | br1 -> {_21} (! bb7) ] ]
     | bb7 = s0
-      [ s0 = [ &_24 <- Int32.lt b (10: Int32.t) ] s1
-      | s1 = any [ br0 -> {_24 = false} (! bb13) | br1 -> {_24} (! bb8) ] ]
+      [ s0 = [ &_23 <- Int32.lt b (10: Int32.t) ] s1
+      | s1 = any [ br0 -> {_23 = false} (! bb13) | br1 -> {_23} (! bb8) ] ]
     | bb8 = s0 [ s0 = Int32.add {a} {b} (fun (_x: Int32.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ]
     | bb13 = s0 [ s0 = [ &_ret <- c ] s1 | s1 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l ()
@@ -930,12 +1040,12 @@ module M_test_foo2
     | & b: Int32.t = Any.any_l ()
     | & c: Int32.t = Any.any_l ()
     | & p: tup2_i32_i32 = Any.any_l ()
-    | & _14: int = Any.any_l ()
-    | & _16: Int32.t = Any.any_l ()
-    | & _18: bool = Any.any_l ()
-    | & _20: bool = Any.any_l ()
-    | & _22: bool = Any.any_l ()
-    | & _24: bool = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
+    | & _13: int = Any.any_l ()
+    | & _15: Int32.t = Any.any_l ()
+    | & _17: bool = Any.any_l ()
+    | & _19: bool = Any.any_l ()
+    | & _21: bool = Any.any_l ()
+    | & _23: bool = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
 end
 module M_test_ghost_fields
   use creusot.int.Int32
@@ -967,14 +1077,14 @@ module M_test_ghost_fields2
   
   let test_ghost_fields2 (x: Int32.t) (return (x'0: Int32.t)) = (! bb0
     [ bb0 = s0
-      [ s0 = foog {x} (fun (_x: tup2_i32_Ghost_i32) -> [ &_5 <- _x ] s1)
-      | s1 = [ &a <- _5.f0 ] s2
+      [ s0 = foog {x} (fun (_x: tup2_i32_Ghost_i32) -> [ &_4 <- _x ] s1)
+      | s1 = [ &a <- _4.f0 ] s2
       | s2 = [ &_ret <- a ] s3
       | s3 = return {_ret} ] ]
     [ & _ret: Int32.t = Any.any_l ()
     | & x: Int32.t = x
     | & a: Int32.t = Any.any_l ()
-    | & _5: tup2_i32_Ghost_i32 = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
+    | & _4: tup2_i32_Ghost_i32 = Any.any_l () ]) [ return (result: Int32.t) -> (! return {result}) ]
 end
 module M_test_ptr2
   use creusot.prelude.Opaque
@@ -1050,8 +1160,8 @@ module M_test_ptr2
     /\ ([@stop_split] [@expl:test_ptr2 requires] false)}
     (! bb0
     [ bb0 = s0
-      [ s0 = as_ref_T {x} {own} (fun (_x: t_T) -> [ &_6 <- _x ] s1) | s1 = [ &_ret <- _6 ] s2 | s2 = return {_ret} ] ]
-    [ & _ret: t_T = Any.any_l () | & x: Opaque.ptr = x | & own: t_Perm_ptr_T = own | & _6: t_T = Any.any_l () ])
+      [ s0 = as_ref_T {x} {own} (fun (_x: t_T) -> [ &_5 <- _x ] s1) | s1 = [ &_ret <- _5 ] s2 | s2 = return {_ret} ] ]
+    [ & _ret: t_T = Any.any_l () | & x: Opaque.ptr = x | & own: t_Perm_ptr_T = own | & _5: t_T = Any.any_l () ])
     [ return (result: t_T) -> {[@stop_split] [@expl:test_ptr2 result type invariant] inv_ref_T result}
       (! return {result}) ]
 end
@@ -1151,19 +1261,19 @@ module M_test_ptr_mut2
     /\ ([@stop_split] [@expl:test_ptr_mut2 requires] false)}
     (! bb0
     [ bb0 = s0
-      [ s0 = as_mut_T {x} {own} (fun (_x: MutBorrow.t t_T) -> [ &_8 <- _x ] s1)
-      | s1 = MutBorrow.borrow_final <t_T> {_8.current} {MutBorrow.get_id _8}
+      [ s0 = as_mut_T {x} {own} (fun (_x: MutBorrow.t t_T) -> [ &_7 <- _x ] s1)
+      | s1 = MutBorrow.borrow_final <t_T> {_7.current} {MutBorrow.get_id _7}
           (fun (_bor: MutBorrow.t t_T) ->
-            [ &_7 <- _bor ] -{inv_T _bor.final}-
-            [ &_8 <- { _8 with current = _bor.final } ] s2) [ _ck -> (! {[@expl:type invariant] inv_T _8.current} any) ]
-      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _8} any) ]
-      | s3 = -{resolve_refmut_T _8}- s4
-      | s4 = MutBorrow.borrow_final <t_T> {_7.current} {MutBorrow.get_id _7}
+            [ &_6 <- _bor ] -{inv_T _bor.final}-
+            [ &_7 <- { _7 with current = _bor.final } ] s2) [ _ck -> (! {[@expl:type invariant] inv_T _7.current} any) ]
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _7} any) ]
+      | s3 = -{resolve_refmut_T _7}- s4
+      | s4 = MutBorrow.borrow_final <t_T> {_6.current} {MutBorrow.get_id _6}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_3 <- _bor ] -{inv_T _bor.final}-
-            [ &_7 <- { _7 with current = _bor.final } ] s5) [ _ck -> (! {[@expl:type invariant] inv_T _7.current} any) ]
-      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _7} any) ]
-      | s6 = -{resolve_refmut_T _7}- s7
+            [ &_6 <- { _6 with current = _bor.final } ] s5) [ _ck -> (! {[@expl:type invariant] inv_T _6.current} any) ]
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_T _6} any) ]
+      | s6 = -{resolve_refmut_T _6}- s7
       | s7 = MutBorrow.borrow_final <t_T> {_3.current} {MutBorrow.get_id _3}
           (fun (_bor: MutBorrow.t t_T) ->
             [ &_ret <- _bor ] -{inv_T _bor.final}-
@@ -1175,8 +1285,8 @@ module M_test_ptr_mut2
     | & x: Opaque.ptr = x
     | & own: MutBorrow.t t_Perm_ptr_T = own
     | & _3: MutBorrow.t t_T = Any.any_l ()
-    | & _7: MutBorrow.t t_T = Any.any_l ()
-    | & _8: MutBorrow.t t_T = Any.any_l () ])
+    | & _6: MutBorrow.t t_T = Any.any_l ()
+    | & _7: MutBorrow.t t_T = Any.any_l () ])
     [ return (result: MutBorrow.t t_T) ->
     {[@stop_split] [@expl:test_ptr_mut2 result type invariant] inv_refmut_T result}
       (! return {result}) ]
@@ -1324,14 +1434,14 @@ module M_unsize2
     (! bb0
     [ bb0 = s0
       [ s0 = new_i32 {(0: Int32.t)} (fun (_x: Int32.t) -> [ &_k <- _x ] s1)
-      | s1 = new_i32 {(1: Int32.t)} (fun (_x: Int32.t) -> [ &_6 <- _x ] s2)
-      | s2 = [ &_k <- _6 ] s3
+      | s1 = new_i32 {(1: Int32.t)} (fun (_x: Int32.t) -> [ &_5 <- _x ] s2)
+      | s2 = [ &_k <- _5 ] s3
       | s3 = [ &_ret <- t ] s4
       | s4 = return {_ret} ] ]
     [ & _ret: Slice64.slice t_T = Any.any_l ()
     | & t: Slice64.array t_T = t
     | & _k: Int32.t = Any.any_l ()
-    | & _6: Int32.t = Any.any_l () ])
+    | & _5: Int32.t = Any.any_l () ])
     [ return (result: Slice64.slice t_T) -> {[@stop_split] [@expl:unsize2 result type invariant] inv_ref_slice_T result}
       (! return {result}) ]
 end

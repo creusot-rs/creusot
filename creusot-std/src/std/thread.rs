@@ -56,9 +56,6 @@ extern_spec! {
         // But you can call this if you want.
         #[ensures(true)]
         fn is_finished(&self) -> bool;
-
-        #[ensures(exists<r> result == Ok(r) && self.valid_result(r))]
-        fn join(self) -> ::std::thread::Result<T>;
     }
 }
 
@@ -119,7 +116,9 @@ impl<'scope, 'env, 'a, F: for<'scope2> FnOnce(&Scope<'scope2, 'env>) -> T, T>
     FnOnce<(&'scope ::std::thread::Scope<'scope, 'a>,)> for ErasedScope<'env, F, T>
 {
     type Output = T;
+
     #[trusted]
+    #[trusted(ghost)]
     extern "rust-call" fn call_once(self, args: (&'scope ::std::thread::Scope,)) -> T {
         todo!() // self.0(args.0)
     }
@@ -130,6 +129,7 @@ impl<'scope, F: FnOnce(Ghost<Tokens>) -> T + 'scope, T> FnOnce<()> for ErasedSco
     type Output = T;
 
     #[trusted]
+    #[trusted(ghost)]
     extern "rust-call" fn call_once(self, args: ()) -> T {
         todo!() // self.0(args.0)
     }
