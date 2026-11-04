@@ -112,3 +112,21 @@ pub fn derive_default(tokens: TS1) -> TS1 {
 pub fn derive_partial_eq(tokens: TS1) -> TS1 {
     creusot::derive_partial_eq(tokens)
 }
+
+#[cfg(feature = "creusot")]
+#[proc_macro_derive(Eq)]
+pub fn derive_eq(tokens: TS1) -> TS1 {
+    creusot::derive_eq(tokens)
+}
+
+#[cfg(feature = "creusot")]
+#[proc_macro_derive(PartialOrd)]
+pub fn derive_partial_ord(tokens: TS1) -> TS1 {
+    creusot::derive_partial_ord(tokens)
+}
+
+#[cfg(feature = "creusot")]
+#[proc_macro_derive(Ord)]
+pub fn derive_ord(tokens: TS1) -> TS1 {
+    creusot::derive_ord(tokens)
+}

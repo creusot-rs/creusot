@@ -45,3 +45,12 @@ extern_spec! {
 pub fn discriminant_value_logic<T>(_: T) -> <T as core::marker::DiscriminantKind>::Discriminant {
     dead
 }
+
+// Reexported for use in derive macros without requiring the consumer to add
+// `#![feature(core_intrinsics)]` to their crate.
+#[cfg(creusot)]
+#[check(ghost)]
+#[ensures(result == discriminant_value_logic(*v))]
+pub fn discriminant_value<T>(v: &T) -> <T as core::marker::DiscriminantKind>::Discriminant {
+    core::intrinsics::discriminant_value(v)
+}

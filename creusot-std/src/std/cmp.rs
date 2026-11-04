@@ -2,10 +2,18 @@ use crate::{partial_ord_laws_impl, prelude::*};
 use core::cmp::*;
 
 #[cfg(creusot)]
-pub use creusot_std_proc::PartialEq;
+pub use creusot_std_proc::{Ord, PartialEq, PartialOrd};
+
+/// Derives `Eq`, just like the `std` macro.
+///
+/// Technically, `Eq` should mean reflexivity but Creusot already forces reflexivity on
+/// `PartialEq`. This should be fixed in the future but, in the meantime, this macro behaves like
+/// the one `std` in that it asserts (in compile time) that all fields implement the `Eq` trait.
+#[cfg(creusot)]
+pub use creusot_std_proc::Eq;
 
 #[cfg(not(creusot))]
-pub use core::cmp::PartialEq;
+pub use core::cmp::{Eq, Ord, PartialEq, PartialOrd};
 
 extern_spec! {
     mod core {
