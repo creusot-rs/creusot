@@ -23,12 +23,48 @@ pub trait View {
 /// This macro can be used to implement `DeepModel` by recursively delegating into `DeepModel` of
 /// each individual field. For a struct, it generates a new struct and for an enum it generates a
 /// new enum. Other types are not supported. The generated type is named the same as the type this
-/// is derived for with the `DeepModel` suffix appended to it.
+/// is derived for with the `DeepModel` suffix appended to it. However, it's generated with
+/// hygiene, so you can't normally name it. You have to write it as
+/// `<YourType as DeepModel>::DeepModelTy` instead.
 ///
-/// The visibility of the generated types and their fields will be the same (including the
-/// `non_exhaustive` attribute, if present) and the types of the fields will be the `DeepModelTy` of
-/// the corresponding field. For instance, `pub struct Foo { bar: u32 }` will become
-/// `pub struct FooDeepModel { bar: Int }`.
+/// However, this macro accepts some attributes that modify this behavior. Firstly, adding
+/// `#[DeepModelTy = "path::to::MyDeepModel"]` the type will *not* be generated and instead the
+/// supplied name will be used. It is still assumed that the mentioned type has the same
+/// fields/variants as the type you're deriving this on.
+///
+/// Another important attribute is `#[DeepModelTy(derive(...))]` which allows you to request
+/// additional derives for the generated deep model type. Most notably, you can use `OrdLogic` and
+/// `PartialOrdLogic` to obtain fully-functioning comparisons. This works for any types, including
+/// with generics as long as the fields obey the property that if the type parameters implement
+/// `DeepModel` with its `DeepModelTy` implementing the logic comparison traits so will the field's
+/// type.
+///
+/// So your code may look like this:
+///
+/// ```
+/// # use creusot_std::{
+/// #     prelude::*,
+/// #     std::cmp::{PartialEq, Ord, PartialOrd},
+/// # };
+///
+/// #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, DeepModel)]
+/// #[DeepModelTy(derive(OrdLogic, PartialOrdLogic))]
+/// pub struct Point {
+///     pub x: i32,
+///     pub y: i32,
+/// }
+/// ```
+///
+/// While deriving any traits is possible using the argument, in general you should only derive the
+/// logic traits. These can be third-party derive macros for logic traits but program traits such
+/// as `Clone` should not be needed and their implementation is discouraged. Note that this
+/// attribute also conflicts with `#[DeepModelTy = "..."]` because that one skips generating the
+/// type.
+///
+/// If the type is generated its visibility and the visibility of its fields will be the same
+/// (including the `non_exhaustive` attribute, if present) and the types of the fields will be the
+/// `DeepModelTy` of the corresponding field. For instance, `pub struct Foo { bar: u32 }` will
+/// become `pub struct FooDeepModel { bar: Int }`.
 ///
 /// To avoid exposing private fields, the generated `deep_model` method will have openess restricted
 /// to the most restrictive visibility of the type. If the type is public but its field is private,

@@ -130,3 +130,15 @@ pub fn derive_partial_ord(tokens: TS1) -> TS1 {
 pub fn derive_ord(tokens: TS1) -> TS1 {
     creusot::derive_ord(tokens)
 }
+
+#[proc_macro_derive(PartialOrdLogic, attributes(DeepModelTy))]
+pub fn derive_partial_ord_logic(tokens: TS1) -> TS1 {
+    allow_unused!(creusot::derive_partial_ord_logic);
+    c::derive_partial_ord_logic(tokens)
+}
+
+#[proc_macro_derive(OrdLogic, attributes(DeepModelTy))]
+pub fn derive_ord_logic(tokens: TS1) -> TS1 {
+    allow_unused!(creusot::derive_ord_logic);
+    c::derive_ord_logic(tokens)
+}
