@@ -147,8 +147,10 @@ fn deep_model_ty(base_ident: &Ident, generics: &Generics, data: &Data) -> syn::R
             let arms = data.variants.iter().map(|v| {
                 let ident = &v.ident;
                 let fields = deep_model_ty_fields(&v.fields);
-
-                quote! { #ident #fields }
+                match &v.discriminant {
+                    Some((token, val)) => quote! { #ident #fields #token #val },
+                    None => quote! { #ident #fields },
+                }
             });
 
             Ok(quote! {
