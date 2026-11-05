@@ -721,6 +721,9 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
             ExprKind::PointerCoercion {
                 cast: PointerCoercion::MutToConstPointer, source, ..
             } => Ok(self.expr_term(source)?.coerce(ty).span(span)),
+            ExprKind::PointerCoercion { source, .. } if self.thir[source].ty == ty => {
+                return self.expr_term(source);
+            }
             ExprKind::ConstParam { param, def_id: _ } => {
                 Ok(Term::const_param(self.ctx.tcx, param, ty, span))
             }

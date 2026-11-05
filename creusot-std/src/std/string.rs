@@ -50,6 +50,10 @@ extern_spec! {
 
     impl String {
         #[check(ghost)]
+        #[ensures(result@.len() == 0)]
+        fn new() -> Self;
+
+        #[check(ghost)]
         #[ensures(result@ == self@.to_bytes().len())]
         fn len(&self) -> usize;
 
