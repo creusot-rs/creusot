@@ -303,17 +303,25 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                     };
 
                     if args.len() == 1
-                        && let TermWithTriggers { term, trigger } = &args[0]
                         && let Term::Closure(TermClosure {
-                            or1_token, inputs, or2_token, body, ..
-                        }) = &**term
+                            or1_token,
+                            inputs,
+                            or2_token,
+                            body,
+                            attrs,
+                            ..
+                        }) = &args[0]
                     {
+                        let trigger = attrs
+                            .iter()
+                            .filter_map(|attr| syn::parse2::<Trigger>(attr.to_token_stream()).ok())
+                            .collect::<Vec<_>>();
                         let term = Term::Quant(TermQuant {
                             quant_token: quant,
                             lt_token: syn::token::Lt { spans: [or1_token.span] },
                             args: inputs.clone(),
                             gt_token: syn::token::Gt { spans: [or2_token.span] },
-                            term: TermWithTriggers { trigger: trigger.clone(), term: body.clone() },
+                            term: TermWithTriggers { trigger: trigger, term: body.clone() },
                         });
                         return encode_term_(&term, locals);
                     } else {
@@ -326,7 +334,7 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
 
                 let args: Vec<_> = args
                     .into_iter()
-                    .map(|t| Ok(encode_term_(&t.term, locals)?.toks()))
+                    .map(|t| Ok(encode_term_(t, locals)?.toks()))
                     .collect::<Result<_, _>>()?;
                 let stream = if path.is_ident("old") {
                     TokenStream::from_iter([
@@ -690,9 +698,15 @@ fn encode_term_(term: &Term, locals: &mut Locals) -> Result<EncodingResult, Enco
                 ));
             }
             locals.open();
+            let trigger = clos
+                .attrs
+                .iter()
+                .filter_map(|attr| syn::parse2::<Trigger>(attr.to_token_stream()).ok())
+                .collect::<Vec<_>>();
             let input = preprocess_pat(locals, &clos.inputs[0], term.span())?;
             let retty = &clos.output;
             let clos = encode_term_(&clos.body, locals)?.toks();
+            let clos = encode_trigger_(&trigger, clos, locals)?;
             locals.close();
             Ok(quote_spanned! { span_before(sp)=>
                 ::creusot_std::__stubs::mapping_from_fn(

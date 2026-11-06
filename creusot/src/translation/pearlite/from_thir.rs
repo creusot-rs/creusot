@@ -688,13 +688,12 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                 if is_logic_closure(self.ctx.tcx, closure_id.into()) {
                     let inputs = self.ctx.inputs_and_output(closure_id.into()).0;
                     assert!(inputs.len() == 2); // self (ignored) and the actual argument
-                    let body = from_thir(
+                    let body = Box::new(from_thir(
                         self.ctx,
                         closure_id,
                         self.renaming,
                         TermSort::LogicClosure(inputs),
-                    )?
-                    .no_triggers();
+                    )?);
                     let (arg, _, arg_ty) = inputs[1];
                     let kind = TermKind::Closure { arg, arg_ty, body };
                     Ok(Term { ty, span, kind })

@@ -228,7 +228,7 @@ pub enum TermKind<'tcx> {
     Closure {
         arg: PIdent,
         arg_ty: Ty<'tcx>,
-        body: Box<Term<'tcx>>,
+        body: Box<TermWithTriggers<'tcx>>,
     },
     Reborrow {
         inner: Box<Term<'tcx>>,
@@ -891,7 +891,10 @@ impl<'tcx> Term<'tcx> {
             TermKind::Closure { arg, arg_ty: _, body } => {
                 let mut bound = bound.clone();
                 bound.insert(arg.0);
-                body.free_vars_inner(&bound, free);
+                for t in body.triggers.iter().flat_map(|trig| &trig.0) {
+                    t.free_vars_inner(&bound, free);
+                }
+                body.term.free_vars_inner(&bound, free);
             }
             TermKind::Reborrow { inner, projections } => {
                 inner.free_vars_inner(bound, free);

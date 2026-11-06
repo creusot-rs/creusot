@@ -6,8 +6,8 @@ use crate::{
         projections::{borrow_generated_id, projections_term},
         signature::lower_contract,
         term::{
-            binop_to_binop, cast_int, lower_literal, lower_pat, lower_pure, tyconst_to_term_final,
-            unsupported_cast,
+            binop_to_binop, cast_int, lower_literal, lower_pat, lower_pure, lower_trigger,
+            tyconst_to_term_final, unsupported_cast,
         },
         ty::{constructor, translate_ty, ty_to_prelude},
     },
@@ -295,18 +295,22 @@ impl<'tcx, N: Namer<'tcx>> VCGen<'_, 'tcx, N> {
                 safe.log_and(k(self.lower_pure(t)))
             }
             // VC(|x| A(x), Q) = (forall<x>, VC(A(x), true)) /\ Q(|x| A(x)) (safety mode)
-            &TermKind::Closure { arg, arg_ty, ref body } if self.safety => {
-                let body = self.build_wp(body, &|_| Exp::mk_true());
-                let safe = Exp::forall([(arg.0, self.ty(arg_ty, t.span))], body);
-                safe.lazy_and(k(self.lower_pure(t)))
-            }
+            //
             // VC(|x| A(x), Q) = (forall<x>, !VC(A(x), false)) -> Q(|x| A(x)) (non-safety mode)
             &TermKind::Closure { arg, arg_ty, ref body } => {
-                assert!(!self.safety);
-                let mut body = self.build_wp(body, &|_| Exp::mk_false());
-                body.smart_not();
-                let safe = Exp::forall([(arg.0, self.ty(arg_ty, t.span))], body);
-                safe.implies(k(self.lower_pure(t)))
+                let closure_exp = self.lower_pure(t);
+
+                let trig = Vec::from_iter(body.triggers.iter().map(|t| lower_trigger(self.ctx, self.names, t)));
+                if self.safety {
+                    let body = self.build_wp(&body.term, &|_| Exp::mk_true());
+                    let safe = Exp::forall_trig([(arg.0, self.ty(arg_ty, t.span))], trig, body);
+                    safe.lazy_and(k(closure_exp))
+                } else {
+                    let mut body = self.build_wp(&body.term, &|_| Exp::mk_false());
+                    body.smart_not();
+                    let safe = Exp::forall_trig([(arg.0, self.ty(arg_ty, t.span))], trig, body);
+                    safe.implies(k(closure_exp))
+                }
             }
             // VC((T...), Q) = VC(T[0], |t0| ... VC(T[N], |tn| Q(t0..tn))))
             TermKind::Tuple { fields } => {

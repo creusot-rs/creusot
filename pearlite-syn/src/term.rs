@@ -223,7 +223,7 @@ ast_struct! {
     pub struct TermCall {
         pub func: Box<Term>,
         pub paren_token: token::Paren,
-        pub args: Punctuated<TermWithTriggers, Token![,]>,
+        pub args: Punctuated<Term, Token![,]>,
     }
 }
 
@@ -814,7 +814,7 @@ pub(crate) mod parsing {
             replace_attrs(&mut item, attrs);
             Ok(TermStmt::Item(item))
         } else {
-            stmt_expr(input, allow_nosemi)
+            stmt_expr(input, allow_nosemi, attrs)
         }
     }
 
@@ -849,8 +849,12 @@ pub(crate) mod parsing {
         })
     }
 
-    fn stmt_expr(input: ParseStream, allow_nosemi: bool) -> Result<TermStmt> {
-        let e = term_early(input)?;
+    fn stmt_expr(
+        input: ParseStream,
+        allow_nosemi: bool,
+        attrs: Vec<Attribute>,
+    ) -> Result<TermStmt> {
+        let e = term_early(input, attrs)?;
 
         if input.peek(Token![;]) {
             return Ok(TermStmt::Semi(e, input.parse()?));
@@ -865,7 +869,7 @@ pub(crate) mod parsing {
 
     impl Parse for Term {
         fn parse(input: ParseStream) -> Result<Self> {
-            ambiguous_term(input, AllowStruct(true))
+            ambiguous_term(input, AllowStruct(true), Attribute::parse_outer(input)?)
         }
     }
 
@@ -951,7 +955,7 @@ pub(crate) mod parsing {
         /// implying tighter precedence for `..` than struct init, a
         /// contradiction.
         pub fn parse_without_eager_brace(input: ParseStream) -> Result<Term> {
-            ambiguous_term(input, AllowStruct(false))
+            ambiguous_term(input, AllowStruct(false), Attribute::parse_outer(input)?)
         }
     }
 
@@ -997,7 +1001,7 @@ pub(crate) mod parsing {
                 let eqeq_token: Token![==] = input.parse()?;
                 let gt_token: Token![>] = input.parse()?;
                 let precedence = Precedence::Impl;
-                let mut rhs = unary_term(input, allow_struct)?;
+                let mut rhs = unary_term(input, allow_struct, Attribute::parse_outer(input)?)?;
                 loop {
                     let next = peek_precedence(input);
                     if next >= precedence {
@@ -1022,7 +1026,7 @@ pub(crate) mod parsing {
                     }
                     return Ok(Term::Range(TermRange { from: Some(lhs.into()), limits, to: None }));
                 }
-                let mut rhs = unary_term(input, allow_struct)?;
+                let mut rhs = unary_term(input, allow_struct, Attribute::parse_outer(input)?)?;
                 loop {
                     let next = peek_precedence(input);
                     if next >= precedence {
@@ -1042,7 +1046,7 @@ pub(crate) mod parsing {
             {
                 let op: BinOp = input.parse()?;
                 let precedence = Precedence::of(&op);
-                let mut rhs = unary_term(input, allow_struct)?;
+                let mut rhs = unary_term(input, allow_struct, Attribute::parse_outer(input)?)?;
                 loop {
                     let next = peek_precedence(input);
                     if next > precedence || next == precedence && precedence == Precedence::Assign {
@@ -1085,32 +1089,40 @@ pub(crate) mod parsing {
     }
 
     // Parse an arbitrary term.
-    fn ambiguous_term(input: ParseStream, allow_struct: AllowStruct) -> Result<Term> {
-        let lhs = unary_term(input, allow_struct)?;
+    fn ambiguous_term(
+        input: ParseStream,
+        allow_struct: AllowStruct,
+        attrs: Vec<Attribute>,
+    ) -> Result<Term> {
+        let lhs = unary_term(input, allow_struct, attrs)?;
         parse_term(input, lhs, allow_struct, Precedence::Any)
     }
 
-    fn unary_term(input: ParseStream, allow_struct: AllowStruct) -> Result<Term> {
+    fn unary_term(
+        input: ParseStream,
+        allow_struct: AllowStruct,
+        attrs: Vec<Attribute>,
+    ) -> Result<Term> {
         if input.peek(Token![&]) {
             Ok(Term::Reference(TermReference {
                 and_token: input.parse()?,
                 mutability: input.parse()?,
-                expr: Box::new(unary_term(input, allow_struct)?),
+                expr: Box::new(unary_term(input, allow_struct, Attribute::parse_outer(input)?)?),
             }))
         } else if input.peek(Token![*]) || input.peek(Token![!]) || input.peek(Token![-]) {
             // <UnOp> <trailer>
             Ok(Term::Unary(TermUnary {
                 op: input.parse()?,
-                expr: Box::new(unary_term(input, allow_struct)?),
+                expr: Box::new(unary_term(input, allow_struct, Attribute::parse_outer(input)?)?),
             }))
         } else if input.peek(Token![^]) {
             // ^ <trailer>
             Ok(Term::Final(TermFinal {
                 final_token: input.parse()?,
-                term: Box::new(unary_term(input, allow_struct)?),
+                term: Box::new(unary_term(input, allow_struct, Attribute::parse_outer(input)?)?),
             }))
         } else {
-            trailer_term(input, allow_struct)
+            trailer_term(input, allow_struct, attrs)
         }
     }
 
@@ -1120,8 +1132,12 @@ pub(crate) mod parsing {
     // <atom> . <lit> ...
     // <atom> [ <expr> ] ...
     // <atom> ? ...
-    fn trailer_term(input: ParseStream, allow_struct: AllowStruct) -> Result<Term> {
-        let atom = atom_term(input, allow_struct)?;
+    fn trailer_term(
+        input: ParseStream,
+        allow_struct: AllowStruct,
+        attrs: Vec<Attribute>,
+    ) -> Result<Term> {
+        let atom = atom_term(input, allow_struct, attrs)?;
         let e = trailer_helper(input, atom)?;
         Ok(e)
     }
@@ -1133,7 +1149,7 @@ pub(crate) mod parsing {
                 e = Term::Call(TermCall {
                     func: Box::new(e),
                     paren_token: parenthesized!(content in input),
-                    args: content.parse_terminated(TermWithTriggers::parse, Token![,])?,
+                    args: content.parse_terminated(Term::parse, Token![,])?,
                 });
             } else if input.peek(Token![.]) && !input.peek(Token![..]) {
                 let mut dot_token: Token![.] = input.parse()?;
@@ -1210,7 +1226,11 @@ pub(crate) mod parsing {
 
     // Parse all atomic expressions which don't have to worry about precedence
     // interactions, as they are fully contained.
-    fn atom_term(input: ParseStream, allow_struct: AllowStruct) -> Result<Term> {
+    fn atom_term(
+        input: ParseStream,
+        allow_struct: AllowStruct,
+        attrs: Vec<Attribute>,
+    ) -> Result<Term> {
         if input.peek(token::Group)
             && !input.peek2(Token![::])
             && !input.peek2(Token![!])
@@ -1220,7 +1240,7 @@ pub(crate) mod parsing {
         } else if input.peek(Lit) {
             input.parse().map(Term::Lit)
         } else if input.peek(Token![|]) {
-            term_closure(input, allow_struct).map(Term::Closure)
+            term_closure(input, allow_struct, attrs).map(Term::Closure)
         } else if (input.peek(Ident)
             && !(peek_quant(input) || input.peek(kw::dead) || input.peek(kw::pearlite)))
             || input.peek(Token![::])
@@ -1378,7 +1398,7 @@ pub(crate) mod parsing {
         }
     }
 
-    pub(crate) fn term_early(input: ParseStream) -> Result<Term> {
+    pub(crate) fn term_early(input: ParseStream, attrs: Vec<Attribute>) -> Result<Term> {
         let mut expr = if input.peek(Token![if]) {
             Term::If(input.parse()?)
         } else if input.peek(Token![match]) {
@@ -1387,7 +1407,7 @@ pub(crate) mod parsing {
             Term::Block(input.call(term_block)?)
         } else {
             let allow_struct = AllowStruct(true);
-            let expr = unary_term(input, allow_struct)?;
+            let expr = unary_term(input, allow_struct, attrs)?;
 
             return parse_term(input, expr, allow_struct, Precedence::Any);
         };
@@ -1697,7 +1717,7 @@ pub(crate) mod parsing {
                 {
                     None
                 } else {
-                    let to = ambiguous_term(input, allow_struct)?;
+                    let to = ambiguous_term(input, allow_struct, Vec::new())?;
                     Some(Box::new(to))
                 }
             },
@@ -1730,7 +1750,7 @@ pub(crate) mod parsing {
                 },
                 fat_arrow_token: input.parse()?,
                 body: {
-                    let body = input.call(term_early)?;
+                    let body = term_early(input, Attribute::parse_outer(input)?)?;
                     requires_comma = requires_terminator(&body);
                     Box::new(body)
                 },
@@ -1781,7 +1801,11 @@ pub(crate) mod parsing {
         Ok(!trailing_dot)
     }
 
-    fn term_closure(input: ParseStream, allow_struct: AllowStruct) -> Result<TermClosure> {
+    fn term_closure(
+        input: ParseStream,
+        allow_struct: AllowStruct,
+        attrs: Vec<Attribute>,
+    ) -> Result<TermClosure> {
         let or1_token: Token![|] = input.parse()?;
 
         let mut inputs = Punctuated::new();
@@ -1808,18 +1832,11 @@ pub(crate) mod parsing {
             let block = Term::Block(body);
             (output, block)
         } else {
-            let body = ambiguous_term(input, allow_struct)?;
+            let body = ambiguous_term(input, allow_struct, Attribute::parse_outer(input)?)?;
             (ReturnType::Default, body)
         };
 
-        Ok(TermClosure {
-            attrs: Vec::new(),
-            or1_token,
-            inputs,
-            or2_token,
-            output,
-            body: Box::new(body),
-        })
+        Ok(TermClosure { attrs, or1_token, inputs, or2_token, output, body: Box::new(body) })
     }
 
     fn closure_arg(input: ParseStream) -> Result<Pat> {

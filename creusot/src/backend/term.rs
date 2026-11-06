@@ -393,7 +393,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             }
             &TermKind::Closure { arg, arg_ty, ref body } => {
                 let binders = [Binder::typed(arg.0, self.lower_ty(arg_ty))].into();
-                let body = self.lower_term(body);
+                let body = self.lower_term(&body.term);
                 Exp::Lam(binders, body.boxed())
             }
             TermKind::Reborrow { inner, projections } => {
