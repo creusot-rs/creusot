@@ -1,0 +1,84 @@
+module M_id
+  type t_T
+  
+  predicate const_true_T (_1: t_T)
+  
+  axiom const_true_T_def: forall _1: t_T [const_true_T _1]. const_true_T _1 = true
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : t_T
+  
+  function id_T (x: t_T) : t_T
+  
+  goal vc_id_T: const_true_T x -> ([@stop_split] [@expl:id ensures] const_true_T x)
+end
+module M_test
+  use map.Map
+  use int.Int
+  
+  predicate const_true_Mapping_Int_unit (_1: Map.map int ())
+  
+  axiom const_true_Mapping_Int_unit_def:
+    forall _1: Map.map int () [const_true_Mapping_Int_unit _1]. const_true_Mapping_Int_unit _1 = true
+  
+  function id_Mapping_Int_unit (x: Map.map int ()) : Map.map int ()
+  
+  axiom id_Mapping_Int_unit_def: forall x: Map.map int () [id_Mapping_Int_unit x]. const_true_Mapping_Int_unit x
+      -> id_Mapping_Int_unit x = x
+  
+  axiom id_Mapping_Int_unit_spec: forall x: Map.map int (). const_true_Mapping_Int_unit x
+      -> const_true_Mapping_Int_unit x
+  
+  predicate const_true_unit (_1: ())
+  
+  axiom const_true_unit_def: forall _1: () [const_true_unit _1]. const_true_unit _1 = true
+  
+  function id_unit (x: ()) : ()
+  
+  axiom id_unit_def: forall x: () [id_unit x]. const_true_unit x -> id_unit x = x
+  
+  axiom id_unit_spec: forall x: (). const_true_unit x -> const_true_unit x
+  
+  function f (_1: int) : int
+  
+  function f_def (x: int) : ()
+  
+  axiom f_def_spec: forall x: int [f_def x]. f (2 * x + 1) = f (2 * x - 1)
+  
+  function index_Mapping_Int_unit [@inline:trivial] (self: Map.map int ()) (a: int) : () = Map.get self a
+  
+  meta "rewrite_def" function index_Mapping_Int_unit
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  function test : ()
+  
+  goal vc_test: ([@stop_split] [@expl:id requires] const_true_Mapping_Int_unit (fun (_0: int) -> ()))
+    /\ (([@stop_split] [@expl:id ensures] const_true_Mapping_Int_unit (fun (_0: int) -> ()))
+    -> (let t = id_Mapping_Int_unit (fun (_0: int) -> ()) in (forall i: int [index_Mapping_Int_unit t i]. ([@stop_split] [@expl:f_def ensures] f (2
+                * 2
+              * i
+            + 1)
+          = f (2 * 2 * i - 1))
+        -> ([@stop_split] [@expl:id requires] const_true_unit (f_def (2 * i)))
+        /\ (([@stop_split] [@expl:id ensures] const_true_unit (f_def (2 * i)))
+        -> ([@stop_split] [@expl:f_def ensures] f (2 * (2 * i + 1) + 1) = f (2 * (2 * i + 1) - 1))
+        -> ([@stop_split] [@expl:id requires] const_true_unit (f_def (2 * i + 1)))))
+    && ([@stop_split] [@expl:id requires] const_true_unit (index_Mapping_Int_unit t 0))
+    /\ (([@stop_split] [@expl:id ensures] const_true_unit (index_Mapping_Int_unit t 0))
+    -> ([@stop_split] [@expl:id requires] const_true_unit (index_Mapping_Int_unit t 1))
+    /\ (([@stop_split] [@expl:id ensures] const_true_unit (index_Mapping_Int_unit t 1))
+    -> ([@stop_split] [@expl:id requires] const_true_unit (index_Mapping_Int_unit t 2))
+    /\ (([@stop_split] [@expl:id ensures] const_true_unit (index_Mapping_Int_unit t 2))
+    -> ([@stop_split] [@expl:id requires] const_true_unit (index_Mapping_Int_unit t 3))
+    /\ (([@stop_split] [@expl:id ensures] const_true_unit (index_Mapping_Int_unit t 3))
+    -> ([@stop_split] [@expl:id requires] const_true_unit (index_Mapping_Int_unit t 4))
+    /\ (([@stop_split] [@expl:id ensures] const_true_unit (index_Mapping_Int_unit t 4))
+    -> ([@stop_split] [@expl:id requires] const_true_unit (index_Mapping_Int_unit t 5))
+    /\ (([@stop_split] [@expl:id ensures] const_true_unit (index_Mapping_Int_unit t 5)) -> f 23 = f (- 1)))))))))
+end

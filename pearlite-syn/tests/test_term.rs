@@ -263,44 +263,38 @@ fn test_trigger() {
                             },
                             paren_token: Paren,
                             args: [
-                                TermWithTriggers {
-                                    trigger: [],
-                                    term: TermPath {
-                                        inner: ExprPath {
-                                            attrs: [],
-                                            qself: None,
-                                            path: Path {
-                                                leading_colon: None,
-                                                segments: [
-                                                    PathSegment {
-                                                        ident: Ident {
-                                                            sym: x,
-                                                        },
-                                                        arguments: PathArguments::None,
+                                TermPath {
+                                    inner: ExprPath {
+                                        attrs: [],
+                                        qself: None,
+                                        path: Path {
+                                            leading_colon: None,
+                                            segments: [
+                                                PathSegment {
+                                                    ident: Ident {
+                                                        sym: x,
                                                     },
-                                                ],
-                                            },
+                                                    arguments: PathArguments::None,
+                                                },
+                                            ],
                                         },
                                     },
                                 },
                                 Comma,
-                                TermWithTriggers {
-                                    trigger: [],
-                                    term: TermPath {
-                                        inner: ExprPath {
-                                            attrs: [],
-                                            qself: None,
-                                            path: Path {
-                                                leading_colon: None,
-                                                segments: [
-                                                    PathSegment {
-                                                        ident: Ident {
-                                                            sym: y,
-                                                        },
-                                                        arguments: PathArguments::None,
+                                TermPath {
+                                    inner: ExprPath {
+                                        attrs: [],
+                                        qself: None,
+                                        path: Path {
+                                            leading_colon: None,
+                                            segments: [
+                                                PathSegment {
+                                                    ident: Ident {
+                                                        sym: y,
                                                     },
-                                                ],
-                                            },
+                                                    arguments: PathArguments::None,
+                                                },
+                                            ],
                                         },
                                     },
                                 },
@@ -334,23 +328,20 @@ fn test_trigger() {
                             },
                             paren_token: Paren,
                             args: [
-                                TermWithTriggers {
-                                    trigger: [],
-                                    term: TermPath {
-                                        inner: ExprPath {
-                                            attrs: [],
-                                            qself: None,
-                                            path: Path {
-                                                leading_colon: None,
-                                                segments: [
-                                                    PathSegment {
-                                                        ident: Ident {
-                                                            sym: x,
-                                                        },
-                                                        arguments: PathArguments::None,
+                                TermPath {
+                                    inner: ExprPath {
+                                        attrs: [],
+                                        qself: None,
+                                        path: Path {
+                                            leading_colon: None,
+                                            segments: [
+                                                PathSegment {
+                                                    ident: Ident {
+                                                        sym: x,
                                                     },
-                                                ],
-                                            },
+                                                    arguments: PathArguments::None,
+                                                },
+                                            ],
                                         },
                                     },
                                 },
@@ -377,23 +368,20 @@ fn test_trigger() {
                             },
                             paren_token: Paren,
                             args: [
-                                TermWithTriggers {
-                                    trigger: [],
-                                    term: TermPath {
-                                        inner: ExprPath {
-                                            attrs: [],
-                                            qself: None,
-                                            path: Path {
-                                                leading_colon: None,
-                                                segments: [
-                                                    PathSegment {
-                                                        ident: Ident {
-                                                            sym: y,
-                                                        },
-                                                        arguments: PathArguments::None,
+                                TermPath {
+                                    inner: ExprPath {
+                                        attrs: [],
+                                        qself: None,
+                                        path: Path {
+                                            leading_colon: None,
+                                            segments: [
+                                                PathSegment {
+                                                    ident: Ident {
+                                                        sym: y,
                                                     },
-                                                ],
-                                            },
+                                                    arguments: PathArguments::None,
+                                                },
+                                            ],
                                         },
                                     },
                                 },

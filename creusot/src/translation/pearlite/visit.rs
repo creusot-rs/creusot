@@ -58,7 +58,10 @@ pub fn super_visit_term<'tcx, V: TermVisitor<'tcx>>(term: &Term<'tcx>, visitor: 
         }
         TermKind::Projection { lhs, idx: _ } => visitor.visit_term(lhs),
         TermKind::Old { term } => visitor.visit_term(term),
-        TermKind::Closure { body, .. } => visitor.visit_term(body),
+        TermKind::Closure { body, .. } => {
+            visitor.visit_term(&body.term);
+            body.triggers.iter().for_each(|t| t.0.iter().for_each(|t| visitor.visit_term(t)));
+        }
         TermKind::Reborrow { inner, projections } => {
             visitor.visit_term(inner);
             visit_projections(projections, |term| visitor.visit_term(term))
@@ -140,7 +143,12 @@ pub(crate) fn super_visit_mut_term<'tcx, V: TermVisitorMut<'tcx>>(
         }
         TermKind::Projection { lhs, idx: _ } => visitor.visit_mut_term(lhs),
         TermKind::Old { term } => visitor.visit_mut_term(term),
-        TermKind::Closure { body, .. } => visitor.visit_mut_term(body),
+        TermKind::Closure { body, .. } => {
+            visitor.visit_mut_term(&mut body.term);
+            body.triggers
+                .iter_mut()
+                .for_each(|t| t.0.iter_mut().for_each(|t| visitor.visit_mut_term(t)));
+        }
         TermKind::Reborrow { inner, projections } => {
             visitor.visit_mut_term(inner);
             visit_projections_mut(projections, |term| visitor.visit_mut_term(term))
