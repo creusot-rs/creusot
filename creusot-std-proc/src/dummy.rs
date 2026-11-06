@@ -124,6 +124,12 @@ pub fn constant(_: TS1, tokens: TS1) -> TS1 {
 pub fn derive_deep_model(_: TS1) -> TS1 {
     TS1::new()
 }
+pub fn derive_partial_ord_logic(_: TS1) -> TS1 {
+    TS1::new()
+}
+pub fn derive_ord_logic(_: TS1) -> TS1 {
+    TS1::new()
+}
 
 /// Visitor to delete all `#[invariant]` and `#[creusot_std::invariant]`
 /// attributes on loops.

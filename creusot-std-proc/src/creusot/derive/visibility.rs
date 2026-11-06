@@ -1,4 +1,35 @@
-use syn::{Ident, Path, PathArguments, Visibility};
+use proc_macro2::TokenStream;
+use quote::quote;
+use syn::{DataStruct, Ident, Path, PathArguments, Visibility, parse_quote};
+
+/// Provides `format_openess` method to format the argument to `logic`
+pub(crate) trait VisibilityExt {
+    fn format_openess(&self) -> TokenStream;
+}
+
+impl VisibilityExt for Visibility {
+    fn format_openess(&self) -> TokenStream {
+        match self {
+            syn::Visibility::Public(_) => quote!(open),
+            syn::Visibility::Restricted(res) => {
+                let in_token = &res.in_token;
+                let path = &res.path;
+                quote!(open(#in_token #path))
+            }
+            syn::Visibility::Inherited => quote!(open(self)),
+        }
+    }
+}
+
+pub(crate) fn struct_intersection(
+    base: Visibility,
+    is_non_exhaustive: bool,
+    data: &DataStruct,
+) -> Visibility {
+    let most_restrictive_vis_so_far =
+        if is_non_exhaustive { intersection(base, &parse_quote!(pub(crate))) } else { base };
+    data.fields.iter().fold(most_restrictive_vis_so_far, |acc, field| intersection(acc, &field.vis))
+}
 
 /// Returns a visibility no broader than either input.
 ///
