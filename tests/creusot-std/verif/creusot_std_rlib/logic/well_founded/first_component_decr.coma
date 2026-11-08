@@ -102,9 +102,15 @@ goal vc_first_component_decr_T1: (forall i: int. 0 <= i
       else
         true
     )
-  && (let result = fun (i: int) -> if 0 <= i then
-    (index_Mapping_Int_tup2_T1_T2 s (extract_nth_T1 s i)).f0
-  else
-    any_T1
-   in [@stop_split] [@expl:first_component_decr ensures] forall i: int. 0 <= i
-    -> well_founded_relation_T1 (index_Mapping_Int_T1 result i) (index_Mapping_Int_T1 result (i + 1)))
+  /\ (forall f: Map.map int t_T1. (forall i: int. if 0 <= i then
+          ([@stop_split] [@expl:extract_nth ensures] ([@stop_split] [@expl:extract_nth ensures #0] 0
+              <= extract_nth_T1 s i)
+            /\ ([@stop_split] [@expl:extract_nth ensures #1] 0 < i
+            -> (let prev = extract_nth_T1 s (i - 1) in prev < extract_nth_T1 s i
+            /\ well_founded_relation_T1 (index_Mapping_Int_tup2_T1_T2 s prev).f0 (index_Mapping_Int_tup2_T1_T2 s (extract_nth_T1 s i)).f0)))
+          /\ (index_Mapping_Int_tup2_T1_T2 s (extract_nth_T1 s i)).f0 = f i
+        else
+          any_T1 = f i
+      )
+    -> (let result = f in [@stop_split] [@expl:first_component_decr ensures] forall i: int. 0 <= i
+      -> well_founded_relation_T1 (index_Mapping_Int_T1 result i) (index_Mapping_Int_T1 result (i + 1))))

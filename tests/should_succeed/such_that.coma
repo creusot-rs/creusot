@@ -43,14 +43,12 @@ module M_foo
   let foo (return (x: ())) = (! bb0
     [ bb0 = s0
       [ s0 = any
-        [ any_ (_dest: int) ->
-        (! -{([@stop_split] [@expl:such_that ensures] index_Mapping_Int_bool (fun (x'1: int) -> x'1 + 1
-            = 42) (such_that_Int (fun (x'1: int) -> x'1 + 1 = 42)))
-          /\ _dest = such_that_Int (fun (x'1: int) -> x'1 + 1 = 42)}-
+        [ any_ (_dest: int) -> (! -{exists f: Map.map int bool. (forall x'1: int. (x'1 + 1 = 42) = f x'1)
+            /\ ([@stop_split] [@expl:such_that ensures] index_Mapping_Int_bool f (such_that_Int f))
+            /\ _dest = such_that_Int f}-
           [ &x <- _dest ] s1) ]
-        [ _ck ->
-        (! {[@stop_split] [@expl:such_that requires] exists x'1: int. index_Mapping_Int_bool (fun (x'2: int) -> x'2 + 1
-            = 42) x'1}
+        [ _ck -> (! {forall f: Map.map int bool. (forall x'1: int. (x'1 + 1 = 42) = f x'1)
+            -> ([@stop_split] [@expl:such_that requires] exists x'1: int. index_Mapping_Int_bool f x'1)}
           any) ]
       | s1 = {[@expl:assertion] x = 41} s2
       | s2 = even (fun (_x: Int32.t) -> [ &y <- _x ] s3)

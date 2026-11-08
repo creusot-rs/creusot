@@ -220,33 +220,26 @@ goal vc_incl_FMap_K_V: let r = forall k: t_K. incl_Option_V (lookup_K self k) (l
         else
           true
         ))
-    && (([@stop_split] [@expl:filter_map ensures] forall k: t_K [lookup_K (filter_map_K other (fun (_0: tup2_K_V) -> let {f0'1 = k'0; f1'1 = vo} = _0 in if incl_Option_V (lookup_K self k'0) (Some'0 vo) then
-          factor_Option_V (Some'0 vo) (lookup_K self k'0)
-        else
-          None'0
-        )) k]. lookup_K (filter_map_K other (fun (_0: tup2_K_V) -> let {f0'1 = k'0; f1'1 = vo} = _0 in if incl_Option_V (lookup_K self k'0) (Some'0 vo) then
-            factor_Option_V (Some'0 vo) (lookup_K self k'0)
+    /\ (forall f: Map.map tup2_K_V t_Option_V. (forall _0: tup2_K_V. let {f0'1 = k; f1'1 = vo} = _0 in ([@stop_split] [@expl:incl ensures] incl_Option_V (lookup_K self k) (Some'0 vo)
+            = (exists factor: t_Option_V. op_Option_V (lookup_K self k) factor = Some'1 (Some'0 vo)))
+          /\ (if incl_Option_V (lookup_K self k) (Some'0 vo) then
+            ([@stop_split] [@expl:factor ensures] op_Option_V (lookup_K self k) (factor_Option_V (Some'0 vo) (lookup_K self k))
+              = Some'1 (Some'0 vo))
+            /\ factor_Option_V (Some'0 vo) (lookup_K self k) = f _0
           else
-            None'0
-          )) k
-        = match lookup_K other k with
-          | None'0 -> None'0
-          | Some'0 v -> index_Mapping_tup2_K_V_Option_V (fun (_0: tup2_K_V) -> let {f0'1 = k'0; f1'1 = vo} = _0 in if incl_Option_V (lookup_K self k'0) (Some'0 vo) then
-            factor_Option_V (Some'0 vo) (lookup_K self k'0)
-          else
-            None'0
-          ) { f0'1 = k; f1'1 = v }
-          end)
-    -> match op_FMap_K_V self (filter_map_K other (fun (_0: tup2_K_V) -> let {f0'1 = k; f1'1 = vo} = _0 in if incl_Option_V (lookup_K self k) (Some'0 vo) then
-      factor_Option_V (Some'0 vo) (lookup_K self k)
-    else
-      None'0
-    )) with
-      | None -> false
-      | Some o -> ([@stop_split] [@expl:ext_eq ensures] ext_eq_K o other = (o = other))
-      -> ext_eq_K o other
-      && ([@stop_split] [@expl:incl ensures] r = (exists factor: t_FMap_K_V. op_FMap_K_V self factor = Some other))
-      end)
+            None'0 = f _0
+          ))
+      -> ([@stop_split] [@expl:filter_map ensures] forall k: t_K [lookup_K (filter_map_K other f) k]. lookup_K (filter_map_K other f) k
+          = match lookup_K other k with
+            | None'0 -> None'0
+            | Some'0 v -> index_Mapping_tup2_K_V_Option_V f { f0'1 = k; f1'1 = v }
+            end)
+      -> match op_FMap_K_V self (filter_map_K other f) with
+        | None -> false
+        | Some o -> ([@stop_split] [@expl:ext_eq ensures] ext_eq_K o other = (o = other))
+        -> ext_eq_K o other
+        && ([@stop_split] [@expl:incl ensures] r = (exists factor: t_FMap_K_V. op_FMap_K_V self factor = Some other))
+        end)
   else
     [@stop_split] [@expl:incl ensures] r = (exists factor: t_FMap_K_V. op_FMap_K_V self factor = Some other)
   
