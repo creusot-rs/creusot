@@ -53,15 +53,10 @@ constant s : Map.map int UInt32.t
 function no_infinite_decreasing_sequence_u32 (s: Map.map int UInt32.t) : int
 
 goal vc_no_infinite_decreasing_sequence_u32:
-  ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures] ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #0] ge_log_Int (no_infinite_decreasing_sequence_Int (fun (i: int) -> UInt32.t'int (index_Mapping_Int_u32 s i)
-      - UInt32.t'int const_MIN)) 0)
-    /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_Int (index_Mapping_Int_Int (fun (i: int) -> UInt32.t'int (index_Mapping_Int_u32 s i)
-    - UInt32.t'int const_MIN) (no_infinite_decreasing_sequence_Int (fun (i: int) -> UInt32.t'int (index_Mapping_Int_u32 s i)
-    - UInt32.t'int const_MIN))) (index_Mapping_Int_Int (fun (i: int) -> UInt32.t'int (index_Mapping_Int_u32 s i)
-    - UInt32.t'int const_MIN) (no_infinite_decreasing_sequence_Int (fun (i: int) -> UInt32.t'int (index_Mapping_Int_u32 s i)
-      - UInt32.t'int const_MIN)
+  forall f: Map.map int int. (forall i: int. UInt32.t'int (index_Mapping_Int_u32 s i) - UInt32.t'int const_MIN = f i)
+    -> ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures] ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #0] ge_log_Int (no_infinite_decreasing_sequence_Int f) 0)
+      /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_Int (index_Mapping_Int_Int f (no_infinite_decreasing_sequence_Int f)) (index_Mapping_Int_Int f (no_infinite_decreasing_sequence_Int f
+      + 1))))
+    -> (let result = no_infinite_decreasing_sequence_Int f in [@stop_split] [@expl:no_infinite_decreasing_sequence_u32 ensures] ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #0] ge_log_Int result 0)
+    /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_u32 (index_Mapping_Int_u32 s result) (index_Mapping_Int_u32 s (result
     + 1))))
-  -> (let result = no_infinite_decreasing_sequence_Int (fun (i: int) -> UInt32.t'int (index_Mapping_Int_u32 s i)
-  - UInt32.t'int const_MIN) in [@stop_split] [@expl:no_infinite_decreasing_sequence_u32 ensures] ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #0] ge_log_Int result 0)
-  /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_u32 (index_Mapping_Int_u32 s result) (index_Mapping_Int_u32 s (result
-  + 1))))

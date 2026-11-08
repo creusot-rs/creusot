@@ -32,10 +32,7 @@ constant factor : t_Self
 function factor_Self (self: t_Self) (factor: t_Self) : t_Self
 
 goal vc_factor_Self: incl_Self factor self
-  -> ([@stop_split] [@expl:such_that requires] exists x: t_Self. index_Mapping_Self_bool (fun (r: t_Self) -> op_Self factor r
-      = Some self) x)
-  /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_Self_bool (fun (r: t_Self) -> op_Self factor r
-    = Some self) (such_that_Self (fun (r: t_Self) -> op_Self factor r = Some self)))
-  -> ([@stop_split] [@expl:factor ensures] op_Self factor (such_that_Self (fun (r: t_Self) -> op_Self factor r
-    = Some self))
-  = Some self))
+  -> (forall f: Map.map t_Self bool. (forall r: t_Self. (op_Self factor r = Some self) = f r)
+    -> ([@stop_split] [@expl:such_that requires] exists x: t_Self. index_Mapping_Self_bool f x)
+    /\ (([@stop_split] [@expl:such_that ensures] index_Mapping_Self_bool f (such_that_Self f))
+    -> ([@stop_split] [@expl:factor ensures] op_Self factor (such_that_Self f) = Some self)))

@@ -1883,11 +1883,12 @@ module M_impl_Queue_T__new (* Queue<T> *)
       | s5 = [ &head_own'0 <- _129.f1'2 ] s6
       | s6 = any
         [ any_ (_dest: int) ->
-        (! -{([@stop_split] [@expl:such_that ensures] index_Mapping_Int_bool (fun (t: int) -> contains_Int (val_AtomicUsize head_own'0) t) (such_that_Int (fun (t: int) -> contains_Int (val_AtomicUsize head_own'0) t)))
-          /\ _dest = such_that_Int (fun (t: int) -> contains_Int (val_AtomicUsize head_own'0) t)}-
+        (! -{exists f: Map.map int bool. (forall t: int. contains_Int (val_AtomicUsize head_own'0) t = f t)
+            /\ ([@stop_split] [@expl:such_that ensures] index_Mapping_Int_bool f (such_that_Int f))
+            /\ _dest = such_that_Int f}-
           [ &head_ts <- _dest ] s7) ]
-        [ _ck ->
-        (! {[@stop_split] [@expl:such_that requires] exists x: int. index_Mapping_Int_bool (fun (t: int) -> contains_Int (val_AtomicUsize head_own'0) t) x}
+        [ _ck -> (! {forall f: Map.map int bool. (forall t: int. contains_Int (val_AtomicUsize head_own'0) t = f t)
+            -> ([@stop_split] [@expl:such_that requires] exists x: int. index_Mapping_Int_bool f x)}
           any) ]
       | s7 = new'0 (fun (_x: t_SyncView) -> [ &_141 <- _x ] s8)
       | s8 = MutBorrow.borrow_mut <t_SyncView> {_141}
@@ -1898,20 +1899,22 @@ module M_impl_Queue_T__new (* Queue<T> *)
       | s12 = [ &tail_own'0 <- _138.f1'2 ] s13
       | s13 = any
         [ any_ (_dest: int) ->
-        (! -{([@stop_split] [@expl:such_that ensures] index_Mapping_Int_bool (fun (t: int) -> contains_Int (val_AtomicUsize tail_own'0) t) (such_that_Int (fun (t: int) -> contains_Int (val_AtomicUsize tail_own'0) t)))
-          /\ _dest = such_that_Int (fun (t: int) -> contains_Int (val_AtomicUsize tail_own'0) t)}-
+        (! -{exists f: Map.map int bool. (forall t: int. contains_Int (val_AtomicUsize tail_own'0) t = f t)
+            /\ ([@stop_split] [@expl:such_that ensures] index_Mapping_Int_bool f (such_that_Int f))
+            /\ _dest = such_that_Int f}-
           [ &tail_ts <- _dest ] s14) ]
-        [ _ck ->
-        (! {[@stop_split] [@expl:such_that requires] exists x: int. index_Mapping_Int_bool (fun (t: int) -> contains_Int (val_AtomicUsize tail_own'0) t) x}
+        [ _ck -> (! {forall f: Map.map int bool. (forall t: int. contains_Int (val_AtomicUsize tail_own'0) t = f t)
+            -> ([@stop_split] [@expl:such_that requires] exists x: int. index_Mapping_Int_bool f x)}
           any) ]
       | s14 = any
-        [ any_ (_dest: Seq.seq t_Id) ->
-        (! -{([@stop_split] [@expl:map ensures] ([@stop_split] [@expl:map ensures #0] Seq.length (map_Authority statuses_mono_auth'0 (fun (x: t_Authority) -> id x))
-              = Seq.length statuses_mono_auth'0)
-            /\ ([@stop_split] [@expl:map ensures #1] forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length statuses_mono_auth'0
-              -> Seq.get (map_Authority statuses_mono_auth'0 (fun (x: t_Authority) -> id x)) i'0
-              = index_Mapping_Authority_Id (fun (x: t_Authority) -> id x) (Seq.get statuses_mono_auth'0 i'0)))
-          /\ _dest = map_Authority statuses_mono_auth'0 (fun (x: t_Authority) -> id x)}-
+        [ any_ (_dest: Seq.seq t_Id) -> (! -{exists f: Map.map t_Authority t_Id. (forall x: t_Authority. id x = f x)
+            /\ ([@stop_split] [@expl:map ensures] ([@stop_split] [@expl:map ensures #0] Seq.length (map_Authority statuses_mono_auth'0 f)
+                = Seq.length statuses_mono_auth'0)
+              /\ ([@stop_split] [@expl:map ensures #1] forall i'0: int. 0 <= i'0
+                  /\ i'0 < Seq.length statuses_mono_auth'0
+                -> Seq.get (map_Authority statuses_mono_auth'0 f) i'0
+                = index_Mapping_Authority_Id f (Seq.get statuses_mono_auth'0 i'0)))
+            /\ _dest = map_Authority statuses_mono_auth'0 f}-
           [ &statuses_mono_auth_wards'0 <- _dest ] s15) ] [ _ck -> (! any) ]
       | s15 = [ &_154 <- Seq.empty: Seq.seq t_T ] s16
       | s16 = [ &_160 <- UInt64.t'int const_MAX - 2 * UInt64.t'int length + 1 ] s17

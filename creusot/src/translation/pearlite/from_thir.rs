@@ -557,6 +557,13 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                         )
                         .span(span))
                     }
+                    Intrinsic::MappingFromFn => {
+                        // We don't use #[builtin("identity")] because it the return type is not
+                        // the same as the parameter.
+                        let mut term = self.expr_term(args[0])?;
+                        term.ty = ty;
+                        Ok(term.span(span))
+                    }
                     _ if self.ctx.is_diagnostic_item(sym::deref_method, id)
                         && let Some(adt) = subst.type_at(0).ty_adt_def()
                         && Intrinsic::Ghost.is(self.ctx, adt.did()) =>
@@ -605,7 +612,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
 
                         for missing_field in missing {
                             let missing_field: FieldIdx = missing_field.into();
-                            let missing_field_ty = self.ctx.tcx.normalize_erasing_regions(
+                            let missing_field_ty = self.ctx.normalize_erasing_regions(
                                 self.typing_env,
                                 variant.fields[missing_field].ty(self.ctx.tcx, args),
                             );
@@ -728,6 +735,7 @@ impl<'tcx> ThirTerm<'_, 'tcx> {
                 Err(self.ctx.dcx().span_err(span, format!("Unsupported expression kind {:?}", ek)))
             }
         };
+        // Use ty from THIR, because it is normalized, contrary to e.g., the return type of a function call.
         Ok(Term { ty, ..res? })
     }
 

@@ -51,8 +51,10 @@ function cons_T'0 (s: Fset.fset t_T) (ss: Fset.fset (Seq.seq t_T)) : Fset.fset (
 
 goal vc_cons_T: (forall x: t_T, xs: Seq.seq t_T. tail_T (cons_T xs x) = xs)
   && (forall xs: Seq.seq t_T. 0 < Seq.length xs -> cons_T (tail_T xs) (Seq.get xs 0) = xs)
-  && (([@stop_split] [@expl:unions ensures] forall y: Seq.seq t_T [contains_Seq_T (unions_T s (fun (x: t_T) -> map_Seq_T ss (fun (xs: Seq.seq t_T) -> cons_T xs x))) y]. contains_Seq_T (unions_T s (fun (x: t_T) -> map_Seq_T ss (fun (xs: Seq.seq t_T) -> cons_T xs x))) y
-      = (exists x: t_T. contains_T s x
-        /\ contains_Seq_T (Map.get (fun (x'0: t_T) -> map_Seq_T ss (fun (xs: Seq.seq t_T) -> cons_T xs x'0)) x) y))
-  -> ([@stop_split] [@expl:cons ensures] forall xs: Seq.seq t_T. contains_Seq_T (unions_T s (fun (x: t_T) -> map_Seq_T ss (fun (xs'0: Seq.seq t_T) -> cons_T xs'0 x))) xs
-    = (0 < Seq.length xs /\ contains_T s (Seq.get xs 0) /\ contains_Seq_T ss (tail_T xs))))
+  && (forall f: Map.map t_T (Fset.fset (Seq.seq t_T)). (forall x: t_T. exists f'0: Map.map (Seq.seq t_T) (Seq.seq t_T). (forall xs: Seq.seq t_T. cons_T xs x
+              = f'0 xs)
+          /\ map_Seq_T ss f'0 = f x)
+    -> ([@stop_split] [@expl:unions ensures] forall y: Seq.seq t_T [contains_Seq_T (unions_T s f) y]. contains_Seq_T (unions_T s f) y
+        = (exists x: t_T. contains_T s x /\ contains_Seq_T (Map.get f x) y))
+    -> ([@stop_split] [@expl:cons ensures] forall xs: Seq.seq t_T. contains_Seq_T (unions_T s f) xs
+      = (0 < Seq.length xs /\ contains_T s (Seq.get xs 0) /\ contains_Seq_T ss (tail_T xs))))

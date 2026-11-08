@@ -72,7 +72,7 @@ pub const fn snapshot_from_fn<T: ?Sized, F: Fn() -> T>(_: F) -> Snapshot<T> {
 }
 
 #[logic(opaque)]
-#[builtin("identity")]
+#[intrinsic("mapping_from_fn")]
 pub fn mapping_from_fn<A: ?Sized, B, F: FnOnce(&A) -> B>(_: F) -> Mapping<A, B> {
     dead
 }

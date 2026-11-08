@@ -30,8 +30,10 @@ constant t : Fset.fset (Seq.seq t_T)
 function concat_T (s: Fset.fset (Seq.seq t_T)) (t: Fset.fset (Seq.seq t_T)) : Fset.fset (Seq.seq t_T)
 
 goal vc_concat_T:
-  ([@stop_split] [@expl:unions ensures] forall y: Seq.seq t_T [contains_Seq_T (unions_Seq_T s (fun (ys: Seq.seq t_T) -> map_Seq_T t (fun (zs: Seq.seq t_T) -> Seq.(++) ys zs))) y]. contains_Seq_T (unions_Seq_T s (fun (ys: Seq.seq t_T) -> map_Seq_T t (fun (zs: Seq.seq t_T) -> Seq.(++) ys zs))) y
-      = (exists x: Seq.seq t_T. contains_Seq_T s x
-        /\ contains_Seq_T (Map.get (fun (ys: Seq.seq t_T) -> map_Seq_T t (fun (zs: Seq.seq t_T) -> Seq.(++) ys zs)) x) y))
-  -> ([@stop_split] [@expl:concat ensures] forall xs: Seq.seq t_T. contains_Seq_T (unions_Seq_T s (fun (ys: Seq.seq t_T) -> map_Seq_T t (fun (zs: Seq.seq t_T) -> Seq.(++) ys zs))) xs
-    = (exists ys: Seq.seq t_T, zs: Seq.seq t_T. contains_Seq_T s ys /\ contains_Seq_T t zs /\ xs = Seq.(++) ys zs))
+  forall f: Map.map (Seq.seq t_T) (Fset.fset (Seq.seq t_T)). (forall ys: Seq.seq t_T. exists f'0: Map.map (Seq.seq t_T) (Seq.seq t_T). (forall zs: Seq.seq t_T. Seq.(++) ys zs
+              = f'0 zs)
+          /\ map_Seq_T t f'0 = f ys)
+    -> ([@stop_split] [@expl:unions ensures] forall y: Seq.seq t_T [contains_Seq_T (unions_Seq_T s f) y]. contains_Seq_T (unions_Seq_T s f) y
+        = (exists x: Seq.seq t_T. contains_Seq_T s x /\ contains_Seq_T (Map.get f x) y))
+    -> ([@stop_split] [@expl:concat ensures] forall xs: Seq.seq t_T. contains_Seq_T (unions_Seq_T s f) xs
+      = (exists ys: Seq.seq t_T, zs: Seq.seq t_T. contains_Seq_T s ys /\ contains_Seq_T t zs /\ xs = Seq.(++) ys zs))

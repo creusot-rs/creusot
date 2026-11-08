@@ -23,7 +23,7 @@ use rustc_middle::{
     ty::{self, EarlyBinder, GenericArg, Ty, TyCtxt, TyKind},
 };
 use rustc_span::Span;
-use std::{cell::Cell, collections::HashMap, iter::repeat_n};
+use std::{cell::Cell, collections::HashMap, iter::repeat_n, ops::Deref};
 use why3::{
     Exp, Ident, Name,
     declaration::Attribute,
@@ -52,13 +52,24 @@ struct VCGen<'a, 'tcx, N> {
     names: &'a N,
     self_call: Option<SelfCall>,
     trivial: Cell<bool>,
-    safety: bool,
 }
 
 pub struct SelfCall {
     pub id: DefId,
     pub args: Vec<Ident>,
     pub variant: Option<Exp>,
+}
+
+struct VCGenCtx<'a, 'tcx, N> {
+    vcgen: &'a VCGen<'a, 'tcx, N>,
+    safety: bool,
+}
+
+impl<'a, 'tcx, N> Deref for VCGenCtx<'a, 'tcx, N> {
+    type Target = VCGen<'a, 'tcx, N>;
+    fn deref(&self) -> &VCGen<'a, 'tcx, N> {
+        self.vcgen
+    }
 }
 
 // We use Fn because some continuations may be called several times (in the case
@@ -74,12 +85,12 @@ pub fn wp<'tcx>(
     safety: bool,
     k: PostCont<'_, 'tcx, Exp>,
 ) -> Option<Exp> {
-    let vcgen = VCGen { ctx, names, self_call, trivial: Cell::new(true), safety };
-    let res = vcgen.build_wp(t, k);
+    let vcgen = VCGen { ctx, names, self_call, trivial: Cell::new(true) };
+    let res = VCGenCtx { vcgen: &vcgen, safety }.build_wp(t, k);
     if vcgen.trivial.get() { None } else { Some(res) }
 }
 
-impl<'tcx, N: Namer<'tcx>> VCGen<'_, 'tcx, N> {
+impl<'tcx, N: Namer<'tcx>> VCGenCtx<'_, 'tcx, N> {
     fn lower_literal(&self, lit: &Literal, ty: Ty<'tcx>) -> Exp {
         lower_literal(self.ctx, self.names, lit, ty)
     }
@@ -294,19 +305,23 @@ impl<'tcx, N: Namer<'tcx>> VCGen<'_, 'tcx, N> {
                     };
                 safe.log_and(k(self.lower_pure(t)))
             }
-            // VC(|x| A(x), Q) = (forall<x>, VC(A(x), true)) /\ Q(|x| A(x)) (safety mode)
-            &TermKind::Closure { arg, arg_ty, ref body } if self.safety => {
-                let body = self.build_wp(body, &|_| Exp::mk_true());
-                let safe = Exp::forall([(arg.0, self.ty(arg_ty, t.span))], body);
-                safe.lazy_and(k(self.lower_pure(t)))
-            }
-            // VC(|x| A(x), Q) = (forall<x>, !VC(A(x), false)) -> Q(|x| A(x)) (non-safety mode)
+            // VC_safety(|x| A(x), Q) = (forall<x>, VC_safety(A(x), true)) /\ VC_nosafety(|x| A(x), Q)
+            // VC_nosafety(|x| A(x), Q) = forall<f> (forall<x>, !VC_nosafety(A(x), r. r != f x)) -> Q(f)
             &TermKind::Closure { arg, arg_ty, ref body } => {
-                assert!(!self.safety);
-                let mut body = self.build_wp(body, &|_| Exp::mk_false());
-                body.smart_not();
-                let safe = Exp::forall([(arg.0, self.ty(arg_ty, t.span))], body);
-                safe.implies(k(self.lower_pure(t)))
+                let safe = if self.safety {
+                    let safe_body = self.build_wp(&body, &|_| Exp::mk_true());
+                    Exp::forall([(arg.0, self.ty(arg_ty, t.span))], safe_body)
+                } else {
+                    Exp::mk_true()
+                };
+
+                let f = Ident::fresh_local("f");
+                let mut post_body = VCGenCtx { vcgen: self.vcgen, safety: false }
+                    .build_wp(&body, &|exp| exp.neq(Exp::var(f).app([Exp::var(arg.0)])));
+                post_body.smart_not();
+                let post = Exp::forall([(arg.0, self.ty(arg_ty, t.span))], post_body); // TODO trigger
+                let post_all = Exp::forall([(f, self.ty(t.ty, t.span))], post.implies(k(Exp::var(f))));
+                safe.log_and(post_all)
             }
             // VC((T...), Q) = VC(T[0], |t0| ... VC(T[N], |tn| Q(t0..tn))))
             TermKind::Tuple { fields } => {

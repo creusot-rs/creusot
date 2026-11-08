@@ -696,16 +696,15 @@ module M_merge_fmaps
     [ bb0 = s0
       [ s0 = any
         [ any_ (_dest: t_FMap_K_V) ->
-        (! -{([@stop_split] [@expl:merge ensures] forall k'0: t_K [lookup_K (merge_K m1 m2 (fun (_0: tup2_V_V) -> let {f0 = v1} = _0 in v1)) k'0]. match { f0'0 = lookup_K m1 k'0;
-                                                                                                                                                           f1'0 = lookup_K m2 k'0 } with
-                | {f0'0 = None; f1'0 = y} -> lookup_K (merge_K m1 m2 (fun (_0: tup2_V_V) -> let {f0 = v1} = _0 in v1)) k'0
-                = y
-                | {f0'0 = x; f1'0 = None} -> lookup_K (merge_K m1 m2 (fun (_0: tup2_V_V) -> let {f0 = v1} = _0 in v1)) k'0
-                = x
-                | {f0'0 = Some x; f1'0 = Some y} -> lookup_K (merge_K m1 m2 (fun (_0: tup2_V_V) -> let {f0 = v1} = _0 in v1)) k'0
-                = Some (index_Mapping_tup2_V_V_V (fun (_0: tup2_V_V) -> let {f0 = v1} = _0 in v1) { f0 = x; f1 = y })
-                end)
-          /\ _dest = merge_K m1 m2 (fun (_0: tup2_V_V) -> let {f0 = v1} = _0 in v1)}-
+        (! -{exists f: Map.map tup2_V_V t_V. (forall _0: tup2_V_V. let {f0 = v1} = _0 in v1 = f _0)
+            /\ ([@stop_split] [@expl:merge ensures] forall k'0: t_K [lookup_K (merge_K m1 m2 f) k'0]. match { f0'0 = lookup_K m1 k'0;
+                                                                                                              f1'0 = lookup_K m2 k'0 } with
+                  | {f0'0 = None; f1'0 = y} -> lookup_K (merge_K m1 m2 f) k'0 = y
+                  | {f0'0 = x; f1'0 = None} -> lookup_K (merge_K m1 m2 f) k'0 = x
+                  | {f0'0 = Some x; f1'0 = Some y} -> lookup_K (merge_K m1 m2 f) k'0
+                  = Some (index_Mapping_tup2_V_V_V f { f0 = x; f1 = y })
+                  end)
+            /\ _dest = merge_K m1 m2 f}-
           [ &merge <- _dest ] s1) ] [ _ck -> (! any) ]
       | s1 = into_inner_FMap_K_V {m2} (fun (_x: t_FMap_K_V) -> [ &result <- _x ] s2)
       | s2 = into_inner_FMap_K_V {m1} (fun (_x: t_FMap_K_V) -> [ &_15 <- _x ] s3)

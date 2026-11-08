@@ -1,8 +1,8 @@
 (* ghost::resource::m::Resource<R> *)
 
 use creusot.prelude.MutBorrow
-use set.Set
 use map.Map
+use set.Set
 use creusot.prelude.Any
 
 type t_U
@@ -142,14 +142,14 @@ let update_R (self: MutBorrow.t t_Resource_R) (upd: t_U) (return (x: t_Choice)) 
     | s8 = update_raw_R {_30} {target_s} (fun (_x: t_R) -> [ &r <- _x ] s9)
     | s9 = -{resolve_refmut_Resource_R self}- s10
     | s10 = any
-      [ any_ (_dest: t_Choice) ->
-      (! -{([@stop_split] [@expl:such_that ensures] index_Mapping_Choice_bool (fun (ch: t_Choice) -> update_U upd v ch
-          = r) (such_that_Choice (fun (ch: t_Choice) -> update_U upd v ch = r)))
-        /\ _dest = such_that_Choice (fun (ch: t_Choice) -> update_U upd v ch = r)}-
+      [ any_ (_dest: t_Choice) -> (! -{exists f: Map.map t_Choice bool. (forall ch: t_Choice. (update_U upd v ch = r)
+              = f ch)
+          /\ ([@stop_split] [@expl:such_that ensures] index_Mapping_Choice_bool f (such_that_Choice f))
+          /\ _dest = such_that_Choice f}-
         [ &_ret <- _dest ] s11) ]
       [ _ck -> (! {(forall ch: t_Choice. [@stop_split] [@expl:update requires] premise_U upd v)
-        && ([@stop_split] [@expl:such_that requires] exists x: t_Choice. index_Mapping_Choice_bool (fun (ch: t_Choice) -> update_U upd v ch
-          = r) x)}
+        /\ (forall f: Map.map t_Choice bool. (forall ch: t_Choice. (update_U upd v ch = r) = f ch)
+          -> ([@stop_split] [@expl:such_that requires] exists x: t_Choice. index_Mapping_Choice_bool f x))}
         any) ]
     | s11 = return {_ret} ] ]
   [ & _ret: t_Choice = Any.any_l ()

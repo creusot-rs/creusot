@@ -151,6 +151,7 @@ contracts_items! {
     "is_aligned_logic"          IsAlignedLogic
     "is_aligned_logic_sized"    IsAlignedLogicSized
     "is_aligned_logic_slice"    IsAlignedLogicSlice
+    "mapping_from_fn"           MappingFromFn
     "metadata_matches"          MetadataMatches
     "metadata_matches_slice"    MetadataMatchesSlice
     "metadata_matches_str"      MetadataMatchesStr

@@ -40,10 +40,11 @@ constant s : Map.map int t_T
 
 function no_infinite_decreasing_sequence_ref_T (s: Map.map int t_T) : int
 
-goal vc_no_infinite_decreasing_sequence_ref_T:
-  ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures] ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #0] ge_log_Int (no_infinite_decreasing_sequence_T (fun (i: int) -> index_Mapping_Int_ref_T s i)) 0)
-    /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_T (index_Mapping_Int_T (fun (i: int) -> index_Mapping_Int_ref_T s i) (no_infinite_decreasing_sequence_T (fun (i: int) -> index_Mapping_Int_ref_T s i))) (index_Mapping_Int_T (fun (i: int) -> index_Mapping_Int_ref_T s i) (no_infinite_decreasing_sequence_T (fun (i: int) -> index_Mapping_Int_ref_T s i)
+goal vc_no_infinite_decreasing_sequence_ref_T: forall f: Map.map int t_T. (forall i: int. index_Mapping_Int_ref_T s i
+        = f i)
+    -> ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures] ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #0] ge_log_Int (no_infinite_decreasing_sequence_T f) 0)
+      /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_T (index_Mapping_Int_T f (no_infinite_decreasing_sequence_T f)) (index_Mapping_Int_T f (no_infinite_decreasing_sequence_T f
+      + 1))))
+    -> (let result = no_infinite_decreasing_sequence_T f in [@stop_split] [@expl:no_infinite_decreasing_sequence_ref_T ensures] ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #0] ge_log_Int result 0)
+    /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_ref_T (index_Mapping_Int_ref_T s result) (index_Mapping_Int_ref_T s (result
     + 1))))
-  -> (let result = no_infinite_decreasing_sequence_T (fun (i: int) -> index_Mapping_Int_ref_T s i) in [@stop_split] [@expl:no_infinite_decreasing_sequence_ref_T ensures] ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #0] ge_log_Int result 0)
-  /\ ([@stop_split] [@expl:no_infinite_decreasing_sequence ensures #1] not well_founded_relation_ref_T (index_Mapping_Int_ref_T s result) (index_Mapping_Int_ref_T s (result
-  + 1))))
