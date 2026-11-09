@@ -1,0 +1,38 @@
+(* <std::collections::btree_map::RangeMut<'a, K, V> as resolve::Resolve> *)
+
+use seq.Seq
+use creusot.prelude.MutBorrow
+use int.Int
+
+type t_RangeMut_K_V
+
+predicate inv_RangeMut_K_V (_1: t_RangeMut_K_V)
+
+predicate structural_resolve_RangeMut_K_V (_1: t_RangeMut_K_V)
+
+type t_K
+
+type t_V
+
+type tup2_ref_K_refmut_V = { f0: t_K; f1: MutBorrow.t t_V }
+
+function view_RangeMut_K_V (self: t_RangeMut_K_V) : Seq.seq tup2_ref_K_refmut_V
+
+predicate resolve_refmut_V [@inline:trivial] (_1: MutBorrow.t t_V) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_V
+
+predicate resolve_RangeMut_K_V [@inline:trivial] (self: t_RangeMut_K_V) =
+  forall i: int. 0 <= i /\ i < Seq.length (view_RangeMut_K_V self)
+    -> resolve_refmut_V (Seq.get (view_RangeMut_K_V self) i).f1
+
+meta "rewrite_def" predicate resolve_RangeMut_K_V
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_RangeMut_K_V. inv_RangeMut_K_V self
+    -> structural_resolve_RangeMut_K_V self
+    -> structural_resolve_RangeMut_K_V self
+    /\ (forall result: (). resolve_RangeMut_K_V self -> resolve_RangeMut_K_V self)

@@ -1,0 +1,20 @@
+(* <std::collections::btree_map::IntoKeys<K, V, A> as std::iter::IteratorSpec> *)
+
+use seq.Seq
+
+type t_IntoKeys_K_V_A
+
+type t_K
+
+function view_IntoKeys_K_V_A (self: t_IntoKeys_K_V_A) : Seq.seq t_K
+
+predicate produces_IntoKeys_K_V_A (self: t_IntoKeys_K_V_A) (visited: Seq.seq t_K) (tl: t_IntoKeys_K_V_A) =
+  view_IntoKeys_K_V_A self = Seq.(++) visited (view_IntoKeys_K_V_A tl)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall self: t_IntoKeys_K_V_A. forall result: (). produces_IntoKeys_K_V_A self (Seq.empty: Seq.seq t_K) self
+      -> produces_IntoKeys_K_V_A self (Seq.empty: Seq.seq t_K) self

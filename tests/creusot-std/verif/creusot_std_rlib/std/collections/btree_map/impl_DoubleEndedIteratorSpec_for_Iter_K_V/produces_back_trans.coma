@@ -1,0 +1,51 @@
+(* <std::collections::btree_map::Iter<'a, K, V> as std::iter::DoubleEndedIteratorSpec> *)
+
+use seq.Seq
+use seq.Reverse
+
+type t_Iter_K_V
+
+type t_K
+
+type t_V
+
+type tup2_ref_K_ref_V = { f0: t_K; f1: t_V }
+
+function view_Iter_K_V (self: t_Iter_K_V) : Seq.seq tup2_ref_K_ref_V
+
+predicate produces_back_Iter_K_V (self: t_Iter_K_V) (visited: Seq.seq tup2_ref_K_ref_V) (tl: t_Iter_K_V) =
+  view_Iter_K_V self = Seq.(++) (view_Iter_K_V tl) (Reverse.reverse visited)
+
+function reverse_concat_tup2_ref_K_ref_V (self: Seq.seq tup2_ref_K_ref_V) (other: Seq.seq tup2_ref_K_ref_V) : ()
+
+axiom reverse_concat_tup2_ref_K_ref_V_spec:
+  forall self: Seq.seq tup2_ref_K_ref_V, other: Seq.seq tup2_ref_K_ref_V. Reverse.reverse (Seq.(++) self other)
+    = Seq.(++) (Reverse.reverse other) (Reverse.reverse self)
+
+function concat_assoc_tup2_ref_K_ref_V (self: Seq.seq tup2_ref_K_ref_V) (other1: Seq.seq tup2_ref_K_ref_V) (other2: Seq.seq tup2_ref_K_ref_V) : ()
+
+axiom concat_assoc_tup2_ref_K_ref_V_spec:
+  forall self: Seq.seq tup2_ref_K_ref_V, other1: Seq.seq tup2_ref_K_ref_V, other2: Seq.seq tup2_ref_K_ref_V. Seq.(++) (Seq.(++) self other1) other2
+    = Seq.(++) self (Seq.(++) other1 other2)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant a : t_Iter_K_V
+
+constant ab : Seq.seq tup2_ref_K_ref_V
+
+constant b : t_Iter_K_V
+
+constant bc : Seq.seq tup2_ref_K_ref_V
+
+constant c : t_Iter_K_V
+
+function produces_back_trans_Iter_K_V (a: t_Iter_K_V) (ab: Seq.seq tup2_ref_K_ref_V) (b: t_Iter_K_V) (bc: Seq.seq tup2_ref_K_ref_V) (c: t_Iter_K_V) : ()
+
+goal vc_produces_back_trans_Iter_K_V: produces_back_Iter_K_V a ab b
+  -> produces_back_Iter_K_V b bc c
+  -> ([@stop_split] [@expl:reverse_concat ensures] Reverse.reverse (Seq.(++) ab bc)
+    = Seq.(++) (Reverse.reverse bc) (Reverse.reverse ab))
+  -> ([@stop_split] [@expl:produces_back_trans ensures] produces_back_Iter_K_V a (Seq.(++) ab bc) c)

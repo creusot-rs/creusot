@@ -1,0 +1,44 @@
+(* <std::collections::btree_map::IterMut<'a, K, V> as std::iter::DoubleEndedIteratorSpec> *)
+
+use creusot.prelude.MutBorrow
+use seq.Seq
+use seq.Reverse
+
+type t_IterMut_K_V
+
+type t_K
+
+type t_V
+
+type tup2_ref_K_refmut_V = { f0: t_K; f1: MutBorrow.t t_V }
+
+function view_IterMut_K_V (self: t_IterMut_K_V) : Seq.seq tup2_ref_K_refmut_V
+
+predicate produces_back_IterMut_K_V (self: t_IterMut_K_V) (visited: Seq.seq tup2_ref_K_refmut_V) (tl: t_IterMut_K_V) =
+  view_IterMut_K_V self = Seq.(++) (view_IterMut_K_V tl) (Reverse.reverse visited)
+
+constant reverse_empty_tup2_ref_K_refmut_V : ()
+
+axiom reverse_empty_tup2_ref_K_refmut_V_spec: Reverse.reverse (Seq.empty: Seq.seq tup2_ref_K_refmut_V)
+  = (Seq.empty: Seq.seq tup2_ref_K_refmut_V)
+
+function concat_empty_tup2_ref_K_refmut_V (self: Seq.seq tup2_ref_K_refmut_V) : ()
+
+axiom concat_empty_tup2_ref_K_refmut_V_spec:
+  forall self: Seq.seq tup2_ref_K_refmut_V. Seq.(++) self (Seq.empty: Seq.seq tup2_ref_K_refmut_V) = self
+
+axiom concat_empty_tup2_ref_K_refmut_V_spec'0:
+  forall self: Seq.seq tup2_ref_K_refmut_V. Seq.(++) (Seq.empty: Seq.seq tup2_ref_K_refmut_V) self = self
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_IterMut_K_V
+
+function produces_back_refl_IterMut_K_V (self: t_IterMut_K_V) : ()
+
+goal vc_produces_back_refl_IterMut_K_V:
+  ([@stop_split] [@expl:reverse_empty ensures] Reverse.reverse (Seq.empty: Seq.seq tup2_ref_K_refmut_V)
+    = (Seq.empty: Seq.seq tup2_ref_K_refmut_V))
+  -> ([@stop_split] [@expl:produces_back_refl ensures] produces_back_IterMut_K_V self (Seq.empty: Seq.seq tup2_ref_K_refmut_V) self)

@@ -1,0 +1,19 @@
+(* <std::collections::btree_map::Values<'a, K, V> as std::iter::IteratorSpec> *)
+
+use seq.Seq
+
+type t_Values_K_V
+
+type t_V
+
+function view_Values_K_V (self: t_Values_K_V) : Seq.seq t_V
+
+predicate produces_Values_K_V (self: t_Values_K_V) (visited: Seq.seq t_V) (tl: t_Values_K_V) =
+  view_Values_K_V self = Seq.(++) visited (view_Values_K_V tl)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_Values_K_V. forall result: (). produces_Values_K_V self (Seq.empty: Seq.seq t_V) self
+      -> produces_Values_K_V self (Seq.empty: Seq.seq t_V) self
