@@ -45,8 +45,8 @@
             };
 
             why3find = {
-              version = "9f284109620b65e6ba09e9125b598a0b26d4e4fc";
-              sha256 = "sha256-MwgXNKPqChv1rR2QqW0iqVQ7+Bn2seJZnbqq+IT6qdI=";
+              version = "89dd8721fb9de7fea5d00e58ebdabdc75a8235b8";
+              sha256 = "sha256-Dyc00B8vyWlp0BmzC4phauue/xTwTrKqWoBKOVqyjmg=";
             };
 
             alt-ergo = {
