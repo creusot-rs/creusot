@@ -1,0 +1,41 @@
+(* <std::collections::btree_map::Range<'a, K, V> as std::iter::IteratorSpec> *)
+
+use seq.Seq
+
+type t_Range_K_V
+
+type t_K
+
+type t_V
+
+type tup2_ref_K_ref_V = { f0: t_K; f1: t_V }
+
+function view_Range_K_V (self: t_Range_K_V) : Seq.seq tup2_ref_K_ref_V
+
+predicate produces_Range_K_V (self: t_Range_K_V) (visited: Seq.seq tup2_ref_K_ref_V) (tl: t_Range_K_V) =
+  view_Range_K_V self = Seq.(++) visited (view_Range_K_V tl)
+
+function concat_assoc_tup2_ref_K_ref_V (self: Seq.seq tup2_ref_K_ref_V) (other1: Seq.seq tup2_ref_K_ref_V) (other2: Seq.seq tup2_ref_K_ref_V) : ()
+
+axiom concat_assoc_tup2_ref_K_ref_V_spec:
+  forall self: Seq.seq tup2_ref_K_ref_V, other1: Seq.seq tup2_ref_K_ref_V, other2: Seq.seq tup2_ref_K_ref_V. Seq.(++) (Seq.(++) self other1) other2
+    = Seq.(++) self (Seq.(++) other1 other2)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant a : t_Range_K_V
+
+constant ab : Seq.seq tup2_ref_K_ref_V
+
+constant b : t_Range_K_V
+
+constant bc : Seq.seq tup2_ref_K_ref_V
+
+constant c : t_Range_K_V
+
+function produces_trans_Range_K_V (a: t_Range_K_V) (ab: Seq.seq tup2_ref_K_ref_V) (b: t_Range_K_V) (bc: Seq.seq tup2_ref_K_ref_V) (c: t_Range_K_V) : ()
+
+goal vc_produces_trans_Range_K_V: produces_Range_K_V a ab b
+  -> produces_Range_K_V b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Range_K_V a (Seq.(++) ab bc) c)

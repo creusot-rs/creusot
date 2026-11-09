@@ -1,0 +1,52 @@
+(* <std::collections::btree_map::ValuesMut<'a, K, V> as std::iter::ExactSizeIteratorSpec> *)
+
+use creusot.int.UInt64
+use seq.Seq
+use creusot.prelude.MutBorrow
+
+type t_ValuesMut_K_V
+
+type t_Option_usize = None | Some UInt64.t
+
+type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
+
+type t_V
+
+function view_ValuesMut_K_V (self: t_ValuesMut_K_V) : Seq.seq (MutBorrow.t t_V)
+
+predicate postcondition_size_hint (self: ()) (args: t_ValuesMut_K_V) (result: tup2_usize_Option_usize) =
+  let self'0 = args in UInt64.t'int result.f0 = Seq.length (view_ValuesMut_K_V self'0) /\ result.f1 = Some (result.f0)
+
+meta "rewrite_def" predicate postcondition_size_hint
+
+predicate inv_ValuesMut_K_V (_1: t_ValuesMut_K_V)
+
+predicate invariant_ref_ValuesMut_K_V [@inline:trivial] (self: t_ValuesMut_K_V) = inv_ValuesMut_K_V self
+
+meta "rewrite_def" predicate invariant_ref_ValuesMut_K_V
+
+predicate inv_ref_ValuesMut_K_V [@inline:trivial] (_1: t_ValuesMut_K_V) = invariant_ref_ValuesMut_K_V _1
+
+meta "rewrite_def" predicate inv_ref_ValuesMut_K_V
+
+let size_hint_ValuesMut_K_V (self: t_ValuesMut_K_V) (return (x: tup2_usize_Option_usize)) =
+{[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_ValuesMut_K_V self}
+  any
+  [ return (result: tup2_usize_Option_usize) ->
+  {[@stop_split] [@expl:size_hint_ValuesMut_K_V ensures] ([@stop_split] [@expl:size_hint ensures #0] UInt64.t'int result.f0
+      = Seq.length (view_ValuesMut_K_V self))
+    /\ ([@stop_split] [@expl:size_hint ensures #1] result.f1 = Some (result.f0))}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_ValuesMut_K_V
+
+constant r : tup2_usize_Option_usize
+
+function size_hint_exact_ValuesMut_K_V (self: t_ValuesMut_K_V) (r: tup2_usize_Option_usize) : ()
+
+goal vc_size_hint_exact_ValuesMut_K_V: postcondition_size_hint () self r
+  -> ([@stop_split] [@expl:size_hint_exact ensures] r.f1 = Some (r.f0))

@@ -1,0 +1,30 @@
+(* <std::collections::btree_map::IterMut<'a, K, V> as std::iter::DoubleEndedIteratorSpec> *)
+
+use creusot.prelude.MutBorrow
+use seq.Seq
+use seq.Reverse
+
+type t_IterMut_K_V
+
+type t_K
+
+type t_V
+
+type tup2_ref_K_refmut_V = { f0: t_K; f1: MutBorrow.t t_V }
+
+function view_IterMut_K_V (self: t_IterMut_K_V) : Seq.seq tup2_ref_K_refmut_V
+
+predicate produces_back_IterMut_K_V (self: t_IterMut_K_V) (visited: Seq.seq tup2_ref_K_refmut_V) (tl: t_IterMut_K_V) =
+  view_IterMut_K_V self = Seq.(++) (view_IterMut_K_V tl) (Reverse.reverse visited)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall a: t_IterMut_K_V, ab: Seq.seq tup2_ref_K_refmut_V, b: t_IterMut_K_V, bc: Seq.seq tup2_ref_K_refmut_V, c: t_IterMut_K_V. produces_back_IterMut_K_V a ab b
+    -> produces_back_IterMut_K_V b bc c
+    -> produces_back_IterMut_K_V a ab b
+    /\ produces_back_IterMut_K_V b bc c
+    /\ (forall result: (). produces_back_IterMut_K_V a (Seq.(++) ab bc) c
+      -> produces_back_IterMut_K_V a (Seq.(++) ab bc) c)

@@ -1,0 +1,96 @@
+(* <std::collections::BTreeMap<K, V, A> as resolve::Resolve> *)
+
+use map.Map
+use creusot.int.UInt64
+use int.Int
+
+type t_BTreeMap_K_V_A
+
+type t_FMap_DeepModelTy_V
+
+type t_DeepModelTy
+
+type t_V
+
+type t_Option_V = None | Some t_V
+
+function to_mapping_DeepModelTy (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
+
+function lookup_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_Option_V =
+  Map.get (to_mapping_DeepModelTy self) k
+
+meta "rewrite_def" function lookup_DeepModelTy
+
+predicate contains_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) =
+  lookup_DeepModelTy self k <> None
+
+meta "rewrite_def" predicate contains_DeepModelTy
+
+predicate inv_DeepModelTy (_1: t_DeepModelTy)
+
+predicate inv_V (_1: t_V)
+
+constant any_V : t_V
+
+function unwrap_Option_V (self: t_Option_V) : t_V = match self with
+    | Some x -> x
+    | None -> any_V
+    end
+
+function index_FMap_DeepModelTy_V [@inline:trivial] (self: t_FMap_DeepModelTy_V) (key: t_DeepModelTy) : t_V =
+  unwrap_Option_V (lookup_DeepModelTy self key)
+
+meta "rewrite_def" function index_FMap_DeepModelTy_V
+
+predicate invariant_FMap_DeepModelTy_V [@inline:trivial] (self: t_FMap_DeepModelTy_V) =
+  forall k: t_DeepModelTy. contains_DeepModelTy self k -> inv_DeepModelTy k /\ inv_V (index_FMap_DeepModelTy_V self k)
+
+meta "rewrite_def" predicate invariant_FMap_DeepModelTy_V
+
+predicate inv_FMap_DeepModelTy_V (_1: t_FMap_DeepModelTy_V)
+
+axiom inv_axiom [@rewrite]: forall _1: t_FMap_DeepModelTy_V [inv_FMap_DeepModelTy_V _1]. inv_FMap_DeepModelTy_V _1
+    = invariant_FMap_DeepModelTy_V _1
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+function len_DeepModelTy (self: t_FMap_DeepModelTy_V) : int
+
+axiom len_DeepModelTy_spec:
+  forall self: t_FMap_DeepModelTy_V [len_DeepModelTy self]. ge_log_Int (len_DeepModelTy self) 0
+
+constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+
+function view_BTreeMap_K_V_A (self: t_BTreeMap_K_V_A) : t_FMap_DeepModelTy_V
+
+axiom view_BTreeMap_K_V_A_spec:
+  forall self: t_BTreeMap_K_V_A [view_BTreeMap_K_V_A self]. len_DeepModelTy (view_BTreeMap_K_V_A self)
+    <= UInt64.t'int const_MAX
+
+predicate invariant_BTreeMap_K_V_A (self: t_BTreeMap_K_V_A) = inv_FMap_DeepModelTy_V (view_BTreeMap_K_V_A self)
+
+predicate inv_BTreeMap_K_V_A (_1: t_BTreeMap_K_V_A)
+
+axiom inv_axiom'0: forall _1: t_BTreeMap_K_V_A [inv_BTreeMap_K_V_A _1]. inv_BTreeMap_K_V_A _1
+    -> invariant_BTreeMap_K_V_A _1
+
+predicate structural_resolve_BTreeMap_K_V_A (_1: t_BTreeMap_K_V_A)
+
+predicate resolve_V (_1: t_V)
+
+predicate resolve_BTreeMap_K_V_A [@inline:trivial] (self: t_BTreeMap_K_V_A) =
+  forall k: t_DeepModelTy. contains_DeepModelTy (view_BTreeMap_K_V_A self) k
+    -> resolve_V (index_FMap_DeepModelTy_V (view_BTreeMap_K_V_A self) k)
+
+meta "rewrite_def" predicate resolve_BTreeMap_K_V_A
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_BTreeMap_K_V_A. inv_BTreeMap_K_V_A self
+    -> structural_resolve_BTreeMap_K_V_A self
+    -> structural_resolve_BTreeMap_K_V_A self
+    /\ (forall result: (). resolve_BTreeMap_K_V_A self -> resolve_BTreeMap_K_V_A self)
