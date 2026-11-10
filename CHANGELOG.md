@@ -12,6 +12,58 @@ Creusot is currently best suited for the verification of code like data-structur
 
 ## [Unreleased] - ReleaseDate
 
+## [0.15.0] - 2026-11-10
+
+### Features
+
+- [**Logical functions aliases**](https://github.com/creusot-rs/creusot/pull/2218)
+- [**Improve visibility handling in `DeepModel` derive**](https://github.com/creusot-rs/creusot/pull/2313)
+- [Introduce pattern in lowering of ensures triggers](https://github.com/creusot-rs/creusot/pull/2319)
+- [Indirect triggers](https://github.com/creusot-rs/creusot/pull/2303)
+- [Support big int literals in pearlite](https://github.com/creusot-rs/creusot/pull/2320)
+
+### `creusot-std`
+
+- [Rename module `cell::permcell` to `cell::pcell`](https://github.com/creusot-rs/creusot/pull/2357)
+- [Implement `DerefLogic` for `Rc` & co](https://github.com/creusot-rs/creusot/pull/2336)
+- [Implement `discriminant_value`](https://github.com/creusot-rs/creusot/pull/2333)
+- [Say that `VecDeque::index_mut` leaves the other elements alone](https://github.com/creusot-rs/creusot/pull/2346)
+- [Add/improve a bunch of std specs](https://github.com/creusot-rs/creusot/pull/2337)
+    + `PartialOrdLogic` for `()`
+    + Extern specs of `Div` and `Rem` for unsigned integers
+    + Extern specs of `is_positive`, `is_negative`, `unsigned_abs`, `signum`, `abs`
+    + Extern specs of `TryFrom` between signed and unsigned integers
+    + Allow calling slice functions in ghost code: `get`, `get_mut`, `get_unchecked`, `get_unchecked_mut`
+    + Make `str::deep_model` and `String::deep_model` into `logic(open, inline)`
+    + Extern specs of `str::is_ascii`, `str::as_bytes`, and `str::from_utf8_unchecked`
+- [Reorganize/rename lemmas on sequence and add new ones](https://github.com/creusot-rs/creusot/pull/2339)
+- [Use only guarded borrows in `NonAtomicInvariant`](https://github.com/creusot-rs/creusot/pull/2328)
+- [Add an extern_spec for `Vec::is_empty`](https://github.com/creusot-rs/creusot/pull/2330)
+- [Move `NthBitLogic` to `num.rs`: it is not a trait that overloads a notation, so it should not be in `ops.rs`](https://github.com/creusot-rs/creusot/pull/2325)
+- [Fix definition of `upper_bound`](https://github.com/creusot-rs/creusot/pull/2323)
+- [Support user preconditions for logic ops](https://github.com/creusot-rs/creusot/pull/2321)
+- [Add specifications for some split functions of slices](https://github.com/creusot-rs/creusot/pull/2315)
+- [Use `()` instead of `None` in committer when there is no ordering](https://github.com/creusot-rs/creusot/pull/2312)
+- [Add ghost functions `Committer::{val_load, val_store}`](https://github.com/creusot-rs/creusot/pull/2296)
+
+### Toolchain
+
+- [Bump Z3 to version 5.3.2](https://github.com/creusot-rs/creusot/pull/2342)
+- [Bump Why3find](https://github.com/creusot-rs/creusot/pull/2351) (+ [#2356](https://github.com/creusot-rs/creusot/pull/2356))
+
+### Bug fixes
+
+- [Change the VCGen for closures in Pearlite](https://github.com/creusot-rs/creusot/pull/2361)
+- [Fix restricted visibility handling in `DeepModel`'s derive macro](https://github.com/creusot-rs/creusot/pull/2309)
+- [Use logic aliases to get rid of the purity hack in validate](https://github.com/creusot-rs/creusot/pull/2317)
+- [Rename Rust identifiers that are Coma keywords](https://github.com/creusot-rs/creusot/pull/2345)
+- [A few cleanups in the handling of switch terminators](https://github.com/creusot-rs/creusot/pull/2335)
+- [erasure: Correctly handle reordering of record fields](https://github.com/creusot-rs/creusot/pull/2334)
+- [Remove special case for rustdoc and the next trait solver](https://github.com/creusot-rs/creusot/pull/2332)
+- [Make the vcgen emit useful postconditions for logical closures](https://github.com/creusot-rs/creusot/pull/2329)
+- [Respect the `CARGO_HOME` env variable](https://github.com/creusot-rs/creusot/pull/2316)
+- [Support of `rust-analyzer` in Nix](https://github.com/creusot-rs/creusot/pull/2304)
+
 ## [0.14.0] - 2026-10-12
 
 ### Features
