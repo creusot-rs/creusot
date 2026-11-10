@@ -1,5 +1,3 @@
-// DEPTH 10 RECURSION_LIMIT 256
-
 // This implementation is an adaption from:
 // https://sites.google.com/site/1024cores/home/lock-free-algorithms/queues/bounded-mpmc-queue
 
@@ -708,7 +706,7 @@ impl<T> Queue<T> {
         for i in 0..length {
             let (item, item_own) = PCell::new(MaybeUninit::uninit());
 
-            let at_view = ghost! {AtView::new(item_own).into_inner()};
+            let at_view = ghost!(AtView::new(item_own).into_inner());
             let mut view = ghost!(at_view.0);
             let at_view = ghost!(at_view.into_inner().1);
 
@@ -725,10 +723,11 @@ impl<T> Queue<T> {
             cells.push(QueueCell { item, status })
         }
 
-        let mut head_view = ghost! { SyncView::new().into_inner() };
+        let mut head_view = ghost!(SyncView::new().into_inner());
         let (head, head_own) = AtomicUsize::new(0, head_view.borrow_mut());
         let head_ts = snapshot!(such_that(|t| head_own.val().contains(&t)));
-        let mut tail_view = ghost! { SyncView::new().into_inner() };
+
+        let mut tail_view = ghost!(SyncView::new().into_inner());
         let (tail, tail_own) = AtomicUsize::new(0, tail_view.borrow_mut());
         let tail_ts = snapshot!(such_that(|t| tail_own.val().contains(&t)));
 
@@ -775,147 +774,9 @@ impl<T> Queue<T> {
         (queue, perm_queue)
     }
 
-    #[check(ghost)]
-    // Invariant requires/ensures
-    #[requires((*inv).protocol())]
-    #[requires(self.inv.public() == (*inv).public())]
-    #[ensures((^inv).protocol())]
-    #[ensures(self.inv.public() == (^inv).public())]
-    // Committer
-    #[requires(!c.shot_store())]
-    #[requires(c.ward() == *inv.head_own.ward())]
-    #[requires(c.val_store()@ == c.val_load()@ + 1)]
-    #[ensures((^c).shot_store())]
-    // Invariant
-    #[requires(witness.id() == inv.statuses_mono_auth[inv.mod_len(c.val_load()@)].id())]
-    #[requires(StatusWithView { status: 2 * c.val_load()@, view: *view } <= witness.val())]
-    #[ensures(result.0.id() == inv.tokens_auth.id())]
-    #[ensures(result.0.val() == *item)]
-    #[ensures(result.0.index() == c.val_load()@)]
-    #[ensures(*result.1.ward() == inv.cells[inv.mod_len(result.0.index())].item)]
-    // User committer
-    #[requires(forall<c: &mut QueueCommitter<T>>
-        !c.shot ==> *c.ward == *self ==>
-        *c.new_seq == c.old_seq.snoc(*item) ==>
-            f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
-    )]
-    #[ensures(exists<c: &mut QueueCommitter<T>>
-        !c.shot && *c.ward == *self &&
-        *c.new_seq == c.old_seq.snoc(*item) && f.postcondition_once((c,),())
-    )]
-    fn try_enqueue_cas_inv<F>(
-        &self,
-        mut inv: Ghost<&mut QueueInv<T>>,
-        mut c: Ghost<&mut Committer<AtomicUsize, usize, Relaxed, Relaxed>>,
-        item: Snapshot<T>,
-        f: Ghost<F>,
-        witness: statuses::Fragment,
-        mut view: Ghost<SyncView>,
-    ) -> Ghost<(tokens::TokenW<T>, PermPCell<T>)>
-    where
-        F: FnGhost + FnOnce(&mut QueueCommitter<T>),
-    {
-        ghost! {
-            let inv = &mut **inv;
-            let old_inv = snapshot!(*inv);
-            let head = snapshot!(inv.head());
-            let head_mod = *snapshot!(inv.mod_len(*head)).into_ghost();
-
-            c.shoot_load(&inv.head_own, &mut view);
-            c.shoot_store(
-                &mut inv.head_own,
-                &mut view,
-                *ReleaseSyncView::new(),
-            );
-            inv.head_last_ts += 1int;
-            proof_assert!(c.val_load()@ == *head);
-
-            inv.statuses_mono_auth[head_mod].frag_lemma(&witness);
-
-            proof_assert!(inv.tokens_auth.val(*head) == tokens::State::None);
-            proof_assert!(inv.tokens_auth.val(*head - inv.len()) == tokens::State::None);
-            proof_assert!(*head < inv.tail() + inv.len());
-
-            let old_seq = snapshot!(inv.seq());
-            let new_seq = snapshot!(old_seq.snoc(*item));
-            let budget = *snapshot!(inv.values_auth.budget()).into_ghost();
-            f.into_inner()(&mut QueueCommitter {
-                auth: &mut inv.values_auth,
-                ward: snapshot!(*self),
-                old_seq,
-                new_seq,
-                shot: false,
-                budget
-            });
-
-            let cell_own = inv.cells_own[head_mod].take().unwrap().sync(*view);
-
-            let token = tokens::TokenW::alloc(
-                ghost!(&mut inv.tokens_auth),
-                *head.into_ghost(),
-                item,
-            );
-
-            proof_assert!(inv.head() == old_inv.head() + 1);
-            proof_assert!(inv.tail() == old_inv.tail());
-            proof_assert!(inv.len() == old_inv.len());
-            proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
-            proof_assert!(inv.statuses_mono_auth == old_inv.statuses_mono_auth);
-            proof_assert!(forall<k> inv.tail() <= k && k < old_inv.head() ==> (^inv).three_statuses_inv(k));
-            proof_assert!(inv.three_statuses_inv(old_inv.head()));
-            proof_assert!(forall<k> old_inv.head() < k && k < inv.tail() + inv.len() ==> (^inv).three_statuses_inv(k));
-
-            (token.into_inner(), cell_own)
-        }
-    }
-
-    #[check(ghost)]
-    // Invariant requires/ensures
-    #[requires((*inv).protocol())]
-    #[ensures((^inv).protocol())]
-    #[ensures((^inv).public() == (*inv).public())]
-    // Committer
-    #[requires(!c.shot_store())]
-    #[requires(c.ward() == *inv.statuses_own[inv.mod_len(token.index())].ward())]
-    #[requires(c.val_store()@ == 2 * token.index() + 1)]
-    #[ensures((^c).shot_store())]
-    // Invariant
-    #[requires(token.id() == inv.tokens_auth.id())]
-    #[requires(cell_own.val()@ == Some(token.val()))]
-    #[requires(*cell_own.ward() == inv.cells[inv.mod_len(token.index())].item)]
-    fn try_enqueue_store_inv(
-        mut inv: Ghost<&mut QueueInv<T>>,
-        mut c: Ghost<&mut Committer<AtomicUsize, usize, (), Release>>,
-        token: Ghost<tokens::TokenW<T>>,
-        cell_own: Ghost<PermPCell<T>>,
-    ) {
-        ghost! {
-            let inv = &mut **inv;
-            let old_inv = snapshot!(*inv);
-            let index_mod = *snapshot!(inv.mod_len(token.index())).into_ghost();
-
-            let (mut view, at_view) = AtView::new(cell_own).into_inner();
-            c.shoot_store(&mut inv.statuses_own[index_mod], &mut view);
-
-            tokens::TokenW::discard(token, ghost!(&mut inv.tokens_auth));
-
-            let status_view = snapshot!(StatusWithView { status: c.val_store()@, view });
-            inv.statuses_mono_auth[index_mod].increase(status_view);
-
-            inv.cells_own[index_mod] = Some(at_view);
-
-            let _ = snapshot!(QueueInv::<T>::mod_len_inj);
-
-            proof_assert!(inv.tail() == old_inv.tail());
-            proof_assert!(inv.head() == old_inv.head());
-            proof_assert!(inv.len() == old_inv.len());
-            proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
-        };
-    }
-
     #[requires(tokens.contains(BOUNDED_MPMC_QUEUE()))]
     #[requires(forall<c: &mut QueueCommitter<T>>
-        !c.shot ==> *c.ward == *self ==>
+        inv(c) ==> !c.shot ==> *c.ward == *self ==>
         *c.new_seq == c.old_seq.snoc(item) ==>
         f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
@@ -952,9 +813,6 @@ impl<T> Queue<T> {
 
                 let status_view = snapshot!(StatusWithView { status: c.val_load()@, view: *view });
                 *witness = Some(inv.statuses_mono_auth[*head_mod_ghost].get_fragment(status_view));
-                proof_assert!(inv.head() == old_inv.head());
-                proof_assert!(inv.tail() == old_inv.tail());
-                proof_assert!(inv.len() == old_inv.len());
                 proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
             });
         } });
@@ -974,18 +832,46 @@ impl<T> Queue<T> {
                 let Ok(c) = c else { return; };
 
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                    let item_snap = snapshot!(item);
-                    let (t, co) = self.try_enqueue_cas_inv(
-                        ghost!(inv),
-                        ghost!(c),
-                        item_snap,
-                        f,
-                        witness.take().unwrap(),
-                        view
-                    ).into_inner();
+                    let item = snapshot!(item);
+                    let witness = witness.take().unwrap();
+                    let old_inv = snapshot!(*inv);
+                    let head = snapshot!(inv.head());
+                    let head_mod: Int = *snapshot!(inv.mod_len(*head)).into_ghost();
 
-                    *token = Some(t);
-                    *cell_own = Some(co);
+                    c.shoot_load(&inv.head_own, &mut view);
+                    c.shoot_store(
+                        &mut inv.head_own,
+                        &mut view,
+                        *ReleaseSyncView::new(),
+                    );
+                    inv.head_last_ts += 1int;
+
+                    inv.statuses_mono_auth[head_mod].frag_lemma(&witness);
+
+                    snapshot!(old_inv.mod_len_wrap(*head - old_inv.len()));
+                    proof_assert!(*head < old_inv.tail() + old_inv.len());
+
+                    let old_seq = snapshot!(inv.seq());
+                    let new_seq = snapshot!(old_seq.snoc(*item));
+                    let budget = *snapshot!(inv.values_auth.budget()).into_ghost();
+                    f.into_inner()(&mut QueueCommitter {
+                        auth: &mut inv.values_auth,
+                        ward: snapshot!(*self),
+                        old_seq,
+                        new_seq,
+                        shot: false,
+                        budget
+                    });
+
+                    *cell_own = Some(inv.cells_own[head_mod].take().unwrap().sync(*view));
+
+                    *token = Some(tokens::TokenW::alloc(
+                        ghost!(&mut inv.tokens_auth),
+                        *head.into_ghost(),
+                        item,
+                    ).into_inner());
+
+                    proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
                 });
             }},
         );
@@ -1003,12 +889,23 @@ impl<T> Queue<T> {
             Ordering::Release,
             ghost! { |c: &mut Committer<_, _, _, Release>| {
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                    Self::try_enqueue_store_inv(
-                        ghost!(inv),
-                        ghost!(c),
-                        ghost!(token.take().unwrap()),
-                        ghost!(cell_own.take().unwrap()),
-                    )
+                    let token = token.take().unwrap();
+                    let old_inv = snapshot!(*inv);
+                    let index_mod: Int = *snapshot!(inv.mod_len(token.index())).into_ghost();
+
+                    let (mut view, at_view) = AtView::new(ghost!(cell_own.take().unwrap())).into_inner();
+                    c.shoot_store(&mut inv.statuses_own[index_mod], &mut view);
+
+                    let status_view = snapshot!(StatusWithView { status: c.val_store()@, view });
+                    tokens::TokenW::discard(ghost!(token), ghost!(&mut inv.tokens_auth));
+
+                    inv.statuses_mono_auth[index_mod].increase(status_view);
+
+                    inv.cells_own[index_mod] = Some(at_view);
+
+                    let _ = snapshot!(QueueInv::<T>::mod_len_inj);
+
+                    proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
                 });
             }},
         );
@@ -1016,147 +913,9 @@ impl<T> Queue<T> {
         true
     }
 
-    #[check(ghost)]
-    // Invariant requires/ensures
-    #[requires((*inv).protocol())]
-    #[requires(self.inv.public() == (*inv).public())]
-    #[ensures((^inv).protocol())]
-    #[ensures(self.inv.public() == (^inv).public())]
-    // Committer
-    #[requires(!c.shot_store())]
-    #[requires(c.ward() == *inv.tail_own.ward())]
-    #[requires(c.val_store()@ == c.val_load()@ + 1)]
-    #[ensures((^c).shot_store())]
-    // Invariant
-    #[requires(witness.id() == inv.statuses_mono_auth[inv.mod_len(c.val_load()@)].id())]
-    #[requires(StatusWithView { status: 2 * c.val_load()@ + 1, view: *view } <= witness.val())]
-    #[ensures(result.0.id() == inv.tokens_auth.id())]
-    #[ensures(result.0.index() == c.val_load()@ + inv.len())]
-    #[ensures(*result.1.ward() == inv.cells[inv.mod_len(result.0.index())].item)]
-    #[ensures(inv.mod_len(result.0.index()) == inv.mod_len(c.val_load()@))]
-    // User committer
-    #[requires(forall<c: &mut QueueCommitter<T>>
-        !c.shot ==> *c.ward == *self ==>
-        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.tail() ==>
-        f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
-    )]
-    #[ensures(exists<c: &mut QueueCommitter<T>>
-        !c.shot && *c.ward == *self &&
-        c.old_seq.len() > 0 && *c.new_seq == c.old_seq.tail() &&
-        f.postcondition_once((c,),()) &&
-        result.1.val()@ == Some(c.old_seq[0])
-    )]
-    #[ensures(2 * (c.val_load()@ + inv.len()) < usize::MAX@)]
-    fn try_dequeue_cas_inv<F>(
-        &self,
-        mut inv: Ghost<&mut QueueInv<T>>,
-        mut c: Ghost<&mut Committer<AtomicUsize, usize, Relaxed, Relaxed>>,
-        f: Ghost<F>,
-        witness: statuses::Fragment,
-        mut view: Ghost<SyncView>,
-    ) -> Ghost<(tokens::TokenR<T>, PermPCell<T>)>
-    where
-        F: FnGhost + FnOnce(&mut QueueCommitter<T>),
-    {
-        ghost! {
-            let inv = &mut **inv;
-            let old_inv = snapshot!(*inv);
-            let tail = snapshot!(inv.tail());
-            let tail_plus_len = snapshot!(*tail + inv.len());
-            let tail_mod = *snapshot!(inv.mod_len(*tail)).into_ghost();
-            snapshot!(inv.mod_len_wrap(*tail));
-
-            c.shoot_load(&inv.tail_own, &mut view);
-            c.shoot_store(
-                &mut inv.tail_own,
-                &mut view,
-                *ReleaseSyncView::new(),
-            );
-            inv.tail_last_ts += 1int;
-            proof_assert!(c.val_load()@ == *tail);
-
-            inv.statuses_mono_auth[tail_mod].frag_lemma(&witness);
-
-            proof_assert!(inv.tokens_auth.val(*tail) == tokens::State::None);
-            proof_assert!(*tail < inv.head());
-
-            let old_seq = snapshot!(inv.seq());
-            let new_seq = snapshot!(old_seq.tail());
-            let budget = *snapshot!(inv.values_auth.budget()).into_ghost();
-            f.into_inner()(&mut QueueCommitter {
-                auth: &mut inv.values_auth,
-                ward: snapshot!(*self),
-                old_seq,
-                new_seq,
-                shot: false,
-                budget
-            });
-
-            let cell_own = inv.cells_own[tail_mod].take().unwrap().sync(*view);
-
-            let token = tokens::TokenR::alloc(
-                ghost!(&mut inv.tokens_auth),
-                *tail_plus_len.into_ghost(),
-            );
-
-            proof_assert!(inv.tail() == old_inv.tail() + 1);
-            proof_assert!(inv.head() == old_inv.head());
-            proof_assert!(inv.len() == old_inv.len());
-            proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
-            proof_assert!(inv.statuses_mono_auth == old_inv.statuses_mono_auth);
-            proof_assert!(forall<k> *tail < k && k < *tail_plus_len ==> (^inv).three_statuses_inv(k));
-            proof_assert!(inv.three_statuses_inv(*tail_plus_len));
-
-            (token.into_inner(), cell_own)
-        }
-    }
-
-    #[check(ghost)]
-    // Invariant requires/ensures
-    #[requires((*inv).protocol())]
-    #[ensures((^inv).protocol())]
-    #[ensures((^inv).public() == (*inv).public())]
-    // Committer
-    #[requires(!c.shot_store())]
-    #[requires(c.ward() == *inv.statuses_own[inv.mod_len(token.index())].ward())]
-    #[requires(c.val_store()@ == 2 * token.index())]
-    #[ensures((^c).shot_store())]
-    // Invariant
-    #[requires(token.id() == inv.tokens_auth.id())]
-    #[requires(*cell_own.ward() == inv.cells[inv.mod_len(token.index())].item)]
-    fn try_dequeue_store_inv(
-        mut inv: Ghost<&mut QueueInv<T>>,
-        mut c: Ghost<&mut Committer<AtomicUsize, usize, (), Release>>,
-        token: Ghost<tokens::TokenR<T>>,
-        cell_own: Ghost<PermPCell<T>>,
-    ) {
-        ghost! {
-            let inv = &mut **inv;
-            let old_inv = snapshot!(*inv);
-            let index_mod = *snapshot!(inv.mod_len(token.index())).into_ghost();
-
-            let (mut view, at_view) = AtView::new(cell_own).into_inner();
-            c.shoot_store(&mut inv.statuses_own[index_mod], &mut view);
-
-            tokens::TokenR::discard(token, ghost!(&mut inv.tokens_auth));
-
-            let status_view = snapshot!(StatusWithView { status: c.val_store()@, view });
-            inv.statuses_mono_auth[index_mod].increase(status_view);
-
-            inv.cells_own[index_mod] = Some(at_view);
-
-            let _ = snapshot!(QueueInv::<T>::mod_len_inj);
-
-            proof_assert!(inv.tail() == old_inv.tail());
-            proof_assert!(inv.head() == old_inv.head());
-            proof_assert!(inv.len() == old_inv.len());
-            proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
-        };
-    }
-
     #[requires(tokens.contains(BOUNDED_MPMC_QUEUE()))]
     #[requires(forall<c: &mut QueueCommitter<T>>
-        !c.shot ==> *c.ward == *self ==>
+        inv(c) ==> !c.shot ==> *c.ward == *self ==>
         c.old_seq.len() > 0 && *c.new_seq == c.old_seq.tail() ==>
         f.precondition((c,)) && (f.postcondition_once((c,),()) ==> (^c).shot && (*c).hist_inv(^c))
     )]
@@ -1190,16 +949,11 @@ impl<T> Queue<T> {
         let cell = &self.cells[tail_mod];
         let status = cell.status.load(Ordering::Acquire, ghost! { |c: &Committer<_, _, Acquire, _>| {
             self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                let old_inv = snapshot!(*inv);
                 let tail_mod_ghost: Ghost<Int> = snapshot!(tail_mod@).into_ghost();
                 c.shoot_load(&inv.statuses_own[*tail_mod_ghost], &mut view.borrow_mut());
 
                 let status_view = snapshot!(StatusWithView { status: c.val_load()@, view: *view });
                 *witness = Some(inv.statuses_mono_auth[*tail_mod_ghost].get_fragment(status_view));
-                proof_assert!(inv.head() == old_inv.head());
-                proof_assert!(inv.tail() == old_inv.tail());
-                proof_assert!(inv.len() == old_inv.len());
-                proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
             });
         } });
 
@@ -1218,16 +972,45 @@ impl<T> Queue<T> {
                 let Ok(c) = c else { return; };
 
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                   let (t, co) = self.try_dequeue_cas_inv(
-                        ghost!(inv),
-                        ghost!(c),
-                        f,
-                        witness.take().unwrap(),
-                        view
-                    ).into_inner();
+                    let witness = witness.take().unwrap();
+                    let old_inv = snapshot!(*inv);
+                    let tail = snapshot!(inv.tail());
+                    let tail_plus_len = snapshot!(*tail + inv.len());
+                    let t_mod: Int = *snapshot!(inv.mod_len(*tail)).into_ghost();
+                    snapshot!(inv.mod_len_wrap(*tail));
 
-                    *token = Some(t);
-                    *cell_own = Some(co);
+                    c.shoot_load(&inv.tail_own, &mut view);
+                    c.shoot_store(
+                        &mut inv.tail_own,
+                        &mut view,
+                        *ReleaseSyncView::new(),
+                    );
+                    inv.tail_last_ts += 1int;
+                    proof_assert!(c.val_load()@ == *tail);
+
+                    inv.statuses_mono_auth[t_mod].frag_lemma(&witness);
+
+                    let old_seq = snapshot!(inv.seq());
+                    let new_seq = snapshot!(old_seq.tail());
+                    let budget = *snapshot!(inv.values_auth.budget()).into_ghost();
+                    f.into_inner()(&mut QueueCommitter {
+                        auth: &mut inv.values_auth,
+                        ward: snapshot!(*self),
+                        old_seq,
+                        new_seq,
+                        shot: false,
+                        budget
+                    });
+
+                    *cell_own = Some(inv.cells_own[t_mod].take().unwrap().sync(*view));
+
+                    *token = Some(tokens::TokenR::alloc(
+                        ghost!(&mut inv.tokens_auth),
+                        *tail_plus_len.into_ghost(),
+                    ).into_inner());
+
+                    proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
+                    proof_assert!(token.unwrap_logic().index().rem_euclid(self.cells@.len()) == tail_mod@);
                 });
             }},
         );
@@ -1247,12 +1030,21 @@ impl<T> Queue<T> {
             Ordering::Release,
             ghost! { |c: &mut Committer<_, _, _, Release>| {
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                    Self::try_dequeue_store_inv(
-                        ghost!(inv),
-                        ghost!(c),
-                        ghost!(token.take().unwrap()),
-                        ghost!(cell_own.take().unwrap()),
-                    )
+                    let token = token.take().unwrap();
+                    let old_inv = snapshot!(*inv);
+                    let index_mod: Int = *snapshot!(inv.mod_len(token.index())).into_ghost();
+
+                    let (mut view, at_view) = AtView::new(ghost!(cell_own.take().unwrap())).into_inner();
+                    c.shoot_store(&mut inv.statuses_own[index_mod], &mut view);
+
+                    tokens::TokenR::discard(ghost!(token), ghost!(&mut inv.tokens_auth));
+
+                    let status_view = snapshot!(StatusWithView { status: c.val_store()@, view });
+                    inv.statuses_mono_auth[index_mod].increase(status_view);
+
+                    inv.cells_own[index_mod] = Some(at_view);
+
+                    proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
                 });
             }},
         );
