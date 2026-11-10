@@ -24,7 +24,7 @@ cargo install cargo-release
 
     ```
     PREV_VERSION=v0.10.0
-    git log $PREV_VERSION..master --pretty=format:'%s'|grep "(#[0-9]*)$"|sed 's_\s*\(.*\S\)\s*(#\([0-9]*\))_- \[\1\](https://github.com/creusot-rs/creusot/pull/\2)_'
+    git log $PREV_VERSION..origin/master --pretty=format:'%s'|grep "(#[0-9]*)$"|sed 's_\s*\(.*\S\)\s*(#\([0-9]*\))_- \[\1\](https://github.com/creusot-rs/creusot/pull/\2)_'
     ```
 
 3. (This step is not reversible!) `cargo release --no-tag --no-push X.Y.Z --execute` (where `X.Y.Z` is the new version number). This will:
