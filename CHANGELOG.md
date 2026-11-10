@@ -731,7 +731,7 @@ The `prelude` (the Coma library imported by Creusot-translated artifacts) has be
 
 ### Cargo Creusot
 
-Documentation using `cargo creusot doc`  now includes functions specifications and logic function bodies (Arnaud Golfouse @arnaudgolfouse).
+Documentation using `cargo creusot doc` now includes functions specifications and logic function bodies (Diane Golfouse @dianegolfouse).
 
 Proof obligations are now generated in a separate `verif` directory, and by default `cargo creusot` will generate one coma file per module in your program, this can enable faster iteration by only loading relevant submodules during verification.
 The old behavior can be restored by passing the `--monolithic` flag.
@@ -771,7 +771,7 @@ Resolution also comes with a proof obligation to demonstrate the soundness of us
 New syntax to specify triggers in quantifiers (David Ewert @dewert99). Triggers can be added to quantifiers in the following way: `forall<x : T, .. > #![trigger exp1,..,expN] exp`.
 Multi-triggers are supported by providing multiple comma separated values.
 
-Fixes to `#[derive(DeepModel)]` for structs (Arnaud Golfouse @arnaudgolfouse).
+Fixes to `#[derive(DeepModel)]` for structs (Diane Golfouse @dianegolfouse).
 
 
 #### Creusot standard library
@@ -802,7 +802,7 @@ A new intrinsic `structural_resolve` generates a resolution statement from the c
 
 #### Ownership in Ghost code
 
-An initial, experimental version of ownership in ghost code was added, reintroducing the `ghost!` macro. Future releases will flesh out support in this area. (@arnaudgolfhouse)
+An initial, experimental version of ownership in ghost code was added, reintroducing the `ghost!` macro. Future releases will flesh out support in this area. (@dianegolfouse)
 
 #### Coma
 
@@ -1181,5 +1181,5 @@ I'd like to thank some of the contributors that have made Creusot possible, this
 - Jacques-Henri Jourdan (@jhjourdan)
 - Dominik Stolz (@voidc)
 - David Ewert (@dewert99)
-- Arnaud Golfouse (@arnaudgolfouse)
+- Diane Golfouse (@dianegolfouse)
 - Armaël Guéneau (@armael)
