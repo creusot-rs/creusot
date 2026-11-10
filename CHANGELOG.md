@@ -12,6 +12,8 @@ Creusot is currently best suited for the verification of code like data-structur
 
 ## [Unreleased] - ReleaseDate
 
+## [0.15.0] - 2026-11-10
+
 ### Features
 
 - [**Logical functions aliases**](https://github.com/creusot-rs/creusot/pull/2218)
