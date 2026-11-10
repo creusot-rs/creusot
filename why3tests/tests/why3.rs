@@ -71,6 +71,13 @@ fn main() {
     let time_re = Regex::new(r"TIME ((\d|\.)+)").unwrap();
     let depth_re = Regex::new(r"DEPTH ((\d|\.)+)").unwrap();
 
+    // Make paths relative to tests
+    for file in &mut args.filter {
+        if let Some(stripped) = file.strip_prefix("tests/") {
+            *file = stripped.into();
+        }
+    }
+
     std::env::set_current_dir("../tests").unwrap();
     let _ = symlink("../examples", "examples");
     let _ = symlink("../why3find.json", "why3find.json");
@@ -414,7 +421,7 @@ fn main() {
 
 fn changed_comas(from: &str) -> Vec<PathBuf> {
     let output = Command::new("git")
-        .args(["diff", "--name-only", from, "tests", "examples"])
+        .args(["diff", "--name-only", from, ".", "../examples"])
         .output()
         .unwrap();
     if !output.status.success() {
@@ -425,7 +432,13 @@ fn changed_comas(from: &str) -> Vec<PathBuf> {
         .lines()
         .filter_map(|line| {
             let path = PathBuf::from(line.unwrap());
-            if path.extension().is_some_and(|e| e == "coma") { Some(path) } else { None }
+            if !path.extension().is_some_and(|e| e == "coma") {
+                None
+            } else if let Ok(path) = path.strip_prefix("tests") {
+                Some(path.into())
+            } else {
+                Some(path)
+            }
         })
         .collect()
 }
