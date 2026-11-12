@@ -1,3 +1,5 @@
+// DEPTH 10
+
 //! Sequence lock protecting a pair of `u32`, in the relaxed memory model.
 //!
 //! Translated from the Verus version:
@@ -599,6 +601,8 @@ impl SeqLock {
                     self.inv.open(tokens.reborrow(), |inv: &mut SeqLockInv| {
                         *acq0 = c.shoot_load(&inv.data0_own, &mut view);
                         inv.snapshots.frag_lemma(snap_frag.as_ref().unwrap());
+                        proof_assert!(inv.snap(seq1@) == Some(*sn));
+                        proof_assert!(c.timestamp() > sn.d0_ts ==> self.seq.get_timestamp((*acq0)@) > sn.seq_ts);
                         proof_assert!(self.data1.get_timestamp(*view) >= sn.d1_ts);
                     })
                 }},
@@ -639,7 +643,6 @@ impl SeqLock {
                             // so neither data load read from a later critical section
                             inv.snapshots.frag_lemma(snap_frag.as_ref().unwrap());
                             proof_assert!(c.timestamp() == sn.seq_ts);
-                            proof_assert!(result0 == sn.v0 && result1 == sn.v1);
                             proof_assert!(inv.log.val()[seq1@ / 2] == (result0, result1));
                             // Linearization point: the values of the snapshot are a log entry
                             let old_log = snapshot!(inv.log.val());

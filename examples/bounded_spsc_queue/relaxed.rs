@@ -824,6 +824,7 @@ impl<T> Consumer<'_, T> {
                         queue.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                             inv.consumer_auth.agree(&self.state);
                             let t = snapshot!(inv.tail());
+                            let old_inv = snapshot!(*inv);
 
                             // store subjective cell permission at the thread's new view
                             let (mut new_view, at_view) = AtView::new(ghost!(perm.take().unwrap())).into_inner();
@@ -841,6 +842,7 @@ impl<T> Consumer<'_, T> {
                             // update logical value of the new message
                             inv.tail_logical = snapshot!(inv.tail_logical.set(c.timestamp() + 1, *t + 1));
                             snapshot!(inv.mod_len_wrap(*t));
+                            proof_assert!(forall<i> inv.mod_len(i) == old_inv.mod_len(i));
                         })
                     }},
                 );

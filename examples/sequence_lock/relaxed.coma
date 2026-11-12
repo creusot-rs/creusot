@@ -5773,7 +5773,8 @@ module M_impl_SeqLock__read (* SeqLock *)
     c2'1: MutBorrow.t t_AcquireSyncView;
     c3'1: MutBorrow.t t_SyncView;
     c4'1: t_Option_Fragment_FMap_Int_Ag_LockSnapshot;
-    c5'1: t_LockSnapshot }
+    c5'1: UInt64.t;
+    c6'1: t_LockSnapshot }
   
   type t_Committer_AtomicU32_u32_Relaxed_unit
   
@@ -5782,8 +5783,9 @@ module M_impl_SeqLock__read (* SeqLock *)
     c1'2: t_Committer_AtomicU32_u32_Relaxed_unit;
     c2'2: MutBorrow.t t_SyncView;
     c3'2: t_Option_Fragment_FMap_Int_Ag_LockSnapshot;
-    c4'2: t_SeqLock;
-    c5'2: t_LockSnapshot }
+    c4'2: UInt64.t;
+    c5'2: t_LockSnapshot;
+    c6'2: t_SeqLock }
   
   predicate shot_store_AtomicU32 (self: t_Committer_AtomicU32_u32_Relaxed_unit)
   
@@ -5830,8 +5832,8 @@ module M_impl_SeqLock__read (* SeqLock *)
   meta "rewrite_def" predicate inv_ref_Ghost_Option_Fragment_FMap_Int_Ag_LockSnapshot
   
   predicate inv_closure0'0 [@inline:trivial] (_1: closure0'0) =
-    let {c0'2 = x0; c1'2 = x1; c2'2 = x2; c3'2 = x3; c4'2 = x4; c5'2 = x5} = _1 in inv_ref_Ghost_Option_Fragment_FMap_Int_Ag_LockSnapshot x3
-    /\ inv_ref_SeqLock x4
+    let {c0'2 = x0; c1'2 = x1; c2'2 = x2; c3'2 = x3; c4'2 = x4; c5'2 = x5; c6'2 = x6} = _1 in inv_ref_Ghost_Option_Fragment_FMap_Int_Ag_LockSnapshot x3
+    /\ inv_ref_SeqLock x6
   
   meta "rewrite_def" predicate inv_closure0'0
   
@@ -5993,7 +5995,8 @@ module M_impl_SeqLock__read (* SeqLock *)
     result_state.c0'2.final = self.c0'2.final
     /\ result_state.c1'2 = self.c1'2
     /\ result_state.c2'2.final = self.c2'2.final
-    /\ result_state.c3'2 = self.c3'2 /\ result_state.c4'2 = self.c4'2 /\ result_state.c5'2 = self.c5'2
+    /\ result_state.c3'2 = self.c3'2
+    /\ result_state.c4'2 = self.c4'2 /\ result_state.c5'2 = self.c5'2 /\ result_state.c6'2 = self.c6'2
   
   let closure0'0 [@coma:extspec] (self: MutBorrow.t closure0'0) (inv'0: MutBorrow.t t_SeqLockInv) (return (x: ())) =
   {[@stop_split] [@expl:closure0 requires] ([@stop_split] [@expl:closure 'self' type invariant] inv_refmut_closure0'0 self)
@@ -6034,10 +6037,14 @@ module M_impl_SeqLock__read (* SeqLock *)
       | s19 = unwrap_ref_Fragment_FMap_Int_Ag_LockSnapshot {_17}
           (fun (_x: t_Fragment_FMap_Int_Ag_LockSnapshot) -> [ &_16 <- _x ] s20)
       | s20 = frag_lemma_FMap_Int_Ag_LockSnapshot {inv'0.current.snapshots} {_16} (fun (_x: ()) -> [ &_13 <- _x ] s21)
-      | s21 =
-        {[@expl:assertion] ge_log_Int (get_timestamp_AtomicU32 self.current.c4'2.data1 self.current.c2'2.current) self.current.c5'2.d1_ts}
-        s22
-      | s22 = return {_ret} ] ]
+      | s21 = {[@expl:assertion] snap inv'0.current (UInt64.t'int self.current.c4'2) = Some'3 (self.current.c5'2)} s22
+      | s22 = {[@expl:assertion] gt_log_Int (timestamp_AtomicU32 self.current.c1'2) self.current.c5'2.d0_ts
+        -> gt_log_Int (get_timestamp_AtomicUsize self.current.c6'2.seq (view_AcquireSyncView self.current.c0'2.current)) self.current.c5'2.seq_ts}
+        s23
+      | s23 =
+        {[@expl:assertion] ge_log_Int (get_timestamp_AtomicU32 self.current.c6'2.data1 self.current.c2'2.current) self.current.c5'2.d1_ts}
+        s24
+      | s24 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t closure0'0 = self
     | & inv'0: MutBorrow.t t_SeqLockInv = inv'0
@@ -6129,7 +6136,7 @@ module M_impl_SeqLock__read (* SeqLock *)
       (! return {result}) ]
   
   predicate inv_closure10 [@inline:trivial] (_1: closure10) =
-    let {c0'1 = x0; c1'1 = x1; c2'1 = x2; c3'1 = x3; c4'1 = x4; c5'1 = x5} = _1 in inv_ref_SeqLock x0
+    let {c0'1 = x0; c1'1 = x1; c2'1 = x2; c3'1 = x3; c4'1 = x4; c5'1 = x5; c6'1 = x6} = _1 in inv_ref_SeqLock x0
     /\ inv_ref_Ghost_Option_Fragment_FMap_Int_Ag_LockSnapshot x4
   
   meta "rewrite_def" predicate inv_closure10
@@ -6151,7 +6158,8 @@ module M_impl_SeqLock__read (* SeqLock *)
     result_state.c0'1 = self.c0'1
     /\ result_state.c1'1.final = self.c1'1.final
     /\ result_state.c2'1.final = self.c2'1.final
-    /\ result_state.c3'1.final = self.c3'1.final /\ result_state.c4'1 = self.c4'1 /\ result_state.c5'1 = self.c5'1
+    /\ result_state.c3'1.final = self.c3'1.final
+    /\ result_state.c4'1 = self.c4'1 /\ result_state.c5'1 = self.c5'1 /\ result_state.c6'1 = self.c6'1
   
   let closure10 [@coma:extspec] (self: MutBorrow.t closure10) (c: t_Committer_AtomicU32_u32_Relaxed_unit)
     (return (x: ())) = {[@stop_split] [@expl:closure 'self' type invariant] inv_refmut_closure10 self}
@@ -6182,8 +6190,9 @@ module M_impl_SeqLock__read (* SeqLock *)
                          c1'2 = c;
                          c2'2 = _14;
                          c3'2 = self.current.c4'1;
-                         c4'2 = self.current.c0'1;
-                         c5'2 = self.current.c5'1 } ] s8
+                         c4'2 = self.current.c5'1;
+                         c5'2 = self.current.c6'1;
+                         c6'2 = self.current.c0'1 } ] s8
       | s8 = __new_closure0'0 {_11} (fun (_x: t_FnGhostWrapper_closure0'0) -> [ &_10 <- _x ] s9)
       | s9 = open_SeqLockInv'0 {_4} {_6} {_10} (fun (_x: ()) -> [ &_ret <- _x ] s10)
       | s10 = -{resolve_refmut_Tokens _8}- s11
@@ -6915,65 +6924,64 @@ module M_impl_SeqLock__read (* SeqLock *)
           (fun (_x: t_Fragment_FMap_Int_Ag_LockSnapshot) -> [ &_21 <- _x ] s3)
       | s3 = frag_lemma_FMap_Int_Ag_LockSnapshot {inv'0.current.snapshots} {_21} (fun (_x: ()) -> [ &_18 <- _x ] s4)
       | s4 = {[@expl:assertion] timestamp_AtomicUsize'0 self.current.c0'6 = self.current.c4'6.seq_ts} s5
-      | s5 = {[@expl:assertion] self.current.c5'6 = self.current.c4'6.v0 /\ self.current.c6'6 = self.current.c4'6.v1} s6
-      | s6 =
+      | s5 =
         {[@expl:assertion] Seq.get (val_Seq_tup2_u32_u32 inv'0.current.log) (ComputerDivision.div (UInt64.t'int self.current.c2'6) 2)
         = { f0 = self.current.c5'6; f1 = self.current.c6'6 }}
-        s7
-      | s7 = [ &old_log <- val_Seq_tup2_u32_u32 inv'0.current.log ] s8
-      | s8 = MutBorrow.borrow_mut <t_Option_F> {self.current.c7'6.current}
+        s6
+      | s6 = [ &old_log <- val_Seq_tup2_u32_u32 inv'0.current.log ] s7
+      | s7 = MutBorrow.borrow_mut <t_Option_F> {self.current.c7'6.current}
           (fun (_bor: MutBorrow.t t_Option_F) ->
-            [ &_49 <- _bor ] -{inv_Ghost_Option_F _bor.final}-
+            [ &_44 <- _bor ] -{inv_Ghost_Option_F _bor.final}-
             [ &self <- { self with current = { self.current with c7'6 = { self.current.c7'6 with current = _bor.final } } } ]
-            s9) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_F self.current.c7'6.current} any) ]
-      | s9 = deref_mut_Ghost_Option_F {_49} (fun (_x: MutBorrow.t t_Option_F) -> [ &_48 <- _x ] s10)
-      | s10 = MutBorrow.borrow_final <t_Option_F> {_48.current} {MutBorrow.get_id _48}
+            s8) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_F self.current.c7'6.current} any) ]
+      | s8 = deref_mut_Ghost_Option_F {_44} (fun (_x: MutBorrow.t t_Option_F) -> [ &_43 <- _x ] s9)
+      | s9 = MutBorrow.borrow_final <t_Option_F> {_43.current} {MutBorrow.get_id _43}
           (fun (_bor: MutBorrow.t t_Option_F) ->
-            [ &_47 <- _bor ] -{inv_Option_F _bor.final}-
-            [ &_48 <- { _48 with current = _bor.final } ] s11)
-        [ _ck -> (! {[@expl:type invariant] inv_Option_F _48.current} any) ]
-      | s11 = take_F {_47} (fun (_x: t_Option_F) -> [ &_46 <- _x ] s12)
-      | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_F _48} any) ]
-      | s13 = -{resolve_refmut_Option_F _48}- s14
-      | s14 = s15 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure0'2 self} any) ]
-      | s15 = -{resolve_refmut_closure0'2 self}- s16
-      | s16 = unwrap_F {_46} (fun (_x: t_F) -> [ &_45 <- _x ] s17)
-      | s17 = MutBorrow.borrow_final <t_Authority_Seq_tup2_u32_u32> {inv'0.current.log}
+            [ &_42 <- _bor ] -{inv_Option_F _bor.final}-
+            [ &_43 <- { _43 with current = _bor.final } ] s10)
+        [ _ck -> (! {[@expl:type invariant] inv_Option_F _43.current} any) ]
+      | s10 = take_F {_42} (fun (_x: t_Option_F) -> [ &_41 <- _x ] s11)
+      | s11 = s12 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_F _43} any) ]
+      | s12 = -{resolve_refmut_Option_F _43}- s13
+      | s13 = s14 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure0'2 self} any) ]
+      | s14 = -{resolve_refmut_closure0'2 self}- s15
+      | s15 = unwrap_F {_41} (fun (_x: t_F) -> [ &_40 <- _x ] s16)
+      | s16 = MutBorrow.borrow_final <t_Authority_Seq_tup2_u32_u32> {inv'0.current.log}
           {MutBorrow.inherit_id (MutBorrow.get_id inv'0) 5}
           (fun (_bor: MutBorrow.t t_Authority_Seq_tup2_u32_u32) ->
-            [ &_55 <- _bor ] -{inv_Authority_Seq_tup2_u32_u32 _bor.final}-
-            [ &inv'0 <- { inv'0 with current = { inv'0.current with log = _bor.final } } ] s18)
+            [ &_50 <- _bor ] -{inv_Authority_Seq_tup2_u32_u32 _bor.final}-
+            [ &inv'0 <- { inv'0 with current = { inv'0.current with log = _bor.final } } ] s17)
         [ _ck -> (! {[@expl:type invariant] inv_Authority_Seq_tup2_u32_u32 inv'0.current.log} any) ]
-      | s18 = MutBorrow.borrow_final <t_Authority_Seq_tup2_u32_u32> {_55.current} {MutBorrow.get_id _55}
+      | s17 = MutBorrow.borrow_final <t_Authority_Seq_tup2_u32_u32> {_50.current} {MutBorrow.get_id _50}
           (fun (_bor: MutBorrow.t t_Authority_Seq_tup2_u32_u32) ->
-            [ &_54 <- _bor ] -{inv_Authority_Seq_tup2_u32_u32 _bor.final}-
-            [ &_55 <- { _55 with current = _bor.final } ] s19)
-        [ _ck -> (! {[@expl:type invariant] inv_Authority_Seq_tup2_u32_u32 _55.current} any) ]
-      | s19 = [ &_56 <- id self.current.c8'6 ] s20
-      | s20 = [ &_53 <- { auth'0 = _54; id'0 = _56; old_log'0 = old_log; new_log'0 = old_log; shot'0 = false } ] s21
-      | s21 = MutBorrow.borrow_mut <t_LogCommitter> {_53}
+            [ &_49 <- _bor ] -{inv_Authority_Seq_tup2_u32_u32 _bor.final}-
+            [ &_50 <- { _50 with current = _bor.final } ] s18)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_Seq_tup2_u32_u32 _50.current} any) ]
+      | s18 = [ &_51 <- id self.current.c8'6 ] s19
+      | s19 = [ &_48 <- { auth'0 = _49; id'0 = _51; old_log'0 = old_log; new_log'0 = old_log; shot'0 = false } ] s20
+      | s20 = MutBorrow.borrow_mut <t_LogCommitter> {_48}
           (fun (_bor: MutBorrow.t t_LogCommitter) ->
-            [ &_52 <- _bor ] -{inv_LogCommitter _bor.final}-
-            [ &_53 <- _bor.final ] s22) [ _ck -> (! {[@expl:type invariant] inv_LogCommitter _53} any) ]
-      | s22 = MutBorrow.borrow_final <t_LogCommitter> {_52.current} {MutBorrow.get_id _52}
+            [ &_47 <- _bor ] -{inv_LogCommitter _bor.final}-
+            [ &_48 <- _bor.final ] s21) [ _ck -> (! {[@expl:type invariant] inv_LogCommitter _48} any) ]
+      | s21 = MutBorrow.borrow_final <t_LogCommitter> {_47.current} {MutBorrow.get_id _47}
           (fun (_bor: MutBorrow.t t_LogCommitter) ->
-            [ &_51 <- _bor ] -{inv_LogCommitter _bor.final}-
-            [ &_52 <- { _52 with current = _bor.final } ] s23)
-        [ _ck -> (! {[@expl:type invariant] inv_LogCommitter _52.current} any) ]
-      | s23 = [ &_50 <- _51 ] s24
-      | s24 = call_once_F {_45} {_50} (fun (_x: ()) -> [ &_44 <- _x ] s25)
-      | s25 = s26 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_Seq_tup2_u32_u32 _55} any) ]
-      | s26 = -{resolve_refmut_Authority_Seq_tup2_u32_u32 _55}- s27
-      | s27 = s28 [ _ck -> (! {[@expl:type invariant] inv_LogCommitter _53} any) ]
-      | s28 = -{resolve_LogCommitter _53}- s29
-      | s29 = s30 [ _ck -> (! {[@expl:type invariant] inv_refmut_LogCommitter _52} any) ]
-      | s30 = -{resolve_refmut_LogCommitter _52}- s31
-      | s31 = s32 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqLockInv inv'0} any) ]
-      | s32 = -{resolve_refmut_SeqLockInv inv'0}- s33
-      | s33 = {[@expl:assertion] forall i: int. 0 <= i /\ i < Seq.length (l old_inv).log'0
+            [ &_46 <- _bor ] -{inv_LogCommitter _bor.final}-
+            [ &_47 <- { _47 with current = _bor.final } ] s22)
+        [ _ck -> (! {[@expl:type invariant] inv_LogCommitter _47.current} any) ]
+      | s22 = [ &_45 <- _46 ] s23
+      | s23 = call_once_F {_40} {_45} (fun (_x: ()) -> [ &_39 <- _x ] s24)
+      | s24 = s25 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_Seq_tup2_u32_u32 _50} any) ]
+      | s25 = -{resolve_refmut_Authority_Seq_tup2_u32_u32 _50}- s26
+      | s26 = s27 [ _ck -> (! {[@expl:type invariant] inv_LogCommitter _48} any) ]
+      | s27 = -{resolve_LogCommitter _48}- s28
+      | s28 = s29 [ _ck -> (! {[@expl:type invariant] inv_refmut_LogCommitter _47} any) ]
+      | s29 = -{resolve_refmut_LogCommitter _47}- s30
+      | s30 = s31 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqLockInv inv'0} any) ]
+      | s31 = -{resolve_refmut_SeqLockInv inv'0}- s32
+      | s32 = {[@expl:assertion] forall i: int. 0 <= i /\ i < Seq.length (l old_inv).log'0
           -> snap old_inv (2 * i) <> None'3}
-        s34
-      | s34 = return {_ret} ]
+        s33
+      | s33 = return {_ret} ]
     | bb16 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqLockInv inv'0} any) ]
       | s1 = -{resolve_refmut_SeqLockInv inv'0}- s2
@@ -6998,19 +7006,19 @@ module M_impl_SeqLock__read (* SeqLock *)
     | & _22: t_Option_ref_Fragment_FMap_Int_Ag_LockSnapshot = Any.any_l ()
     | & _24: t_Option_Fragment_FMap_Int_Ag_LockSnapshot = Any.any_l ()
     | & old_log: Seq.seq tup2_u32_u32 = Any.any_l ()
-    | & _44: () = Any.any_l ()
-    | & _45: t_F = Any.any_l ()
-    | & _46: t_Option_F = Any.any_l ()
-    | & _47: MutBorrow.t t_Option_F = Any.any_l ()
-    | & _48: MutBorrow.t t_Option_F = Any.any_l ()
-    | & _49: MutBorrow.t t_Option_F = Any.any_l ()
-    | & _50: MutBorrow.t t_LogCommitter = Any.any_l ()
-    | & _51: MutBorrow.t t_LogCommitter = Any.any_l ()
-    | & _52: MutBorrow.t t_LogCommitter = Any.any_l ()
-    | & _53: t_LogCommitter = Any.any_l ()
-    | & _54: MutBorrow.t t_Authority_Seq_tup2_u32_u32 = Any.any_l ()
-    | & _55: MutBorrow.t t_Authority_Seq_tup2_u32_u32 = Any.any_l ()
-    | & _56: t_Id = Any.any_l () ]
+    | & _39: () = Any.any_l ()
+    | & _40: t_F = Any.any_l ()
+    | & _41: t_Option_F = Any.any_l ()
+    | & _42: MutBorrow.t t_Option_F = Any.any_l ()
+    | & _43: MutBorrow.t t_Option_F = Any.any_l ()
+    | & _44: MutBorrow.t t_Option_F = Any.any_l ()
+    | & _45: MutBorrow.t t_LogCommitter = Any.any_l ()
+    | & _46: MutBorrow.t t_LogCommitter = Any.any_l ()
+    | & _47: MutBorrow.t t_LogCommitter = Any.any_l ()
+    | & _48: t_LogCommitter = Any.any_l ()
+    | & _49: MutBorrow.t t_Authority_Seq_tup2_u32_u32 = Any.any_l ()
+    | & _50: MutBorrow.t t_Authority_Seq_tup2_u32_u32 = Any.any_l ()
+    | & _51: t_Id = Any.any_l () ]
     [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0'2 self.current self.final}
       return {result} ]
   
@@ -7367,72 +7375,78 @@ module M_impl_SeqLock__read (* SeqLock *)
                   (fun (_bor: MutBorrow.t t_AcquireSyncView) -> [ &_61 <- _bor ] [ &acq0 <- _bor.final ] s5)
               | s5 = MutBorrow.borrow_mut <t_SyncView> {view}
                   (fun (_bor: MutBorrow.t t_SyncView) -> [ &_62 <- _bor ] [ &view <- _bor.final ] s6)
-              | s6 = [ &_58 <- { c0'1 = self; c1'1 = _60; c2'1 = _61; c3'1 = _62; c4'1 = snap_frag; c5'1 = sn } ] s7
+              | s6 = [ &_58 <- { c0'1 = self;
+                                 c1'1 = _60;
+                                 c2'1 = _61;
+                                 c3'1 = _62;
+                                 c4'1 = snap_frag;
+                                 c5'1 = seq1;
+                                 c6'1 = sn } ] s7
               | s7 = __new_closure10 {_58} (fun (_x: t_FnGhostWrapper_closure10) -> [ &_57 <- _x ] s8)
               | s8 = new_FnGhostWrapper_closure10 {_57} (fun (_x: t_FnGhostWrapper_closure10) -> [ &_56 <- _x ] s9)
               | s9 = load_FnGhostWrapper_closure10 {self.data0} {_55} {_56}
                   (fun (_x: UInt32.t) -> [ &result0 <- _x ] s10)
               | s10 = new'1 (fun (_x: t_AcquireSyncView) -> [ &acq1 <- _x ] s11)
-              | s11 = [ &_68 <- Relaxed ] s12
+              | s11 = [ &_69 <- Relaxed ] s12
               | s12 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-                  (fun (_bor: MutBorrow.t t_Tokens) -> [ &_73 <- _bor ] [ &tokens <- _bor.final ] s13)
+                  (fun (_bor: MutBorrow.t t_Tokens) -> [ &_74 <- _bor ] [ &tokens <- _bor.final ] s13)
               | s13 = MutBorrow.borrow_mut <t_AcquireSyncView> {acq1}
-                  (fun (_bor: MutBorrow.t t_AcquireSyncView) -> [ &_74 <- _bor ] [ &acq1 <- _bor.final ] s14)
+                  (fun (_bor: MutBorrow.t t_AcquireSyncView) -> [ &_75 <- _bor ] [ &acq1 <- _bor.final ] s14)
               | s14 = MutBorrow.borrow_mut <t_SyncView> {view}
-                  (fun (_bor: MutBorrow.t t_SyncView) -> [ &_75 <- _bor ] [ &view <- _bor.final ] s15)
-              | s15 = [ &_71 <- { c0'3 = self;
-                                  c1'3 = _73;
-                                  c2'3 = _74;
-                                  c3'3 = _75;
+                  (fun (_bor: MutBorrow.t t_SyncView) -> [ &_76 <- _bor ] [ &view <- _bor.final ] s15)
+              | s15 = [ &_72 <- { c0'3 = self;
+                                  c1'3 = _74;
+                                  c2'3 = _75;
+                                  c3'3 = _76;
                                   c4'3 = snap_frag;
                                   c5'3 = seq1;
                                   c6'3 = sn } ] s16
-              | s16 = __new_closure11 {_71} (fun (_x: t_FnGhostWrapper_closure11) -> [ &_70 <- _x ] s17)
-              | s17 = new_FnGhostWrapper_closure11 {_70} (fun (_x: t_FnGhostWrapper_closure11) -> [ &_69 <- _x ] s18)
-              | s18 = load_FnGhostWrapper_closure11 {self.data1} {_68} {_69}
+              | s16 = __new_closure11 {_72} (fun (_x: t_FnGhostWrapper_closure11) -> [ &_71 <- _x ] s17)
+              | s17 = new_FnGhostWrapper_closure11 {_71} (fun (_x: t_FnGhostWrapper_closure11) -> [ &_70 <- _x ] s18)
+              | s18 = load_FnGhostWrapper_closure11 {self.data1} {_69} {_70}
                   (fun (_x: UInt32.t) -> [ &result1 <- _x ] s19)
-              | s19 = [ &_80 <- Acquire ] s20
-              | s20 = deref_Ghost_AcquireSyncView {acq0} (fun (_x: t_AcquireSyncView) -> [ &_84 <- _x ] s21)
-              | s21 = deref_Ghost_AcquireSyncView {acq1} (fun (_x: t_AcquireSyncView) -> [ &_87 <- _x ] s22)
-              | s22 = acq_join {_84} {_87} (fun (_x: t_AcquireSyncView) -> [ &_82 <- _x ] s23)
-              | s23 = new_AcquireSyncView {_82} (fun (_x: t_AcquireSyncView) -> [ &_81 <- _x ] s24)
-              | s24 = fence_acquire {_80} {_81} (fun (_x: t_SyncView) -> [ &fence_view <- _x ] s25)
+              | s19 = [ &_81 <- Acquire ] s20
+              | s20 = deref_Ghost_AcquireSyncView {acq0} (fun (_x: t_AcquireSyncView) -> [ &_85 <- _x ] s21)
+              | s21 = deref_Ghost_AcquireSyncView {acq1} (fun (_x: t_AcquireSyncView) -> [ &_88 <- _x ] s22)
+              | s22 = acq_join {_85} {_88} (fun (_x: t_AcquireSyncView) -> [ &_83 <- _x ] s23)
+              | s23 = new_AcquireSyncView {_83} (fun (_x: t_AcquireSyncView) -> [ &_82 <- _x ] s24)
+              | s24 = fence_acquire {_81} {_82} (fun (_x: t_SyncView) -> [ &fence_view <- _x ] s25)
               | s25 = MutBorrow.borrow_mut <t_SyncView> {view}
-                  (fun (_bor: MutBorrow.t t_SyncView) -> [ &_93 <- _bor ] [ &view <- _bor.final ] s26)
-              | s26 = deref_mut_Ghost_SyncView {_93} (fun (_x: MutBorrow.t t_SyncView) -> [ &_92 <- _x ] s27)
-              | s27 = deref_Ghost_SyncView {fence_view} (fun (_x: t_SyncView) -> [ &_95 <- _x ] s28)
-              | s28 = MutBorrow.borrow_final <t_SyncView> {_92.current} {MutBorrow.get_id _92}
+                  (fun (_bor: MutBorrow.t t_SyncView) -> [ &_94 <- _bor ] [ &view <- _bor.final ] s26)
+              | s26 = deref_mut_Ghost_SyncView {_94} (fun (_x: MutBorrow.t t_SyncView) -> [ &_93 <- _x ] s27)
+              | s27 = deref_Ghost_SyncView {fence_view} (fun (_x: t_SyncView) -> [ &_96 <- _x ] s28)
+              | s28 = MutBorrow.borrow_final <t_SyncView> {_93.current} {MutBorrow.get_id _93}
                   (fun (_bor: MutBorrow.t t_SyncView) ->
-                    [ &_91 <- _bor ] [ &_92 <- { _92 with current = _bor.final } ] s29)
-              | s29 = join_in {_91} {_95} (fun (_x: ()) -> [ &_90 <- _x ] s30)
-              | s30 = -{resolve_refmut_SyncView _92}- s31
-              | s31 = new_unit {_90} (fun (_x: ()) -> [ &_89 <- _x ] s32)
-              | s32 = [ &_99 <- Relaxed ] s33
+                    [ &_92 <- _bor ] [ &_93 <- { _93 with current = _bor.final } ] s29)
+              | s29 = join_in {_92} {_96} (fun (_x: ()) -> [ &_91 <- _x ] s30)
+              | s30 = -{resolve_refmut_SyncView _93}- s31
+              | s31 = new_unit {_91} (fun (_x: ()) -> [ &_90 <- _x ] s32)
+              | s32 = [ &_100 <- Relaxed ] s33
               | s33 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-                  (fun (_bor: MutBorrow.t t_Tokens) -> [ &_104 <- _bor ] [ &tokens <- _bor.final ] s34)
+                  (fun (_bor: MutBorrow.t t_Tokens) -> [ &_105 <- _bor ] [ &tokens <- _bor.final ] s34)
               | s34 = MutBorrow.borrow_mut <t_SyncView> {view}
-                  (fun (_bor: MutBorrow.t t_SyncView) -> [ &_105 <- _bor ] [ &view <- _bor.final ] s35)
+                  (fun (_bor: MutBorrow.t t_SyncView) -> [ &_106 <- _bor ] [ &view <- _bor.final ] s35)
               | s35 = s36
                 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment_FMap_Int_Ag_LockSnapshot snap_frag} any) ]
               | s36 = -{resolve_Ghost_Option_Fragment_FMap_Int_Ag_LockSnapshot'0 snap_frag}- s37
               | s37 = MutBorrow.borrow_mut <t_Option_F> {f'0}
                   (fun (_bor: MutBorrow.t t_Option_F) ->
-                    [ &_111 <- _bor ] -{inv_Ghost_Option_F _bor.final}-
+                    [ &_112 <- _bor ] -{inv_Ghost_Option_F _bor.final}-
                     [ &f'0 <- _bor.final ] s38) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_F f'0} any) ]
-              | s38 = [ &_102 <- { c0'5 = self;
-                                   c1'5 = _104;
-                                   c2'5 = _105;
+              | s38 = [ &_103 <- { c0'5 = self;
+                                   c1'5 = _105;
+                                   c2'5 = _106;
                                    c3'5 = seq1;
                                    c4'5 = snap_frag;
                                    c5'5 = sn;
                                    c6'5 = result0;
                                    c7'5 = result1;
-                                   c8'5 = _111 } ] s39
-              | s39 = __new_closure12 {_102} (fun (_x: t_FnGhostWrapper_closure12) -> [ &_101 <- _x ] s40)
-              | s40 = new_FnGhostWrapper_closure12 {_101} (fun (_x: t_FnGhostWrapper_closure12) -> [ &_100 <- _x ] s41)
-              | s41 = load_FnGhostWrapper_closure12 {self.seq} {_99} {_100} (fun (_x: UInt64.t) -> [ &seq2 <- _x ] s42)
-              | s42 = [ &_112 <- seq1 = seq2 ] s43
-              | s43 = any [ br0 -> {_112 = false} (! bb6) | br1 -> {_112} (! bb36) ] ] ] ]
+                                   c8'5 = _112 } ] s39
+              | s39 = __new_closure12 {_103} (fun (_x: t_FnGhostWrapper_closure12) -> [ &_102 <- _x ] s40)
+              | s40 = new_FnGhostWrapper_closure12 {_102} (fun (_x: t_FnGhostWrapper_closure12) -> [ &_101 <- _x ] s41)
+              | s41 = load_FnGhostWrapper_closure12 {self.seq} {_100} {_101} (fun (_x: UInt64.t) -> [ &seq2 <- _x ] s42)
+              | s42 = [ &_113 <- seq1 = seq2 ] s43
+              | s43 = any [ br0 -> {_113 = false} (! bb6) | br1 -> {_113} (! bb36) ] ] ] ]
         | bb36 = s0
           [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_F f'0} any) ]
           | s1 = -{resolve_Ghost_Option_F'0 f'0}- s2
@@ -7472,34 +7486,34 @@ module M_impl_SeqLock__read (* SeqLock *)
         | & _62: MutBorrow.t t_SyncView = Any.any_l ()
         | & acq1: t_AcquireSyncView = Any.any_l ()
         | & result1: UInt32.t = Any.any_l ()
-        | & _68: t_Ordering = Any.any_l ()
-        | & _69: t_FnGhostWrapper_closure11 = Any.any_l ()
+        | & _69: t_Ordering = Any.any_l ()
         | & _70: t_FnGhostWrapper_closure11 = Any.any_l ()
-        | & _71: closure11 = Any.any_l ()
-        | & _73: MutBorrow.t t_Tokens = Any.any_l ()
-        | & _74: MutBorrow.t t_AcquireSyncView = Any.any_l ()
-        | & _75: MutBorrow.t t_SyncView = Any.any_l ()
+        | & _71: t_FnGhostWrapper_closure11 = Any.any_l ()
+        | & _72: closure11 = Any.any_l ()
+        | & _74: MutBorrow.t t_Tokens = Any.any_l ()
+        | & _75: MutBorrow.t t_AcquireSyncView = Any.any_l ()
+        | & _76: MutBorrow.t t_SyncView = Any.any_l ()
         | & fence_view: t_SyncView = Any.any_l ()
-        | & _80: t_Ordering = Any.any_l ()
-        | & _81: t_AcquireSyncView = Any.any_l ()
+        | & _81: t_Ordering = Any.any_l ()
         | & _82: t_AcquireSyncView = Any.any_l ()
-        | & _84: t_AcquireSyncView = Any.any_l ()
-        | & _87: t_AcquireSyncView = Any.any_l ()
-        | & _89: () = Any.any_l ()
+        | & _83: t_AcquireSyncView = Any.any_l ()
+        | & _85: t_AcquireSyncView = Any.any_l ()
+        | & _88: t_AcquireSyncView = Any.any_l ()
         | & _90: () = Any.any_l ()
-        | & _91: MutBorrow.t t_SyncView = Any.any_l ()
+        | & _91: () = Any.any_l ()
         | & _92: MutBorrow.t t_SyncView = Any.any_l ()
         | & _93: MutBorrow.t t_SyncView = Any.any_l ()
-        | & _95: t_SyncView = Any.any_l ()
+        | & _94: MutBorrow.t t_SyncView = Any.any_l ()
+        | & _96: t_SyncView = Any.any_l ()
         | & seq2: UInt64.t = Any.any_l ()
-        | & _99: t_Ordering = Any.any_l ()
-        | & _100: t_FnGhostWrapper_closure12 = Any.any_l ()
+        | & _100: t_Ordering = Any.any_l ()
         | & _101: t_FnGhostWrapper_closure12 = Any.any_l ()
-        | & _102: closure12 = Any.any_l ()
-        | & _104: MutBorrow.t t_Tokens = Any.any_l ()
-        | & _105: MutBorrow.t t_SyncView = Any.any_l ()
-        | & _111: MutBorrow.t t_Option_F = Any.any_l ()
-        | & _112: bool = Any.any_l () ])))
+        | & _102: t_FnGhostWrapper_closure12 = Any.any_l ()
+        | & _103: closure12 = Any.any_l ()
+        | & _105: MutBorrow.t t_Tokens = Any.any_l ()
+        | & _106: MutBorrow.t t_SyncView = Any.any_l ()
+        | & _112: MutBorrow.t t_Option_F = Any.any_l ()
+        | & _113: bool = Any.any_l () ])))
     [ return (result: tup2_u32_u32) ->
     {[@stop_split] [@expl:read_F ensures] ([@stop_split] [@expl:read ensures #0] exists c: MutBorrow.t t_LogCommitter. not shot c.current
           /\ id'1 c.current = id self
