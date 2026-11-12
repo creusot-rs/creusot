@@ -530,21 +530,24 @@ impl<T> Producer<'_, T> {
         loop {
             let mut perm: Ghost<Option<PermPCell<T>>> = ghost!(None);
 
-            let tail = queue.tail.load(Ordering::SeqCst, ghost! { |c: &Committer<_, _, SeqCst, _>| {
-                queue.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                    inv.producer_auth.agree(&self.state);
-                    c.shoot_load(&inv.tail_own);
-                    let h = snapshot!(inv.head());
-                    snapshot!(inv.mod_len_wrap(*h + 1 - inv.len()));
-                    if c.val_load() != next {
-                        // update producer state from Idle to Producing
-                        let new_state = snapshot!(ProducerState { head: *h, producing: true });
-                        inv.producer_auth.update(&mut self.state, new_state);
-                        // remove (uninitialized) permission for head cell
-                        *perm = Some(inv.cell_perms.delete(&*snapshot!(*h).into_ghost()).unwrap());
-                    }
-                })
-            }});
+            let tail = queue.tail.load(
+                Ordering::SeqCst,
+                ghost! { |c: &Committer<_, _, SeqCst, _>| {
+                    queue.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                        inv.producer_auth.agree(&self.state);
+                        c.shoot_load(&inv.tail_own);
+                        let h = snapshot!(inv.head());
+                        snapshot!(inv.mod_len_wrap(*h + 1 - inv.len()));
+                        if c.val_load() != next {
+                            // update producer state from Idle to Producing
+                            let new_state = snapshot!(ProducerState { head: *h, producing: true });
+                            inv.producer_auth.update(&mut self.state, new_state);
+                            // remove (uninitialized) permission for head cell
+                            *perm = Some(inv.cell_perms.delete(&*snapshot!(*h).into_ghost()).unwrap());
+                        }
+                    })
+                }}
+            );
 
             if tail != next {
                 unsafe {
@@ -643,36 +646,39 @@ impl<T> Consumer<'_, T> {
         loop {
             let mut perm: Ghost<Option<PermPCell<T>>> = ghost!(None);
 
-            let head = queue.head.load(Ordering::SeqCst, ghost! { |c: &Committer<_, _, SeqCst, _>| {
-                queue.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                    inv.consumer_auth.agree(&self.state);
-                    c.shoot_load(&inv.head_own);
-                    let t = snapshot!(inv.tail());
-                    if c.val_load() != self.tail {
-                        // update consumer state from Idle to Consuming
-                        let new_state = snapshot!(ConsumerState { tail: *t, consuming: true });
-                        inv.consumer_auth.update(&mut self.state, new_state);
-                        // remove (initialized) permission for tail cell
-                        *perm = Some(inv.cell_perms.delete(&*snapshot!(*t).into_ghost()).unwrap());
+            let head = queue.head.load(
+                Ordering::SeqCst,
+                ghost! { |c: &Committer<_, _, SeqCst, _>| {
+                    queue.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                        inv.consumer_auth.agree(&self.state);
+                        c.shoot_load(&inv.head_own);
+                        let t = snapshot!(inv.tail());
+                        if c.val_load() != self.tail {
+                            // update consumer state from Idle to Consuming
+                            let new_state = snapshot!(ConsumerState { tail: *t, consuming: true });
+                            inv.consumer_auth.update(&mut self.state, new_state);
+                            // remove (initialized) permission for tail cell
+                            *perm = Some(inv.cell_perms.delete(&*snapshot!(*t).into_ghost()).unwrap());
 
-                        // linearization point: the oldest element is removed from the queue
-                        let old_seq = snapshot!(inv.seq());
-                        let new_seq = snapshot!(old_seq.tail());
-                        f.take().unwrap()(&mut QueueCommitter {
-                            auth: &mut inv.contents_auth,
-                            id: snapshot!(queue.id()),
-                            old_seq,
-                            new_seq,
-                            shot: false,
-                        });
-                        proof_assert!(exists<qc: &mut QueueCommitter<T>>
-                            !qc.shot() && qc.id() == queue.id() &&
-                            qc.old_seq().len() > 0 && qc.new_seq() == qc.old_seq().tail() &&
-                            (*f_snap).postcondition_once((qc,), ()) &&
-                            perm.unwrap_logic().val()@ == Some(qc.old_seq()[0]));
-                    }
-                })
-            }});
+                            // linearization point: the oldest element is removed from the queue
+                            let old_seq = snapshot!(inv.seq());
+                            let new_seq = snapshot!(old_seq.tail());
+                            f.take().unwrap()(&mut QueueCommitter {
+                                auth: &mut inv.contents_auth,
+                                id: snapshot!(queue.id()),
+                                old_seq,
+                                new_seq,
+                                shot: false,
+                            });
+                            proof_assert!(exists<qc: &mut QueueCommitter<T>>
+                                !qc.shot() && qc.id() == queue.id() &&
+                                qc.old_seq().len() > 0 && qc.new_seq() == qc.old_seq().tail() &&
+                                (*f_snap).postcondition_once((qc,), ()) &&
+                                perm.unwrap_logic().val()@ == Some(qc.old_seq()[0]));
+                        }
+                    })
+                }}
+            );
 
             if head != self.tail {
                 let item = unsafe {

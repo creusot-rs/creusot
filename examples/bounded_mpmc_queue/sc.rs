@@ -712,7 +712,7 @@ impl<T> Queue<T> {
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                     c.shoot_load(&inv.head_own);
                 });
-            } },
+            }},
         );
 
         let head_mod = head % self.cells.len();
@@ -729,7 +729,7 @@ impl<T> Queue<T> {
                     let status = snapshot!(c.val_load()@);
                     *witness = Some(inv.statuses_mono_auth[*head_mod_ghost].get_fragment(status));
                 });
-            } },
+            }},
         );
 
         if 2 * head != status {
@@ -849,7 +849,7 @@ impl<T> Queue<T> {
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                     c.shoot_load(&inv.tail_own);
                 });
-            } },
+            }},
         );
 
         let tail_mod = tail % self.cells.len();
@@ -865,7 +865,7 @@ impl<T> Queue<T> {
                     let status = snapshot!(c.val_load()@);
                     *witness = Some(inv.statuses_mono_auth[*tail_mod_ghost].get_fragment(status));
                 });
-            } },
+            }},
         );
 
         if 2 * tail + 1 != status {

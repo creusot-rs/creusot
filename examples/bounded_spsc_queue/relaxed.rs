@@ -626,27 +626,30 @@ impl<T> Producer<'_, T> {
             let mut perm: Ghost<Option<PermPCell<T>>> = ghost!(None);
 
             // Get the current `tail` value from the shared atomic.
-            let tail = queue.tail.load(Ordering::Acquire, ghost! { |c: &Committer<_, _, Acquire, _>| {
-                queue.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                    inv.producer_auth.agree(&self.state);
-                    c.shoot_load(&inv.tail_own, &mut self.view);
-                    let h = snapshot!(inv.head());
-                    snapshot!(inv.mod_len_wrap(*h + 1 - inv.len()));
-                    if c.val_load() != next {
-                        // update producer state from Idle to Producing
-                        let new_state = snapshot!(ProducerState { head: *h, view: *self.view, producing: true });
-                        inv.producer_auth.update(&mut self.state, new_state);
-                        // remove (uninitialized) permission for head cell
-                        let p = inv.cell_perms.delete(&*snapshot!(*h).into_ghost()).unwrap();
-                        *perm = Some(p.sync(*self.view));
-                    } else {
-                        // update producer view in the invariant
-                        let new_state = snapshot!(ProducerState { head: *h, view: *self.view, producing: false });
-                        inv.producer_auth.update(&mut self.state, new_state);
-                    }
-                    proof_assert!(inv.valid_storage());
-                })
-            }});
+            let tail = queue.tail.load(
+                Ordering::Acquire,
+                ghost! { |c: &Committer<_, _, Acquire, _>| {
+                    queue.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                        inv.producer_auth.agree(&self.state);
+                        c.shoot_load(&inv.tail_own, &mut self.view);
+                        let h = snapshot!(inv.head());
+                        snapshot!(inv.mod_len_wrap(*h + 1 - inv.len()));
+                        if c.val_load() != next {
+                            // update producer state from Idle to Producing
+                            let new_state = snapshot!(ProducerState { head: *h, view: *self.view, producing: true });
+                            inv.producer_auth.update(&mut self.state, new_state);
+                            // remove (uninitialized) permission for head cell
+                            let p = inv.cell_perms.delete(&*snapshot!(*h).into_ghost()).unwrap();
+                            *perm = Some(p.sync(*self.view));
+                        } else {
+                            // update producer view in the invariant
+                            let new_state = snapshot!(ProducerState { head: *h, view: *self.view, producing: false });
+                            inv.producer_auth.update(&mut self.state, new_state);
+                        }
+                        proof_assert!(inv.valid_storage());
+                    })
+                }}
+            );
 
             if tail != next {
                 unsafe {
@@ -758,41 +761,44 @@ impl<T> Consumer<'_, T> {
         loop {
             let mut perm: Ghost<Option<PermPCell<T>>> = ghost!(None);
 
-            let head = queue.head.load(Ordering::Acquire, ghost! { |c: &Committer<_, _, Acquire, _>| {
-                queue.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                    inv.consumer_auth.agree(&self.state);
-                    c.shoot_load(&inv.head_own, &mut self.view);
-                    let t = snapshot!(inv.tail());
-                    if c.val_load() != self.tail {
-                        // update consumer state from Idle to Consuming
-                        let new_state = snapshot!(ConsumerState { tail: *t, view: *self.view, consuming: true });
-                        inv.consumer_auth.update(&mut self.state, new_state);
-                        // remove (initialized) permission for tail cell
-                        let p = inv.cell_perms.delete(&*snapshot!(*t).into_ghost()).unwrap();
-                        *perm = Some(p.sync(*self.view));
+            let head = queue.head.load(
+                Ordering::Acquire,
+                ghost! { |c: &Committer<_, _, Acquire, _>| {
+                    queue.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
+                        inv.consumer_auth.agree(&self.state);
+                        c.shoot_load(&inv.head_own, &mut self.view);
+                        let t = snapshot!(inv.tail());
+                        if c.val_load() != self.tail {
+                            // update consumer state from Idle to Consuming
+                            let new_state = snapshot!(ConsumerState { tail: *t, view: *self.view, consuming: true });
+                            inv.consumer_auth.update(&mut self.state, new_state);
+                            // remove (initialized) permission for tail cell
+                            let p = inv.cell_perms.delete(&*snapshot!(*t).into_ghost()).unwrap();
+                            *perm = Some(p.sync(*self.view));
 
-                        // linearization point: the oldest element is removed from the queue
-                        let old_seq = snapshot!(inv.seq());
-                        let new_seq = snapshot!(old_seq.tail());
-                        f.take().unwrap()(&mut QueueCommitter {
-                            auth: &mut inv.contents_auth,
-                            id: snapshot!(queue.id()),
-                            old_seq,
-                            new_seq,
-                            shot: false,
-                        });
-                        proof_assert!(exists<qc: &mut QueueCommitter<T>>
-                            !qc.shot() && qc.id() == queue.id() &&
-                            qc.old_seq().len() > 0 && qc.new_seq() == qc.old_seq().tail() &&
-                            (*f_snap).postcondition_once((qc,), ()) &&
-                            perm.unwrap_logic().val()@ == Some(qc.old_seq()[0]));
-                    } else {
-                        // update consumer view in the invariant
-                        let new_state = snapshot!(ConsumerState { tail: *t, view: *self.view, consuming: false });
-                        inv.consumer_auth.update(&mut self.state, new_state);
-                    }
-                })
-            }});
+                            // linearization point: the oldest element is removed from the queue
+                            let old_seq = snapshot!(inv.seq());
+                            let new_seq = snapshot!(old_seq.tail());
+                            f.take().unwrap()(&mut QueueCommitter {
+                                auth: &mut inv.contents_auth,
+                                id: snapshot!(queue.id()),
+                                old_seq,
+                                new_seq,
+                                shot: false,
+                            });
+                            proof_assert!(exists<qc: &mut QueueCommitter<T>>
+                                !qc.shot() && qc.id() == queue.id() &&
+                                qc.old_seq().len() > 0 && qc.new_seq() == qc.old_seq().tail() &&
+                                (*f_snap).postcondition_once((qc,), ()) &&
+                                perm.unwrap_logic().val()@ == Some(qc.old_seq()[0]));
+                        } else {
+                            // update consumer view in the invariant
+                            let new_state = snapshot!(ConsumerState { tail: *t, view: *self.view, consuming: false });
+                            inv.consumer_auth.update(&mut self.state, new_state);
+                        }
+                    })
+                }}
+            );
 
             if head != self.tail {
                 let item = unsafe {
