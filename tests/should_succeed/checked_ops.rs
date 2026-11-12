@@ -298,7 +298,7 @@ pub fn test_i8_div_example() {
 
     assert!(5i8.saturating_div(2) == 2);
     assert!(5i8.saturating_div(-2) == -2);
-    assert!((-128i8).saturating_div(-1) == -128);
+    assert!((-128i8).saturating_div(-1) == 127);
 
     let res = 5i8.overflowing_div(2);
     assert!(res.0 == 2 && res.1 == false);
