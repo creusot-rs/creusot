@@ -102,7 +102,7 @@ impl PartialOrdLogic for SyncView {
 #[opaque]
 #[derive(Copy)]
 #[allow(dead_code)]
-pub struct ReleaseSyncView(*mut ()); // Neither Sync nor Send
+pub struct ReleaseSyncView(*mut (), NotObjective); // Neither Sync nor Send
 
 impl Clone for ReleaseSyncView {
     #[check(ghost)]
@@ -154,7 +154,7 @@ impl View for ReleaseSyncView {
 #[opaque]
 #[derive(Copy)]
 #[allow(dead_code)]
-pub struct AcquireSyncView(*mut ()); // Neither Sync nor Send
+pub struct AcquireSyncView(*mut (), NotObjective); // Neither Sync nor Send
 
 impl Clone for AcquireSyncView {
     #[ensures(result == *self)]

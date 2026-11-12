@@ -9,6 +9,9 @@ use crate::{
 };
 use core::cell::UnsafeCell;
 
+#[cfg(creusot)]
+use crate::std::sync::SyncViewExt;
+
 /// Cell with ghost permissions
 ///
 /// When writing/reading the cell, you need to explicitly pass a [`Perm`] object.
@@ -50,6 +53,7 @@ impl<T: ?Sized> PCell<T> {
     #[check(terminates)]
     #[ensures(result.0 == *result.1.ward())]
     #[ensures(result.1.val() == value)]
+    #[erasure(core::cell::SyncUnsafeCell::<T>::new)]
     pub fn new(value: T) -> (Self, Ghost<Perm<PCell<T>>>)
     where
         T: Sized,
@@ -112,6 +116,7 @@ impl<T: ?Sized> PCell<T> {
     #[check(terminates)]
     #[requires(self == *perm.ward())]
     #[ensures(result == perm.val())]
+    #[erasure(core::cell::SyncUnsafeCell::<T>::into_inner)]
     pub fn into_inner(self, perm: Ghost<Perm<PCell<T>>>) -> T
     where
         T: Sized,
@@ -136,6 +141,7 @@ impl<T: ?Sized> PCell<T> {
     #[check(terminates)]
     #[requires(self == perm.ward())]
     #[ensures(*result == *perm.val_unsized())]
+    #[erasure(core::cell::SyncUnsafeCell::<T>::borrow)]
     pub unsafe fn borrow<'a>(&'a self, perm: Ghost<&'a Perm<PCell<T>>>) -> &'a T {
         let _ = perm;
         unsafe { &*self.0.get() }
@@ -159,6 +165,7 @@ impl<T: ?Sized> PCell<T> {
     #[ensures(self == (^perm).ward())]
     #[ensures(*result == *perm.val_unsized())]
     #[ensures(^result == *(^perm).val_unsized())]
+    #[erasure(core::cell::SyncUnsafeCell::<T>::borrow_mut)]
     pub unsafe fn borrow_mut<'a>(&'a self, perm: Ghost<&'a mut Perm<PCell<T>>>) -> &'a mut T {
         let _ = perm;
         unsafe { &mut *self.0.get() }
