@@ -9,6 +9,10 @@ use crate::{
 use core::num::Wrapping;
 // Resolve links like [`i8::add`] in the generated documentation
 #[cfg(creusot)]
+use crate::std::mem::size_of_logic;
+#[cfg(creusot)]
+use core::mem::size_of;
+#[cfg(creusot)]
 use core::ops::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign,
     Mul, MulAssign, Neg, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
@@ -25,6 +29,26 @@ pub trait NthBitLogic {
 
 macro_rules! mach_int {
     ($t:ty, $ty_nm:expr, $zero:expr, $to_int:literal) => {
+        extern_spec! {
+            impl $t {
+                #[check(ghost)]
+                #[ensures(forall<i: u32> i@ >= 0 && i@ < size_of_logic::<Self>() ==> result@[i@] == (self >> (Self::BITS - 8u32 * i - 8u32)) as u8)]
+                fn to_be_bytes(self) -> [u8; size_of::<Self>()];
+
+                #[check(ghost)]
+                #[ensures(forall<i: u32> i@ >= 0 && i@ < size_of_logic::<Self>() ==> result@[i@] == (self >> (8u32 * i)) as u8)]
+                fn to_le_bytes(self) -> [u8; size_of::<Self>()];
+
+                #[check(ghost)]
+                #[ensures(forall<i: u32> i@ >= 0 && i@ < size_of_logic::<Self>() ==> bytes@[i@] == (result >> (Self::BITS - 8u32 * i - 8u32)) as u8)]
+                fn from_be_bytes(bytes: [u8; size_of::<Self>()]) -> Self;
+
+                #[check(ghost)]
+                #[ensures(forall<i: u32> i@ >= 0 && i@ < size_of_logic::<Self>() ==> bytes@[i@] == (result >> (8u32 * i)) as u8)]
+                fn from_le_bytes(bytes: [u8; size_of::<Self>()]) -> Self;
+            }
+        }
+
         impl View for $t {
             type ViewTy = Int;
             #[logic]
@@ -611,10 +635,45 @@ macro_rules! spec_bits {
 macro_rules! spec_shifts {
     ($type:ty) => {
         spec_shifts! {$type, u8 u16 u32 u64 u128 usize i8 i16 i32 i64 i128 isize}
+        spec_shifts! {
+            @inherent $type, >>, unchecked_shr, wrapping_shr, unbounded_shr,
+            { unsafe { self.unchecked_shr(Self::BITS - 1) } }, { self >> (Self::BITS - 1u32) }
+        }
+        spec_shifts! {
+            @inherent $type, <<, unchecked_shl, wrapping_shl, unbounded_shl,
+            { 0 }, { (0u8 as $type) }
+        }
     };
     ($type:ty, $($rhs:ty)*) => {
         $(spec_shifts! {$type, $rhs, >>, Shr, shr, ShrAssign, shr_assign})*
         $(spec_shifts! {$type, $rhs, <<, Shl, shl, ShlAssign, shl_assign})*
+    };
+    (@inherent $type:ty, $op:tt, $unc:ident, $w:ident, $ub:ident, {$($ubp:tt)*}, {$($ubl:tt)*}) => {
+        extern_spec! {
+            impl $type {
+                #[check(ghost)]
+                #[requires(rhs < Self::BITS)]
+                #[ensures(result == self $op rhs)]
+                unsafe fn $unc(self, rhs: u32) -> Self;
+
+                #[check(ghost)]
+                #[ensures(result == self $op (rhs & (Self::BITS - 1u32)))]
+                #[bitwise_proof]
+                fn $w(self, rhs: u32) -> Self {
+                    unsafe { self.$unc(rhs & (Self::BITS - 1)) }
+                }
+
+                #[check(ghost)]
+                #[ensures(result == if rhs < Self::BITS { self $op rhs } else { $($ubl)* })]
+                fn $ub(self, rhs: u32) -> Self {
+                    if rhs < Self::BITS {
+                        unsafe { self.$unc(rhs) }
+                    } else {
+                        $($ubp)*
+                    }
+                }
+            }
+        }
     };
     ($type:ty, $rhs:ty, $op:tt, $tr:ident, $f:ident, $tr_assign:ident, $f_assign:ident) => {
         extern_spec! {
