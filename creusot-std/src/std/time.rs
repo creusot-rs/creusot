@@ -171,16 +171,6 @@ extern_spec! {
         #[ensures(self@ > earlier@ ==> result@ > 0)]
         #[ensures(self@ <= earlier@ ==> result@ == 0)]
         fn saturating_duration_since(&self, earlier: Instant) -> Duration;
-
-        #[check(ghost)]
-        #[ensures(duration@ == 0 ==> result.deep_model() == Some(self@))]
-        #[ensures(duration@ > 0 && result != None ==> Some(self@) < result.deep_model())]
-        fn checked_add(&self, duration: Duration) -> Option<Instant>;
-
-        #[check(ghost)]
-        #[ensures(duration@ == 0 ==> result.deep_model() == Some(self@))]
-        #[ensures(duration@ > 0 && result != None ==> Some(self@) > result.deep_model())]
-        fn checked_sub(&self, duration: Duration) -> Option<Instant>;
     }
 }
 
@@ -200,22 +190,34 @@ extern_spec! {
     }
 }
 
+// To keep things simple, we restrict this spec to the two OS families that we support.
+// In at least one obscure OS (`"solid_asp3"`), `add`/`sub` first truncate the
+// duration to milliseconds, so a positive `Duration` may not increase/decrease
+// the `Instant`. Handling this correctly complicates the `ensures` and probably
+// nobody is going to use this.
+#[cfg(all(feature = "std", any(target_family = "unix", target_os = "windows")))]
+extern_spec! {
+    impl Instant {
+        #[check(ghost)]
+        #[ensures(duration@ == 0 ==> result.deep_model() == Some(self@))]
+        #[ensures(duration@ > 0 && result != None ==> Some(self@) < result.deep_model())]
+        fn checked_add(&self, duration: Duration) -> Option<Instant>;
+
+        #[check(ghost)]
+        #[ensures(duration@ == 0 ==> result.deep_model() == Some(self@))]
+        #[ensures(duration@ > 0 && result != None ==> Some(self@) > result.deep_model())]
+        fn checked_sub(&self, duration: Duration) -> Option<Instant>;
+    }
+}
+
+// We don't have specs for `Add<Duration>` or `Sub<Duration> for Instant`
+// because it's not clear how one can even reason about overflow here.
+// - There is no way to check for it other than `checked_add`/`checked_sub`.
+// - The bounds depend on the OS (seconds must fit `i64` on `unix`,
+//   or `u64` on `windows`).
+
 #[cfg(feature = "std")]
 extern_spec! {
-    impl Add<Duration> for Instant {
-        #[check(ghost)]
-        #[ensures(rhs@ == 0 ==> self@ == result@)]
-        #[ensures(rhs@ > 0 ==> self@ < result@)]
-        fn add(self, rhs: Duration) -> Instant;
-    }
-
-    impl Sub<Duration> for Instant {
-        #[check(ghost)]
-        #[ensures(rhs@ == 0 ==> self@ == result@)]
-        #[ensures(rhs@ > 0 ==> self@ > result@)]
-        fn sub(self, rhs: Duration) -> Instant;
-    }
-
     impl Sub<Instant> for Instant {
         #[check(ghost)]
         #[ensures(self@ > other@ ==> result@ > 0)]

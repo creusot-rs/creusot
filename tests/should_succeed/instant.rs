@@ -9,17 +9,21 @@ pub fn test_instant() {
     let zero_dur = Duration::from_secs(0);
     assert!(instant.elapsed() >= zero_dur);
 
-    assert!(instant.checked_add(zero_dur).unwrap() == instant);
-    assert!(instant + zero_dur == instant);
+    assert!(instant.checked_add(zero_dur) == Some(instant));
     let three_seconds = Duration::from_secs(3);
-    let greater_instant = instant + three_seconds;
+    let Some(greater_instant) = instant.checked_add(three_seconds) else {
+        return;
+    };
     proof_assert!(instant@ < greater_instant@);
-    let even_greater_instant = greater_instant + three_seconds;
+    let Some(even_greater_instant) = greater_instant.checked_add(three_seconds) else {
+        return;
+    };
     proof_assert!(instant@ < even_greater_instant@);
 
-    assert!(instant.checked_sub(zero_dur).unwrap() == instant);
-    assert!(instant - zero_dur == instant);
-    let lesser_instant = instant - three_seconds;
+    assert!(instant.checked_sub(zero_dur) == Some(instant));
+    let Some(lesser_instant) = instant.checked_sub(three_seconds) else {
+        return;
+    };
     proof_assert!(instant@ > lesser_instant@);
     assert!(instant - instant == zero_dur);
     assert!(instant - greater_instant == zero_dur);

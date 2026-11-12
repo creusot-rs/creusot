@@ -135,6 +135,7 @@ extern_spec! {
         fn remove(&mut self, ix: usize) -> T;
 
         #[check(terminates)] // can OOM
+        #[requires(index@ <= self@.len())]
         #[ensures((^self)@.len() == self@.len() + 1)]
         #[ensures(forall<i> 0 <= i && i < index@ ==> (^self)[i] == self[i])]
         #[ensures((^self)[index@] == element)]
