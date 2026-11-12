@@ -76,11 +76,11 @@ extern_spec! {
                 #[ensures(result.deep_model() <= self.deep_model())]
                 #[ensures(result.deep_model() <= o.deep_model())]
                 #[ensures(result == self || result == o)]
-                #[ensures(self.deep_model() < o.deep_model() ==> result == self)]
-                #[ensures(o.deep_model() <= self.deep_model() ==> result == o)]
+                #[ensures(self.deep_model() <= o.deep_model() ==> result == self)]
+                #[ensures(o.deep_model() < self.deep_model() ==> result == o)]
                 fn min(self, o: Self) -> Self where Self: Sized {
                     let _ = snapshot!(Self::DeepModelTy::lt_log_total);
-                    if self < o { self } else { o }
+                    if self <= o { self } else { o }
                 }
 
                 #[requires(min.deep_model() <= max.deep_model())]
@@ -110,8 +110,8 @@ extern_spec! {
             #[ensures(result.deep_model() <= v1.deep_model())]
             #[ensures(result.deep_model() <= v2.deep_model())]
             #[ensures(result == v1 || result == v2)]
-            #[ensures(v1.deep_model() < v2.deep_model() ==> result == v1)]
-            #[ensures(v2.deep_model() <= v1.deep_model() ==> result == v2)]
+            #[ensures(v1.deep_model() <= v2.deep_model() ==> result == v1)]
+            #[ensures(v2.deep_model() < v1.deep_model() ==> result == v2)]
             fn min<T: Ord + DeepModel<DeepModelTy: OrdLogic>>(v1: T, v2: T) -> T {
                 <T as Ord>::min(v1, v2)
             }
