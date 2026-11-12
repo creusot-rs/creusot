@@ -18,6 +18,7 @@ impl<K> VacantEntry<'_, K>
 where
     K: Clone,
 {
+    #[requires(self.index@ <= self.map@.len())]
     pub fn insert(&mut self) {
         self.map.insert(self.index, self.key.clone())
     }

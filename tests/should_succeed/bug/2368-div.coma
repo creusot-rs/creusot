@@ -1,0 +1,29 @@
+module M_saturating_div_min
+  use creusot.int.Int8
+  use int.ComputerDivision
+  use creusot.prelude.Any
+  use int.Int
+  
+  constant const_MIN: Int8.t = (-128: Int8.t)
+  
+  constant const_MAX: Int8.t = (127: Int8.t)
+  
+  let saturating_div (self: Int8.t) (rhs: Int8.t) (return (x: Int8.t)) =
+  {[@stop_split] [@expl:saturating_div requires] Int8.to_int rhs <> 0}
+    any
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:saturating_div ensures] Int8.to_int self = Int8.to_int const_MIN
+        /\ Int8.to_int rhs = - 1 /\ Int8.to_int result = Int8.to_int const_MAX
+      \/ Int8.to_int result = ComputerDivision.div (Int8.to_int self) (Int8.to_int rhs)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let saturating_div_min (return (x: Int8.t)) = (! bb0
+    [ bb0 = s0
+      [ s0 = saturating_div {const_MIN} {(-1: Int8.t)} (fun (_x: Int8.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: Int8.t = Any.any_l () ])
+    [ return (result: Int8.t) -> {[@stop_split] [@expl:saturating_div_min ensures] result = const_MAX}
+      (! return {result}) ]
+end

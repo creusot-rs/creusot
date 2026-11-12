@@ -136,12 +136,14 @@ extern_spec! {
 
     impl<T, A: Allocator> Index<usize> for VecDeque<T, A> {
         #[check(ghost)]
+        #[requires(i@ < self@.len())]
         #[ensures(*result == self@[i@])]
         fn index(&self, i: usize) -> &T;
     }
 
     impl<T, A: Allocator> IndexMut<usize> for VecDeque<T, A> {
         #[check(ghost)]
+        #[requires(i@ < self@.len())]
         #[ensures(*result == (*self)@[i@])]
         #[ensures(^result == (^self)@[i@])]
         #[ensures((^self)@.len() == (*self)@.len())]

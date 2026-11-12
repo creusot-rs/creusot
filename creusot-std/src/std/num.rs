@@ -264,10 +264,8 @@ macro_rules! spec_type {
                 #[check(ghost)]
                 // Panics if the divisor is zero
                 #[requires(rhs@ != 0)]
-                // Returns `$type::MIN` if the division overflows
-                #[ensures((self@ == $type::MIN@ && rhs@ == -1) ==> result@ == $type::MIN@)]
-                // Else, returns the result of the division
-                #[ensures((self@ == $type::MIN@ && rhs@ == -1) || result@ == self@ / rhs@)]
+                // Returns `$type::MAX` in the one case where the division overflows
+                #[ensures((self@ == $type::MIN@ && rhs@ == -1 && result@ == $type::MAX@) || result@ == self@ / rhs@)]
                 fn saturating_div(self, rhs: $type) -> $type;
 
                 #[allow(dead_code)]

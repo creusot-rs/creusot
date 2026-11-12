@@ -39,11 +39,11 @@ predicate inv_ref_Self_ [@inline:trivial] (_1: t_Self_) = invariant_ref_Self_ _1
 
 meta "rewrite_def" predicate inv_ref_Self_
 
-predicate precondition_lt (self: ()) (args: tup2_ref_Self__ref_Self_)
+predicate precondition_le (self: ()) (args: tup2_ref_Self__ref_Self_)
 
 axiom precondition_fndef:
-  forall args: tup2_ref_Self__ref_Self_ [precondition_lt () args]. (let {f0 = self; f1 = other} = args in inv_ref_Self_ self
-      /\ inv_ref_Self_ other) -> precondition_lt () args
+  forall args: tup2_ref_Self__ref_Self_ [precondition_le () args]. (let {f0 = self; f1 = other} = args in inv_ref_Self_ self
+      /\ inv_ref_Self_ other) -> precondition_le () args
 
 function deep_model_Self_ (self: t_Self_) : t_DeepModelTy
 
@@ -51,22 +51,22 @@ function deep_model_ref_Self_ [@inline:trivial] (self: t_Self_) : t_DeepModelTy 
 
 meta "rewrite_def" function deep_model_ref_Self_
 
-predicate postcondition_lt (self: ()) (args: tup2_ref_Self__ref_Self_) (result: bool)
+predicate postcondition_le (self: ()) (args: tup2_ref_Self__ref_Self_) (result: bool)
 
 axiom postcondition_fndef:
-  forall args: tup2_ref_Self__ref_Self_, result: bool [postcondition_lt () args result]. postcondition_lt () args result
+  forall args: tup2_ref_Self__ref_Self_, result: bool [postcondition_le () args result]. postcondition_le () args result
     -> (let {f0 = self; f1 = other} = args in result
-    = lt_log_DeepModelTy (deep_model_ref_Self_ self) (deep_model_ref_Self_ other))
+    = le_log_DeepModelTy (deep_model_ref_Self_ self) (deep_model_ref_Self_ other))
 
-predicate postcondition_once_lt (self: ()) (args: tup2_ref_Self__ref_Self_) (result: bool) =
-  postcondition_lt self args result
+predicate postcondition_once_le (self: ()) (args: tup2_ref_Self__ref_Self_) (result: bool) =
+  postcondition_le self args result
 
-meta "rewrite_def" predicate postcondition_once_lt
+meta "rewrite_def" predicate postcondition_once_le
 
-let lt_Self_ (self: t_Self_) (other: t_Self_) (return (x: bool)) =
-{[@stop_split] [@expl:lt requires] precondition_lt () { f0 = self; f1 = other }}
+let le_Self_ (self: t_Self_) (other: t_Self_) (return (x: bool)) =
+{[@stop_split] [@expl:le requires] precondition_le () { f0 = self; f1 = other }}
   any
-  [ return (result: bool) -> {[@stop_split] [@expl:lt ensures] postcondition_once_lt () { f0 = self;
+  [ return (result: bool) -> {[@stop_split] [@expl:le ensures] postcondition_once_le () { f0 = self;
                                                                                           f1 = other } result}
     (! return {result}) ]
 
@@ -82,7 +82,7 @@ let extern_spec_core_cmp_Ord_min_body_Self_ (self_: t_Self_) (o: t_Self_) (retur
   (! bb0
   [ bb0 = s0
     [ s0 = [ &_16 <- () ] s1
-    | s1 = lt_Self_ {self_} {o} (fun (_x: bool) -> [ &_18 <- _x ] s2)
+    | s1 = le_Self_ {self_} {o} (fun (_x: bool) -> [ &_18 <- _x ] s2)
     | s2 = any [ br0 -> {_18 = false} (! bb4) | br1 -> {_18} (! bb3) ] ]
   | bb3 = s0
     [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Self_ o} any) ]
@@ -104,8 +104,8 @@ let extern_spec_core_cmp_Ord_min_body_Self_ (self_: t_Self_) (o: t_Self_) (retur
     /\ ([@stop_split] [@expl:extern_spec_core_cmp_Ord_min_body ensures #0] le_log_DeepModelTy (deep_model_Self_ result) (deep_model_Self_ self_))
     /\ ([@stop_split] [@expl:extern_spec_core_cmp_Ord_min_body ensures #1] le_log_DeepModelTy (deep_model_Self_ result) (deep_model_Self_ o))
     /\ ([@stop_split] [@expl:extern_spec_core_cmp_Ord_min_body ensures #2] result = self_ \/ result = o)
-    /\ ([@stop_split] [@expl:extern_spec_core_cmp_Ord_min_body ensures #3] lt_log_DeepModelTy (deep_model_Self_ self_) (deep_model_Self_ o)
+    /\ ([@stop_split] [@expl:extern_spec_core_cmp_Ord_min_body ensures #3] le_log_DeepModelTy (deep_model_Self_ self_) (deep_model_Self_ o)
       -> result = self_)
-    /\ ([@stop_split] [@expl:extern_spec_core_cmp_Ord_min_body ensures #4] le_log_DeepModelTy (deep_model_Self_ o) (deep_model_Self_ self_)
+    /\ ([@stop_split] [@expl:extern_spec_core_cmp_Ord_min_body ensures #4] lt_log_DeepModelTy (deep_model_Self_ o) (deep_model_Self_ self_)
     -> result = o)}
     (! return {result}) ]
