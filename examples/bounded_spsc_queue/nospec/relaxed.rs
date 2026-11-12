@@ -50,7 +50,7 @@ pub struct Producer<'a, T> {
 }
 
 impl<T: 'static> Producer<'_, T> {
-    #[erasure(spec::Producer::<T>::enqueue::<ErasedGhostFn<T, spec::ErasedQueue, ()>>)]
+    #[erasure(spec::Producer::<T>::enqueue::<ErasedGhostFn<T, spec::ErasedCommitter, ()>>)]
     pub fn enqueue(&mut self, item: T) {
         let queue = self.queue;
         let buffer_size = queue.buffer.len();
@@ -77,7 +77,7 @@ pub struct Consumer<'a, T> {
 }
 
 impl<T: 'static> Consumer<'_, T> {
-    #[erasure(spec::Consumer::<T>::dequeue::<ErasedGhostFn<T, spec::ErasedQueue, ()>>)]
+    #[erasure(spec::Consumer::<T>::dequeue::<ErasedGhostFn<T, spec::ErasedCommitter, ()>>)]
     pub fn dequeue<F>(&mut self) -> T {
         let queue = self.queue;
         let buffer_size = queue.buffer.len();
@@ -111,8 +111,8 @@ pub fn channel<'a, T>(queue: &'a Queue<T>) -> (Producer<'a, T>, Consumer<'a, T>)
 pub mod spec {
     include!("../relaxed.rs");
 
-    pub struct ErasedQueue {}
-    impl creusot_std::ghost::ErasedGhostFnArg for ErasedQueue {
+    pub struct ErasedCommitter {}
+    impl creusot_std::ghost::ErasedGhostFnArg for ErasedCommitter {
         type Ty<'a, T: 'a> = QueueCommitter<'a, T>;
     }
 }

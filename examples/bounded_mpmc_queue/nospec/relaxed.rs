@@ -51,7 +51,7 @@ impl<T: 'static> Queue<T> {
         Queue { cells, head, tail }
     }
 
-    #[erasure(spec::Queue::<T>::try_enqueue::<ErasedGhostFn<T, spec::ErasedQueue, ()>>)]
+    #[erasure(spec::Queue::<T>::try_enqueue::<ErasedGhostFn<T, spec::ErasedCommitter, ()>>)]
     pub fn try_enqueue(&self, item: T) -> bool {
         let head = self.head.load(Ordering::Relaxed);
         let head_mod = head % self.cells.len();
@@ -77,7 +77,7 @@ impl<T: 'static> Queue<T> {
         true
     }
 
-    #[erasure(spec::Queue::<T>::try_dequeue::<ErasedGhostFn<T, spec::ErasedQueue, ()>>)]
+    #[erasure(spec::Queue::<T>::try_dequeue::<ErasedGhostFn<T, spec::ErasedCommitter, ()>>)]
     pub fn try_dequeue(&self) -> Option<T> {
         let tail = self.tail.load(Ordering::Relaxed);
         let tail_mod = tail % self.cells.len();
@@ -107,8 +107,8 @@ impl<T: 'static> Queue<T> {
 pub mod spec {
     include!("../relaxed.rs");
 
-    pub struct ErasedQueue {}
-    impl creusot_std::ghost::ErasedGhostFnArg for ErasedQueue {
+    pub struct ErasedCommitter {}
+    impl creusot_std::ghost::ErasedGhostFnArg for ErasedCommitter {
         type Ty<'a, T: 'a> = QueueCommitter<'a, T>;
     }
 }
