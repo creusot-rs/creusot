@@ -1,0 +1,78 @@
+module M_leading_ones_false
+  use creusot.int.UInt8BW
+  use creusot.int.UInt32BW
+  use creusot.prelude.Any
+  
+  constant const_BITS: UInt32BW.t = (8: UInt32BW.t)
+  
+  function shr_u8 [@inline:trivial] (self: UInt8BW.t) (rhs: UInt32BW.t) : UInt8BW.t =
+    UInt8BW.shr self (UInt8BW.of_BV256 (UInt32BW.to_BV256 rhs))
+  
+  meta "rewrite_def" function shr_u8
+  
+  constant const_MAX: UInt8BW.t = (255: UInt8BW.t)
+  
+  function leading_ones_u8 (self: UInt8BW.t) : UInt32BW.t
+  
+  axiom leading_ones_u8_spec:
+    forall self: UInt8BW.t [leading_ones_u8 self]. UInt32BW.le (leading_ones_u8 self) const_BITS
+  
+  axiom leading_ones_u8_spec'0: forall self: UInt8BW.t [leading_ones_u8 self]. (leading_ones_u8 self <> const_BITS)
+      = (shr_u8 (UInt8BW.bw_not self) (UInt32BW.sub (UInt32BW.sub const_BITS (leading_ones_u8 self)) (1: UInt32BW.t))
+      = (1: UInt8BW.t))
+  
+  axiom leading_ones_u8_spec'1: forall self: UInt8BW.t [leading_ones_u8 self]. (leading_ones_u8 self = const_BITS)
+      = (self = const_MAX)
+  
+  let leading_ones (self: UInt8BW.t) (return (x: UInt32BW.t)) = any
+    [ return (result: UInt32BW.t) -> {[@stop_split] [@expl:leading_ones ensures] result = leading_ones_u8 self}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let leading_ones_false (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = leading_ones {(0: UInt8BW.t)} (fun (_x: UInt32BW.t) -> [ &_2 <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & _2: UInt32BW.t = Any.any_l () ])
+    [ return (result: ()) -> {[@stop_split] [@expl:leading_ones_false ensures] false} (! return {result}) ]
+end
+module M_trailing_ones_false
+  use creusot.int.UInt8BW
+  use creusot.int.UInt32BW
+  use creusot.prelude.Any
+  
+  constant const_MAX: UInt8BW.t = (255: UInt8BW.t)
+  
+  constant const_BITS: UInt32BW.t = (8: UInt32BW.t)
+  
+  function shl_u8 [@inline:trivial] (self: UInt8BW.t) (rhs: UInt32BW.t) : UInt8BW.t =
+    UInt8BW.shl self (UInt8BW.of_BV256 (UInt32BW.to_BV256 rhs))
+  
+  meta "rewrite_def" function shl_u8
+  
+  function trailing_ones_u8 (self: UInt8BW.t) : UInt32BW.t
+  
+  axiom trailing_ones_u8_spec:
+    forall self: UInt8BW.t [trailing_ones_u8 self]. UInt32BW.le (trailing_ones_u8 self) const_BITS
+  
+  axiom trailing_ones_u8_spec'0: forall self: UInt8BW.t [trailing_ones_u8 self]. (trailing_ones_u8 self <> const_BITS)
+      = (shl_u8 (UInt8BW.bw_not self) (UInt32BW.sub (UInt32BW.sub const_BITS (trailing_ones_u8 self)) (1: UInt32BW.t))
+      = shl_u8 (1: UInt8BW.t) (UInt32BW.sub const_BITS (1: UInt32BW.t)))
+  
+  axiom trailing_ones_u8_spec'1: forall self: UInt8BW.t [trailing_ones_u8 self]. (trailing_ones_u8 self = const_BITS)
+      = (self = const_MAX)
+  
+  let trailing_ones (self: UInt8BW.t) (return (x: UInt32BW.t)) = any
+    [ return (result: UInt32BW.t) -> {[@stop_split] [@expl:trailing_ones ensures] result = trailing_ones_u8 self}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let trailing_ones_false (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = trailing_ones {const_MAX} (fun (_x: UInt32BW.t) -> [ &_2 <- _x ] s1) | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () | & _2: UInt32BW.t = Any.any_l () ])
+    [ return (result: ()) -> {[@stop_split] [@expl:trailing_ones_false ensures] false} (! return {result}) ]
+end

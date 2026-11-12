@@ -326,7 +326,7 @@ macro_rules! spec_unsigned {
             #[logic(opaque)]
             #[trusted]
             #[ensures(result <= $type::BITS)]
-            #[ensures((result != $type::BITS) == (!self >> ($type::BITS - result - 1u32) == $zero))]
+            #[ensures((result != $type::BITS) == (!self >> ($type::BITS - result - 1u32) == $one))]
             #[ensures((result == $type::BITS) == (self == $type::MAX))]
             fn leading_ones_logic(self) -> u32 {
                 dead
@@ -335,7 +335,7 @@ macro_rules! spec_unsigned {
             #[logic(opaque)]
             #[trusted]
             #[ensures(result <= $type::BITS)]
-            #[ensures((result == $type::BITS) == (!self << ($type::BITS - result - 1u32) == $one << ($type::BITS - 1u32)))]
+            #[ensures((result != $type::BITS) == (!self << ($type::BITS - result - 1u32) == $one << ($type::BITS - 1u32)))]
             #[ensures((result == $type::BITS) == (self == $type::MAX))]
             fn trailing_ones_logic(self) -> u32 {
                 dead
