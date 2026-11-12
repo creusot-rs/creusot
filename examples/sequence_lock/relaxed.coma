@@ -733,212 +733,6 @@ module M_ghost_var__impl_Authority_T__update (* ghost_var::Authority<T> *)
       /\ ([@stop_split] [@expl:update ensures #3] val_T self.final = v /\ val_T'0 frag.final = v)}
       (! return {result}) ]
 end
-module M_impl_LogCommitter__shoot (* LogCommitter<'_> *)
-  use creusot.prelude.MutBorrow
-  use creusot.int.UInt32
-  use seq.Seq
-  use creusot.prelude.Any
-  
-  type t_Fragment_Seq_tup2_u32_u32
-  
-  type t_SeqLockLog = { f0: t_Fragment_Seq_tup2_u32_u32 }
-  
-  predicate invariant_Fragment_Seq_tup2_u32_u32 (self: t_Fragment_Seq_tup2_u32_u32)
-  
-  predicate inv_Fragment_Seq_tup2_u32_u32 (_1: t_Fragment_Seq_tup2_u32_u32)
-  
-  axiom inv_axiom:
-    forall _1: t_Fragment_Seq_tup2_u32_u32 [inv_Fragment_Seq_tup2_u32_u32 _1]. inv_Fragment_Seq_tup2_u32_u32 _1
-      -> invariant_Fragment_Seq_tup2_u32_u32 _1
-  
-  type t_Authority_Seq_tup2_u32_u32
-  
-  type t_Id
-  
-  type tup2_u32_u32 = { f0'0: UInt32.t; f1'0: UInt32.t }
-  
-  type t_LogCommitter = {
-    auth: MutBorrow.t t_Authority_Seq_tup2_u32_u32;
-    id: t_Id;
-    old_log: Seq.seq tup2_u32_u32;
-    new_log: Seq.seq tup2_u32_u32;
-    shot: bool }
-  
-  predicate invariant_Authority_Seq_tup2_u32_u32 (self: t_Authority_Seq_tup2_u32_u32)
-  
-  predicate inv_Authority_Seq_tup2_u32_u32 (_1: t_Authority_Seq_tup2_u32_u32)
-  
-  axiom inv_axiom'0:
-    forall _1: t_Authority_Seq_tup2_u32_u32 [inv_Authority_Seq_tup2_u32_u32 _1]. inv_Authority_Seq_tup2_u32_u32 _1
-      -> invariant_Authority_Seq_tup2_u32_u32 _1
-  
-  predicate invariant_refmut_Authority_Seq_tup2_u32_u32 [@inline:trivial] (self: MutBorrow.t t_Authority_Seq_tup2_u32_u32) =
-    inv_Authority_Seq_tup2_u32_u32 self.current /\ inv_Authority_Seq_tup2_u32_u32 self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Authority_Seq_tup2_u32_u32
-  
-  predicate inv_refmut_Authority_Seq_tup2_u32_u32 [@inline:trivial] (_1: MutBorrow.t t_Authority_Seq_tup2_u32_u32) =
-    invariant_refmut_Authority_Seq_tup2_u32_u32 _1
-  
-  meta "rewrite_def" predicate inv_refmut_Authority_Seq_tup2_u32_u32
-  
-  predicate invariant_refmut_Fragment_Seq_tup2_u32_u32 [@inline:trivial] (self: MutBorrow.t t_Fragment_Seq_tup2_u32_u32) =
-    inv_Fragment_Seq_tup2_u32_u32 self.current /\ inv_Fragment_Seq_tup2_u32_u32 self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Fragment_Seq_tup2_u32_u32
-  
-  predicate inv_refmut_Fragment_Seq_tup2_u32_u32 [@inline:trivial] (_1: MutBorrow.t t_Fragment_Seq_tup2_u32_u32) =
-    invariant_refmut_Fragment_Seq_tup2_u32_u32 _1
-  
-  meta "rewrite_def" predicate inv_refmut_Fragment_Seq_tup2_u32_u32
-  
-  function id_Seq_tup2_u32_u32 (self: t_Authority_Seq_tup2_u32_u32) : t_Id
-  
-  function id_Seq_tup2_u32_u32'0 (self: t_Fragment_Seq_tup2_u32_u32) : t_Id
-  
-  function val_Seq_tup2_u32_u32 (self: t_Authority_Seq_tup2_u32_u32) : Seq.seq tup2_u32_u32
-  
-  function val_Seq_tup2_u32_u32'0 (self: t_Fragment_Seq_tup2_u32_u32) : Seq.seq tup2_u32_u32
-  
-  let update_Seq_tup2_u32_u32 (self: MutBorrow.t t_Authority_Seq_tup2_u32_u32)
-    (frag: MutBorrow.t t_Fragment_Seq_tup2_u32_u32) (v: Seq.seq tup2_u32_u32) (return (x: ())) =
-  {[@stop_split] [@expl:update_Seq_tup2_u32_u32 requires] ([@stop_split] [@expl:update 'self' type invariant] inv_refmut_Authority_Seq_tup2_u32_u32 self)
-    /\ ([@stop_split] [@expl:update 'frag' type invariant] inv_refmut_Fragment_Seq_tup2_u32_u32 frag)
-    /\ ([@stop_split] [@expl:update requires] id_Seq_tup2_u32_u32 self.current = id_Seq_tup2_u32_u32'0 frag.current)}
-    any
-    [ return (result: ()) ->
-    {[@stop_split] [@expl:update_Seq_tup2_u32_u32 ensures] ([@stop_split] [@expl:update ensures #0] id_Seq_tup2_u32_u32 self.final
-        = id_Seq_tup2_u32_u32 self.current)
-      /\ ([@stop_split] [@expl:update ensures #1] id_Seq_tup2_u32_u32'0 frag.final = id_Seq_tup2_u32_u32'0 frag.current)
-      /\ ([@stop_split] [@expl:update ensures #2] val_Seq_tup2_u32_u32 self.current
-        = val_Seq_tup2_u32_u32'0 frag.current)
-      /\ ([@stop_split] [@expl:update ensures #3] val_Seq_tup2_u32_u32 self.final = v
-      /\ val_Seq_tup2_u32_u32'0 frag.final = v)}
-      (! return {result}) ]
-  
-  predicate resolve_refmut_Fragment_Seq_tup2_u32_u32 [@inline:trivial] (_1: MutBorrow.t t_Fragment_Seq_tup2_u32_u32) =
-    _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Fragment_Seq_tup2_u32_u32
-  
-  predicate inv_SeqLockLog (_1: t_SeqLockLog)
-  
-  axiom inv_axiom'1 [@rewrite]: forall _1: t_SeqLockLog [inv_SeqLockLog _1]. inv_SeqLockLog _1
-      = inv_Fragment_Seq_tup2_u32_u32 _1.f0
-  
-  predicate invariant_refmut_SeqLockLog [@inline:trivial] (self: MutBorrow.t t_SeqLockLog) =
-    inv_SeqLockLog self.current /\ inv_SeqLockLog self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_SeqLockLog
-  
-  predicate inv_refmut_SeqLockLog [@inline:trivial] (_1: MutBorrow.t t_SeqLockLog) = invariant_refmut_SeqLockLog _1
-  
-  meta "rewrite_def" predicate inv_refmut_SeqLockLog
-  
-  predicate resolve_refmut_SeqLockLog [@inline:trivial] (_1: MutBorrow.t t_SeqLockLog) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_SeqLockLog
-  
-  predicate invariant_LogCommitter [@inline:trivial] (self: t_LogCommitter) =
-    id_Seq_tup2_u32_u32 self.auth.current = self.id
-    /\ (if self.shot then
-      val_Seq_tup2_u32_u32 self.auth.current = self.new_log
-    else
-      val_Seq_tup2_u32_u32 self.auth.current = self.old_log
-    )
-  
-  meta "rewrite_def" predicate invariant_LogCommitter
-  
-  predicate inv_LogCommitter (_1: t_LogCommitter)
-  
-  axiom inv_axiom'2 [@rewrite]: forall _1: t_LogCommitter [inv_LogCommitter _1]. inv_LogCommitter _1
-      = (invariant_LogCommitter _1 /\ inv_refmut_Authority_Seq_tup2_u32_u32 _1.auth)
-  
-  predicate invariant_refmut_LogCommitter [@inline:trivial] (self: MutBorrow.t t_LogCommitter) =
-    inv_LogCommitter self.current /\ inv_LogCommitter self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_LogCommitter
-  
-  predicate inv_refmut_LogCommitter [@inline:trivial] (_1: MutBorrow.t t_LogCommitter) =
-    invariant_refmut_LogCommitter _1
-  
-  meta "rewrite_def" predicate inv_refmut_LogCommitter
-  
-  predicate resolve_refmut_LogCommitter [@inline:trivial] (_1: MutBorrow.t t_LogCommitter) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_LogCommitter
-  
-  predicate shot'0 (self: t_LogCommitter) = self.shot
-  
-  function id'0 (self: t_LogCommitter) : t_Id = self.id
-  
-  function id'1 (self: t_SeqLockLog) : t_Id = id_Seq_tup2_u32_u32'0 self.f0
-  
-  predicate hist_inv [@inline:trivial] (self: t_LogCommitter) (other: t_LogCommitter) =
-    self.id = other.id
-    /\ self.auth.final = other.auth.final /\ self.old_log = other.old_log /\ self.new_log = other.new_log
-  
-  meta "rewrite_def" predicate hist_inv
-  
-  function view_SeqLockLog (self: t_SeqLockLog) : Seq.seq tup2_u32_u32 = val_Seq_tup2_u32_u32'0 self.f0
-  
-  function old_log'0 (self: t_LogCommitter) : Seq.seq tup2_u32_u32 = self.old_log
-  
-  function new_log'0 (self: t_LogCommitter) : Seq.seq tup2_u32_u32 = self.new_log
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  let shoot (self: MutBorrow.t t_LogCommitter) (log: MutBorrow.t t_SeqLockLog) (return (x: ())) =
-  {[@stop_split] [@expl:shoot requires] ([@stop_split] [@expl:shoot 'self' type invariant] inv_refmut_LogCommitter self)
-    /\ ([@stop_split] [@expl:shoot 'log' type invariant] inv_refmut_SeqLockLog log)
-    /\ ([@stop_split] [@expl:shoot requires #0] not shot'0 self.current)
-    /\ ([@stop_split] [@expl:shoot requires #1] id'0 self.current = id'1 log.current)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = MutBorrow.borrow_final <t_Fragment_Seq_tup2_u32_u32> {log.current.f0}
-          {MutBorrow.inherit_id (MutBorrow.get_id log) 0}
-          (fun (_bor: MutBorrow.t t_Fragment_Seq_tup2_u32_u32) ->
-            [ &_23 <- _bor ] -{inv_Fragment_Seq_tup2_u32_u32 _bor.final}-
-            [ &log <- { log with current = { f0 = _bor.final } } ] s1)
-        [ _ck -> (! {[@expl:type invariant] inv_Fragment_Seq_tup2_u32_u32 log.current.f0} any) ]
-      | s1 = [ &_24 <- self.current.new_log ] s2
-      | s2 = MutBorrow.borrow_mut <t_Authority_Seq_tup2_u32_u32> {self.current.auth.current}
-          (fun (_bor: MutBorrow.t t_Authority_Seq_tup2_u32_u32) ->
-            [ &_21 <- _bor ] -{inv_Authority_Seq_tup2_u32_u32 _bor.final}-
-            [ &self <- { self with current = { self.current with auth = { self.current.auth with current = _bor.final } } } ]
-            s3) [ _ck -> (! {[@expl:type invariant] inv_Authority_Seq_tup2_u32_u32 self.current.auth.current} any) ]
-      | s3 = MutBorrow.borrow_final <t_Fragment_Seq_tup2_u32_u32> {_23.current} {MutBorrow.get_id _23}
-          (fun (_bor: MutBorrow.t t_Fragment_Seq_tup2_u32_u32) ->
-            [ &_22 <- _bor ] -{inv_Fragment_Seq_tup2_u32_u32 _bor.final}-
-            [ &_23 <- { _23 with current = _bor.final } ] s4)
-        [ _ck -> (! {[@expl:type invariant] inv_Fragment_Seq_tup2_u32_u32 _23.current} any) ]
-      | s4 = update_Seq_tup2_u32_u32 {_21} {_22} {_24} (fun (_x: ()) -> [ &_20 <- _x ] s5)
-      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_Fragment_Seq_tup2_u32_u32 _23} any) ]
-      | s6 = -{resolve_refmut_Fragment_Seq_tup2_u32_u32 _23}- s7
-      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqLockLog log} any) ]
-      | s8 = -{resolve_refmut_SeqLockLog log}- s9
-      | s9 = [ &self <- { self with current = { self.current with shot = true } } ] s10
-      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_LogCommitter self} any) ]
-      | s11 = -{resolve_refmut_LogCommitter self}- s12
-      | s12 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l ()
-    | & self: MutBorrow.t t_LogCommitter = self
-    | & log: MutBorrow.t t_SeqLockLog = log
-    | & _20: () = Any.any_l ()
-    | & _21: MutBorrow.t t_Authority_Seq_tup2_u32_u32 = Any.any_l ()
-    | & _22: MutBorrow.t t_Fragment_Seq_tup2_u32_u32 = Any.any_l ()
-    | & _23: MutBorrow.t t_Fragment_Seq_tup2_u32_u32 = Any.any_l ()
-    | & _24: Seq.seq tup2_u32_u32 = Any.any_l () ])
-    [ return (result: ()) ->
-    {[@stop_split] [@expl:shoot ensures] ([@stop_split] [@expl:shoot ensures #0] shot'0 self.final)
-      /\ ([@stop_split] [@expl:shoot ensures #1] hist_inv self.current self.final)
-      /\ ([@stop_split] [@expl:shoot ensures #2] view_SeqLockLog log.current = old_log'0 self.current)
-      /\ ([@stop_split] [@expl:shoot ensures #3] view_SeqLockLog log.final = new_log'0 self.current)
-      /\ ([@stop_split] [@expl:shoot ensures #4] id'1 log.final = id'1 log.current)}
-      (! return {result}) ]
-end
 module M_impl_SeqLock__into_inner (* SeqLock *)
   use creusot.int.UInt32
   use map.Map
@@ -1077,7 +871,7 @@ module M_impl_SeqLock__into_inner (* SeqLock *)
   
   type t_Authority_Seq_tup2_u32_u32
   
-  type t_LogCommitter = {
+  type t_SeqLockCommitter = {
     auth: MutBorrow.t t_Authority_Seq_tup2_u32_u32;
     id: t_Id;
     old_log: Seq.seq tup2_u32_u32;
@@ -1088,7 +882,7 @@ module M_impl_SeqLock__into_inner (* SeqLock *)
   
   function val_Seq_tup2_u32_u32 (self: t_Authority_Seq_tup2_u32_u32) : Seq.seq tup2_u32_u32
   
-  predicate invariant_LogCommitter [@inline:trivial] (self: t_LogCommitter) =
+  predicate invariant_SeqLockCommitter [@inline:trivial] (self: t_SeqLockCommitter) =
     id_Seq_tup2_u32_u32 self.auth.current = self.id
     /\ (if self.shot then
       val_Seq_tup2_u32_u32 self.auth.current = self.new_log
@@ -1096,7 +890,7 @@ module M_impl_SeqLock__into_inner (* SeqLock *)
       val_Seq_tup2_u32_u32 self.auth.current = self.old_log
     )
   
-  meta "rewrite_def" predicate invariant_LogCommitter
+  meta "rewrite_def" predicate invariant_SeqLockCommitter
   
   predicate invariant_Authority_Seq_tup2_u32_u32 (self: t_Authority_Seq_tup2_u32_u32)
   
@@ -1116,30 +910,30 @@ module M_impl_SeqLock__into_inner (* SeqLock *)
   
   meta "rewrite_def" predicate inv_refmut_Authority_Seq_tup2_u32_u32
   
-  predicate inv_LogCommitter (_1: t_LogCommitter)
+  predicate inv_SeqLockCommitter (_1: t_SeqLockCommitter)
   
-  axiom inv_axiom'3 [@rewrite]: forall _1: t_LogCommitter [inv_LogCommitter _1]. inv_LogCommitter _1
-      = (invariant_LogCommitter _1 /\ inv_refmut_Authority_Seq_tup2_u32_u32 _1.auth)
+  axiom inv_axiom'3 [@rewrite]: forall _1: t_SeqLockCommitter [inv_SeqLockCommitter _1]. inv_SeqLockCommitter _1
+      = (invariant_SeqLockCommitter _1 /\ inv_refmut_Authority_Seq_tup2_u32_u32 _1.auth)
   
-  predicate invariant_refmut_LogCommitter [@inline:trivial] (self: MutBorrow.t t_LogCommitter) =
-    inv_LogCommitter self.current /\ inv_LogCommitter self.final
+  predicate invariant_refmut_SeqLockCommitter [@inline:trivial] (self: MutBorrow.t t_SeqLockCommitter) =
+    inv_SeqLockCommitter self.current /\ inv_SeqLockCommitter self.final
   
-  meta "rewrite_def" predicate invariant_refmut_LogCommitter
+  meta "rewrite_def" predicate invariant_refmut_SeqLockCommitter
   
-  predicate inv_refmut_LogCommitter [@inline:trivial] (_1: MutBorrow.t t_LogCommitter) =
-    invariant_refmut_LogCommitter _1
+  predicate inv_refmut_SeqLockCommitter [@inline:trivial] (_1: MutBorrow.t t_SeqLockCommitter) =
+    invariant_refmut_SeqLockCommitter _1
   
-  meta "rewrite_def" predicate inv_refmut_LogCommitter
+  meta "rewrite_def" predicate inv_refmut_SeqLockCommitter
   
-  predicate shot'0 (self: t_LogCommitter) = self.shot
+  predicate shot'0 (self: t_SeqLockCommitter) = self.shot
   
-  function id'0 (self: t_LogCommitter) : t_Id = self.id
+  function id'0 (self: t_SeqLockCommitter) : t_Id = self.id
   
   function id_Seq_tup2_u32_u32'0 (self: t_Fragment_Seq_tup2_u32_u32) : t_Id
   
   function id'1 (self: t_SeqLockLog) : t_Id = id_Seq_tup2_u32_u32'0 self.f0'1
   
-  predicate hist_inv [@inline:trivial] (self: t_LogCommitter) (other: t_LogCommitter) =
+  predicate hist_inv [@inline:trivial] (self: t_SeqLockCommitter) (other: t_SeqLockCommitter) =
     self.id = other.id
     /\ self.auth.final = other.auth.final /\ self.old_log = other.old_log /\ self.new_log = other.new_log
   
@@ -1149,12 +943,12 @@ module M_impl_SeqLock__into_inner (* SeqLock *)
   
   function view_SeqLockLog (self: t_SeqLockLog) : Seq.seq tup2_u32_u32 = val_Seq_tup2_u32_u32'0 self.f0'1
   
-  function old_log'0 (self: t_LogCommitter) : Seq.seq tup2_u32_u32 = self.old_log
+  function old_log'0 (self: t_SeqLockCommitter) : Seq.seq tup2_u32_u32 = self.old_log
   
-  function new_log'0 (self: t_LogCommitter) : Seq.seq tup2_u32_u32 = self.new_log
+  function new_log'0 (self: t_SeqLockCommitter) : Seq.seq tup2_u32_u32 = self.new_log
   
-  let shoot (self: MutBorrow.t t_LogCommitter) (log: MutBorrow.t t_SeqLockLog) (return (x: ())) =
-  {[@stop_split] [@expl:shoot requires] ([@stop_split] [@expl:shoot 'self' type invariant] inv_refmut_LogCommitter self)
+  let shoot (self: MutBorrow.t t_SeqLockCommitter) (log: MutBorrow.t t_SeqLockLog) (return (x: ())) =
+  {[@stop_split] [@expl:shoot requires] ([@stop_split] [@expl:shoot 'self' type invariant] inv_refmut_SeqLockCommitter self)
     /\ ([@stop_split] [@expl:shoot 'log' type invariant] inv_refmut_SeqLockLog log)
     /\ ([@stop_split] [@expl:shoot requires #0] not shot'0 self.current)
     /\ ([@stop_split] [@expl:shoot requires #1] id'0 self.current = id'1 log.current)}
@@ -1175,9 +969,10 @@ module M_impl_SeqLock__into_inner (* SeqLock *)
   
   meta "rewrite_def" predicate resolve_refmut_SeqLockLog
   
-  predicate resolve_refmut_LogCommitter [@inline:trivial] (_1: MutBorrow.t t_LogCommitter) = _1.final = _1.current
+  predicate resolve_refmut_SeqLockCommitter [@inline:trivial] (_1: MutBorrow.t t_SeqLockCommitter) =
+    _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_refmut_LogCommitter
+  meta "rewrite_def" predicate resolve_refmut_SeqLockCommitter
   
   predicate inv_closure4 [@inline:trivial] (_1: closure4) = let {c0 = x0} = _1 in inv_refmut_Ghost_SeqLockLog x0
   
@@ -1198,9 +993,9 @@ module M_impl_SeqLock__into_inner (* SeqLock *)
   
   predicate hist_inv_closure4 (self: closure4) (result_state: closure4) = result_state.c0.final = self.c0.final
   
-  let closure4 [@coma:extspec] (self: MutBorrow.t closure4) (c: MutBorrow.t t_LogCommitter) (return (x: ())) =
+  let closure4 [@coma:extspec] (self: MutBorrow.t closure4) (c: MutBorrow.t t_SeqLockCommitter) (return (x: ())) =
   {[@stop_split] [@expl:closure4 requires] ([@stop_split] [@expl:closure 'self' type invariant] inv_refmut_closure4 self)
-    /\ ([@stop_split] [@expl:closure 'c' type invariant] inv_refmut_LogCommitter c)}
+    /\ ([@stop_split] [@expl:closure 'c' type invariant] inv_refmut_SeqLockCommitter c)}
     bb0
     [ bb0 = s0
       [ s0 = MutBorrow.borrow_mut <t_SeqLockLog> {self.current.c0.current}
@@ -1214,11 +1009,11 @@ module M_impl_SeqLock__into_inner (* SeqLock *)
             [ &_7 <- { _7 with current = _bor.final } ] s2)
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_SeqLockLog _7.current} any) ]
       | s2 = deref_mut_Ghost_SeqLockLog {_6} (fun (_x: MutBorrow.t t_SeqLockLog) -> [ &_5 <- _x ] s3)
-      | s3 = MutBorrow.borrow_final <t_LogCommitter> {c.current} {MutBorrow.get_id c}
-          (fun (_bor: MutBorrow.t t_LogCommitter) ->
-            [ &_3 <- _bor ] -{inv_LogCommitter _bor.final}-
+      | s3 = MutBorrow.borrow_final <t_SeqLockCommitter> {c.current} {MutBorrow.get_id c}
+          (fun (_bor: MutBorrow.t t_SeqLockCommitter) ->
+            [ &_3 <- _bor ] -{inv_SeqLockCommitter _bor.final}-
             [ &c <- { c with current = _bor.final } ] s4)
-        [ _ck -> (! {[@expl:type invariant] inv_LogCommitter c.current} any) ]
+        [ _ck -> (! {[@expl:type invariant] inv_SeqLockCommitter c.current} any) ]
       | s4 = MutBorrow.borrow_final <t_SeqLockLog> {_5.current} {MutBorrow.get_id _5}
           (fun (_bor: MutBorrow.t t_SeqLockLog) ->
             [ &_4 <- _bor ] -{inv_SeqLockLog _bor.final}-
@@ -1229,15 +1024,15 @@ module M_impl_SeqLock__into_inner (* SeqLock *)
       | s7 = -{resolve_refmut_Ghost_SeqLockLog _7}- s8
       | s8 = s9 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqLockLog _5} any) ]
       | s9 = -{resolve_refmut_SeqLockLog _5}- s10
-      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_LogCommitter c} any) ]
-      | s11 = -{resolve_refmut_LogCommitter c}- s12
+      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqLockCommitter c} any) ]
+      | s11 = -{resolve_refmut_SeqLockCommitter c}- s12
       | s12 = s13 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure4 self} any) ]
       | s13 = -{resolve_refmut_closure4 self}- s14
       | s14 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t closure4 = self
-    | & c: MutBorrow.t t_LogCommitter = c
-    | & _3: MutBorrow.t t_LogCommitter = Any.any_l ()
+    | & c: MutBorrow.t t_SeqLockCommitter = c
+    | & _3: MutBorrow.t t_SeqLockCommitter = Any.any_l ()
     | & _4: MutBorrow.t t_SeqLockLog = Any.any_l ()
     | & _5: MutBorrow.t t_SeqLockLog = Any.any_l ()
     | & _6: MutBorrow.t t_SeqLockLog = Any.any_l ()
@@ -1314,13 +1109,13 @@ module M_impl_SeqLock__into_inner (* SeqLock *)
   
   function id'2 (self: t_SeqLock) : t_Id = (public_SeqLockInv self.inv).f4'0
   
-  predicate precondition_closure4 (self: closure4) (args: MutBorrow.t t_LogCommitter) =
+  predicate precondition_closure4 (self: closure4) (args: MutBorrow.t t_SeqLockCommitter) =
     let c = args in forall bor_self: MutBorrow.t closure4. bor_self.current = self /\ inv_closure4 bor_self.final
       -> closure4'pre bor_self c
   
   meta "rewrite_def" predicate precondition_closure4
   
-  predicate precondition_FnGhostWrapper_closure4 (self: t_FnGhostWrapper_closure4) (args: MutBorrow.t t_LogCommitter) =
+  predicate precondition_FnGhostWrapper_closure4 (self: t_FnGhostWrapper_closure4) (args: MutBorrow.t t_SeqLockCommitter) =
     precondition_closure4 self.f0'2 args
   
   meta "rewrite_def" predicate precondition_FnGhostWrapper_closure4
@@ -1329,14 +1124,14 @@ module M_impl_SeqLock__into_inner (* SeqLock *)
   
   meta "rewrite_def" predicate resolve_closure4
   
-  predicate postcondition_once_closure4 (self: closure4) (args: MutBorrow.t t_LogCommitter) (result: ()) =
+  predicate postcondition_once_closure4 (self: closure4) (args: MutBorrow.t t_SeqLockCommitter) (result: ()) =
     let c = args in exists e: closure4. (exists bor_self: MutBorrow.t closure4. bor_self.current = self
           /\ bor_self.final = e /\ closure4'post'return bor_self c result /\ hist_inv_closure4 self e)
       /\ resolve_closure4 e
   
   meta "rewrite_def" predicate postcondition_once_closure4
   
-  predicate postcondition_once_FnGhostWrapper_closure4 (self: t_FnGhostWrapper_closure4) (args: MutBorrow.t t_LogCommitter) (result: ()) =
+  predicate postcondition_once_FnGhostWrapper_closure4 (self: t_FnGhostWrapper_closure4) (args: MutBorrow.t t_SeqLockCommitter) (result: ()) =
     postcondition_once_closure4 self.f0'2 args result
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure4
@@ -1442,7 +1237,7 @@ module M_impl_SeqLock__into_inner (* SeqLock *)
   {[@stop_split] [@expl:lock_write_FnGhostWrapper_closure4 requires] ([@stop_split] [@expl:lock_write 'self' type invariant] inv_ref_SeqLock self)
     /\ ([@stop_split] [@expl:lock_write 'f' type invariant] inv_Ghost_FnGhostWrapper_closure4 f)
     /\ ([@stop_split] [@expl:lock_write requires #0] contains tokens (Namespace_SEQLOCK 0))
-    /\ ([@stop_split] [@expl:lock_write requires #1] forall c: MutBorrow.t t_LogCommitter. inv_refmut_LogCommitter c
+    /\ ([@stop_split] [@expl:lock_write requires #1] forall c: MutBorrow.t t_SeqLockCommitter. inv_refmut_SeqLockCommitter c
       -> not shot'0 c.current
       -> id'0 c.current = id'2 self
       -> new_log'0 c.current = old_log'0 c.current
@@ -1451,7 +1246,7 @@ module M_impl_SeqLock__into_inner (* SeqLock *)
     any
     [ return (result: t_SeqLockGuard) ->
     {[@stop_split] [@expl:lock_write_FnGhostWrapper_closure4 ensures] ([@stop_split] [@expl:lock_write result type invariant] inv_SeqLockGuard result)
-      /\ ([@stop_split] [@expl:lock_write ensures #0] exists c: MutBorrow.t t_LogCommitter. not shot'0 c.current
+      /\ ([@stop_split] [@expl:lock_write ensures #0] exists c: MutBorrow.t t_SeqLockCommitter. not shot'0 c.current
           /\ id'0 c.current = id'2 self
           /\ new_log'0 c.current = old_log'0 c.current
           /\ postcondition_once_FnGhostWrapper_closure4 f c ()
@@ -1578,6 +1373,12 @@ module M_impl_SeqLock__lock_write (* SeqLock *)
   type t_SyncView
   
   let new (return (x: t_SyncView)) = any [ return (result: t_SyncView) -> (! return {result}) ]
+  
+  let into_inner_SyncView (self: t_SyncView) (return (x: t_SyncView)) = any
+    [ return (result: t_SyncView) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
+  
+  let new_SyncView (x: t_SyncView) (return (x'0: t_SyncView)) = any
+    [ return (result: t_SyncView) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   type t_F
   
@@ -2649,14 +2450,14 @@ module M_impl_SeqLock__lock_write (* SeqLock *)
   
   function id (self: t_SeqLock) : t_Id = (public_SeqLockInv'0 self.inv).f4'2
   
-  type t_LogCommitter = {
+  type t_SeqLockCommitter = {
     auth'0: MutBorrow.t t_Authority_Seq_tup2_u32_u32;
     id'0: t_Id;
     old_log'0: Seq.seq tup2_u32_u32;
     new_log'0: Seq.seq tup2_u32_u32;
     shot'0: bool }
   
-  predicate invariant_LogCommitter [@inline:trivial] (self: t_LogCommitter) =
+  predicate invariant_SeqLockCommitter [@inline:trivial] (self: t_SeqLockCommitter) =
     id_Seq_tup2_u32_u32 self.auth'0.current = self.id'0
     /\ (if self.shot'0 then
       val_Seq_tup2_u32_u32 self.auth'0.current = self.new_log'0
@@ -2664,7 +2465,7 @@ module M_impl_SeqLock__lock_write (* SeqLock *)
       val_Seq_tup2_u32_u32 self.auth'0.current = self.old_log'0
     )
   
-  meta "rewrite_def" predicate invariant_LogCommitter
+  meta "rewrite_def" predicate invariant_SeqLockCommitter
   
   predicate invariant_refmut_Authority_Seq_tup2_u32_u32 [@inline:trivial] (self: MutBorrow.t t_Authority_Seq_tup2_u32_u32) =
     inv_Authority_Seq_tup2_u32_u32 self.current /\ inv_Authority_Seq_tup2_u32_u32 self.final
@@ -2676,32 +2477,33 @@ module M_impl_SeqLock__lock_write (* SeqLock *)
   
   meta "rewrite_def" predicate inv_refmut_Authority_Seq_tup2_u32_u32
   
-  predicate inv_LogCommitter (_1: t_LogCommitter)
+  predicate inv_SeqLockCommitter (_1: t_SeqLockCommitter)
   
-  axiom inv_axiom'8 [@rewrite]: forall _1: t_LogCommitter [inv_LogCommitter _1]. inv_LogCommitter _1
-      = (invariant_LogCommitter _1 /\ inv_refmut_Authority_Seq_tup2_u32_u32 _1.auth'0)
+  axiom inv_axiom'8 [@rewrite]: forall _1: t_SeqLockCommitter [inv_SeqLockCommitter _1]. inv_SeqLockCommitter _1
+      = (invariant_SeqLockCommitter _1 /\ inv_refmut_Authority_Seq_tup2_u32_u32 _1.auth'0)
   
-  predicate invariant_refmut_LogCommitter [@inline:trivial] (self: MutBorrow.t t_LogCommitter) =
-    inv_LogCommitter self.current /\ inv_LogCommitter self.final
+  predicate invariant_refmut_SeqLockCommitter [@inline:trivial] (self: MutBorrow.t t_SeqLockCommitter) =
+    inv_SeqLockCommitter self.current /\ inv_SeqLockCommitter self.final
   
-  meta "rewrite_def" predicate invariant_refmut_LogCommitter
+  meta "rewrite_def" predicate invariant_refmut_SeqLockCommitter
   
-  predicate inv_refmut_LogCommitter [@inline:trivial] (_1: MutBorrow.t t_LogCommitter) =
-    invariant_refmut_LogCommitter _1
+  predicate inv_refmut_SeqLockCommitter [@inline:trivial] (_1: MutBorrow.t t_SeqLockCommitter) =
+    invariant_refmut_SeqLockCommitter _1
   
-  meta "rewrite_def" predicate inv_refmut_LogCommitter
+  meta "rewrite_def" predicate inv_refmut_SeqLockCommitter
   
-  predicate inv_tup1_refmut_LogCommitter [@inline:trivial] (_1: MutBorrow.t t_LogCommitter) = inv_refmut_LogCommitter _1
+  predicate inv_tup1_refmut_SeqLockCommitter [@inline:trivial] (_1: MutBorrow.t t_SeqLockCommitter) =
+    inv_refmut_SeqLockCommitter _1
   
-  meta "rewrite_def" predicate inv_tup1_refmut_LogCommitter
+  meta "rewrite_def" predicate inv_tup1_refmut_SeqLockCommitter
   
-  predicate precondition_F (self: t_F) (args: MutBorrow.t t_LogCommitter)
+  predicate precondition_F (self: t_F) (args: MutBorrow.t t_SeqLockCommitter)
   
-  predicate postcondition_once_F (self: t_F) (args: MutBorrow.t t_LogCommitter) (result: ())
+  predicate postcondition_once_F (self: t_F) (args: MutBorrow.t t_SeqLockCommitter) (result: ())
   
-  let call_once_F (self: t_F) (args: MutBorrow.t t_LogCommitter) (return (x: ())) =
+  let call_once_F (self: t_F) (args: MutBorrow.t t_SeqLockCommitter) (return (x: ())) =
   {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self' type invariant] inv_F self)
-    /\ ([@stop_split] [@expl:call_once 'args' type invariant] inv_tup1_refmut_LogCommitter args)
+    /\ ([@stop_split] [@expl:call_once 'args' type invariant] inv_tup1_refmut_SeqLockCommitter args)
     /\ ([@stop_split] [@expl:call_once requires] precondition_F self args)}
     any
     [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self args result}
@@ -2712,14 +2514,16 @@ module M_impl_SeqLock__lock_write (* SeqLock *)
   
   meta "rewrite_def" predicate resolve_refmut_Authority_Seq_tup2_u32_u32
   
-  predicate resolve_LogCommitter (_1: t_LogCommitter)
+  predicate resolve_SeqLockCommitter (_1: t_SeqLockCommitter)
   
-  axiom resolve_axiom [@rewrite]: forall _1: t_LogCommitter [resolve_LogCommitter _1]. resolve_LogCommitter _1
+  axiom resolve_axiom [@rewrite]:
+    forall _1: t_SeqLockCommitter [resolve_SeqLockCommitter _1]. resolve_SeqLockCommitter _1
       = resolve_refmut_Authority_Seq_tup2_u32_u32 _1.auth'0
   
-  predicate resolve_refmut_LogCommitter [@inline:trivial] (_1: MutBorrow.t t_LogCommitter) = _1.final = _1.current
+  predicate resolve_refmut_SeqLockCommitter [@inline:trivial] (_1: MutBorrow.t t_SeqLockCommitter) =
+    _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_refmut_LogCommitter
+  meta "rewrite_def" predicate resolve_refmut_SeqLockCommitter
   
   function pred'0 (self: t_SeqLock) : Map.map tup2_u32_u32 bool = (public_SeqLockInv'0 self.inv).f6'2
   
@@ -2883,23 +2687,23 @@ module M_impl_SeqLock__lock_write (* SeqLock *)
         [ _ck -> (! {[@expl:type invariant] inv_Authority_Seq_tup2_u32_u32 _53.current} any) ]
       | s43 = [ &_54 <- id self.current.c4'2 ] s44
       | s44 = [ &_51 <- { auth'0 = _52; id'0 = _54; old_log'0 = old_log; new_log'0 = old_log; shot'0 = false } ] s45
-      | s45 = MutBorrow.borrow_mut <t_LogCommitter> {_51}
-          (fun (_bor: MutBorrow.t t_LogCommitter) ->
-            [ &_50 <- _bor ] -{inv_LogCommitter _bor.final}-
-            [ &_51 <- _bor.final ] s46) [ _ck -> (! {[@expl:type invariant] inv_LogCommitter _51} any) ]
-      | s46 = MutBorrow.borrow_final <t_LogCommitter> {_50.current} {MutBorrow.get_id _50}
-          (fun (_bor: MutBorrow.t t_LogCommitter) ->
-            [ &_49 <- _bor ] -{inv_LogCommitter _bor.final}-
+      | s45 = MutBorrow.borrow_mut <t_SeqLockCommitter> {_51}
+          (fun (_bor: MutBorrow.t t_SeqLockCommitter) ->
+            [ &_50 <- _bor ] -{inv_SeqLockCommitter _bor.final}-
+            [ &_51 <- _bor.final ] s46) [ _ck -> (! {[@expl:type invariant] inv_SeqLockCommitter _51} any) ]
+      | s46 = MutBorrow.borrow_final <t_SeqLockCommitter> {_50.current} {MutBorrow.get_id _50}
+          (fun (_bor: MutBorrow.t t_SeqLockCommitter) ->
+            [ &_49 <- _bor ] -{inv_SeqLockCommitter _bor.final}-
             [ &_50 <- { _50 with current = _bor.final } ] s47)
-        [ _ck -> (! {[@expl:type invariant] inv_LogCommitter _50.current} any) ]
+        [ _ck -> (! {[@expl:type invariant] inv_SeqLockCommitter _50.current} any) ]
       | s47 = [ &_48 <- _49 ] s48
       | s48 = call_once_F {_43} {_48} (fun (_x: ()) -> [ &_42 <- _x ] s49)
       | s49 = s50 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_Seq_tup2_u32_u32 _53} any) ]
       | s50 = -{resolve_refmut_Authority_Seq_tup2_u32_u32 _53}- s51
-      | s51 = s52 [ _ck -> (! {[@expl:type invariant] inv_LogCommitter _51} any) ]
-      | s52 = -{resolve_LogCommitter _51}- s53
-      | s53 = s54 [ _ck -> (! {[@expl:type invariant] inv_refmut_LogCommitter _50} any) ]
-      | s54 = -{resolve_refmut_LogCommitter _50}- s55
+      | s51 = s52 [ _ck -> (! {[@expl:type invariant] inv_SeqLockCommitter _51} any) ]
+      | s52 = -{resolve_SeqLockCommitter _51}- s53
+      | s53 = s54 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqLockCommitter _50} any) ]
+      | s54 = -{resolve_refmut_SeqLockCommitter _50}- s55
       | s55 = s56 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqLockInv inv'0} any) ]
       | s56 = -{resolve_refmut_SeqLockInv inv'0}- s57
       | s57 = {[@expl:assertion] Map.get (pred'0 self.current.c4'2) { f0 = (val_Latest'0 fr).d0'0.val''0;
@@ -2957,10 +2761,10 @@ module M_impl_SeqLock__lock_write (* SeqLock *)
     | & _45: MutBorrow.t t_Option_F = Any.any_l ()
     | & _46: MutBorrow.t t_Option_F = Any.any_l ()
     | & _47: MutBorrow.t t_Option_F = Any.any_l ()
-    | & _48: MutBorrow.t t_LogCommitter = Any.any_l ()
-    | & _49: MutBorrow.t t_LogCommitter = Any.any_l ()
-    | & _50: MutBorrow.t t_LogCommitter = Any.any_l ()
-    | & _51: t_LogCommitter = Any.any_l ()
+    | & _48: MutBorrow.t t_SeqLockCommitter = Any.any_l ()
+    | & _49: MutBorrow.t t_SeqLockCommitter = Any.any_l ()
+    | & _50: MutBorrow.t t_SeqLockCommitter = Any.any_l ()
+    | & _51: t_SeqLockCommitter = Any.any_l ()
     | & _52: MutBorrow.t t_Authority_Seq_tup2_u32_u32 = Any.any_l ()
     | & _53: MutBorrow.t t_Authority_Seq_tup2_u32_u32 = Any.any_l ()
     | & _54: t_Id = Any.any_l ()
@@ -3316,15 +3120,15 @@ module M_impl_SeqLock__lock_write (* SeqLock *)
     view'1: t_SyncView;
     rel'1: t_ReleaseSyncView }
   
-  predicate shot (self: t_LogCommitter) = self.shot'0
+  predicate shot (self: t_SeqLockCommitter) = self.shot'0
   
-  function id'1 (self: t_LogCommitter) : t_Id = self.id'0
+  function id'1 (self: t_SeqLockCommitter) : t_Id = self.id'0
   
-  function new_log (self: t_LogCommitter) : Seq.seq tup2_u32_u32 = self.new_log'0
+  function new_log (self: t_SeqLockCommitter) : Seq.seq tup2_u32_u32 = self.new_log'0
   
-  function old_log (self: t_LogCommitter) : Seq.seq tup2_u32_u32 = self.old_log'0
+  function old_log (self: t_SeqLockCommitter) : Seq.seq tup2_u32_u32 = self.old_log'0
   
-  predicate hist_inv [@inline:trivial] (self: t_LogCommitter) (other: t_LogCommitter) =
+  predicate hist_inv [@inline:trivial] (self: t_SeqLockCommitter) (other: t_SeqLockCommitter) =
     self.id'0 = other.id'0
     /\ self.auth'0.final = other.auth'0.final /\ self.old_log'0 = other.old_log'0 /\ self.new_log'0 = other.new_log'0
   
@@ -3364,7 +3168,7 @@ module M_impl_SeqLock__lock_write (* SeqLock *)
   {[@stop_split] [@expl:lock_write_F requires] ([@stop_split] [@expl:lock_write 'self' type invariant] inv_ref_SeqLock self)
     /\ ([@stop_split] [@expl:lock_write 'f' type invariant] inv_Ghost_F f)
     /\ ([@stop_split] [@expl:lock_write requires #0] contains tokens (Namespace_SEQLOCK 0))
-    /\ ([@stop_split] [@expl:lock_write requires #1] forall c: MutBorrow.t t_LogCommitter. inv_refmut_LogCommitter c
+    /\ ([@stop_split] [@expl:lock_write requires #1] forall c: MutBorrow.t t_SeqLockCommitter. inv_refmut_SeqLockCommitter c
       -> not shot c.current
       -> id'1 c.current = id self
       -> new_log c.current = old_log c.current
@@ -3373,114 +3177,118 @@ module M_impl_SeqLock__lock_write (* SeqLock *)
       (set_ORDERING
         (bb0
         [ bb0 = s0
-          [ s0 = new (fun (_x: t_SyncView) -> [ &view <- _x ] s1)
-          | s1 = [ &f_snap <- f ] s2
-          | s2 = into_inner_F {f} (fun (_x: t_F) -> [ &_22 <- _x ] s3)
-          | s3 = [ &_21 <- Some _22 ] s4
-          | s4 = new_Option_F {_21} (fun (_x: t_Option_F) -> [ &f'0 <- _x ] s5)
-          | s5 = bb6 ]
-        | bb6 = bb6
-          [ bb6 = {[@expl:inferred invariant: type invariant] inv_Ghost_Option_F f'0}
+          [ s0 = new (fun (_x: t_SyncView) -> [ &_18 <- _x ] s1)
+          | s1 = into_inner_SyncView {_18} (fun (_x: t_SyncView) -> [ &_17 <- _x ] s2)
+          | s2 = new_SyncView {_17} (fun (_x: t_SyncView) -> [ &view <- _x ] s3)
+          | s3 = [ &f_snap <- f ] s4
+          | s4 = into_inner_F {f} (fun (_x: t_F) -> [ &_24 <- _x ] s5)
+          | s5 = [ &_23 <- Some _24 ] s6
+          | s6 = new_Option_F {_23} (fun (_x: t_Option_F) -> [ &f'0 <- _x ] s7)
+          | s7 = bb8 ]
+        | bb8 = bb8
+          [ bb8 = {[@expl:inferred invariant: type invariant] inv_Ghost_Option_F f'0}
             {[@expl:loop invariant #0] contains tokens (Namespace_SEQLOCK 0)}
             {[@expl:loop invariant #1] f'0 = Some f_snap}
             (! s0)
-            [ s0 = [ &_34 <- Relaxed ] s1
+            [ s0 = [ &_36 <- Relaxed ] s1
             | s1 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-                (fun (_bor: MutBorrow.t t_Tokens) -> [ &_39 <- _bor ] [ &tokens <- _bor.final ] s2)
+                (fun (_bor: MutBorrow.t t_Tokens) -> [ &_41 <- _bor ] [ &tokens <- _bor.final ] s2)
             | s2 = MutBorrow.borrow_mut <t_SyncView> {view}
-                (fun (_bor: MutBorrow.t t_SyncView) -> [ &_40 <- _bor ] [ &view <- _bor.final ] s3)
-            | s3 = [ &_37 <- { c0 = self; c1 = _39; c2 = _40 } ] s4
-            | s4 = __new_closure9 {_37} (fun (_x: t_FnGhostWrapper_closure9) -> [ &_36 <- _x ] s5)
-            | s5 = new_FnGhostWrapper_closure9 {_36} (fun (_x: t_FnGhostWrapper_closure9) -> [ &_35 <- _x ] s6)
-            | s6 = load_FnGhostWrapper_closure9 {self.seq} {_34} {_35} (fun (_x: UInt64.t) -> [ &seq'2 <- _x ] s7)
-            | s7 = [ &_45 <- (2: UInt64.t) = (0: UInt64.t) ] s8
-            | s8 = {[@expl:remainder by zero] not _45} s9
-            | s9 = UInt64.rem {seq'2} {(2: UInt64.t)} (fun (_x: UInt64.t) -> [ &_43 <- _x ] s10)
-            | s10 = [ &_42 <- _43 <> (0: UInt64.t) ] s11
-            | s11 = any [ br0 -> {_42 = false} (! bb13) | br1 -> {_42} (! bb6) ] ]
-            [ bb13 = s0
+                (fun (_bor: MutBorrow.t t_SyncView) -> [ &_42 <- _bor ] [ &view <- _bor.final ] s3)
+            | s3 = [ &_39 <- { c0 = self; c1 = _41; c2 = _42 } ] s4
+            | s4 = __new_closure9 {_39} (fun (_x: t_FnGhostWrapper_closure9) -> [ &_38 <- _x ] s5)
+            | s5 = new_FnGhostWrapper_closure9 {_38} (fun (_x: t_FnGhostWrapper_closure9) -> [ &_37 <- _x ] s6)
+            | s6 = load_FnGhostWrapper_closure9 {self.seq} {_36} {_37} (fun (_x: UInt64.t) -> [ &seq'2 <- _x ] s7)
+            | s7 = [ &_47 <- (2: UInt64.t) = (0: UInt64.t) ] s8
+            | s8 = {[@expl:remainder by zero] not _47} s9
+            | s9 = UInt64.rem {seq'2} {(2: UInt64.t)} (fun (_x: UInt64.t) -> [ &_45 <- _x ] s10)
+            | s10 = [ &_44 <- _45 <> (0: UInt64.t) ] s11
+            | s11 = any [ br0 -> {_44 = false} (! bb15) | br1 -> {_44} (! bb8) ] ]
+            [ bb15 = s0
               [ s0 = UInt64.add {seq'2} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &next_seq <- _x ] s1)
-              | s1 = [ &_50 <- None'0 ] s2
-              | s2 = new_Option_Fragment_Latest {_50}
+              | s1 = [ &_52 <- None'0 ] s2
+              | s2 = new_Option_Fragment_Latest {_52}
                   (fun (_x: t_Option_Fragment_Latest) -> [ &latest_frag'0 <- _x ] s3)
-              | s3 = [ &_55 <- Acquire ] s4
-              | s4 = [ &_56 <- Relaxed ] s5
+              | s3 = [ &_57 <- Acquire ] s4
+              | s4 = [ &_58 <- Relaxed ] s5
               | s5 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-                  (fun (_bor: MutBorrow.t t_Tokens) -> [ &_61 <- _bor ] [ &tokens <- _bor.final ] s6)
+                  (fun (_bor: MutBorrow.t t_Tokens) -> [ &_63 <- _bor ] [ &tokens <- _bor.final ] s6)
               | s6 = MutBorrow.borrow_mut <t_SyncView> {view}
-                  (fun (_bor: MutBorrow.t t_SyncView) -> [ &_62 <- _bor ] [ &view <- _bor.final ] s7)
+                  (fun (_bor: MutBorrow.t t_SyncView) -> [ &_64 <- _bor ] [ &view <- _bor.final ] s7)
               | s7 = MutBorrow.borrow_mut <t_Option_F> {f'0}
                   (fun (_bor: MutBorrow.t t_Option_F) ->
-                    [ &_64 <- _bor ] -{inv_Ghost_Option_F _bor.final}-
+                    [ &_66 <- _bor ] -{inv_Ghost_Option_F _bor.final}-
                     [ &f'0 <- _bor.final ] s8) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_F f'0} any) ]
               | s8 = MutBorrow.borrow_mut <t_Option_Fragment_Latest> {latest_frag'0}
                   (fun (_bor: MutBorrow.t t_Option_Fragment_Latest) ->
-                    [ &_65 <- _bor ] -{inv_Ghost_Option_Fragment_Latest _bor.final}-
+                    [ &_67 <- _bor ] -{inv_Ghost_Option_Fragment_Latest _bor.final}-
                     [ &latest_frag'0 <- _bor.final ] s9)
                 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment_Latest latest_frag'0} any) ]
-              | s9 = [ &_59 <- { c0'1 = self; c1'1 = _61; c2'1 = _62; c3'1 = next_seq; c4'1 = _64; c5'1 = _65 } ] s10
-              | s10 = __new_closure10 {_59} (fun (_x: t_FnGhostWrapper_closure10) -> [ &_58 <- _x ] s11)
-              | s11 = new_FnGhostWrapper_closure10 {_58} (fun (_x: t_FnGhostWrapper_closure10) -> [ &_57 <- _x ] s12)
-              | s12 = compare_exchange_FnGhostWrapper_closure10 {self.seq} {seq'2} {next_seq} {_55} {_56} {_57}
+              | s9 = [ &_61 <- { c0'1 = self; c1'1 = _63; c2'1 = _64; c3'1 = next_seq; c4'1 = _66; c5'1 = _67 } ] s10
+              | s10 = __new_closure10 {_61} (fun (_x: t_FnGhostWrapper_closure10) -> [ &_60 <- _x ] s11)
+              | s11 = new_FnGhostWrapper_closure10 {_60} (fun (_x: t_FnGhostWrapper_closure10) -> [ &_59 <- _x ] s12)
+              | s12 = compare_exchange_FnGhostWrapper_closure10 {self.seq} {seq'2} {next_seq} {_57} {_58} {_59}
                   (fun (_x: t_Result_usize_usize) -> [ &res <- _x ] s13)
-              | s13 = is_err_usize {res} (fun (_x: bool) -> [ &_67 <- _x ] s14)
-              | s14 = any [ br0 -> {_67 = false} (! bb20) | br1 -> {_67} (! bb19) ] ]
-            | bb19 = s0
+              | s13 = is_err_usize {res} (fun (_x: bool) -> [ &_69 <- _x ] s14)
+              | s14 = any [ br0 -> {_69 = false} (! bb22) | br1 -> {_69} (! bb21) ] ]
+            | bb21 = s0
               [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment_Latest latest_frag'0} any) ]
               | s1 = -{resolve_Ghost_Option_Fragment_Latest'0 latest_frag'0}- s2
-              | s2 = bb6 ] ] ]
-        | bb20 = s0
+              | s2 = bb8 ] ] ]
+        | bb22 = s0
           [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_F f'0} any) ]
           | s1 = -{resolve_Ghost_Option_F'0 f'0}- s2
-          | s2 = [ &_71 <- Release ] s3
-          | s3 = fence_release {_71} {view} (fun (_x: t_ReleaseSyncView) -> [ &rel <- _x ] s4)
+          | s2 = [ &_73 <- Release ] s3
+          | s3 = fence_release {_73} {view} (fun (_x: t_ReleaseSyncView) -> [ &rel <- _x ] s4)
           | s4 = into_inner_Option_Fragment_Latest {latest_frag'0}
-              (fun (_x: t_Option_Fragment_Latest) -> [ &_77 <- _x ] s5)
-          | s5 = unwrap_Fragment_Latest {_77} (fun (_x: t_Fragment_Latest) -> [ &_76 <- _x ] s6)
-          | s6 = new_Fragment_Latest {_76} (fun (_x: t_Fragment_Latest) -> [ &_75 <- _x ] s7)
-          | s7 = [ &_ret <- { seqlock'1 = self; seq'1 = next_seq; latest'1 = _75; view'1 = view; rel'1 = rel } ] s8
+              (fun (_x: t_Option_Fragment_Latest) -> [ &_79 <- _x ] s5)
+          | s5 = unwrap_Fragment_Latest {_79} (fun (_x: t_Fragment_Latest) -> [ &_78 <- _x ] s6)
+          | s6 = new_Fragment_Latest {_78} (fun (_x: t_Fragment_Latest) -> [ &_77 <- _x ] s7)
+          | s7 = [ &_ret <- { seqlock'1 = self; seq'1 = next_seq; latest'1 = _77; view'1 = view; rel'1 = rel } ] s8
           | s8 = return {_ret} ] ]
         [ & _ret: t_SeqLockGuard = Any.any_l ()
         | & self: t_SeqLock = self
         | & tokens: t_Tokens = tokens
         | & f: t_F = f
         | & view: t_SyncView = Any.any_l ()
+        | & _17: t_SyncView = Any.any_l ()
+        | & _18: t_SyncView = Any.any_l ()
         | & f_snap: t_F = Any.any_l ()
         | & f'0: t_Option_F = Any.any_l ()
-        | & _21: t_Option_F = Any.any_l ()
-        | & _22: t_F = Any.any_l ()
+        | & _23: t_Option_F = Any.any_l ()
+        | & _24: t_F = Any.any_l ()
         | & seq'2: UInt64.t = Any.any_l ()
-        | & _34: t_Ordering = Any.any_l ()
-        | & _35: t_FnGhostWrapper_closure9 = Any.any_l ()
-        | & _36: t_FnGhostWrapper_closure9 = Any.any_l ()
-        | & _37: closure9 = Any.any_l ()
-        | & _39: MutBorrow.t t_Tokens = Any.any_l ()
-        | & _40: MutBorrow.t t_SyncView = Any.any_l ()
-        | & _42: bool = Any.any_l ()
-        | & _43: UInt64.t = Any.any_l ()
-        | & _45: bool = Any.any_l ()
+        | & _36: t_Ordering = Any.any_l ()
+        | & _37: t_FnGhostWrapper_closure9 = Any.any_l ()
+        | & _38: t_FnGhostWrapper_closure9 = Any.any_l ()
+        | & _39: closure9 = Any.any_l ()
+        | & _41: MutBorrow.t t_Tokens = Any.any_l ()
+        | & _42: MutBorrow.t t_SyncView = Any.any_l ()
+        | & _44: bool = Any.any_l ()
+        | & _45: UInt64.t = Any.any_l ()
+        | & _47: bool = Any.any_l ()
         | & next_seq: UInt64.t = Any.any_l ()
         | & latest_frag'0: t_Option_Fragment_Latest = Any.any_l ()
-        | & _50: t_Option_Fragment_Latest = Any.any_l ()
+        | & _52: t_Option_Fragment_Latest = Any.any_l ()
         | & res: t_Result_usize_usize = Any.any_l ()
-        | & _55: t_Ordering = Any.any_l ()
-        | & _56: t_Ordering = Any.any_l ()
-        | & _57: t_FnGhostWrapper_closure10 = Any.any_l ()
-        | & _58: t_FnGhostWrapper_closure10 = Any.any_l ()
-        | & _59: closure10 = Any.any_l ()
-        | & _61: MutBorrow.t t_Tokens = Any.any_l ()
-        | & _62: MutBorrow.t t_SyncView = Any.any_l ()
-        | & _64: MutBorrow.t t_Option_F = Any.any_l ()
-        | & _65: MutBorrow.t t_Option_Fragment_Latest = Any.any_l ()
-        | & _67: bool = Any.any_l ()
+        | & _57: t_Ordering = Any.any_l ()
+        | & _58: t_Ordering = Any.any_l ()
+        | & _59: t_FnGhostWrapper_closure10 = Any.any_l ()
+        | & _60: t_FnGhostWrapper_closure10 = Any.any_l ()
+        | & _61: closure10 = Any.any_l ()
+        | & _63: MutBorrow.t t_Tokens = Any.any_l ()
+        | & _64: MutBorrow.t t_SyncView = Any.any_l ()
+        | & _66: MutBorrow.t t_Option_F = Any.any_l ()
+        | & _67: MutBorrow.t t_Option_Fragment_Latest = Any.any_l ()
+        | & _69: bool = Any.any_l ()
         | & rel: t_ReleaseSyncView = Any.any_l ()
-        | & _71: t_Ordering = Any.any_l ()
-        | & _75: t_Fragment_Latest = Any.any_l ()
-        | & _76: t_Fragment_Latest = Any.any_l ()
-        | & _77: t_Option_Fragment_Latest = Any.any_l () ])))
+        | & _73: t_Ordering = Any.any_l ()
+        | & _77: t_Fragment_Latest = Any.any_l ()
+        | & _78: t_Fragment_Latest = Any.any_l ()
+        | & _79: t_Option_Fragment_Latest = Any.any_l () ])))
     [ return (result: t_SeqLockGuard) ->
     {[@stop_split] [@expl:lock_write_F ensures] ([@stop_split] [@expl:lock_write result type invariant] inv_SeqLockGuard result)
-      /\ ([@stop_split] [@expl:lock_write ensures #0] exists c: MutBorrow.t t_LogCommitter. not shot c.current
+      /\ ([@stop_split] [@expl:lock_write ensures #0] exists c: MutBorrow.t t_SeqLockCommitter. not shot c.current
           /\ id'1 c.current = id self
           /\ new_log c.current = old_log c.current
           /\ postcondition_once_F f c ()
@@ -3508,6 +3316,12 @@ module M_impl_SeqLock__new (* SeqLock *)
   type t_SyncView
   
   let new (return (x: t_SyncView)) = any [ return (result: t_SyncView) -> (! return {result}) ]
+  
+  let into_inner_SyncView (self: t_SyncView) (return (x: t_SyncView)) = any
+    [ return (result: t_SyncView) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
+  
+  let new_SyncView (x: t_SyncView) (return (x'0: t_SyncView)) = any
+    [ return (result: t_SyncView) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   let borrow_mut_SyncView (self: MutBorrow.t t_SyncView) (return (x: MutBorrow.t t_SyncView)) = any
     [ return (result: MutBorrow.t t_SyncView) -> {[@stop_split] [@expl:borrow_mut ensures] result = self}
@@ -3763,6 +3577,24 @@ module M_impl_SeqLock__new (* SeqLock *)
       /\ ([@stop_split] [@expl:alloc ensures #1] val_Latest result.f0'4 = v /\ val_Latest'0 result.f1'4 = v)}
       (! return {result}) ]
   
+  let into_inner_tup2_Authority_Latest_Fragment_Latest (self: tup2_Authority_Latest_Fragment_Latest)
+    (return (x: tup2_Authority_Latest_Fragment_Latest)) =
+  {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_tup2_Authority_Latest_Fragment_Latest self}
+    any
+    [ return (result: tup2_Authority_Latest_Fragment_Latest) ->
+    {[@stop_split] [@expl:into_inner_tup2_Authority_Latest_Fragment_Latest ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_tup2_Authority_Latest_Fragment_Latest result)
+      /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
+      (! return {result}) ]
+  
+  let new_tup2_Authority_Latest_Fragment_Latest (x: tup2_Authority_Latest_Fragment_Latest)
+    (return (x'0: tup2_Authority_Latest_Fragment_Latest)) =
+  {[@stop_split] [@expl:new 'x' type invariant] inv_tup2_Authority_Latest_Fragment_Latest x}
+    any
+    [ return (result: tup2_Authority_Latest_Fragment_Latest) ->
+    {[@stop_split] [@expl:new_tup2_Authority_Latest_Fragment_Latest ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_tup2_Authority_Latest_Fragment_Latest result)
+      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      (! return {result}) ]
+  
   type tup2_Ghost_Authority_Latest_Ghost_Fragment_Latest = { f0'5: t_Authority_Latest; f1'5: t_Fragment_Latest }
   
   predicate invariant_Ghost_Authority_Latest [@inline:trivial] (self: t_Authority_Latest) = inv_Authority_Latest self
@@ -3850,6 +3682,26 @@ module M_impl_SeqLock__new (* SeqLock *)
       /\ ([@stop_split] [@expl:alloc ensures #0] id_Seq_tup2_u32_u32 result.f0'6 = id_Seq_tup2_u32_u32'0 result.f1'6)
       /\ ([@stop_split] [@expl:alloc ensures #1] val_Seq_tup2_u32_u32 result.f0'6 = v
       /\ val_Seq_tup2_u32_u32'0 result.f1'6 = v)}
+      (! return {result}) ]
+  
+  let into_inner_tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32
+    (self: tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32)
+    (return (x: tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32)) =
+  {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32 self}
+    any
+    [ return (result: tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32) ->
+    {[@stop_split] [@expl:into_inner_tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32 ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32 result)
+      /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
+      (! return {result}) ]
+  
+  let new_tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32
+    (x: tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32)
+    (return (x'0: tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32)) =
+  {[@stop_split] [@expl:new 'x' type invariant] inv_tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32 x}
+    any
+    [ return (result: tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32) ->
+    {[@stop_split] [@expl:new_tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32 ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32 result)
+      /\ ([@stop_split] [@expl:new ensures] result = x)}
       (! return {result}) ]
   
   type tup2_Ghost_Authority_Seq_tup2_u32_u32_Ghost_Fragment_Seq_tup2_u32_u32 = {
@@ -4007,6 +3859,24 @@ module M_impl_SeqLock__new (* SeqLock *)
       = unit_FMap_Int_Ag_LockSnapshot)}
       (! return {result}) ]
   
+  let into_inner_Authority_FMap_Int_Ag_LockSnapshot (self: t_Authority_FMap_Int_Ag_LockSnapshot)
+    (return (x: t_Authority_FMap_Int_Ag_LockSnapshot)) =
+  {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_Authority_FMap_Int_Ag_LockSnapshot self}
+    any
+    [ return (result: t_Authority_FMap_Int_Ag_LockSnapshot) ->
+    {[@stop_split] [@expl:into_inner_Authority_FMap_Int_Ag_LockSnapshot ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_Authority_FMap_Int_Ag_LockSnapshot result)
+      /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
+      (! return {result}) ]
+  
+  let new_Authority_FMap_Int_Ag_LockSnapshot (x: t_Authority_FMap_Int_Ag_LockSnapshot)
+    (return (x'0: t_Authority_FMap_Int_Ag_LockSnapshot)) =
+  {[@stop_split] [@expl:new 'x' type invariant] inv_Authority_FMap_Int_Ag_LockSnapshot x}
+    any
+    [ return (result: t_Authority_FMap_Int_Ag_LockSnapshot) ->
+    {[@stop_split] [@expl:new_Authority_FMap_Int_Ag_LockSnapshot ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Authority_FMap_Int_Ag_LockSnapshot result)
+      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      (! return {result}) ]
+  
   predicate invariant_refmut_Ghost_Authority_FMap_Int_Ag_LockSnapshot [@inline:trivial] (self: MutBorrow.t t_Authority_FMap_Int_Ag_LockSnapshot) =
     inv_Ghost_Authority_FMap_Int_Ag_LockSnapshot self.current /\ inv_Ghost_Authority_FMap_Int_Ag_LockSnapshot self.final
   
@@ -4128,15 +3998,6 @@ module M_impl_SeqLock__new (* SeqLock *)
     any
     [ return (result: t_Authority_Seq_tup2_u32_u32) ->
     {[@stop_split] [@expl:into_inner_Authority_Seq_tup2_u32_u32 ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_Authority_Seq_tup2_u32_u32 result)
-      /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
-      (! return {result}) ]
-  
-  let into_inner_Authority_FMap_Int_Ag_LockSnapshot (self: t_Authority_FMap_Int_Ag_LockSnapshot)
-    (return (x: t_Authority_FMap_Int_Ag_LockSnapshot)) =
-  {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_Authority_FMap_Int_Ag_LockSnapshot self}
-    any
-    [ return (result: t_Authority_FMap_Int_Ag_LockSnapshot) ->
-    {[@stop_split] [@expl:into_inner_Authority_FMap_Int_Ag_LockSnapshot ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_Authority_FMap_Int_Ag_LockSnapshot result)
       /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
       (! return {result}) ]
   
@@ -4346,6 +4207,16 @@ module M_impl_SeqLock__new (* SeqLock *)
       /\ ([@stop_split] [@expl:new ensures #1] namespace_SeqLockInv result = namespace)}
       (! return {result}) ]
   
+  let into_inner_AtomicInvariant_SeqLockInv (self: t_AtomicInvariant_SeqLockInv)
+    (return (x: t_AtomicInvariant_SeqLockInv)) = any
+    [ return (result: t_AtomicInvariant_SeqLockInv) -> {[@stop_split] [@expl:into_inner ensures] result = self}
+      (! return {result}) ]
+  
+  let new_AtomicInvariant_SeqLockInv (x: t_AtomicInvariant_SeqLockInv) (return (x'0: t_AtomicInvariant_SeqLockInv)) =
+  any
+    [ return (result: t_AtomicInvariant_SeqLockInv) -> {[@stop_split] [@expl:new ensures] result = x}
+      (! return {result}) ]
+  
   type t_SeqLock = {
     seq'0: t_AtomicUsize;
     data0'0: t_AtomicU32;
@@ -4419,153 +4290,178 @@ module M_impl_SeqLock__new (* SeqLock *)
                                                                                                        f1'3 = val1 }}
     (! bb0
     [ bb0 = s0
-      [ s0 = new (fun (_x: t_SyncView) -> [ &view <- _x ] s1)
-      | s1 = MutBorrow.borrow_mut <t_SyncView> {view}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_20 <- _bor ] [ &view <- _bor.final ] s2)
-      | s2 = borrow_mut_SyncView {_20} (fun (_x: MutBorrow.t t_SyncView) -> [ &_19 <- _x ] s3)
-      | s3 = new'0 {val0} {_19} (fun (_x: tup2_AtomicU32_Ghost_Perm_AtomicU32) -> [ &_17 <- _x ] s4)
-      | s4 = [ &data0 <- _17.f0 ] s5
-      | s5 = [ &data0_own <- _17.f1 ] s6
-      | s6 = [ &d0_ts'0 <- get_timestamp_AtomicU32 data0 view ] s7
-      | s7 = MutBorrow.borrow_mut <t_SyncView> {view}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_30 <- _bor ] [ &view <- _bor.final ] s8)
-      | s8 = borrow_mut_SyncView {_30} (fun (_x: MutBorrow.t t_SyncView) -> [ &_29 <- _x ] s9)
-      | s9 = new'0 {val1} {_29} (fun (_x: tup2_AtomicU32_Ghost_Perm_AtomicU32) -> [ &_27 <- _x ] s10)
-      | s10 = [ &data1 <- _27.f0 ] s11
-      | s11 = [ &data1_own <- _27.f1 ] s12
-      | s12 = [ &d1_ts'0 <- get_timestamp_AtomicU32 data1 view ] s13
-      | s13 = MutBorrow.borrow_mut <t_SyncView> {view}
-          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_39 <- _bor ] [ &view <- _bor.final ] s14)
-      | s14 = borrow_mut_SyncView {_39} (fun (_x: MutBorrow.t t_SyncView) -> [ &_38 <- _x ] s15)
-      | s15 = new'1 {(0: UInt64.t)} {_38} (fun (_x: tup2_AtomicUsize_Ghost_Perm_AtomicUsize) -> [ &_37 <- _x ] s16)
-      | s16 = [ &seq'1 <- _37.f0'1 ] s17
-      | s17 = [ &seq_own <- _37.f1'1 ] s18
-      | s18 = [ &seq_ts'0 <- get_timestamp_AtomicUsize seq'1 view ] s19
-      | s19 = [ &log0 <- Seq.singleton { f0'3 = val0; f1'3 = val1 } ] s20
-      | s20 = [ &_52 <- { seq = { val' = (0: UInt64.t); ts = seq_ts'0 };
+      [ s0 = new (fun (_x: t_SyncView) -> [ &_16 <- _x ] s1)
+      | s1 = into_inner_SyncView {_16} (fun (_x: t_SyncView) -> [ &_15 <- _x ] s2)
+      | s2 = new_SyncView {_15} (fun (_x: t_SyncView) -> [ &view <- _x ] s3)
+      | s3 = MutBorrow.borrow_mut <t_SyncView> {view}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_22 <- _bor ] [ &view <- _bor.final ] s4)
+      | s4 = borrow_mut_SyncView {_22} (fun (_x: MutBorrow.t t_SyncView) -> [ &_21 <- _x ] s5)
+      | s5 = new'0 {val0} {_21} (fun (_x: tup2_AtomicU32_Ghost_Perm_AtomicU32) -> [ &_19 <- _x ] s6)
+      | s6 = [ &data0 <- _19.f0 ] s7
+      | s7 = [ &data0_own <- _19.f1 ] s8
+      | s8 = [ &d0_ts'0 <- get_timestamp_AtomicU32 data0 view ] s9
+      | s9 = MutBorrow.borrow_mut <t_SyncView> {view}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_32 <- _bor ] [ &view <- _bor.final ] s10)
+      | s10 = borrow_mut_SyncView {_32} (fun (_x: MutBorrow.t t_SyncView) -> [ &_31 <- _x ] s11)
+      | s11 = new'0 {val1} {_31} (fun (_x: tup2_AtomicU32_Ghost_Perm_AtomicU32) -> [ &_29 <- _x ] s12)
+      | s12 = [ &data1 <- _29.f0 ] s13
+      | s13 = [ &data1_own <- _29.f1 ] s14
+      | s14 = [ &d1_ts'0 <- get_timestamp_AtomicU32 data1 view ] s15
+      | s15 = MutBorrow.borrow_mut <t_SyncView> {view}
+          (fun (_bor: MutBorrow.t t_SyncView) -> [ &_41 <- _bor ] [ &view <- _bor.final ] s16)
+      | s16 = borrow_mut_SyncView {_41} (fun (_x: MutBorrow.t t_SyncView) -> [ &_40 <- _x ] s17)
+      | s17 = new'1 {(0: UInt64.t)} {_40} (fun (_x: tup2_AtomicUsize_Ghost_Perm_AtomicUsize) -> [ &_39 <- _x ] s18)
+      | s18 = [ &seq'1 <- _39.f0'1 ] s19
+      | s19 = [ &seq_own <- _39.f1'1 ] s20
+      | s20 = [ &seq_ts'0 <- get_timestamp_AtomicUsize seq'1 view ] s21
+      | s21 = [ &log0 <- Seq.singleton { f0'3 = val0; f1'3 = val1 } ] s22
+      | s22 = [ &_56 <- { seq = { val' = (0: UInt64.t); ts = seq_ts'0 };
                           d0 = { val''0 = val0; ts'0 = d0_ts'0 };
                           d1 = { val''0 = val1; ts'0 = d1_ts'0 };
-                          log = log0 } ] s21
-      | s21 = alloc_Latest {_52} (fun (_x: tup2_Authority_Latest_Fragment_Latest) -> [ &_51 <- _x ] s22)
-      | s22 = split_Authority_Latest {_51}
-          (fun (_x: tup2_Ghost_Authority_Latest_Ghost_Fragment_Latest) -> [ &_50 <- _x ] s23)
-      | s23 = [ &latest <- _50.f0'5 ] s24
-      | s24 = [ &latest_frag <- _50.f1'5 ] s25
-      | s25 = alloc_Seq_tup2_u32_u32 {log0}
-          (fun (_x: tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32) -> [ &_63 <- _x ] s26)
-      | s26 = split_Authority_Seq_tup2_u32_u32 {_63}
-          (fun (_x: tup2_Ghost_Authority_Seq_tup2_u32_u32_Ghost_Fragment_Seq_tup2_u32_u32) -> [ &_62 <- _x ] s27)
-      | s27 = [ &log'1 <- _62.f0'7 ] s28
-      | s28 = [ &log_frag <- _62.f1'7 ] s29
-      | s29 = alloc_FMap_Int_Ag_LockSnapshot
-          (fun (_x: t_Authority_FMap_Int_Ag_LockSnapshot) -> [ &snapshots <- _x ] s30)
-      | s30 = [ &snap0 <- { v0 = val0; v1 = val1; seq_ts = seq_ts'0; d0_ts = d0_ts'0; d1_ts = d1_ts'0 } ] s31
-      | s31 = MutBorrow.borrow_mut <t_Authority_FMap_Int_Ag_LockSnapshot> {snapshots}
+                          log = log0 } ] s23
+      | s23 = alloc_Latest {_56} (fun (_x: tup2_Authority_Latest_Fragment_Latest) -> [ &_55 <- _x ] s24)
+      | s24 = into_inner_tup2_Authority_Latest_Fragment_Latest {_55}
+          (fun (_x: tup2_Authority_Latest_Fragment_Latest) -> [ &_54 <- _x ] s25)
+      | s25 = new_tup2_Authority_Latest_Fragment_Latest {_54}
+          (fun (_x: tup2_Authority_Latest_Fragment_Latest) -> [ &_53 <- _x ] s26)
+      | s26 = split_Authority_Latest {_53}
+          (fun (_x: tup2_Ghost_Authority_Latest_Ghost_Fragment_Latest) -> [ &_52 <- _x ] s27)
+      | s27 = [ &latest <- _52.f0'5 ] s28
+      | s28 = [ &latest_frag <- _52.f1'5 ] s29
+      | s29 = alloc_Seq_tup2_u32_u32 {log0}
+          (fun (_x: tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32) -> [ &_69 <- _x ] s30)
+      | s30 = into_inner_tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32 {_69}
+          (fun (_x: tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32) -> [ &_68 <- _x ] s31)
+      | s31 = new_tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32 {_68}
+          (fun (_x: tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32) -> [ &_67 <- _x ] s32)
+      | s32 = split_Authority_Seq_tup2_u32_u32 {_67}
+          (fun (_x: tup2_Ghost_Authority_Seq_tup2_u32_u32_Ghost_Fragment_Seq_tup2_u32_u32) -> [ &_66 <- _x ] s33)
+      | s33 = [ &log'1 <- _66.f0'7 ] s34
+      | s34 = [ &log_frag <- _66.f1'7 ] s35
+      | s35 = alloc_FMap_Int_Ag_LockSnapshot (fun (_x: t_Authority_FMap_Int_Ag_LockSnapshot) -> [ &_73 <- _x ] s36)
+      | s36 = into_inner_Authority_FMap_Int_Ag_LockSnapshot {_73}
+          (fun (_x: t_Authority_FMap_Int_Ag_LockSnapshot) -> [ &_72 <- _x ] s37)
+      | s37 = new_Authority_FMap_Int_Ag_LockSnapshot {_72}
+          (fun (_x: t_Authority_FMap_Int_Ag_LockSnapshot) -> [ &snapshots <- _x ] s38)
+      | s38 = [ &snap0 <- { v0 = val0; v1 = val1; seq_ts = seq_ts'0; d0_ts = d0_ts'0; d1_ts = d1_ts'0 } ] s39
+      | s39 = MutBorrow.borrow_mut <t_Authority_FMap_Int_Ag_LockSnapshot> {snapshots}
           (fun (_bor: MutBorrow.t t_Authority_FMap_Int_Ag_LockSnapshot) ->
-            [ &_78 <- _bor ] -{inv_Ghost_Authority_FMap_Int_Ag_LockSnapshot _bor.final}-
-            [ &snapshots <- _bor.final ] s32)
+            [ &_86 <- _bor ] -{inv_Ghost_Authority_FMap_Int_Ag_LockSnapshot _bor.final}-
+            [ &snapshots <- _bor.final ] s40)
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Authority_FMap_Int_Ag_LockSnapshot snapshots} any) ]
-      | s32 = deref_mut_Ghost_Authority_FMap_Int_Ag_LockSnapshot {_78}
-          (fun (_x: MutBorrow.t t_Authority_FMap_Int_Ag_LockSnapshot) -> [ &_77 <- _x ] s33)
-      | s33 = [ &_79 <- singleton_Int'1 0 { f0'8 = snap0 } ] s34
-      | s34 = MutBorrow.borrow_final <t_Authority_FMap_Int_Ag_LockSnapshot> {_77.current} {MutBorrow.get_id _77}
+      | s40 = deref_mut_Ghost_Authority_FMap_Int_Ag_LockSnapshot {_86}
+          (fun (_x: MutBorrow.t t_Authority_FMap_Int_Ag_LockSnapshot) -> [ &_85 <- _x ] s41)
+      | s41 = [ &_87 <- singleton_Int'1 0 { f0'8 = snap0 } ] s42
+      | s42 = MutBorrow.borrow_final <t_Authority_FMap_Int_Ag_LockSnapshot> {_85.current} {MutBorrow.get_id _85}
           (fun (_bor: MutBorrow.t t_Authority_FMap_Int_Ag_LockSnapshot) ->
-            [ &_76 <- _bor ] -{inv_Authority_FMap_Int_Ag_LockSnapshot _bor.final}-
-            [ &_77 <- { _77 with current = _bor.final } ] s35)
-        [ _ck -> (! {[@expl:type invariant] inv_Authority_FMap_Int_Ag_LockSnapshot _77.current} any) ]
-      | s35 = add_fragment_FMap_Int_Ag_LockSnapshot {_76} {_79}
-          (fun (_x: t_Fragment_FMap_Int_Ag_LockSnapshot) -> [ &_75 <- _x ] s36)
-      | s36 = s37 [ _ck -> (! {[@expl:type invariant] inv_Fragment_FMap_Int_Ag_LockSnapshot _75} any) ]
-      | s37 = -{resolve_Fragment_FMap_Int_Ag_LockSnapshot _75}- s38
-      | s38 = s39 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_FMap_Int_Ag_LockSnapshot _77} any) ]
-      | s39 = -{resolve_refmut_Authority_FMap_Int_Ag_LockSnapshot _77}- s40
-      | s40 = new_unit {_67} (fun (_x: ()) -> [ &_66 <- _x ] s41)
-      | s41 = into_inner_Perm_AtomicUsize {seq_own} (fun (_x: t_Perm_AtomicUsize) -> [ &_85 <- _x ] s42)
-      | s42 = into_inner_Perm_AtomicU32 {data0_own} (fun (_x: t_Perm_AtomicU32) -> [ &_87 <- _x ] s43)
-      | s43 = into_inner_Perm_AtomicU32 {data1_own} (fun (_x: t_Perm_AtomicU32) -> [ &_89 <- _x ] s44)
-      | s44 = into_inner_Authority_Latest {latest} (fun (_x: t_Authority_Latest) -> [ &_91 <- _x ] s45)
-      | s45 = into_inner_Fragment_Latest {latest_frag} (fun (_x: t_Fragment_Latest) -> [ &_94 <- _x ] s46)
-      | s46 = [ &_93 <- Some'4 _94 ] s47
-      | s47 = into_inner_Authority_Seq_tup2_u32_u32 {log'1}
-          (fun (_x: t_Authority_Seq_tup2_u32_u32) -> [ &_96 <- _x ] s48)
-      | s48 = into_inner_Authority_FMap_Int_Ag_LockSnapshot {snapshots}
-          (fun (_x: t_Authority_FMap_Int_Ag_LockSnapshot) -> [ &_98 <- _x ] s49)
-      | s49 = [ &_84 <- { seq_own'0 = _85;
-                          data0_own'0 = _87;
-                          data1_own'0 = _89;
-                          latest'0 = _91;
-                          latest_frag'0 = _93;
-                          log'0 = _96;
-                          snapshots'0 = _98;
-                          pred'0 = pred'1 } ] s50
-      | s50 = new_SeqLockInv {_84} (fun (_x: t_SeqLockInv) -> [ &_83 <- _x ] s51)
-      | s51 = [ &_101 <- Namespace_SEQLOCK 0 ] s52
-      | s52 = new_SeqLockInv'0 {_83} {_101} (fun (_x: t_AtomicInvariant_SeqLockInv) -> [ &inv <- _x ] s53)
-      | s53 = [ &_103 <- { seq'0 = seq'1; data0'0 = data0; data1'0 = data1; inv'0 = inv } ] s54
-      | s54 = into_inner_Fragment_Seq_tup2_u32_u32 {log_frag}
-          (fun (_x: t_Fragment_Seq_tup2_u32_u32) -> [ &_110 <- _x ] s55)
-      | s55 = [ &_109 <- { f0'13 = _110 } ] s56
-      | s56 = new_SeqLockLog {_109} (fun (_x: t_SeqLockLog) -> [ &_108 <- _x ] s57)
-      | s57 = [ &_ret <- { f0'14 = _103; f1'14 = _108 } ] s58
-      | s58 = return {_ret} ] ]
+            [ &_84 <- _bor ] -{inv_Authority_FMap_Int_Ag_LockSnapshot _bor.final}-
+            [ &_85 <- { _85 with current = _bor.final } ] s43)
+        [ _ck -> (! {[@expl:type invariant] inv_Authority_FMap_Int_Ag_LockSnapshot _85.current} any) ]
+      | s43 = add_fragment_FMap_Int_Ag_LockSnapshot {_84} {_87}
+          (fun (_x: t_Fragment_FMap_Int_Ag_LockSnapshot) -> [ &_83 <- _x ] s44)
+      | s44 = s45 [ _ck -> (! {[@expl:type invariant] inv_Fragment_FMap_Int_Ag_LockSnapshot _83} any) ]
+      | s45 = -{resolve_Fragment_FMap_Int_Ag_LockSnapshot _83}- s46
+      | s46 = s47 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_FMap_Int_Ag_LockSnapshot _85} any) ]
+      | s47 = -{resolve_refmut_Authority_FMap_Int_Ag_LockSnapshot _85}- s48
+      | s48 = new_unit {_75} (fun (_x: ()) -> [ &_74 <- _x ] s49)
+      | s49 = into_inner_Perm_AtomicUsize {seq_own} (fun (_x: t_Perm_AtomicUsize) -> [ &_95 <- _x ] s50)
+      | s50 = into_inner_Perm_AtomicU32 {data0_own} (fun (_x: t_Perm_AtomicU32) -> [ &_97 <- _x ] s51)
+      | s51 = into_inner_Perm_AtomicU32 {data1_own} (fun (_x: t_Perm_AtomicU32) -> [ &_99 <- _x ] s52)
+      | s52 = into_inner_Authority_Latest {latest} (fun (_x: t_Authority_Latest) -> [ &_101 <- _x ] s53)
+      | s53 = into_inner_Fragment_Latest {latest_frag} (fun (_x: t_Fragment_Latest) -> [ &_104 <- _x ] s54)
+      | s54 = [ &_103 <- Some'4 _104 ] s55
+      | s55 = into_inner_Authority_Seq_tup2_u32_u32 {log'1}
+          (fun (_x: t_Authority_Seq_tup2_u32_u32) -> [ &_106 <- _x ] s56)
+      | s56 = into_inner_Authority_FMap_Int_Ag_LockSnapshot {snapshots}
+          (fun (_x: t_Authority_FMap_Int_Ag_LockSnapshot) -> [ &_108 <- _x ] s57)
+      | s57 = [ &_94 <- { seq_own'0 = _95;
+                          data0_own'0 = _97;
+                          data1_own'0 = _99;
+                          latest'0 = _101;
+                          latest_frag'0 = _103;
+                          log'0 = _106;
+                          snapshots'0 = _108;
+                          pred'0 = pred'1 } ] s58
+      | s58 = new_SeqLockInv {_94} (fun (_x: t_SeqLockInv) -> [ &_93 <- _x ] s59)
+      | s59 = [ &_111 <- Namespace_SEQLOCK 0 ] s60
+      | s60 = new_SeqLockInv'0 {_93} {_111} (fun (_x: t_AtomicInvariant_SeqLockInv) -> [ &_92 <- _x ] s61)
+      | s61 = into_inner_AtomicInvariant_SeqLockInv {_92} (fun (_x: t_AtomicInvariant_SeqLockInv) -> [ &_91 <- _x ] s62)
+      | s62 = new_AtomicInvariant_SeqLockInv {_91} (fun (_x: t_AtomicInvariant_SeqLockInv) -> [ &inv <- _x ] s63)
+      | s63 = [ &_113 <- { seq'0 = seq'1; data0'0 = data0; data1'0 = data1; inv'0 = inv } ] s64
+      | s64 = into_inner_Fragment_Seq_tup2_u32_u32 {log_frag}
+          (fun (_x: t_Fragment_Seq_tup2_u32_u32) -> [ &_120 <- _x ] s65)
+      | s65 = [ &_119 <- { f0'13 = _120 } ] s66
+      | s66 = new_SeqLockLog {_119} (fun (_x: t_SeqLockLog) -> [ &_118 <- _x ] s67)
+      | s67 = [ &_ret <- { f0'14 = _113; f1'14 = _118 } ] s68
+      | s68 = return {_ret} ] ]
     [ & _ret: tup2_SeqLock_Ghost_SeqLockLog = Any.any_l ()
     | & val0: UInt32.t = val0
     | & val1: UInt32.t = val1
     | & pred'1: Map.map tup2_u32_u32 bool = pred'1
     | & view: t_SyncView = Any.any_l ()
+    | & _15: t_SyncView = Any.any_l ()
+    | & _16: t_SyncView = Any.any_l ()
     | & data0: t_AtomicU32 = Any.any_l ()
     | & data0_own: t_Perm_AtomicU32 = Any.any_l ()
-    | & _17: tup2_AtomicU32_Ghost_Perm_AtomicU32 = Any.any_l ()
-    | & _19: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _20: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _19: tup2_AtomicU32_Ghost_Perm_AtomicU32 = Any.any_l ()
+    | & _21: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _22: MutBorrow.t t_SyncView = Any.any_l ()
     | & d0_ts'0: int = Any.any_l ()
     | & data1: t_AtomicU32 = Any.any_l ()
     | & data1_own: t_Perm_AtomicU32 = Any.any_l ()
-    | & _27: tup2_AtomicU32_Ghost_Perm_AtomicU32 = Any.any_l ()
-    | & _29: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _30: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _29: tup2_AtomicU32_Ghost_Perm_AtomicU32 = Any.any_l ()
+    | & _31: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _32: MutBorrow.t t_SyncView = Any.any_l ()
     | & d1_ts'0: int = Any.any_l ()
     | & seq'1: t_AtomicUsize = Any.any_l ()
     | & seq_own: t_Perm_AtomicUsize = Any.any_l ()
-    | & _37: tup2_AtomicUsize_Ghost_Perm_AtomicUsize = Any.any_l ()
-    | & _38: MutBorrow.t t_SyncView = Any.any_l ()
-    | & _39: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _39: tup2_AtomicUsize_Ghost_Perm_AtomicUsize = Any.any_l ()
+    | & _40: MutBorrow.t t_SyncView = Any.any_l ()
+    | & _41: MutBorrow.t t_SyncView = Any.any_l ()
     | & seq_ts'0: int = Any.any_l ()
     | & log0: Seq.seq tup2_u32_u32 = Any.any_l ()
     | & latest: t_Authority_Latest = Any.any_l ()
     | & latest_frag: t_Fragment_Latest = Any.any_l ()
-    | & _50: tup2_Ghost_Authority_Latest_Ghost_Fragment_Latest = Any.any_l ()
-    | & _51: tup2_Authority_Latest_Fragment_Latest = Any.any_l ()
-    | & _52: t_Latest = Any.any_l ()
+    | & _52: tup2_Ghost_Authority_Latest_Ghost_Fragment_Latest = Any.any_l ()
+    | & _53: tup2_Authority_Latest_Fragment_Latest = Any.any_l ()
+    | & _54: tup2_Authority_Latest_Fragment_Latest = Any.any_l ()
+    | & _55: tup2_Authority_Latest_Fragment_Latest = Any.any_l ()
+    | & _56: t_Latest = Any.any_l ()
     | & log'1: t_Authority_Seq_tup2_u32_u32 = Any.any_l ()
     | & log_frag: t_Fragment_Seq_tup2_u32_u32 = Any.any_l ()
-    | & _62: tup2_Ghost_Authority_Seq_tup2_u32_u32_Ghost_Fragment_Seq_tup2_u32_u32 = Any.any_l ()
-    | & _63: tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32 = Any.any_l ()
+    | & _66: tup2_Ghost_Authority_Seq_tup2_u32_u32_Ghost_Fragment_Seq_tup2_u32_u32 = Any.any_l ()
+    | & _67: tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32 = Any.any_l ()
+    | & _68: tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32 = Any.any_l ()
+    | & _69: tup2_Authority_Seq_tup2_u32_u32_Fragment_Seq_tup2_u32_u32 = Any.any_l ()
     | & snapshots: t_Authority_FMap_Int_Ag_LockSnapshot = Any.any_l ()
-    | & _66: () = Any.any_l ()
-    | & _67: () = Any.any_l ()
+    | & _72: t_Authority_FMap_Int_Ag_LockSnapshot = Any.any_l ()
+    | & _73: t_Authority_FMap_Int_Ag_LockSnapshot = Any.any_l ()
+    | & _74: () = Any.any_l ()
+    | & _75: () = Any.any_l ()
     | & snap0: t_LockSnapshot = Any.any_l ()
-    | & _75: t_Fragment_FMap_Int_Ag_LockSnapshot = Any.any_l ()
-    | & _76: MutBorrow.t t_Authority_FMap_Int_Ag_LockSnapshot = Any.any_l ()
-    | & _77: MutBorrow.t t_Authority_FMap_Int_Ag_LockSnapshot = Any.any_l ()
-    | & _78: MutBorrow.t t_Authority_FMap_Int_Ag_LockSnapshot = Any.any_l ()
-    | & _79: t_FMap_Int_Ag_LockSnapshot = Any.any_l ()
+    | & _83: t_Fragment_FMap_Int_Ag_LockSnapshot = Any.any_l ()
+    | & _84: MutBorrow.t t_Authority_FMap_Int_Ag_LockSnapshot = Any.any_l ()
+    | & _85: MutBorrow.t t_Authority_FMap_Int_Ag_LockSnapshot = Any.any_l ()
+    | & _86: MutBorrow.t t_Authority_FMap_Int_Ag_LockSnapshot = Any.any_l ()
+    | & _87: t_FMap_Int_Ag_LockSnapshot = Any.any_l ()
     | & inv: t_AtomicInvariant_SeqLockInv = Any.any_l ()
-    | & _83: t_SeqLockInv = Any.any_l ()
-    | & _84: t_SeqLockInv = Any.any_l ()
-    | & _85: t_Perm_AtomicUsize = Any.any_l ()
-    | & _87: t_Perm_AtomicU32 = Any.any_l ()
-    | & _89: t_Perm_AtomicU32 = Any.any_l ()
-    | & _91: t_Authority_Latest = Any.any_l ()
-    | & _93: t_Option_Fragment_Latest = Any.any_l ()
-    | & _94: t_Fragment_Latest = Any.any_l ()
-    | & _96: t_Authority_Seq_tup2_u32_u32 = Any.any_l ()
-    | & _98: t_Authority_FMap_Int_Ag_LockSnapshot = Any.any_l ()
-    | & _101: t_Namespace = Any.any_l ()
-    | & _103: t_SeqLock = Any.any_l ()
-    | & _108: t_SeqLockLog = Any.any_l ()
-    | & _109: t_SeqLockLog = Any.any_l ()
-    | & _110: t_Fragment_Seq_tup2_u32_u32 = Any.any_l () ])
+    | & _91: t_AtomicInvariant_SeqLockInv = Any.any_l ()
+    | & _92: t_AtomicInvariant_SeqLockInv = Any.any_l ()
+    | & _93: t_SeqLockInv = Any.any_l ()
+    | & _94: t_SeqLockInv = Any.any_l ()
+    | & _95: t_Perm_AtomicUsize = Any.any_l ()
+    | & _97: t_Perm_AtomicU32 = Any.any_l ()
+    | & _99: t_Perm_AtomicU32 = Any.any_l ()
+    | & _101: t_Authority_Latest = Any.any_l ()
+    | & _103: t_Option_Fragment_Latest = Any.any_l ()
+    | & _104: t_Fragment_Latest = Any.any_l ()
+    | & _106: t_Authority_Seq_tup2_u32_u32 = Any.any_l ()
+    | & _108: t_Authority_FMap_Int_Ag_LockSnapshot = Any.any_l ()
+    | & _111: t_Namespace = Any.any_l ()
+    | & _113: t_SeqLock = Any.any_l ()
+    | & _118: t_SeqLockLog = Any.any_l ()
+    | & _119: t_SeqLockLog = Any.any_l ()
+    | & _120: t_Fragment_Seq_tup2_u32_u32 = Any.any_l () ])
     [ return (result: tup2_SeqLock_Ghost_SeqLockLog) ->
     {[@stop_split] [@expl:new ensures] ([@stop_split] [@expl:new result type invariant] inv_tup2_SeqLock_Ghost_SeqLockLog result)
       /\ ([@stop_split] [@expl:new ensures #0] pred result.f0'14 = pred'1)
@@ -4594,6 +4490,12 @@ module M_impl_SeqLock__read (* SeqLock *)
   type t_SyncView
   
   let new (return (x: t_SyncView)) = any [ return (result: t_SyncView) -> (! return {result}) ]
+  
+  let into_inner_SyncView (self: t_SyncView) (return (x: t_SyncView)) = any
+    [ return (result: t_SyncView) -> {[@stop_split] [@expl:into_inner ensures] result = self} (! return {result}) ]
+  
+  let new_SyncView (x: t_SyncView) (return (x'0: t_SyncView)) = any
+    [ return (result: t_SyncView) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
   
   type t_F
   
@@ -5767,6 +5669,13 @@ module M_impl_SeqLock__read (* SeqLock *)
   
   let new'1 (return (x: t_AcquireSyncView)) = any [ return (result: t_AcquireSyncView) -> (! return {result}) ]
   
+  let into_inner_AcquireSyncView (self: t_AcquireSyncView) (return (x: t_AcquireSyncView)) = any
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:into_inner ensures] result = self}
+      (! return {result}) ]
+  
+  let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
+    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+  
   type closure10 = {
     c0'1: t_SeqLock;
     c1'1: MutBorrow.t t_Tokens;
@@ -6662,9 +6571,6 @@ module M_impl_SeqLock__read (* SeqLock *)
       = join (view_AcquireSyncView a) (view_AcquireSyncView b)}
       (! return {result}) ]
   
-  let new_AcquireSyncView (x: t_AcquireSyncView) (return (x'0: t_AcquireSyncView)) = any
-    [ return (result: t_AcquireSyncView) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
-  
   let fence_acquire (ordering: t_Ordering) (acq_view: t_AcquireSyncView) (return (x: t_SyncView)) =
   {[@stop_split] [@expl:fence_acquire requires] ordering = Acquire}
     any
@@ -6810,14 +6716,14 @@ module M_impl_SeqLock__read (* SeqLock *)
   
   function id (self: t_SeqLock) : t_Id = (public_SeqLockInv'0 self.inv).f4'5
   
-  type t_LogCommitter = {
+  type t_SeqLockCommitter = {
     auth'0: MutBorrow.t t_Authority_Seq_tup2_u32_u32;
     id'0: t_Id;
     old_log'0: Seq.seq tup2_u32_u32;
     new_log'0: Seq.seq tup2_u32_u32;
     shot'0: bool }
   
-  predicate invariant_LogCommitter [@inline:trivial] (self: t_LogCommitter) =
+  predicate invariant_SeqLockCommitter [@inline:trivial] (self: t_SeqLockCommitter) =
     id_Seq_tup2_u32_u32 self.auth'0.current = self.id'0
     /\ (if self.shot'0 then
       val_Seq_tup2_u32_u32 self.auth'0.current = self.new_log'0
@@ -6825,7 +6731,7 @@ module M_impl_SeqLock__read (* SeqLock *)
       val_Seq_tup2_u32_u32 self.auth'0.current = self.old_log'0
     )
   
-  meta "rewrite_def" predicate invariant_LogCommitter
+  meta "rewrite_def" predicate invariant_SeqLockCommitter
   
   predicate invariant_refmut_Authority_Seq_tup2_u32_u32 [@inline:trivial] (self: MutBorrow.t t_Authority_Seq_tup2_u32_u32) =
     inv_Authority_Seq_tup2_u32_u32 self.current /\ inv_Authority_Seq_tup2_u32_u32 self.final
@@ -6837,32 +6743,33 @@ module M_impl_SeqLock__read (* SeqLock *)
   
   meta "rewrite_def" predicate inv_refmut_Authority_Seq_tup2_u32_u32
   
-  predicate inv_LogCommitter (_1: t_LogCommitter)
+  predicate inv_SeqLockCommitter (_1: t_SeqLockCommitter)
   
-  axiom inv_axiom'15 [@rewrite]: forall _1: t_LogCommitter [inv_LogCommitter _1]. inv_LogCommitter _1
-      = (invariant_LogCommitter _1 /\ inv_refmut_Authority_Seq_tup2_u32_u32 _1.auth'0)
+  axiom inv_axiom'15 [@rewrite]: forall _1: t_SeqLockCommitter [inv_SeqLockCommitter _1]. inv_SeqLockCommitter _1
+      = (invariant_SeqLockCommitter _1 /\ inv_refmut_Authority_Seq_tup2_u32_u32 _1.auth'0)
   
-  predicate invariant_refmut_LogCommitter [@inline:trivial] (self: MutBorrow.t t_LogCommitter) =
-    inv_LogCommitter self.current /\ inv_LogCommitter self.final
+  predicate invariant_refmut_SeqLockCommitter [@inline:trivial] (self: MutBorrow.t t_SeqLockCommitter) =
+    inv_SeqLockCommitter self.current /\ inv_SeqLockCommitter self.final
   
-  meta "rewrite_def" predicate invariant_refmut_LogCommitter
+  meta "rewrite_def" predicate invariant_refmut_SeqLockCommitter
   
-  predicate inv_refmut_LogCommitter [@inline:trivial] (_1: MutBorrow.t t_LogCommitter) =
-    invariant_refmut_LogCommitter _1
+  predicate inv_refmut_SeqLockCommitter [@inline:trivial] (_1: MutBorrow.t t_SeqLockCommitter) =
+    invariant_refmut_SeqLockCommitter _1
   
-  meta "rewrite_def" predicate inv_refmut_LogCommitter
+  meta "rewrite_def" predicate inv_refmut_SeqLockCommitter
   
-  predicate inv_tup1_refmut_LogCommitter [@inline:trivial] (_1: MutBorrow.t t_LogCommitter) = inv_refmut_LogCommitter _1
+  predicate inv_tup1_refmut_SeqLockCommitter [@inline:trivial] (_1: MutBorrow.t t_SeqLockCommitter) =
+    inv_refmut_SeqLockCommitter _1
   
-  meta "rewrite_def" predicate inv_tup1_refmut_LogCommitter
+  meta "rewrite_def" predicate inv_tup1_refmut_SeqLockCommitter
   
-  predicate precondition_F (self: t_F) (args: MutBorrow.t t_LogCommitter)
+  predicate precondition_F (self: t_F) (args: MutBorrow.t t_SeqLockCommitter)
   
-  predicate postcondition_once_F (self: t_F) (args: MutBorrow.t t_LogCommitter) (result: ())
+  predicate postcondition_once_F (self: t_F) (args: MutBorrow.t t_SeqLockCommitter) (result: ())
   
-  let call_once_F (self: t_F) (args: MutBorrow.t t_LogCommitter) (return (x: ())) =
+  let call_once_F (self: t_F) (args: MutBorrow.t t_SeqLockCommitter) (return (x: ())) =
   {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self' type invariant] inv_F self)
-    /\ ([@stop_split] [@expl:call_once 'args' type invariant] inv_tup1_refmut_LogCommitter args)
+    /\ ([@stop_split] [@expl:call_once 'args' type invariant] inv_tup1_refmut_SeqLockCommitter args)
     /\ ([@stop_split] [@expl:call_once requires] precondition_F self args)}
     any
     [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self args result}
@@ -6873,14 +6780,16 @@ module M_impl_SeqLock__read (* SeqLock *)
   
   meta "rewrite_def" predicate resolve_refmut_Authority_Seq_tup2_u32_u32
   
-  predicate resolve_LogCommitter (_1: t_LogCommitter)
+  predicate resolve_SeqLockCommitter (_1: t_SeqLockCommitter)
   
-  axiom resolve_axiom'0 [@rewrite]: forall _1: t_LogCommitter [resolve_LogCommitter _1]. resolve_LogCommitter _1
+  axiom resolve_axiom'0 [@rewrite]:
+    forall _1: t_SeqLockCommitter [resolve_SeqLockCommitter _1]. resolve_SeqLockCommitter _1
       = resolve_refmut_Authority_Seq_tup2_u32_u32 _1.auth'0
   
-  predicate resolve_refmut_LogCommitter [@inline:trivial] (_1: MutBorrow.t t_LogCommitter) = _1.final = _1.current
+  predicate resolve_refmut_SeqLockCommitter [@inline:trivial] (_1: MutBorrow.t t_SeqLockCommitter) =
+    _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_refmut_LogCommitter
+  meta "rewrite_def" predicate resolve_refmut_SeqLockCommitter
   
   predicate hist_inv_closure0'2 (self: closure0'2) (result_state: closure0'2) =
     result_state.c0'6 = self.c0'6
@@ -6959,23 +6868,23 @@ module M_impl_SeqLock__read (* SeqLock *)
         [ _ck -> (! {[@expl:type invariant] inv_Authority_Seq_tup2_u32_u32 _50.current} any) ]
       | s18 = [ &_51 <- id self.current.c8'6 ] s19
       | s19 = [ &_48 <- { auth'0 = _49; id'0 = _51; old_log'0 = old_log; new_log'0 = old_log; shot'0 = false } ] s20
-      | s20 = MutBorrow.borrow_mut <t_LogCommitter> {_48}
-          (fun (_bor: MutBorrow.t t_LogCommitter) ->
-            [ &_47 <- _bor ] -{inv_LogCommitter _bor.final}-
-            [ &_48 <- _bor.final ] s21) [ _ck -> (! {[@expl:type invariant] inv_LogCommitter _48} any) ]
-      | s21 = MutBorrow.borrow_final <t_LogCommitter> {_47.current} {MutBorrow.get_id _47}
-          (fun (_bor: MutBorrow.t t_LogCommitter) ->
-            [ &_46 <- _bor ] -{inv_LogCommitter _bor.final}-
+      | s20 = MutBorrow.borrow_mut <t_SeqLockCommitter> {_48}
+          (fun (_bor: MutBorrow.t t_SeqLockCommitter) ->
+            [ &_47 <- _bor ] -{inv_SeqLockCommitter _bor.final}-
+            [ &_48 <- _bor.final ] s21) [ _ck -> (! {[@expl:type invariant] inv_SeqLockCommitter _48} any) ]
+      | s21 = MutBorrow.borrow_final <t_SeqLockCommitter> {_47.current} {MutBorrow.get_id _47}
+          (fun (_bor: MutBorrow.t t_SeqLockCommitter) ->
+            [ &_46 <- _bor ] -{inv_SeqLockCommitter _bor.final}-
             [ &_47 <- { _47 with current = _bor.final } ] s22)
-        [ _ck -> (! {[@expl:type invariant] inv_LogCommitter _47.current} any) ]
+        [ _ck -> (! {[@expl:type invariant] inv_SeqLockCommitter _47.current} any) ]
       | s22 = [ &_45 <- _46 ] s23
       | s23 = call_once_F {_40} {_45} (fun (_x: ()) -> [ &_39 <- _x ] s24)
       | s24 = s25 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_Seq_tup2_u32_u32 _50} any) ]
       | s25 = -{resolve_refmut_Authority_Seq_tup2_u32_u32 _50}- s26
-      | s26 = s27 [ _ck -> (! {[@expl:type invariant] inv_LogCommitter _48} any) ]
-      | s27 = -{resolve_LogCommitter _48}- s28
-      | s28 = s29 [ _ck -> (! {[@expl:type invariant] inv_refmut_LogCommitter _47} any) ]
-      | s29 = -{resolve_refmut_LogCommitter _47}- s30
+      | s26 = s27 [ _ck -> (! {[@expl:type invariant] inv_SeqLockCommitter _48} any) ]
+      | s27 = -{resolve_SeqLockCommitter _48}- s28
+      | s28 = s29 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqLockCommitter _47} any) ]
+      | s29 = -{resolve_refmut_SeqLockCommitter _47}- s30
       | s30 = s31 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqLockInv inv'0} any) ]
       | s31 = -{resolve_refmut_SeqLockInv inv'0}- s32
       | s32 = {[@expl:assertion] forall i: int. 0 <= i /\ i < Seq.length (l old_inv).log'0
@@ -7012,10 +6921,10 @@ module M_impl_SeqLock__read (* SeqLock *)
     | & _42: MutBorrow.t t_Option_F = Any.any_l ()
     | & _43: MutBorrow.t t_Option_F = Any.any_l ()
     | & _44: MutBorrow.t t_Option_F = Any.any_l ()
-    | & _45: MutBorrow.t t_LogCommitter = Any.any_l ()
-    | & _46: MutBorrow.t t_LogCommitter = Any.any_l ()
-    | & _47: MutBorrow.t t_LogCommitter = Any.any_l ()
-    | & _48: t_LogCommitter = Any.any_l ()
+    | & _45: MutBorrow.t t_SeqLockCommitter = Any.any_l ()
+    | & _46: MutBorrow.t t_SeqLockCommitter = Any.any_l ()
+    | & _47: MutBorrow.t t_SeqLockCommitter = Any.any_l ()
+    | & _48: t_SeqLockCommitter = Any.any_l ()
     | & _49: MutBorrow.t t_Authority_Seq_tup2_u32_u32 = Any.any_l ()
     | & _50: MutBorrow.t t_Authority_Seq_tup2_u32_u32 = Any.any_l ()
     | & _51: t_Id = Any.any_l () ]
@@ -7284,15 +7193,15 @@ module M_impl_SeqLock__read (* SeqLock *)
   
   meta "rewrite_def" predicate resolve_Ghost_Option_F'0
   
-  predicate shot (self: t_LogCommitter) = self.shot'0
+  predicate shot (self: t_SeqLockCommitter) = self.shot'0
   
-  function id'1 (self: t_LogCommitter) : t_Id = self.id'0
+  function id'1 (self: t_SeqLockCommitter) : t_Id = self.id'0
   
-  function new_log (self: t_LogCommitter) : Seq.seq tup2_u32_u32 = self.new_log'0
+  function new_log (self: t_SeqLockCommitter) : Seq.seq tup2_u32_u32 = self.new_log'0
   
-  function old_log (self: t_LogCommitter) : Seq.seq tup2_u32_u32 = self.old_log'0
+  function old_log (self: t_SeqLockCommitter) : Seq.seq tup2_u32_u32 = self.old_log'0
   
-  predicate hist_inv [@inline:trivial] (self: t_LogCommitter) (other: t_LogCommitter) =
+  predicate hist_inv [@inline:trivial] (self: t_SeqLockCommitter) (other: t_SeqLockCommitter) =
     self.id'0 = other.id'0
     /\ self.auth'0.final = other.auth'0.final /\ self.old_log'0 = other.old_log'0 /\ self.new_log'0 = other.new_log'0
   
@@ -7311,7 +7220,7 @@ module M_impl_SeqLock__read (* SeqLock *)
   {[@stop_split] [@expl:read_F requires] ([@stop_split] [@expl:read 'self' type invariant] inv_ref_SeqLock self)
     /\ ([@stop_split] [@expl:read 'f' type invariant] inv_Ghost_F f)
     /\ ([@stop_split] [@expl:read requires #0] contains tokens (Namespace_SEQLOCK 0))
-    /\ ([@stop_split] [@expl:read requires #1] forall c: MutBorrow.t t_LogCommitter. inv_refmut_LogCommitter c
+    /\ ([@stop_split] [@expl:read requires #1] forall c: MutBorrow.t t_SeqLockCommitter. inv_refmut_SeqLockCommitter c
       -> not shot c.current
       -> id'1 c.current = id self
       -> new_log c.current = old_log c.current
@@ -7320,45 +7229,47 @@ module M_impl_SeqLock__read (* SeqLock *)
       (set_ORDERING
         (bb0
         [ bb0 = s0
-          [ s0 = new (fun (_x: t_SyncView) -> [ &view <- _x ] s1)
-          | s1 = [ &f_snap <- f ] s2
-          | s2 = into_inner_F {f} (fun (_x: t_F) -> [ &_20 <- _x ] s3)
-          | s3 = [ &_19 <- Some _20 ] s4
-          | s4 = new_Option_F {_19} (fun (_x: t_Option_F) -> [ &f'0 <- _x ] s5)
-          | s5 = bb6 ]
-        | bb6 = bb6
-          [ bb6 = {[@expl:inferred invariant: type invariant] inv_Ghost_Option_F f'0}
+          [ s0 = new (fun (_x: t_SyncView) -> [ &_16 <- _x ] s1)
+          | s1 = into_inner_SyncView {_16} (fun (_x: t_SyncView) -> [ &_15 <- _x ] s2)
+          | s2 = new_SyncView {_15} (fun (_x: t_SyncView) -> [ &view <- _x ] s3)
+          | s3 = [ &f_snap <- f ] s4
+          | s4 = into_inner_F {f} (fun (_x: t_F) -> [ &_22 <- _x ] s5)
+          | s5 = [ &_21 <- Some _22 ] s6
+          | s6 = new_Option_F {_21} (fun (_x: t_Option_F) -> [ &f'0 <- _x ] s7)
+          | s7 = bb8 ]
+        | bb8 = bb8
+          [ bb8 = {[@expl:inferred invariant: type invariant] inv_Ghost_Option_F f'0}
             {[@expl:loop invariant #0] contains tokens (Namespace_SEQLOCK 0)}
             {[@expl:loop invariant #1] f'0 = Some f_snap}
             (! s0)
-            [ s0 = [ &_31 <- None'0 ] s1
-            | s1 = new_Option_Fragment_FMap_Int_Ag_LockSnapshot {_31}
+            [ s0 = [ &_33 <- None'0 ] s1
+            | s1 = new_Option_Fragment_FMap_Int_Ag_LockSnapshot {_33}
                 (fun (_x: t_Option_Fragment_FMap_Int_Ag_LockSnapshot) -> [ &snap_frag <- _x ] s2)
-            | s2 = [ &_34 <- Acquire ] s3
+            | s2 = [ &_36 <- Acquire ] s3
             | s3 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-                (fun (_bor: MutBorrow.t t_Tokens) -> [ &_39 <- _bor ] [ &tokens <- _bor.final ] s4)
+                (fun (_bor: MutBorrow.t t_Tokens) -> [ &_41 <- _bor ] [ &tokens <- _bor.final ] s4)
             | s4 = MutBorrow.borrow_mut <t_SyncView> {view}
-                (fun (_bor: MutBorrow.t t_SyncView) -> [ &_40 <- _bor ] [ &view <- _bor.final ] s5)
+                (fun (_bor: MutBorrow.t t_SyncView) -> [ &_42 <- _bor ] [ &view <- _bor.final ] s5)
             | s5 = MutBorrow.borrow_mut <t_Option_Fragment_FMap_Int_Ag_LockSnapshot> {snap_frag}
                 (fun (_bor: MutBorrow.t t_Option_Fragment_FMap_Int_Ag_LockSnapshot) ->
-                  [ &_41 <- _bor ] -{inv_Ghost_Option_Fragment_FMap_Int_Ag_LockSnapshot _bor.final}-
+                  [ &_43 <- _bor ] -{inv_Ghost_Option_Fragment_FMap_Int_Ag_LockSnapshot _bor.final}-
                   [ &snap_frag <- _bor.final ] s6)
               [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment_FMap_Int_Ag_LockSnapshot snap_frag} any) ]
-            | s6 = [ &_37 <- { c0 = self; c1 = _39; c2 = _40; c3 = _41 } ] s7
-            | s7 = __new_closure8 {_37} (fun (_x: t_FnGhostWrapper_closure8) -> [ &_36 <- _x ] s8)
-            | s8 = new_FnGhostWrapper_closure8 {_36} (fun (_x: t_FnGhostWrapper_closure8) -> [ &_35 <- _x ] s9)
-            | s9 = load_FnGhostWrapper_closure8 {self.seq} {_34} {_35} (fun (_x: UInt64.t) -> [ &seq1 <- _x ] s10)
-            | s10 = [ &_46 <- (2: UInt64.t) = (0: UInt64.t) ] s11
-            | s11 = {[@expl:remainder by zero] not _46} s12
-            | s12 = UInt64.rem {seq1} {(2: UInt64.t)} (fun (_x: UInt64.t) -> [ &_44 <- _x ] s13)
-            | s13 = [ &_43 <- _44 <> (0: UInt64.t) ] s14
-            | s14 = any [ br0 -> {_43 = false} (! bb14) | br1 -> {_43} (! bb13) ] ]
-            [ bb13 = s0
+            | s6 = [ &_39 <- { c0 = self; c1 = _41; c2 = _42; c3 = _43 } ] s7
+            | s7 = __new_closure8 {_39} (fun (_x: t_FnGhostWrapper_closure8) -> [ &_38 <- _x ] s8)
+            | s8 = new_FnGhostWrapper_closure8 {_38} (fun (_x: t_FnGhostWrapper_closure8) -> [ &_37 <- _x ] s9)
+            | s9 = load_FnGhostWrapper_closure8 {self.seq} {_36} {_37} (fun (_x: UInt64.t) -> [ &seq1 <- _x ] s10)
+            | s10 = [ &_48 <- (2: UInt64.t) = (0: UInt64.t) ] s11
+            | s11 = {[@expl:remainder by zero] not _48} s12
+            | s12 = UInt64.rem {seq1} {(2: UInt64.t)} (fun (_x: UInt64.t) -> [ &_46 <- _x ] s13)
+            | s13 = [ &_45 <- _46 <> (0: UInt64.t) ] s14
+            | s14 = any [ br0 -> {_45 = false} (! bb16) | br1 -> {_45} (! bb15) ] ]
+            [ bb15 = s0
               [ s0 = s1
                 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment_FMap_Int_Ag_LockSnapshot snap_frag} any) ]
               | s1 = -{resolve_Ghost_Option_Fragment_FMap_Int_Ag_LockSnapshot'0 snap_frag}- s2
-              | s2 = bb6 ]
-            | bb14 = s0
+              | s2 = bb8 ]
+            | bb16 = s0
               [ s0 = any
                 [ any_ (_dest: t_LockSnapshot) -> (! -{_dest
                   = (unwrap_Option_Ag_LockSnapshot (lookup_Int'0 (view_Fragment_FMap_Int_Ag_LockSnapshot (unwrap_Option_Fragment_FMap_Int_Ag_LockSnapshot snap_frag)) (UInt64.t'int seq1))).f0'1}-
@@ -7367,87 +7278,91 @@ module M_impl_SeqLock__read (* SeqLock *)
                   /\ ([@stop_split] [@expl:unwrap_logic requires] lookup_Int'0 (view_Fragment_FMap_Int_Ag_LockSnapshot (unwrap_Option_Fragment_FMap_Int_Ag_LockSnapshot snap_frag)) (UInt64.t'int seq1)
                   <> None'4)}
                   any) ]
-              | s1 = new'1 (fun (_x: t_AcquireSyncView) -> [ &acq0 <- _x ] s2)
-              | s2 = [ &_55 <- Relaxed ] s3
-              | s3 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-                  (fun (_bor: MutBorrow.t t_Tokens) -> [ &_60 <- _bor ] [ &tokens <- _bor.final ] s4)
-              | s4 = MutBorrow.borrow_mut <t_AcquireSyncView> {acq0}
-                  (fun (_bor: MutBorrow.t t_AcquireSyncView) -> [ &_61 <- _bor ] [ &acq0 <- _bor.final ] s5)
-              | s5 = MutBorrow.borrow_mut <t_SyncView> {view}
-                  (fun (_bor: MutBorrow.t t_SyncView) -> [ &_62 <- _bor ] [ &view <- _bor.final ] s6)
-              | s6 = [ &_58 <- { c0'1 = self;
-                                 c1'1 = _60;
-                                 c2'1 = _61;
-                                 c3'1 = _62;
+              | s1 = new'1 (fun (_x: t_AcquireSyncView) -> [ &_56 <- _x ] s2)
+              | s2 = into_inner_AcquireSyncView {_56} (fun (_x: t_AcquireSyncView) -> [ &_55 <- _x ] s3)
+              | s3 = new_AcquireSyncView {_55} (fun (_x: t_AcquireSyncView) -> [ &acq0 <- _x ] s4)
+              | s4 = [ &_59 <- Relaxed ] s5
+              | s5 = MutBorrow.borrow_mut <t_Tokens> {tokens}
+                  (fun (_bor: MutBorrow.t t_Tokens) -> [ &_64 <- _bor ] [ &tokens <- _bor.final ] s6)
+              | s6 = MutBorrow.borrow_mut <t_AcquireSyncView> {acq0}
+                  (fun (_bor: MutBorrow.t t_AcquireSyncView) -> [ &_65 <- _bor ] [ &acq0 <- _bor.final ] s7)
+              | s7 = MutBorrow.borrow_mut <t_SyncView> {view}
+                  (fun (_bor: MutBorrow.t t_SyncView) -> [ &_66 <- _bor ] [ &view <- _bor.final ] s8)
+              | s8 = [ &_62 <- { c0'1 = self;
+                                 c1'1 = _64;
+                                 c2'1 = _65;
+                                 c3'1 = _66;
                                  c4'1 = snap_frag;
                                  c5'1 = seq1;
-                                 c6'1 = sn } ] s7
-              | s7 = __new_closure10 {_58} (fun (_x: t_FnGhostWrapper_closure10) -> [ &_57 <- _x ] s8)
-              | s8 = new_FnGhostWrapper_closure10 {_57} (fun (_x: t_FnGhostWrapper_closure10) -> [ &_56 <- _x ] s9)
-              | s9 = load_FnGhostWrapper_closure10 {self.data0} {_55} {_56}
-                  (fun (_x: UInt32.t) -> [ &result0 <- _x ] s10)
-              | s10 = new'1 (fun (_x: t_AcquireSyncView) -> [ &acq1 <- _x ] s11)
-              | s11 = [ &_69 <- Relaxed ] s12
-              | s12 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-                  (fun (_bor: MutBorrow.t t_Tokens) -> [ &_74 <- _bor ] [ &tokens <- _bor.final ] s13)
-              | s13 = MutBorrow.borrow_mut <t_AcquireSyncView> {acq1}
-                  (fun (_bor: MutBorrow.t t_AcquireSyncView) -> [ &_75 <- _bor ] [ &acq1 <- _bor.final ] s14)
-              | s14 = MutBorrow.borrow_mut <t_SyncView> {view}
-                  (fun (_bor: MutBorrow.t t_SyncView) -> [ &_76 <- _bor ] [ &view <- _bor.final ] s15)
-              | s15 = [ &_72 <- { c0'3 = self;
-                                  c1'3 = _74;
-                                  c2'3 = _75;
-                                  c3'3 = _76;
+                                 c6'1 = sn } ] s9
+              | s9 = __new_closure10 {_62} (fun (_x: t_FnGhostWrapper_closure10) -> [ &_61 <- _x ] s10)
+              | s10 = new_FnGhostWrapper_closure10 {_61} (fun (_x: t_FnGhostWrapper_closure10) -> [ &_60 <- _x ] s11)
+              | s11 = load_FnGhostWrapper_closure10 {self.data0} {_59} {_60}
+                  (fun (_x: UInt32.t) -> [ &result0 <- _x ] s12)
+              | s12 = new'1 (fun (_x: t_AcquireSyncView) -> [ &_72 <- _x ] s13)
+              | s13 = into_inner_AcquireSyncView {_72} (fun (_x: t_AcquireSyncView) -> [ &_71 <- _x ] s14)
+              | s14 = new_AcquireSyncView {_71} (fun (_x: t_AcquireSyncView) -> [ &acq1 <- _x ] s15)
+              | s15 = [ &_75 <- Relaxed ] s16
+              | s16 = MutBorrow.borrow_mut <t_Tokens> {tokens}
+                  (fun (_bor: MutBorrow.t t_Tokens) -> [ &_80 <- _bor ] [ &tokens <- _bor.final ] s17)
+              | s17 = MutBorrow.borrow_mut <t_AcquireSyncView> {acq1}
+                  (fun (_bor: MutBorrow.t t_AcquireSyncView) -> [ &_81 <- _bor ] [ &acq1 <- _bor.final ] s18)
+              | s18 = MutBorrow.borrow_mut <t_SyncView> {view}
+                  (fun (_bor: MutBorrow.t t_SyncView) -> [ &_82 <- _bor ] [ &view <- _bor.final ] s19)
+              | s19 = [ &_78 <- { c0'3 = self;
+                                  c1'3 = _80;
+                                  c2'3 = _81;
+                                  c3'3 = _82;
                                   c4'3 = snap_frag;
                                   c5'3 = seq1;
-                                  c6'3 = sn } ] s16
-              | s16 = __new_closure11 {_72} (fun (_x: t_FnGhostWrapper_closure11) -> [ &_71 <- _x ] s17)
-              | s17 = new_FnGhostWrapper_closure11 {_71} (fun (_x: t_FnGhostWrapper_closure11) -> [ &_70 <- _x ] s18)
-              | s18 = load_FnGhostWrapper_closure11 {self.data1} {_69} {_70}
-                  (fun (_x: UInt32.t) -> [ &result1 <- _x ] s19)
-              | s19 = [ &_81 <- Acquire ] s20
-              | s20 = deref_Ghost_AcquireSyncView {acq0} (fun (_x: t_AcquireSyncView) -> [ &_85 <- _x ] s21)
-              | s21 = deref_Ghost_AcquireSyncView {acq1} (fun (_x: t_AcquireSyncView) -> [ &_88 <- _x ] s22)
-              | s22 = acq_join {_85} {_88} (fun (_x: t_AcquireSyncView) -> [ &_83 <- _x ] s23)
-              | s23 = new_AcquireSyncView {_83} (fun (_x: t_AcquireSyncView) -> [ &_82 <- _x ] s24)
-              | s24 = fence_acquire {_81} {_82} (fun (_x: t_SyncView) -> [ &fence_view <- _x ] s25)
-              | s25 = MutBorrow.borrow_mut <t_SyncView> {view}
-                  (fun (_bor: MutBorrow.t t_SyncView) -> [ &_94 <- _bor ] [ &view <- _bor.final ] s26)
-              | s26 = deref_mut_Ghost_SyncView {_94} (fun (_x: MutBorrow.t t_SyncView) -> [ &_93 <- _x ] s27)
-              | s27 = deref_Ghost_SyncView {fence_view} (fun (_x: t_SyncView) -> [ &_96 <- _x ] s28)
-              | s28 = MutBorrow.borrow_final <t_SyncView> {_93.current} {MutBorrow.get_id _93}
+                                  c6'3 = sn } ] s20
+              | s20 = __new_closure11 {_78} (fun (_x: t_FnGhostWrapper_closure11) -> [ &_77 <- _x ] s21)
+              | s21 = new_FnGhostWrapper_closure11 {_77} (fun (_x: t_FnGhostWrapper_closure11) -> [ &_76 <- _x ] s22)
+              | s22 = load_FnGhostWrapper_closure11 {self.data1} {_75} {_76}
+                  (fun (_x: UInt32.t) -> [ &result1 <- _x ] s23)
+              | s23 = [ &_87 <- Acquire ] s24
+              | s24 = deref_Ghost_AcquireSyncView {acq0} (fun (_x: t_AcquireSyncView) -> [ &_91 <- _x ] s25)
+              | s25 = deref_Ghost_AcquireSyncView {acq1} (fun (_x: t_AcquireSyncView) -> [ &_94 <- _x ] s26)
+              | s26 = acq_join {_91} {_94} (fun (_x: t_AcquireSyncView) -> [ &_89 <- _x ] s27)
+              | s27 = new_AcquireSyncView {_89} (fun (_x: t_AcquireSyncView) -> [ &_88 <- _x ] s28)
+              | s28 = fence_acquire {_87} {_88} (fun (_x: t_SyncView) -> [ &fence_view <- _x ] s29)
+              | s29 = MutBorrow.borrow_mut <t_SyncView> {view}
+                  (fun (_bor: MutBorrow.t t_SyncView) -> [ &_100 <- _bor ] [ &view <- _bor.final ] s30)
+              | s30 = deref_mut_Ghost_SyncView {_100} (fun (_x: MutBorrow.t t_SyncView) -> [ &_99 <- _x ] s31)
+              | s31 = deref_Ghost_SyncView {fence_view} (fun (_x: t_SyncView) -> [ &_102 <- _x ] s32)
+              | s32 = MutBorrow.borrow_final <t_SyncView> {_99.current} {MutBorrow.get_id _99}
                   (fun (_bor: MutBorrow.t t_SyncView) ->
-                    [ &_92 <- _bor ] [ &_93 <- { _93 with current = _bor.final } ] s29)
-              | s29 = join_in {_92} {_96} (fun (_x: ()) -> [ &_91 <- _x ] s30)
-              | s30 = -{resolve_refmut_SyncView _93}- s31
-              | s31 = new_unit {_91} (fun (_x: ()) -> [ &_90 <- _x ] s32)
-              | s32 = [ &_100 <- Relaxed ] s33
-              | s33 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-                  (fun (_bor: MutBorrow.t t_Tokens) -> [ &_105 <- _bor ] [ &tokens <- _bor.final ] s34)
-              | s34 = MutBorrow.borrow_mut <t_SyncView> {view}
-                  (fun (_bor: MutBorrow.t t_SyncView) -> [ &_106 <- _bor ] [ &view <- _bor.final ] s35)
-              | s35 = s36
+                    [ &_98 <- _bor ] [ &_99 <- { _99 with current = _bor.final } ] s33)
+              | s33 = join_in {_98} {_102} (fun (_x: ()) -> [ &_97 <- _x ] s34)
+              | s34 = -{resolve_refmut_SyncView _99}- s35
+              | s35 = new_unit {_97} (fun (_x: ()) -> [ &_96 <- _x ] s36)
+              | s36 = [ &_106 <- Relaxed ] s37
+              | s37 = MutBorrow.borrow_mut <t_Tokens> {tokens}
+                  (fun (_bor: MutBorrow.t t_Tokens) -> [ &_111 <- _bor ] [ &tokens <- _bor.final ] s38)
+              | s38 = MutBorrow.borrow_mut <t_SyncView> {view}
+                  (fun (_bor: MutBorrow.t t_SyncView) -> [ &_112 <- _bor ] [ &view <- _bor.final ] s39)
+              | s39 = s40
                 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_Fragment_FMap_Int_Ag_LockSnapshot snap_frag} any) ]
-              | s36 = -{resolve_Ghost_Option_Fragment_FMap_Int_Ag_LockSnapshot'0 snap_frag}- s37
-              | s37 = MutBorrow.borrow_mut <t_Option_F> {f'0}
+              | s40 = -{resolve_Ghost_Option_Fragment_FMap_Int_Ag_LockSnapshot'0 snap_frag}- s41
+              | s41 = MutBorrow.borrow_mut <t_Option_F> {f'0}
                   (fun (_bor: MutBorrow.t t_Option_F) ->
-                    [ &_112 <- _bor ] -{inv_Ghost_Option_F _bor.final}-
-                    [ &f'0 <- _bor.final ] s38) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_F f'0} any) ]
-              | s38 = [ &_103 <- { c0'5 = self;
-                                   c1'5 = _105;
-                                   c2'5 = _106;
+                    [ &_118 <- _bor ] -{inv_Ghost_Option_F _bor.final}-
+                    [ &f'0 <- _bor.final ] s42) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_F f'0} any) ]
+              | s42 = [ &_109 <- { c0'5 = self;
+                                   c1'5 = _111;
+                                   c2'5 = _112;
                                    c3'5 = seq1;
                                    c4'5 = snap_frag;
                                    c5'5 = sn;
                                    c6'5 = result0;
                                    c7'5 = result1;
-                                   c8'5 = _112 } ] s39
-              | s39 = __new_closure12 {_103} (fun (_x: t_FnGhostWrapper_closure12) -> [ &_102 <- _x ] s40)
-              | s40 = new_FnGhostWrapper_closure12 {_102} (fun (_x: t_FnGhostWrapper_closure12) -> [ &_101 <- _x ] s41)
-              | s41 = load_FnGhostWrapper_closure12 {self.seq} {_100} {_101} (fun (_x: UInt64.t) -> [ &seq2 <- _x ] s42)
-              | s42 = [ &_113 <- seq1 = seq2 ] s43
-              | s43 = any [ br0 -> {_113 = false} (! bb6) | br1 -> {_113} (! bb36) ] ] ] ]
-        | bb36 = s0
+                                   c8'5 = _118 } ] s43
+              | s43 = __new_closure12 {_109} (fun (_x: t_FnGhostWrapper_closure12) -> [ &_108 <- _x ] s44)
+              | s44 = new_FnGhostWrapper_closure12 {_108} (fun (_x: t_FnGhostWrapper_closure12) -> [ &_107 <- _x ] s45)
+              | s45 = load_FnGhostWrapper_closure12 {self.seq} {_106} {_107} (fun (_x: UInt64.t) -> [ &seq2 <- _x ] s46)
+              | s46 = [ &_119 <- seq1 = seq2 ] s47
+              | s47 = any [ br0 -> {_119 = false} (! bb8) | br1 -> {_119} (! bb42) ] ] ] ]
+        | bb42 = s0
           [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_F f'0} any) ]
           | s1 = -{resolve_Ghost_Option_F'0 f'0}- s2
           | s2 = [ &_ret <- { f0 = result0; f1 = result1 } ] s3
@@ -7457,69 +7372,282 @@ module M_impl_SeqLock__read (* SeqLock *)
         | & tokens: t_Tokens = tokens
         | & f: t_F = f
         | & view: t_SyncView = Any.any_l ()
+        | & _15: t_SyncView = Any.any_l ()
+        | & _16: t_SyncView = Any.any_l ()
         | & f_snap: t_F = Any.any_l ()
         | & f'0: t_Option_F = Any.any_l ()
-        | & _19: t_Option_F = Any.any_l ()
-        | & _20: t_F = Any.any_l ()
+        | & _21: t_Option_F = Any.any_l ()
+        | & _22: t_F = Any.any_l ()
         | & snap_frag: t_Option_Fragment_FMap_Int_Ag_LockSnapshot = Any.any_l ()
-        | & _31: t_Option_Fragment_FMap_Int_Ag_LockSnapshot = Any.any_l ()
+        | & _33: t_Option_Fragment_FMap_Int_Ag_LockSnapshot = Any.any_l ()
         | & seq1: UInt64.t = Any.any_l ()
-        | & _34: t_Ordering = Any.any_l ()
-        | & _35: t_FnGhostWrapper_closure8 = Any.any_l ()
-        | & _36: t_FnGhostWrapper_closure8 = Any.any_l ()
-        | & _37: closure8 = Any.any_l ()
-        | & _39: MutBorrow.t t_Tokens = Any.any_l ()
-        | & _40: MutBorrow.t t_SyncView = Any.any_l ()
-        | & _41: MutBorrow.t t_Option_Fragment_FMap_Int_Ag_LockSnapshot = Any.any_l ()
-        | & _43: bool = Any.any_l ()
-        | & _44: UInt64.t = Any.any_l ()
-        | & _46: bool = Any.any_l ()
+        | & _36: t_Ordering = Any.any_l ()
+        | & _37: t_FnGhostWrapper_closure8 = Any.any_l ()
+        | & _38: t_FnGhostWrapper_closure8 = Any.any_l ()
+        | & _39: closure8 = Any.any_l ()
+        | & _41: MutBorrow.t t_Tokens = Any.any_l ()
+        | & _42: MutBorrow.t t_SyncView = Any.any_l ()
+        | & _43: MutBorrow.t t_Option_Fragment_FMap_Int_Ag_LockSnapshot = Any.any_l ()
+        | & _45: bool = Any.any_l ()
+        | & _46: UInt64.t = Any.any_l ()
+        | & _48: bool = Any.any_l ()
         | & sn: t_LockSnapshot = Any.any_l ()
         | & acq0: t_AcquireSyncView = Any.any_l ()
+        | & _55: t_AcquireSyncView = Any.any_l ()
+        | & _56: t_AcquireSyncView = Any.any_l ()
         | & result0: UInt32.t = Any.any_l ()
-        | & _55: t_Ordering = Any.any_l ()
-        | & _56: t_FnGhostWrapper_closure10 = Any.any_l ()
-        | & _57: t_FnGhostWrapper_closure10 = Any.any_l ()
-        | & _58: closure10 = Any.any_l ()
-        | & _60: MutBorrow.t t_Tokens = Any.any_l ()
-        | & _61: MutBorrow.t t_AcquireSyncView = Any.any_l ()
-        | & _62: MutBorrow.t t_SyncView = Any.any_l ()
+        | & _59: t_Ordering = Any.any_l ()
+        | & _60: t_FnGhostWrapper_closure10 = Any.any_l ()
+        | & _61: t_FnGhostWrapper_closure10 = Any.any_l ()
+        | & _62: closure10 = Any.any_l ()
+        | & _64: MutBorrow.t t_Tokens = Any.any_l ()
+        | & _65: MutBorrow.t t_AcquireSyncView = Any.any_l ()
+        | & _66: MutBorrow.t t_SyncView = Any.any_l ()
         | & acq1: t_AcquireSyncView = Any.any_l ()
+        | & _71: t_AcquireSyncView = Any.any_l ()
+        | & _72: t_AcquireSyncView = Any.any_l ()
         | & result1: UInt32.t = Any.any_l ()
-        | & _69: t_Ordering = Any.any_l ()
-        | & _70: t_FnGhostWrapper_closure11 = Any.any_l ()
-        | & _71: t_FnGhostWrapper_closure11 = Any.any_l ()
-        | & _72: closure11 = Any.any_l ()
-        | & _74: MutBorrow.t t_Tokens = Any.any_l ()
-        | & _75: MutBorrow.t t_AcquireSyncView = Any.any_l ()
-        | & _76: MutBorrow.t t_SyncView = Any.any_l ()
+        | & _75: t_Ordering = Any.any_l ()
+        | & _76: t_FnGhostWrapper_closure11 = Any.any_l ()
+        | & _77: t_FnGhostWrapper_closure11 = Any.any_l ()
+        | & _78: closure11 = Any.any_l ()
+        | & _80: MutBorrow.t t_Tokens = Any.any_l ()
+        | & _81: MutBorrow.t t_AcquireSyncView = Any.any_l ()
+        | & _82: MutBorrow.t t_SyncView = Any.any_l ()
         | & fence_view: t_SyncView = Any.any_l ()
-        | & _81: t_Ordering = Any.any_l ()
-        | & _82: t_AcquireSyncView = Any.any_l ()
-        | & _83: t_AcquireSyncView = Any.any_l ()
-        | & _85: t_AcquireSyncView = Any.any_l ()
+        | & _87: t_Ordering = Any.any_l ()
         | & _88: t_AcquireSyncView = Any.any_l ()
-        | & _90: () = Any.any_l ()
-        | & _91: () = Any.any_l ()
-        | & _92: MutBorrow.t t_SyncView = Any.any_l ()
-        | & _93: MutBorrow.t t_SyncView = Any.any_l ()
-        | & _94: MutBorrow.t t_SyncView = Any.any_l ()
-        | & _96: t_SyncView = Any.any_l ()
+        | & _89: t_AcquireSyncView = Any.any_l ()
+        | & _91: t_AcquireSyncView = Any.any_l ()
+        | & _94: t_AcquireSyncView = Any.any_l ()
+        | & _96: () = Any.any_l ()
+        | & _97: () = Any.any_l ()
+        | & _98: MutBorrow.t t_SyncView = Any.any_l ()
+        | & _99: MutBorrow.t t_SyncView = Any.any_l ()
+        | & _100: MutBorrow.t t_SyncView = Any.any_l ()
+        | & _102: t_SyncView = Any.any_l ()
         | & seq2: UInt64.t = Any.any_l ()
-        | & _100: t_Ordering = Any.any_l ()
-        | & _101: t_FnGhostWrapper_closure12 = Any.any_l ()
-        | & _102: t_FnGhostWrapper_closure12 = Any.any_l ()
-        | & _103: closure12 = Any.any_l ()
-        | & _105: MutBorrow.t t_Tokens = Any.any_l ()
-        | & _106: MutBorrow.t t_SyncView = Any.any_l ()
-        | & _112: MutBorrow.t t_Option_F = Any.any_l ()
-        | & _113: bool = Any.any_l () ])))
+        | & _106: t_Ordering = Any.any_l ()
+        | & _107: t_FnGhostWrapper_closure12 = Any.any_l ()
+        | & _108: t_FnGhostWrapper_closure12 = Any.any_l ()
+        | & _109: closure12 = Any.any_l ()
+        | & _111: MutBorrow.t t_Tokens = Any.any_l ()
+        | & _112: MutBorrow.t t_SyncView = Any.any_l ()
+        | & _118: MutBorrow.t t_Option_F = Any.any_l ()
+        | & _119: bool = Any.any_l () ])))
     [ return (result: tup2_u32_u32) ->
-    {[@stop_split] [@expl:read_F ensures] ([@stop_split] [@expl:read ensures #0] exists c: MutBorrow.t t_LogCommitter. not shot c.current
+    {[@stop_split] [@expl:read_F ensures] ([@stop_split] [@expl:read ensures #0] exists c: MutBorrow.t t_SeqLockCommitter. not shot c.current
           /\ id'1 c.current = id self
           /\ new_log c.current = old_log c.current
           /\ postcondition_once_F f c () /\ contains_tup2_u32_u32 (old_log c.current) result)
       /\ ([@stop_split] [@expl:read ensures #1] Map.get (pred'0 self) result)}
+      (! return {result}) ]
+end
+module M_impl_SeqLockCommitter__shoot (* SeqLockCommitter<'_> *)
+  use creusot.prelude.MutBorrow
+  use creusot.int.UInt32
+  use seq.Seq
+  use creusot.prelude.Any
+  
+  type t_Fragment_Seq_tup2_u32_u32
+  
+  type t_SeqLockLog = { f0: t_Fragment_Seq_tup2_u32_u32 }
+  
+  predicate invariant_Fragment_Seq_tup2_u32_u32 (self: t_Fragment_Seq_tup2_u32_u32)
+  
+  predicate inv_Fragment_Seq_tup2_u32_u32 (_1: t_Fragment_Seq_tup2_u32_u32)
+  
+  axiom inv_axiom:
+    forall _1: t_Fragment_Seq_tup2_u32_u32 [inv_Fragment_Seq_tup2_u32_u32 _1]. inv_Fragment_Seq_tup2_u32_u32 _1
+      -> invariant_Fragment_Seq_tup2_u32_u32 _1
+  
+  type t_Authority_Seq_tup2_u32_u32
+  
+  type t_Id
+  
+  type tup2_u32_u32 = { f0'0: UInt32.t; f1'0: UInt32.t }
+  
+  type t_SeqLockCommitter = {
+    auth: MutBorrow.t t_Authority_Seq_tup2_u32_u32;
+    id: t_Id;
+    old_log: Seq.seq tup2_u32_u32;
+    new_log: Seq.seq tup2_u32_u32;
+    shot: bool }
+  
+  predicate invariant_Authority_Seq_tup2_u32_u32 (self: t_Authority_Seq_tup2_u32_u32)
+  
+  predicate inv_Authority_Seq_tup2_u32_u32 (_1: t_Authority_Seq_tup2_u32_u32)
+  
+  axiom inv_axiom'0:
+    forall _1: t_Authority_Seq_tup2_u32_u32 [inv_Authority_Seq_tup2_u32_u32 _1]. inv_Authority_Seq_tup2_u32_u32 _1
+      -> invariant_Authority_Seq_tup2_u32_u32 _1
+  
+  predicate invariant_refmut_Authority_Seq_tup2_u32_u32 [@inline:trivial] (self: MutBorrow.t t_Authority_Seq_tup2_u32_u32) =
+    inv_Authority_Seq_tup2_u32_u32 self.current /\ inv_Authority_Seq_tup2_u32_u32 self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Authority_Seq_tup2_u32_u32
+  
+  predicate inv_refmut_Authority_Seq_tup2_u32_u32 [@inline:trivial] (_1: MutBorrow.t t_Authority_Seq_tup2_u32_u32) =
+    invariant_refmut_Authority_Seq_tup2_u32_u32 _1
+  
+  meta "rewrite_def" predicate inv_refmut_Authority_Seq_tup2_u32_u32
+  
+  predicate invariant_refmut_Fragment_Seq_tup2_u32_u32 [@inline:trivial] (self: MutBorrow.t t_Fragment_Seq_tup2_u32_u32) =
+    inv_Fragment_Seq_tup2_u32_u32 self.current /\ inv_Fragment_Seq_tup2_u32_u32 self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_Fragment_Seq_tup2_u32_u32
+  
+  predicate inv_refmut_Fragment_Seq_tup2_u32_u32 [@inline:trivial] (_1: MutBorrow.t t_Fragment_Seq_tup2_u32_u32) =
+    invariant_refmut_Fragment_Seq_tup2_u32_u32 _1
+  
+  meta "rewrite_def" predicate inv_refmut_Fragment_Seq_tup2_u32_u32
+  
+  function id_Seq_tup2_u32_u32 (self: t_Authority_Seq_tup2_u32_u32) : t_Id
+  
+  function id_Seq_tup2_u32_u32'0 (self: t_Fragment_Seq_tup2_u32_u32) : t_Id
+  
+  function val_Seq_tup2_u32_u32 (self: t_Authority_Seq_tup2_u32_u32) : Seq.seq tup2_u32_u32
+  
+  function val_Seq_tup2_u32_u32'0 (self: t_Fragment_Seq_tup2_u32_u32) : Seq.seq tup2_u32_u32
+  
+  let update_Seq_tup2_u32_u32 (self: MutBorrow.t t_Authority_Seq_tup2_u32_u32)
+    (frag: MutBorrow.t t_Fragment_Seq_tup2_u32_u32) (v: Seq.seq tup2_u32_u32) (return (x: ())) =
+  {[@stop_split] [@expl:update_Seq_tup2_u32_u32 requires] ([@stop_split] [@expl:update 'self' type invariant] inv_refmut_Authority_Seq_tup2_u32_u32 self)
+    /\ ([@stop_split] [@expl:update 'frag' type invariant] inv_refmut_Fragment_Seq_tup2_u32_u32 frag)
+    /\ ([@stop_split] [@expl:update requires] id_Seq_tup2_u32_u32 self.current = id_Seq_tup2_u32_u32'0 frag.current)}
+    any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:update_Seq_tup2_u32_u32 ensures] ([@stop_split] [@expl:update ensures #0] id_Seq_tup2_u32_u32 self.final
+        = id_Seq_tup2_u32_u32 self.current)
+      /\ ([@stop_split] [@expl:update ensures #1] id_Seq_tup2_u32_u32'0 frag.final = id_Seq_tup2_u32_u32'0 frag.current)
+      /\ ([@stop_split] [@expl:update ensures #2] val_Seq_tup2_u32_u32 self.current
+        = val_Seq_tup2_u32_u32'0 frag.current)
+      /\ ([@stop_split] [@expl:update ensures #3] val_Seq_tup2_u32_u32 self.final = v
+      /\ val_Seq_tup2_u32_u32'0 frag.final = v)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_Fragment_Seq_tup2_u32_u32 [@inline:trivial] (_1: MutBorrow.t t_Fragment_Seq_tup2_u32_u32) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_Fragment_Seq_tup2_u32_u32
+  
+  predicate inv_SeqLockLog (_1: t_SeqLockLog)
+  
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_SeqLockLog [inv_SeqLockLog _1]. inv_SeqLockLog _1
+      = inv_Fragment_Seq_tup2_u32_u32 _1.f0
+  
+  predicate invariant_refmut_SeqLockLog [@inline:trivial] (self: MutBorrow.t t_SeqLockLog) =
+    inv_SeqLockLog self.current /\ inv_SeqLockLog self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_SeqLockLog
+  
+  predicate inv_refmut_SeqLockLog [@inline:trivial] (_1: MutBorrow.t t_SeqLockLog) = invariant_refmut_SeqLockLog _1
+  
+  meta "rewrite_def" predicate inv_refmut_SeqLockLog
+  
+  predicate resolve_refmut_SeqLockLog [@inline:trivial] (_1: MutBorrow.t t_SeqLockLog) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_SeqLockLog
+  
+  predicate invariant_SeqLockCommitter [@inline:trivial] (self: t_SeqLockCommitter) =
+    id_Seq_tup2_u32_u32 self.auth.current = self.id
+    /\ (if self.shot then
+      val_Seq_tup2_u32_u32 self.auth.current = self.new_log
+    else
+      val_Seq_tup2_u32_u32 self.auth.current = self.old_log
+    )
+  
+  meta "rewrite_def" predicate invariant_SeqLockCommitter
+  
+  predicate inv_SeqLockCommitter (_1: t_SeqLockCommitter)
+  
+  axiom inv_axiom'2 [@rewrite]: forall _1: t_SeqLockCommitter [inv_SeqLockCommitter _1]. inv_SeqLockCommitter _1
+      = (invariant_SeqLockCommitter _1 /\ inv_refmut_Authority_Seq_tup2_u32_u32 _1.auth)
+  
+  predicate invariant_refmut_SeqLockCommitter [@inline:trivial] (self: MutBorrow.t t_SeqLockCommitter) =
+    inv_SeqLockCommitter self.current /\ inv_SeqLockCommitter self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_SeqLockCommitter
+  
+  predicate inv_refmut_SeqLockCommitter [@inline:trivial] (_1: MutBorrow.t t_SeqLockCommitter) =
+    invariant_refmut_SeqLockCommitter _1
+  
+  meta "rewrite_def" predicate inv_refmut_SeqLockCommitter
+  
+  predicate resolve_refmut_SeqLockCommitter [@inline:trivial] (_1: MutBorrow.t t_SeqLockCommitter) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_SeqLockCommitter
+  
+  predicate shot'0 (self: t_SeqLockCommitter) = self.shot
+  
+  function id'0 (self: t_SeqLockCommitter) : t_Id = self.id
+  
+  function id'1 (self: t_SeqLockLog) : t_Id = id_Seq_tup2_u32_u32'0 self.f0
+  
+  predicate hist_inv [@inline:trivial] (self: t_SeqLockCommitter) (other: t_SeqLockCommitter) =
+    self.id = other.id
+    /\ self.auth.final = other.auth.final /\ self.old_log = other.old_log /\ self.new_log = other.new_log
+  
+  meta "rewrite_def" predicate hist_inv
+  
+  function view_SeqLockLog (self: t_SeqLockLog) : Seq.seq tup2_u32_u32 = val_Seq_tup2_u32_u32'0 self.f0
+  
+  function old_log'0 (self: t_SeqLockCommitter) : Seq.seq tup2_u32_u32 = self.old_log
+  
+  function new_log'0 (self: t_SeqLockCommitter) : Seq.seq tup2_u32_u32 = self.new_log
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let shoot (self: MutBorrow.t t_SeqLockCommitter) (log: MutBorrow.t t_SeqLockLog) (return (x: ())) =
+  {[@stop_split] [@expl:shoot requires] ([@stop_split] [@expl:shoot 'self' type invariant] inv_refmut_SeqLockCommitter self)
+    /\ ([@stop_split] [@expl:shoot 'log' type invariant] inv_refmut_SeqLockLog log)
+    /\ ([@stop_split] [@expl:shoot requires #0] not shot'0 self.current)
+    /\ ([@stop_split] [@expl:shoot requires #1] id'0 self.current = id'1 log.current)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_final <t_Fragment_Seq_tup2_u32_u32> {log.current.f0}
+          {MutBorrow.inherit_id (MutBorrow.get_id log) 0}
+          (fun (_bor: MutBorrow.t t_Fragment_Seq_tup2_u32_u32) ->
+            [ &_23 <- _bor ] -{inv_Fragment_Seq_tup2_u32_u32 _bor.final}-
+            [ &log <- { log with current = { f0 = _bor.final } } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_Fragment_Seq_tup2_u32_u32 log.current.f0} any) ]
+      | s1 = [ &_24 <- self.current.new_log ] s2
+      | s2 = MutBorrow.borrow_mut <t_Authority_Seq_tup2_u32_u32> {self.current.auth.current}
+          (fun (_bor: MutBorrow.t t_Authority_Seq_tup2_u32_u32) ->
+            [ &_21 <- _bor ] -{inv_Authority_Seq_tup2_u32_u32 _bor.final}-
+            [ &self <- { self with current = { self.current with auth = { self.current.auth with current = _bor.final } } } ]
+            s3) [ _ck -> (! {[@expl:type invariant] inv_Authority_Seq_tup2_u32_u32 self.current.auth.current} any) ]
+      | s3 = MutBorrow.borrow_final <t_Fragment_Seq_tup2_u32_u32> {_23.current} {MutBorrow.get_id _23}
+          (fun (_bor: MutBorrow.t t_Fragment_Seq_tup2_u32_u32) ->
+            [ &_22 <- _bor ] -{inv_Fragment_Seq_tup2_u32_u32 _bor.final}-
+            [ &_23 <- { _23 with current = _bor.final } ] s4)
+        [ _ck -> (! {[@expl:type invariant] inv_Fragment_Seq_tup2_u32_u32 _23.current} any) ]
+      | s4 = update_Seq_tup2_u32_u32 {_21} {_22} {_24} (fun (_x: ()) -> [ &_20 <- _x ] s5)
+      | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_Fragment_Seq_tup2_u32_u32 _23} any) ]
+      | s6 = -{resolve_refmut_Fragment_Seq_tup2_u32_u32 _23}- s7
+      | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqLockLog log} any) ]
+      | s8 = -{resolve_refmut_SeqLockLog log}- s9
+      | s9 = [ &self <- { self with current = { self.current with shot = true } } ] s10
+      | s10 = s11 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqLockCommitter self} any) ]
+      | s11 = -{resolve_refmut_SeqLockCommitter self}- s12
+      | s12 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & self: MutBorrow.t t_SeqLockCommitter = self
+    | & log: MutBorrow.t t_SeqLockLog = log
+    | & _20: () = Any.any_l ()
+    | & _21: MutBorrow.t t_Authority_Seq_tup2_u32_u32 = Any.any_l ()
+    | & _22: MutBorrow.t t_Fragment_Seq_tup2_u32_u32 = Any.any_l ()
+    | & _23: MutBorrow.t t_Fragment_Seq_tup2_u32_u32 = Any.any_l ()
+    | & _24: Seq.seq tup2_u32_u32 = Any.any_l () ])
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:shoot ensures] ([@stop_split] [@expl:shoot ensures #0] shot'0 self.final)
+      /\ ([@stop_split] [@expl:shoot ensures #1] hist_inv self.current self.final)
+      /\ ([@stop_split] [@expl:shoot ensures #2] view_SeqLockLog log.current = old_log'0 self.current)
+      /\ ([@stop_split] [@expl:shoot ensures #3] view_SeqLockLog log.final = new_log'0 self.current)
+      /\ ([@stop_split] [@expl:shoot ensures #4] id'1 log.final = id'1 log.current)}
       (! return {result}) ]
 end
 module M_impl_SeqLockGuard__read (* SeqLockGuard<'_> *)
@@ -9305,7 +9433,7 @@ module M_impl_SeqLockGuard__unlock (* SeqLockGuard<'_> *)
   
   function id (self: t_SeqLock) : t_Id = (public_SeqLockInv self.inv).f4'3
   
-  type t_LogCommitter = {
+  type t_SeqLockCommitter = {
     auth'0: MutBorrow.t t_Authority_Seq_tup2_u32_u32;
     id'0: t_Id;
     old_log'0: Seq.seq tup2_u32_u32;
@@ -9316,7 +9444,7 @@ module M_impl_SeqLockGuard__unlock (* SeqLockGuard<'_> *)
   
   function val_Seq_tup2_u32_u32 (self: t_Authority_Seq_tup2_u32_u32) : Seq.seq tup2_u32_u32
   
-  predicate invariant_LogCommitter [@inline:trivial] (self: t_LogCommitter) =
+  predicate invariant_SeqLockCommitter [@inline:trivial] (self: t_SeqLockCommitter) =
     id_Seq_tup2_u32_u32 self.auth'0.current = self.id'0
     /\ (if self.shot'0 then
       val_Seq_tup2_u32_u32 self.auth'0.current = self.new_log'0
@@ -9324,7 +9452,7 @@ module M_impl_SeqLockGuard__unlock (* SeqLockGuard<'_> *)
       val_Seq_tup2_u32_u32 self.auth'0.current = self.old_log'0
     )
   
-  meta "rewrite_def" predicate invariant_LogCommitter
+  meta "rewrite_def" predicate invariant_SeqLockCommitter
   
   predicate invariant_refmut_Authority_Seq_tup2_u32_u32 [@inline:trivial] (self: MutBorrow.t t_Authority_Seq_tup2_u32_u32) =
     inv_Authority_Seq_tup2_u32_u32 self.current /\ inv_Authority_Seq_tup2_u32_u32 self.final
@@ -9336,32 +9464,33 @@ module M_impl_SeqLockGuard__unlock (* SeqLockGuard<'_> *)
   
   meta "rewrite_def" predicate inv_refmut_Authority_Seq_tup2_u32_u32
   
-  predicate inv_LogCommitter (_1: t_LogCommitter)
+  predicate inv_SeqLockCommitter (_1: t_SeqLockCommitter)
   
-  axiom inv_axiom'3 [@rewrite]: forall _1: t_LogCommitter [inv_LogCommitter _1]. inv_LogCommitter _1
-      = (invariant_LogCommitter _1 /\ inv_refmut_Authority_Seq_tup2_u32_u32 _1.auth'0)
+  axiom inv_axiom'3 [@rewrite]: forall _1: t_SeqLockCommitter [inv_SeqLockCommitter _1]. inv_SeqLockCommitter _1
+      = (invariant_SeqLockCommitter _1 /\ inv_refmut_Authority_Seq_tup2_u32_u32 _1.auth'0)
   
-  predicate invariant_refmut_LogCommitter [@inline:trivial] (self: MutBorrow.t t_LogCommitter) =
-    inv_LogCommitter self.current /\ inv_LogCommitter self.final
+  predicate invariant_refmut_SeqLockCommitter [@inline:trivial] (self: MutBorrow.t t_SeqLockCommitter) =
+    inv_SeqLockCommitter self.current /\ inv_SeqLockCommitter self.final
   
-  meta "rewrite_def" predicate invariant_refmut_LogCommitter
+  meta "rewrite_def" predicate invariant_refmut_SeqLockCommitter
   
-  predicate inv_refmut_LogCommitter [@inline:trivial] (_1: MutBorrow.t t_LogCommitter) =
-    invariant_refmut_LogCommitter _1
+  predicate inv_refmut_SeqLockCommitter [@inline:trivial] (_1: MutBorrow.t t_SeqLockCommitter) =
+    invariant_refmut_SeqLockCommitter _1
   
-  meta "rewrite_def" predicate inv_refmut_LogCommitter
+  meta "rewrite_def" predicate inv_refmut_SeqLockCommitter
   
-  predicate inv_tup1_refmut_LogCommitter [@inline:trivial] (_1: MutBorrow.t t_LogCommitter) = inv_refmut_LogCommitter _1
+  predicate inv_tup1_refmut_SeqLockCommitter [@inline:trivial] (_1: MutBorrow.t t_SeqLockCommitter) =
+    inv_refmut_SeqLockCommitter _1
   
-  meta "rewrite_def" predicate inv_tup1_refmut_LogCommitter
+  meta "rewrite_def" predicate inv_tup1_refmut_SeqLockCommitter
   
-  predicate precondition_F (self: t_F) (args: MutBorrow.t t_LogCommitter)
+  predicate precondition_F (self: t_F) (args: MutBorrow.t t_SeqLockCommitter)
   
-  predicate postcondition_once_F (self: t_F) (args: MutBorrow.t t_LogCommitter) (result: ())
+  predicate postcondition_once_F (self: t_F) (args: MutBorrow.t t_SeqLockCommitter) (result: ())
   
-  let call_once_F (self: t_F) (args: MutBorrow.t t_LogCommitter) (return (x: ())) =
+  let call_once_F (self: t_F) (args: MutBorrow.t t_SeqLockCommitter) (return (x: ())) =
   {[@stop_split] [@expl:call_once_F requires] ([@stop_split] [@expl:call_once 'self' type invariant] inv_F self)
-    /\ ([@stop_split] [@expl:call_once 'args' type invariant] inv_tup1_refmut_LogCommitter args)
+    /\ ([@stop_split] [@expl:call_once 'args' type invariant] inv_tup1_refmut_SeqLockCommitter args)
     /\ ([@stop_split] [@expl:call_once requires] precondition_F self args)}
     any
     [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_F self args result}
@@ -9372,14 +9501,16 @@ module M_impl_SeqLockGuard__unlock (* SeqLockGuard<'_> *)
   
   meta "rewrite_def" predicate resolve_refmut_Authority_Seq_tup2_u32_u32
   
-  predicate resolve_LogCommitter (_1: t_LogCommitter)
+  predicate resolve_SeqLockCommitter (_1: t_SeqLockCommitter)
   
-  axiom resolve_axiom [@rewrite]: forall _1: t_LogCommitter [resolve_LogCommitter _1]. resolve_LogCommitter _1
+  axiom resolve_axiom [@rewrite]:
+    forall _1: t_SeqLockCommitter [resolve_SeqLockCommitter _1]. resolve_SeqLockCommitter _1
       = resolve_refmut_Authority_Seq_tup2_u32_u32 _1.auth'0
   
-  predicate resolve_refmut_LogCommitter [@inline:trivial] (_1: MutBorrow.t t_LogCommitter) = _1.final = _1.current
+  predicate resolve_refmut_SeqLockCommitter [@inline:trivial] (_1: MutBorrow.t t_SeqLockCommitter) =
+    _1.final = _1.current
   
-  meta "rewrite_def" predicate resolve_refmut_LogCommitter
+  meta "rewrite_def" predicate resolve_refmut_SeqLockCommitter
   
   let into_inner_Fragment_Latest (self: t_Fragment_Latest) (return (x: t_Fragment_Latest)) =
   {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_Fragment_Latest self}
@@ -9574,23 +9705,23 @@ module M_impl_SeqLockGuard__unlock (* SeqLockGuard<'_> *)
         [ _ck -> (! {[@expl:type invariant] inv_Authority_Seq_tup2_u32_u32 _58.current} any) ]
       | s39 = [ &_59 <- id self.c5'0 ] s40
       | s40 = [ &_56 <- { auth'0 = _57; id'0 = _59; old_log'0 = old_log; new_log'0 = new_log; shot'0 = false } ] s41
-      | s41 = MutBorrow.borrow_mut <t_LogCommitter> {_56}
-          (fun (_bor: MutBorrow.t t_LogCommitter) ->
-            [ &_55 <- _bor ] -{inv_LogCommitter _bor.final}-
-            [ &_56 <- _bor.final ] s42) [ _ck -> (! {[@expl:type invariant] inv_LogCommitter _56} any) ]
-      | s42 = MutBorrow.borrow_final <t_LogCommitter> {_55.current} {MutBorrow.get_id _55}
-          (fun (_bor: MutBorrow.t t_LogCommitter) ->
-            [ &_54 <- _bor ] -{inv_LogCommitter _bor.final}-
+      | s41 = MutBorrow.borrow_mut <t_SeqLockCommitter> {_56}
+          (fun (_bor: MutBorrow.t t_SeqLockCommitter) ->
+            [ &_55 <- _bor ] -{inv_SeqLockCommitter _bor.final}-
+            [ &_56 <- _bor.final ] s42) [ _ck -> (! {[@expl:type invariant] inv_SeqLockCommitter _56} any) ]
+      | s42 = MutBorrow.borrow_final <t_SeqLockCommitter> {_55.current} {MutBorrow.get_id _55}
+          (fun (_bor: MutBorrow.t t_SeqLockCommitter) ->
+            [ &_54 <- _bor ] -{inv_SeqLockCommitter _bor.final}-
             [ &_55 <- { _55 with current = _bor.final } ] s43)
-        [ _ck -> (! {[@expl:type invariant] inv_LogCommitter _55.current} any) ]
+        [ _ck -> (! {[@expl:type invariant] inv_SeqLockCommitter _55.current} any) ]
       | s43 = [ &_53 <- _54 ] s44
       | s44 = call_once_F {_51} {_53} (fun (_x: ()) -> [ &_50 <- _x ] s45)
       | s45 = s46 [ _ck -> (! {[@expl:type invariant] inv_refmut_Authority_Seq_tup2_u32_u32 _58} any) ]
       | s46 = -{resolve_refmut_Authority_Seq_tup2_u32_u32 _58}- s47
-      | s47 = s48 [ _ck -> (! {[@expl:type invariant] inv_LogCommitter _56} any) ]
-      | s48 = -{resolve_LogCommitter _56}- s49
-      | s49 = s50 [ _ck -> (! {[@expl:type invariant] inv_refmut_LogCommitter _55} any) ]
-      | s50 = -{resolve_refmut_LogCommitter _55}- s51
+      | s47 = s48 [ _ck -> (! {[@expl:type invariant] inv_SeqLockCommitter _56} any) ]
+      | s48 = -{resolve_SeqLockCommitter _56}- s49
+      | s49 = s50 [ _ck -> (! {[@expl:type invariant] inv_refmut_SeqLockCommitter _55} any) ]
+      | s50 = -{resolve_refmut_SeqLockCommitter _55}- s51
       | s51 = into_inner_Fragment_Latest {self.c0'0} (fun (_x: t_Fragment_Latest) -> [ &_65 <- _x ] s52)
       | s52 = [ &_64 <- Some _65 ] s53
       | s53 = s54 [ _ck -> (! {[@expl:type invariant] inv_Option_Fragment_Latest inv'0.current.latest_frag} any) ]
@@ -9629,10 +9760,10 @@ module M_impl_SeqLockGuard__unlock (* SeqLockGuard<'_> *)
     | & _48: MutBorrow.t t_Fragment_Latest = Any.any_l ()
     | & _50: () = Any.any_l ()
     | & _51: t_F = Any.any_l ()
-    | & _53: MutBorrow.t t_LogCommitter = Any.any_l ()
-    | & _54: MutBorrow.t t_LogCommitter = Any.any_l ()
-    | & _55: MutBorrow.t t_LogCommitter = Any.any_l ()
-    | & _56: t_LogCommitter = Any.any_l ()
+    | & _53: MutBorrow.t t_SeqLockCommitter = Any.any_l ()
+    | & _54: MutBorrow.t t_SeqLockCommitter = Any.any_l ()
+    | & _55: MutBorrow.t t_SeqLockCommitter = Any.any_l ()
+    | & _56: t_SeqLockCommitter = Any.any_l ()
     | & _57: MutBorrow.t t_Authority_Seq_tup2_u32_u32 = Any.any_l ()
     | & _58: MutBorrow.t t_Authority_Seq_tup2_u32_u32 = Any.any_l ()
     | & _59: t_Id = Any.any_l ()
@@ -10065,15 +10196,15 @@ module M_impl_SeqLockGuard__unlock (* SeqLockGuard<'_> *)
   
   constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
   
-  predicate shot (self: t_LogCommitter) = self.shot'0
+  predicate shot (self: t_SeqLockCommitter) = self.shot'0
   
-  function id'1 (self: t_LogCommitter) : t_Id = self.id'0
+  function id'1 (self: t_SeqLockCommitter) : t_Id = self.id'0
   
-  function old_log (self: t_LogCommitter) : Seq.seq tup2_u32_u32 = self.old_log'0
+  function old_log (self: t_SeqLockCommitter) : Seq.seq tup2_u32_u32 = self.old_log'0
   
-  function new_log (self: t_LogCommitter) : Seq.seq tup2_u32_u32 = self.new_log'0
+  function new_log (self: t_SeqLockCommitter) : Seq.seq tup2_u32_u32 = self.new_log'0
   
-  predicate hist_inv [@inline:trivial] (self: t_LogCommitter) (other: t_LogCommitter) =
+  predicate hist_inv [@inline:trivial] (self: t_SeqLockCommitter) (other: t_SeqLockCommitter) =
     self.id'0 = other.id'0
     /\ self.auth'0.final = other.auth'0.final /\ self.old_log'0 = other.old_log'0 /\ self.new_log'0 = other.new_log'0
   
@@ -10089,7 +10220,7 @@ module M_impl_SeqLockGuard__unlock (* SeqLockGuard<'_> *)
     /\ ([@stop_split] [@expl:unlock requires #0] contains tokens (Namespace_SEQLOCK 0))
     /\ ([@stop_split] [@expl:unlock requires #1] Map.get (pred'0 (seqlock self)) (value'0 self))
     /\ ([@stop_split] [@expl:unlock requires #2] 2 * Seq.length (log_at_lock self) <= UInt64.t'int const_MAX)
-    /\ ([@stop_split] [@expl:unlock requires #3] forall c: MutBorrow.t t_LogCommitter. inv_refmut_LogCommitter c
+    /\ ([@stop_split] [@expl:unlock requires #3] forall c: MutBorrow.t t_SeqLockCommitter. inv_refmut_SeqLockCommitter c
       -> not shot c.current
       -> id'1 c.current = id (seqlock self)
       -> old_log c.current = log_at_lock self
@@ -10129,7 +10260,7 @@ module M_impl_SeqLockGuard__unlock (* SeqLockGuard<'_> *)
       | & _29: MutBorrow.t t_Tokens = Any.any_l ()
       | & _30: MutBorrow.t t_SyncView = Any.any_l () ]))
     [ return (result: ()) ->
-    {[@stop_split] [@expl:unlock ensures] exists c: MutBorrow.t t_LogCommitter. not shot c.current
+    {[@stop_split] [@expl:unlock ensures] exists c: MutBorrow.t t_SeqLockCommitter. not shot c.current
         /\ id'1 c.current = id (seqlock self)
         /\ old_log c.current = log_at_lock self
         /\ new_log c.current = Seq.snoc (old_log c.current) (value'0 self) /\ postcondition_once_F f c ()}

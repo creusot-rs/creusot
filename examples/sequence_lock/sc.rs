@@ -1,21 +1,10 @@
-//! Sequence lock protecting a pair of `u32`, in the sequentially consistent memory model.
-//!
-//! Translated from the Verus version:
-//! <https://github.com/zero-to-nat/verus-relaxed-memory/blob/pldi2027-cleanup/wm-examples/src/seq_lock.rs>
-//! which is itself based on
-//! <https://jeehoonkang.github.io/2017/08/23/synchronization-patterns.html> and
-//! <https://github.com/Amanieu/seqlock/blob/master/src/lib.rs>.
-//!
-//! The ghost state is described with resources:
-//! - `latest`, a ghost variable holding the current values of `seq`, `data0` and `data1`
-//!   and the log. One half is held by the invariant, and the other half is held by the
-//!   invariant while the lock is free, and by the `SeqLockGuard` while it is held.
-//! - `log`, a ghost variable holding the log of the values committed to the lock, the
-//!   other half of which is held by the client (`SeqLockLog`).
-//! - `snapshots`, a monotone map from every sequence number reached so far to the values
-//!   of the data at that time (only meaningful for even sequence numbers). Its fragments
-//!   are persistent knowledge for readers: they give the value committed at an even
-//!   sequence number, and a lower bound on the current sequence number.
+// Sequence lock protecting a pair of `u32`, in the sequentially consistent memory model.
+//
+// Translated from the Verus version:
+// <https://github.com/zero-to-nat/verus-relaxed-memory/blob/pldi2027-cleanup/wm-examples/src/seq_lock.rs>
+// which is itself based on
+// <https://jeehoonkang.github.io/2017/08/23/synchronization-patterns.html> and
+// <https://github.com/Amanieu/seqlock/blob/master/src/lib.rs>.
 
 use core::sync::atomic::Ordering;
 
@@ -36,9 +25,6 @@ use creusot_std::{
 
 declare_namespace! { SEQLOCK }
 
-/// A ghost variable, split in two halves: an authority (held by the invariant) and a
-/// fragment (held by a client). Both halves agree on the value, and updating the
-/// value requires both halves. This corresponds to `FracGhost` with fraction 1/2 in Verus.
 mod ghost_var {
     use creusot_std::{
         ghost::resource,
@@ -119,7 +105,6 @@ mod ghost_var {
 
 use ghost_var::{Authority, Fragment};
 
-/// The current values of the atomics, and the log of the values committed to the lock.
 pub struct Latest {
     pub seq: usize,
     pub d0: u32,
@@ -127,9 +112,6 @@ pub struct Latest {
     pub log: Seq<(u32, u32)>,
 }
 
-/// Ghost token for the logical state of a `SeqLock`, owned by the client:
-/// every value committed to the lock, oldest first.
-/// The client holds this half of the ghost variable, and the lock's invariant holds the other half.
 pub struct SeqLockLog(Fragment<Seq<(u32, u32)>>);
 
 impl SeqLockLog {
@@ -154,12 +136,13 @@ struct SeqLockInv {
     seq_own: Perm<AtomicUsize>,
     data0_own: Perm<AtomicU32>,
     data1_own: Perm<AtomicU32>,
+
     latest: Authority<Latest>,
-    /// The other half of `latest`, held here iff the lock is free.
     latest_frag: Option<Fragment<Latest>>,
+
     log: Authority<Seq<(u32, u32)>>,
     snapshots: resource::Authority<Snapshots>,
-    /// The client's invariant on the values stored in the lock
+    // The client's invariant on the values stored in the lock
     pred: Snapshot<Mapping<(u32, u32), bool>>,
 }
 
@@ -169,7 +152,7 @@ impl SeqLockInv {
         self.latest.val()
     }
 
-    /// The current sequence number
+    // The current sequence number
     #[logic]
     fn s(self) -> Int {
         pearlite! { self.l().seq@ }
@@ -187,7 +170,6 @@ impl SeqLockInv {
 }
 
 impl Protocol for SeqLockInv {
-    /// (seq, data0, data1, latest id, log id, snapshots id, pred)
     type Public = (AtomicUsize, AtomicU32, AtomicU32, Id, Id, Id, Mapping<(u32, u32), bool>);
 
     #[logic]
@@ -252,11 +234,7 @@ impl Invariant for SeqLock {
     }
 }
 
-/// A logically atomic update of the log of the lock.
-///
-/// This is given to the client at the linearization points of `read`, `lock_write` and
-/// `unlock`, which is required to "shoot" it, updating its own half of the log.
-pub struct LogCommitter<'a> {
+pub struct SeqLockCommitter<'a> {
     auth: &'a mut Authority<Seq<(u32, u32)>>,
     id: Snapshot<Id>,
     old_log: Snapshot<Seq<(u32, u32)>>,
@@ -264,7 +242,7 @@ pub struct LogCommitter<'a> {
     shot: bool,
 }
 
-impl Invariant for LogCommitter<'_> {
+impl Invariant for SeqLockCommitter<'_> {
     #[logic(inline)]
     fn invariant(self) -> bool {
         self.auth.id() == *self.id
@@ -276,7 +254,7 @@ impl Invariant for LogCommitter<'_> {
     }
 }
 
-impl LogCommitter<'_> {
+impl SeqLockCommitter<'_> {
     #[logic]
     pub fn id(self) -> Id {
         *self.id
@@ -320,13 +298,11 @@ impl LogCommitter<'_> {
 }
 
 impl SeqLock {
-    /// The ID of this lock, which its [`SeqLockLog`] token must match.
     #[logic]
     pub fn id(self) -> Id {
         self.inv.public().4
     }
 
-    /// The client's invariant on the values stored in this lock.
     #[logic]
     pub fn pred(self) -> Mapping<(u32, u32), bool> {
         self.inv.public().6
@@ -337,8 +313,6 @@ impl SeqLock {
         self.inv.public().3
     }
 
-    /// Creates a new SeqLock with the given initial value, along with the token
-    /// for its logical state.
     #[requires(pred.get((val0, val1)))]
     #[ensures(result.0.pred() == *pred)]
     #[ensures(result.1.id() == result.0.id())]
@@ -353,52 +327,52 @@ impl SeqLock {
         let (seq, seq_own) = AtomicUsize::new(0);
 
         let log0 = snapshot!(Seq::singleton((val0, val1)));
-        let (latest, latest_frag) =
+        let (latest, latest_frag) = ghost!(
             Authority::alloc(snapshot!(Latest { seq: 0usize, d0: val0, d1: val1, log: *log0 }))
-                .split();
-        let (log, log_frag) = Authority::alloc(log0).split();
-        let mut snapshots = resource::Authority::alloc();
+                .into_inner()
+        )
+        .split();
+
+        let (log, log_frag) = ghost!(Authority::alloc(log0).into_inner()).split();
+        let mut snapshots = ghost!(resource::Authority::alloc().into_inner());
+
         ghost! {
             snapshots.add_fragment(snapshot!(FMap::singleton(0, Ag((val0, val1)))));
         };
 
-        let inv = AtomicInvariantSC::new(
-            ghost!(SeqLockInv {
-                seq_own: seq_own.into_inner(),
-                data0_own: data0_own.into_inner(),
-                data1_own: data1_own.into_inner(),
-                latest: latest.into_inner(),
-                latest_frag: Some(latest_frag.into_inner()),
-                log: log.into_inner(),
-                snapshots: snapshots.into_inner(),
-                pred,
-            }),
-            snapshot!(SEQLOCK()),
+        let inv = ghost!(
+            AtomicInvariantSC::new(
+                ghost!(SeqLockInv {
+                    seq_own: seq_own.into_inner(),
+                    data0_own: data0_own.into_inner(),
+                    data1_own: data1_own.into_inner(),
+                    latest: latest.into_inner(),
+                    latest_frag: Some(latest_frag.into_inner()),
+                    log: log.into_inner(),
+                    snapshots: snapshots.into_inner(),
+                    pred,
+                }),
+                snapshot!(SEQLOCK()),
+            )
+            .into_inner()
         );
+
         (SeqLock { seq, data0, data1, inv }, ghost!(SeqLockLog(log_frag.into_inner())))
     }
 
-    /// Reads the value protected by the `SeqLock`.
-    ///
-    /// This operation is extremely fast since it only reads the `SeqLock`,
-    /// which allows multiple readers to read the value without interfering with
-    /// each other.
-    ///
-    /// If a writer is currently modifying the contained value then the calling
-    /// thread will block until the writer thread releases the lock.
     #[requires(tokens.contains(SEQLOCK()))]
-    #[requires(forall<c: &mut LogCommitter>
+    #[requires(forall<c: &mut SeqLockCommitter>
         inv(c) ==> !c.shot() ==> c.id() == self.id() ==> c.new_log() == c.old_log() ==>
         f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot() && (*c).hist_inv(^c))
     )]
-    #[ensures(exists<c: &mut LogCommitter>
+    #[ensures(exists<c: &mut SeqLockCommitter>
         !c.shot() && c.id() == self.id() && c.new_log() == c.old_log() &&
         f.postcondition_once((c,), ()) && c.old_log().contains(result)
     )]
     #[ensures(self.pred().get(result))]
     pub fn read<F>(&self, mut tokens: Ghost<Tokens>, f: Ghost<F>) -> (u32, u32)
     where
-        F: FnGhost + FnOnce(&mut LogCommitter),
+        F: FnGhost + FnOnce(&mut SeqLockCommitter),
     {
         let f_snap = snapshot!(*f);
         let mut f = ghost!(Some(f.into_inner()));
@@ -425,6 +399,7 @@ impl SeqLock {
             if seq1 % 2 != 0 {
                 continue;
             }
+
             // The data may be concurrently modified by a writer.
             // We record the sequence number at the time of each data load
             // (as a fragment of `snapshots`, which is a lower bound for later sequence numbers).
@@ -468,7 +443,7 @@ impl SeqLock {
                             proof_assert!(inv.log.val()[seq1@ / 2] == (result0, result1));
                             // Linearization point: the values of the snapshot are a log entry
                             let old_log = snapshot!(inv.log.val());
-                            f.take().unwrap()(&mut LogCommitter {
+                            f.take().unwrap()(&mut SeqLockCommitter {
                                 auth: &mut inv.log,
                                 id: snapshot!(self.id()),
                                 old_log,
@@ -486,18 +461,12 @@ impl SeqLock {
         }
     }
 
-    /// Locks this `SeqLock` with exclusive write access, blocking the current
-    /// thread until it can be acquired.
-    ///
-    /// This function does not block while waiting for concurrent readers.
-    /// Instead, readers will detect the concurrent write and retry the read.
-    /// (The Verus version splits this into `begin_write` and `lock_write`.)
     #[requires(tokens.contains(SEQLOCK()))]
-    #[requires(forall<c: &mut LogCommitter>
+    #[requires(forall<c: &mut SeqLockCommitter>
         inv(c) ==> !c.shot() ==> c.id() == self.id() ==> c.new_log() == c.old_log() ==>
         f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot() && (*c).hist_inv(^c))
     )]
-    #[ensures(exists<c: &mut LogCommitter>
+    #[ensures(exists<c: &mut SeqLockCommitter>
         !c.shot() && c.id() == self.id() && c.new_log() == c.old_log() &&
         f.postcondition_once((c,), ()) &&
         result.log_at_lock() == c.old_log() &&
@@ -507,7 +476,7 @@ impl SeqLock {
     #[ensures(self.pred().get(result.value()))]
     pub fn lock_write<F>(&self, mut tokens: Ghost<Tokens>, f: Ghost<F>) -> SeqLockGuard<'_>
     where
-        F: FnGhost + FnOnce(&mut LogCommitter),
+        F: FnGhost + FnOnce(&mut SeqLockCommitter),
     {
         let f_snap = snapshot!(*f);
         let mut f = ghost!(Some(f.into_inner()));
@@ -548,7 +517,7 @@ impl SeqLock {
                         inv.snapshots.add_fragment(snapshot!(FMap::singleton(next_seq@, Ag((l.d0, l.d1)))));
                         // Linearization point: acquire the lock
                         let old_log = snapshot!(inv.log.val());
-                        f.take().unwrap()(&mut LogCommitter {
+                        f.take().unwrap()(&mut SeqLockCommitter {
                             auth: &mut inv.log,
                             id: snapshot!(self.id()),
                             old_log,
@@ -560,6 +529,7 @@ impl SeqLock {
                     })
                 }},
             );
+
             if res.is_err() {
                 continue;
             }
@@ -572,7 +542,6 @@ impl SeqLock {
         }
     }
 
-    /// Consumes this `SeqLock`, returning the underlying data.
     #[requires(tokens.contains(SEQLOCK()))]
     #[requires(log.id() == self.id())]
     #[ensures(result == log@[log@.len() - 1])]
@@ -580,18 +549,17 @@ impl SeqLock {
     pub fn into_inner(self, mut log: Ghost<SeqLockLog>, mut tokens: Ghost<Tokens>) -> (u32, u32) {
         let lock = self.lock_write(
             ghost!(tokens.reborrow()),
-            ghost!(|c: &mut LogCommitter| c.shoot(&mut log)),
+            ghost!(|c: &mut SeqLockCommitter| c.shoot(&mut log)),
         );
         lock.read(tokens)
     }
 }
 
-/// RAII structure used to release the exclusive write access of a `SeqLock`
-/// when dropped.
 pub struct SeqLockGuard<'a> {
     seqlock: &'a SeqLock,
     seq: usize,
-    /// The writer's half of the latest values
+
+    // The writer's half of the latest values
     latest: Ghost<Fragment<Latest>>,
 }
 
@@ -608,27 +576,23 @@ impl Invariant for SeqLockGuard<'_> {
 }
 
 impl SeqLockGuard<'_> {
-    /// The lock this guard belongs to.
     #[logic]
     pub fn seqlock(self) -> SeqLock {
         *self.seqlock
     }
 
-    /// The value currently written by this guard.
     #[logic]
     pub fn value(self) -> (u32, u32) {
         (self.latest.val().d0, self.latest.val().d1)
     }
 
-    /// The log at the time this guard acquired the lock.
-    /// No other writer can commit while the guard is held, so this is still the current log.
+    // The log at the time this guard acquired the lock.
+    // No other writer can commit while the guard is held, so this is still the current log.
     #[logic]
     pub fn log_at_lock(self) -> Seq<(u32, u32)> {
         self.latest.val().log
     }
 
-    /// Reads the data in the `SeqLockGuard`
-    /// (workaround for implementing `Deref`).
     #[requires(tokens.contains(SEQLOCK()))]
     #[ensures(result == self.value())]
     pub fn read(&self, mut tokens: Ghost<Tokens>) -> (u32, u32) {
@@ -656,9 +620,6 @@ impl SeqLockGuard<'_> {
         (ret0, ret1)
     }
 
-    /// Writes to the data in the `SeqLockGuard`.
-    /// (Since this is a workaround for getting a mutable reference to the underlying data,
-    /// we impose no restrictions on the values that are written at this time.)
     #[requires(tokens.contains(SEQLOCK()))]
     #[ensures((^self).seqlock() == (*self).seqlock())]
     #[ensures((^self).log_at_lock() == (*self).log_at_lock())]
@@ -692,34 +653,28 @@ impl SeqLockGuard<'_> {
         );
     }
 
-    /// Releases the lock, committing the guard's value to the log.
-    /// (Workaround for implementing `Drop`.)
-    ///
-    /// While a `SeqLockGuard` exists, the sequence number `s` is odd and
-    /// `s == 2 * len - 1`, where `len == self.log_at_lock().len()`.
-    /// Unlocking increments `s`, so requiring `2 * len <= usize::MAX` ensures
-    /// `s + 1 <= usize::MAX`.
     #[requires(tokens.contains(SEQLOCK()))]
     #[requires(self.seqlock().pred().get(self.value()))]
     #[requires(2 * self.log_at_lock().len() <= usize::MAX@)]
-    #[requires(forall<c: &mut LogCommitter>
+    #[requires(forall<c: &mut SeqLockCommitter>
         inv(c) ==> !c.shot() ==> c.id() == self.seqlock().id() ==>
         c.old_log() == self.log_at_lock() ==> c.new_log() == c.old_log().snoc(self.value()) ==>
         f.precondition((c,)) && (f.postcondition_once((c,), ()) ==> (^c).shot() && (*c).hist_inv(^c))
     )]
-    #[ensures(exists<c: &mut LogCommitter>
+    #[ensures(exists<c: &mut SeqLockCommitter>
         !c.shot() && c.id() == self.seqlock().id() &&
         c.old_log() == self.log_at_lock() && c.new_log() == c.old_log().snoc(self.value()) &&
         f.postcondition_once((c,), ())
     )]
     pub fn unlock<F>(self, mut tokens: Ghost<Tokens>, f: Ghost<F>)
     where
-        F: FnGhost + FnOnce(&mut LogCommitter),
+        F: FnGhost + FnOnce(&mut SeqLockCommitter),
     {
         // Increment the sequence number again, which will make it even and
         // allow readers to access the data.
         let next_seq = self.seq + 1;
         let SeqLockGuard { seqlock, mut latest, .. } = self;
+
         seqlock.seq.store(
             next_seq,
             Ordering::SeqCst,
@@ -734,7 +689,7 @@ impl SeqLockGuard<'_> {
                     let new_l = snapshot!(Latest { seq: next_seq, d0: l.d0, d1: l.d1, log: *new_log });
                     inv.latest.update(&mut latest, new_l);
                     // Linearization point: append the guard's value to the log
-                    f.into_inner()(&mut LogCommitter {
+                    f.into_inner()(&mut SeqLockCommitter {
                         auth: &mut inv.log,
                         id: snapshot!(seqlock.id()),
                         old_log,
