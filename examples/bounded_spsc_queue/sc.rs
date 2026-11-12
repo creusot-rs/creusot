@@ -1,14 +1,12 @@
-//! Single-producer single-consumer bounded queue, in the sequentially consistent memory model.
-//!
-//! Translated from the Verus version:
-//! <https://github.com/zero-to-nat/verus-relaxed-memory/blob/pldi2027-cleanup/wm-examples/src/spsc.rs>
-//!
-//! The queue is a ring buffer of `N` cells, with two atomics `head` and `tail`
-//! holding *physical* indices (i.e., in `0..N`). The producer is the only writer of
-//! `head`, and the consumer is the only writer of `tail`. Logically, the invariant
-//! keeps track of the *logical* (unbounded) values of `head` and `tail`.
+// Single-producer single-consumer bounded queue, in the sequentially consistent memory model.
+//
+// Translated from the Verus version:
+// <https://github.com/zero-to-nat/verus-relaxed-memory/blob/pldi2027-cleanup/wm-examples/src/spsc.rs>
 
-use core::{mem::MaybeUninit, sync::atomic::Ordering};
+use core::{
+    mem::{MaybeUninit, replace},
+    sync::atomic::Ordering,
+};
 
 use creusot_std::{
     cell::PCell,
@@ -110,15 +108,11 @@ mod ghost_var {
 
 use ghost_var::{Authority, Fragment};
 
-/// State of the producer: the logical value of `head`, and whether it is currently
-/// writing into the cell at index `head`.
 pub struct ProducerState {
     pub head: Int,
     pub producing: bool,
 }
 
-/// State of the consumer: the logical value of `tail`, and whether it is currently
-/// reading the cell at index `tail`.
 pub struct ConsumerState {
     pub tail: Int,
     pub consuming: bool,
@@ -126,8 +120,6 @@ pub struct ConsumerState {
 
 type PermPCell<T> = Perm<PCell<MaybeUninit<T>>>;
 
-/// The logical contents of the queue, oldest element first.
-/// The client holds this half of the ghost variable, and the queue's invariant holds the other half.
 pub struct QueueContents<T>(Fragment<Seq<T>>);
 
 impl<T> QueueContents<T> {
@@ -149,9 +141,10 @@ impl<T> View for QueueContents<T> {
 struct QueueInv<T> {
     head_own: Perm<AtomicUsize>,
     tail_own: Perm<AtomicUsize>,
+
     cells: Snapshot<Seq<PCell<MaybeUninit<T>>>>,
-    /// Permissions to the cells, indexed by *logical* index.
     cell_perms: FMap<Int, PermPCell<T>>,
+
     producer_auth: Authority<ProducerState>,
     consumer_auth: Authority<ConsumerState>,
     contents_auth: Authority<Seq<T>>,
@@ -193,19 +186,16 @@ impl<T> QueueInv<T> {
         self.contents_auth.val()
     }
 
-    /// Index of the first element of the logical contents.
     #[logic]
     fn start(self) -> Int {
         if self.consumer().consuming { self.tail() + 1 } else { self.tail() }
     }
 
-    /// Whether the cell at logical index `i` is full, and not being consumed.
     #[logic(inline)]
     fn can_be_consumed(self, i: Int) -> bool {
         self.tail() <= i && i < self.head() && !(self.consumer().consuming && i == self.tail())
     }
 
-    /// Whether the cell at logical index `i` is empty, and not being produced.
     #[logic(inline)]
     fn can_be_produced(self, i: Int) -> bool {
         self.head() <= i
@@ -237,7 +227,6 @@ impl<T> QueueInv<T> {
         }
     }
 
-    /// For any cell that can be consumed/produced, the perm must be present and initialized/uninitialized.
     #[logic(inline)]
     fn valid_storage(self) -> bool {
         pearlite! {
@@ -247,7 +236,6 @@ impl<T> QueueInv<T> {
         }
     }
 
-    /// The atomics hold the physical values of `head` and `tail`.
     #[logic(inline)]
     fn matches_physical_state(self) -> bool {
         pearlite! {
@@ -256,7 +244,6 @@ impl<T> QueueInv<T> {
         }
     }
 
-    /// tail is never ahead of head, and head is never more than (len-1) steps ahead of tail.
     #[logic(inline)]
     fn head_tail_bounds(self) -> bool {
         pearlite! {
@@ -266,7 +253,6 @@ impl<T> QueueInv<T> {
         }
     }
 
-    /// The logical contents of the queue are the values of the cells that can be consumed, oldest first.
     #[logic(inline)]
     fn matches_contents(self) -> bool {
         self.seq().len() == self.head() - self.start()
@@ -279,7 +265,6 @@ impl<T> QueueInv<T> {
 }
 
 impl<T> Protocol for QueueInv<T> {
-    /// (head, tail, cells, producer id, consumer id, contents id)
     type Public = (AtomicUsize, AtomicUsize, Seq<PCell<MaybeUninit<T>>>, Id, Id, Id);
 
     #[logic]
@@ -326,7 +311,6 @@ impl<T> Invariant for Queue<T> {
 }
 
 impl<T> Queue<T> {
-    /// Identifier of the logical contents of the queue.
     #[logic]
     pub fn id(self) -> Id {
         self.inv.public().5
@@ -348,10 +332,6 @@ impl<T> Queue<T> {
     }
 }
 
-/// A logically atomic update of the contents of the queue.
-///
-/// This is given to the client at the linearization point of `enqueue` and `dequeue`,
-/// which is required to "shoot" it, updating its own half of the contents.
 pub struct QueueCommitter<'a, T> {
     auth: &'a mut Authority<Seq<T>>,
     id: Snapshot<Id>,
@@ -415,8 +395,6 @@ impl<T> QueueCommitter<'_, T> {
     }
 }
 
-/// The producer's and consumer's halves of the ghost state, handed out by `Queue::new`
-/// and consumed by `channel` to construct the `Producer` and `Consumer`.
 pub struct QueueTokens {
     producer: Fragment<ProducerState>,
     consumer: Fragment<ConsumerState>,
@@ -440,17 +418,16 @@ impl<T> Queue<T> {
     #[ensures(result.2.id() == result.0.id())]
     #[ensures(result.2@ == Seq::empty())]
     pub fn new(len: usize) -> (Self, Ghost<QueueTokens>, Ghost<QueueContents<T>>) {
-        // Initialize the vector to store the cells
         let mut buffer: Vec<PCell<MaybeUninit<T>>> = Vec::new();
-        // Initialize map for the permissions to the cells (keyed by the indices into the vector)
-        let mut cell_perms: Ghost<FMap<Int, PermPCell<T>>> = FMap::new();
+        let mut cell_perms: Ghost<FMap<Int, PermPCell<T>>> = ghost!(FMap::new().into_inner());
 
         #[invariant(buffer@.len() == produced.len())]
         #[invariant(forall<j> 0 <= j && j < produced.len() ==>
             match cell_perms.lookup(j) {
                 Some(p) => *p.ward() == buffer@[j] && p.val()@ == None,
                 None => false,
-            })]
+            }
+        )]
         for _ in 0..len {
             let (cell, cell_perm) = PCell::new(MaybeUninit::uninit());
             ghost! {
@@ -459,28 +436,36 @@ impl<T> Queue<T> {
             buffer.push(cell);
         }
 
-        // Initialize atomics
         let (head, head_own) = AtomicUsize::new(0);
         let (tail, tail_own) = AtomicUsize::new(0);
 
-        // Initialize the ghost variables
-        let (producer_auth, producer_frag) =
-            Authority::alloc(snapshot!(ProducerState { head: 0, producing: false })).split();
-        let (consumer_auth, consumer_frag) =
-            Authority::alloc(snapshot!(ConsumerState { tail: 0, consuming: false })).split();
-        let (contents_auth, contents_frag) = Authority::alloc(snapshot!(Seq::empty())).split();
+        let (producer_auth, producer_frag) = ghost!(
+            Authority::alloc(snapshot!(ProducerState { head: 0, producing: false })).into_inner()
+        )
+        .split();
 
-        let inv = AtomicInvariantSC::new(
-            ghost!(QueueInv {
-                head_own: head_own.into_inner(),
-                tail_own: tail_own.into_inner(),
-                cells: snapshot!(buffer@),
-                cell_perms: cell_perms.into_inner(),
-                producer_auth: producer_auth.into_inner(),
-                consumer_auth: consumer_auth.into_inner(),
-                contents_auth: contents_auth.into_inner(),
-            }),
-            snapshot!(BOUNDED_SPSC_QUEUE()),
+        let (consumer_auth, consumer_frag) = ghost!(
+            Authority::alloc(snapshot!(ConsumerState { tail: 0, consuming: false })).into_inner()
+        )
+        .split();
+
+        let (contents_auth, contents_frag) =
+            ghost!(Authority::alloc(snapshot!(Seq::empty())).into_inner()).split();
+
+        let inv = ghost!(
+            AtomicInvariantSC::new(
+                ghost!(QueueInv {
+                    head_own: head_own.into_inner(),
+                    tail_own: tail_own.into_inner(),
+                    cells: snapshot!(buffer@),
+                    cell_perms: cell_perms.into_inner(),
+                    producer_auth: producer_auth.into_inner(),
+                    consumer_auth: consumer_auth.into_inner(),
+                    contents_auth: contents_auth.into_inner(),
+                }),
+                snapshot!(BOUNDED_SPSC_QUEUE()),
+            )
+            .into_inner()
         );
 
         let queue = Queue { buffer, head, tail, inv };
@@ -494,7 +479,6 @@ impl<T> Queue<T> {
 
 pub struct Producer<'a, T> {
     queue: &'a Queue<T>,
-    /// Local copy of the (physical) head
     head: usize,
     state: Ghost<Fragment<ProducerState>>,
 }
@@ -532,13 +516,11 @@ impl<T> Producer<'_, T> {
     {
         let queue = self.queue;
         let buffer_size = queue.buffer.len();
-        // Calculate the index of the slot right after `head`, wrapping around
-        // if necessary. If the enqueue is successful, then we will be updating
-        // the `head` to this value.
+
         let next = if self.head + 1 == buffer_size { 0 } else { self.head + 1 };
+
         let item_snap = snapshot!(item);
 
-        // Loop: if the queue is full, then block until it is not.
         #[invariant(tokens.contains(BOUNDED_SPSC_QUEUE()))]
         #[invariant(self.queue == queue)]
         #[invariant(next@ == queue.mod_len(self.state.val().head + 1))]
@@ -547,7 +529,7 @@ impl<T> Producer<'_, T> {
         #[invariant(self.head@ == queue.mod_len(self.state.val().head))]
         loop {
             let mut perm: Ghost<Option<PermPCell<T>>> = ghost!(None);
-            // Get the current `tail` value from the shared atomic.
+
             let tail = queue.tail.load(Ordering::SeqCst, ghost! { |c: &Committer<_, _, SeqCst, _>| {
                 queue.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                     inv.producer_auth.agree(&self.state);
@@ -564,15 +546,12 @@ impl<T> Producer<'_, T> {
                 })
             }});
 
-            // Here's where we "actually" do the `tail != next` check:
             if tail != next {
-                // Write the element into the buffer, updating the cell
-                // from uninitialized to initialized.
                 unsafe {
-                    queue.buffer[self.head]
-                        .set(ghost!(perm.as_mut().unwrap()), MaybeUninit::new(item))
+                    *queue.buffer[self.head].borrow_mut(ghost!(perm.as_mut().unwrap())) =
+                        MaybeUninit::new(item)
                 };
-                // Store the updated head to the shared `head` atomic.
+
                 queue.head.store(
                     next,
                     Ordering::SeqCst,
@@ -611,7 +590,6 @@ impl<T> Producer<'_, T> {
 
 pub struct Consumer<'a, T> {
     queue: &'a Queue<T>,
-    /// Local copy of the (physical) tail
     tail: usize,
     state: Ghost<Fragment<ConsumerState>>,
 }
@@ -664,7 +642,7 @@ impl<T> Consumer<'_, T> {
         #[invariant(*f == Some(*f_snap))]
         loop {
             let mut perm: Ghost<Option<PermPCell<T>>> = ghost!(None);
-            // Get the current `head` value from the shared atomic.
+
             let head = queue.head.load(Ordering::SeqCst, ghost! { |c: &Committer<_, _, SeqCst, _>| {
                 queue.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
                     inv.consumer_auth.agree(&self.state);
@@ -697,14 +675,14 @@ impl<T> Consumer<'_, T> {
             }});
 
             if head != self.tail {
-                // Take the data from the buffer, updating the cell
-                // from initialized to uninitialized.
                 let item = unsafe {
-                    queue.buffer[self.tail]
-                        .replace(ghost!(perm.as_mut().unwrap()), MaybeUninit::uninit())
-                        .assume_init()
+                    replace(
+                        queue.buffer[self.tail].borrow_mut(ghost!(perm.as_mut().unwrap())),
+                        MaybeUninit::uninit(),
+                    )
+                    .assume_init()
                 };
-                // Store the updated tail to the shared `tail` atomic.
+
                 queue.tail.store(
                     next,
                     Ordering::SeqCst,
