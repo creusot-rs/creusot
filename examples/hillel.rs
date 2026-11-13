@@ -1,7 +1,6 @@
 // A series of formal verification challenges by Hillel Wayne:
 // https://www.hillelwayne.com/post/theorem-prover-showdown/
 
-#![feature(allocator_api)]
 #![allow(dead_code)]
 
 extern crate creusot_std;

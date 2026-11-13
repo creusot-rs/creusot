@@ -40,9 +40,8 @@ macro_rules! contracts_items {
                         DefKind::AssocFn |
                         DefKind::Trait |
                         DefKind::Impl { .. } => (),
-                        _ => return None
+                        _ => return None,
                     }
-
                     Some((get_intrinsic(tcx, did)?, did))
                 })
                 .collect();

@@ -9,6 +9,7 @@ use crate::{
         fmir::{self, *},
         pearlite::{Term, TermKind, UnOp},
     },
+    util::Orphan,
 };
 use rustc_middle::{
     mir::{
@@ -32,11 +33,11 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         self.resolve_at(loc, span);
         self.activate_two_phases(loc, span);
         let mut term = match &terminator.kind {
-            Goto { target } => Terminator::Goto(*target),
+            Goto { target, .. } => Terminator::Goto(*target),
             SwitchInt { discr, targets, .. } => {
                 let bbd = &self.body.basic_blocks[loc.block];
                 let real_discr = if let Some(mir::Statement {
-                    kind: StatementKind::Assign(box (pl, Rvalue::Discriminant(real_discr))),
+                    kind: StatementKind::Assign((pl, Rvalue::Discriminant(real_discr))),
                     ..
                 }) = bbd.statements.last()
                     && discr.place() == Some(*pl)
@@ -54,7 +55,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
             &Call { ref func, ref args, destination, mut target, fn_span, .. } => {
                 let &TyKind::FnDef(fun_def_id, subst) = func.ty(self.body, self.tcx()).kind()
                 else {
-                    self.fatal_error(fn_span, "unsupported function call type").emit()
+                    self.fatal_error(fn_span, "unsupported function call type").emit_fatal()
                 };
                 let subst = subst.skip_binder();
                 if Intrinsic::SnapshotFromFn.is(self.ctx, fun_def_id) {
@@ -183,7 +184,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
         {
             let mut retarget = HashMap::new();
             for target in term.targets_mut() {
-                match resolved.remove(target) {
+                match resolved.remove(&Orphan(*target)) {
                     Some(resolves) => {
                         let fresh = self.fresh_block_id();
                         retarget.insert(*target, fresh);

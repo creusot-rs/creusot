@@ -16,7 +16,8 @@ use crate::{
     },
     util::erased_identity_for_item,
 };
-use rustc_hir::{AttrArgs, HirId, Safety, def::DefKind, def_id::DefId};
+use rustc_attr_ir::AttrArgs;
+use rustc_hir::{HirId, Safety, def::DefKind, def_id::DefId};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
     EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv, Unnormalized,
@@ -255,7 +256,7 @@ impl ContractClauses {
                     expl.push_str(&format!(" #{i}"))
                 }
 
-                let TermWithTriggers { box term, triggers } = ctx.term(ens_id, sort);
+                let TermWithTriggers { term: deref!(term), triggers } = ctx.term(ens_id, sort);
 
                 if let Some((aspan, aid, proph)) = self.alias
                     && aid == ens_id

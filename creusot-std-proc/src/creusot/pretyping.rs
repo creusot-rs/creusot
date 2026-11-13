@@ -737,7 +737,7 @@ fn preprocess_pat(locals: &mut Locals, pat: &Pat, span: Span) -> Result<TokenStr
         Pat::Type(PatType {
             attrs,
             pat:
-                box Pat::Ident(PatIdent { by_ref: None, mutability: None, ident, subpat: None, .. }),
+                deref!(Pat::Ident(PatIdent { by_ref: None, mutability: None, ident, subpat: None, .. })),
             ty,
             colon_token,
         }) => {

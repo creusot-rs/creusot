@@ -28,7 +28,7 @@ pub(crate) struct Contract {
 impl Contract {
     // Don't add `stop_split` if there's already one.
     fn add_stop_split(exp: Exp, name: &str, kind: &str) -> Exp {
-        if let Exp::Attr(Attribute::Attr(a1), box Exp::Attr(Attribute::Attr(a2), _)) = &exp
+        if let Exp::Attr(Attribute::Attr(a1), Exp::Attr(Attribute::Attr(a2), _)) = &exp
             && a1 == "stop_split"
             && a2.starts_with("expl:")
         {

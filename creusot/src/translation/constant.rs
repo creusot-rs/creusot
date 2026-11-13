@@ -90,7 +90,7 @@ fn get_u8_slice_len<'tcx>(tcx: ty::TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<Size> {
     if !matches!(ety.kind(), ty::TyKind::Uint(ty::UintTy::U8)) {
         return None;
     }
-    n.try_to_target_usize(tcx).map(|n| Size::from_bytes(n))
+    n.try_to_value()?.try_to_target_usize(tcx).map(|n| Size::from_bytes(n))
 }
 
 fn scalar_to_literal<'tcx>(
@@ -117,19 +117,19 @@ fn try_scalar_to_literal<'tcx>(
         Char => Literal::Char(char::try_from(scalar).ok()?),
         Int(ity) => {
             let size = Size::from_bits(ity.normalize(target_width).bit_width().unwrap());
-            let bits = size.sign_extend(scalar.try_to_bits(size).ok()?);
+            let bits = size.sign_extend(scalar.to_bits(size));
             Literal::MachSigned(bits, *ity)
         }
         Uint(uty) => {
             let size = Size::from_bits(uty.normalize(target_width).bit_width().unwrap());
-            let bits = scalar.try_to_bits(size).ok()?;
+            let bits = scalar.to_bits(size);
             Literal::MachUnsigned(bits, *uty)
         }
         Bool => Literal::Bool(scalar.try_to_bool().unwrap_or_else(|_| {
             ctx.crash_and_error(span, format!("can't convert {scalar:?} to bool"))
         })),
         Float(FloatTy::F32) => {
-            let float = f32::from_bits(scalar.try_to_bits(Size::from_bits(32)).ok()? as u32);
+            let float = f32::from_bits(scalar.to_bits(Size::from_bits(32)) as u32);
             if float.is_nan() {
                 ctx.crash_and_error(span, "NaN is not yet supported")
             } else {
@@ -137,7 +137,7 @@ fn try_scalar_to_literal<'tcx>(
             }
         }
         Float(FloatTy::F64) => {
-            let float = f64::from_bits(scalar.try_to_bits(Size::from_bits(64)).ok()? as u64);
+            let float = f64::from_bits(scalar.to_bits(Size::from_bits(64)) as u64);
             if float.is_nan() {
                 ctx.crash_and_error(span, "NaN is not yet supported")
             } else {
@@ -177,7 +177,18 @@ pub fn try_const_to_term<'tcx>(
         let ty = ctx.type_of(def_id).instantiate(ctx.tcx, subst);
         let ty = ctx.tcx.normalize_erasing_regions(typing_env, ty);
         let span = ctx.def_span(def_id);
-        let kind = ty::AliasConstKind::new_from_def_id(ctx.tcx, def_id);
+        let kind = match kind {
+            DefKind::Const => ty::AliasConstKind::Free { def_id },
+            DefKind::AssocConst => {
+                if let DefKind::Impl { of_trait: false } = ctx.tcx.def_kind(ctx.tcx.parent(def_id))
+                {
+                    ty::AliasConstKind::InherentImpl { def_id }
+                } else {
+                    ty::AliasConstKind::Projection { def_id }
+                }
+            }
+            _ => unreachable!(),
+        };
         let uneval = ty::AliasConst::new(ctx.tcx, kind, subst);
         if let Ok(Ok(val)) = ctx.const_eval_resolve_for_typeck(typing_env, uneval, span) {
             return valtree_to_term(val, ctx, ty, typing_env, span);
@@ -206,7 +217,8 @@ pub fn try_const_to_term<'tcx>(
         ConstKind::Alias(_, u)
             if let AliasConstKind::Projection { def_id }
             | AliasConstKind::Free { def_id }
-            | AliasConstKind::Inherent { def_id } = u.kind =>
+            | AliasConstKind::InherentSelf { def_id }
+            | AliasConstKind::InherentImpl { def_id } = u.kind =>
         {
             let (u, ty) = ctx.tcx.normalize_erasing_regions(
                 typing_env,
@@ -274,7 +286,7 @@ fn simple_body_const<'tcx>(
     if block.statements.len() != 1 || !matches!(block.terminator().kind, TerminatorKind::Return) {
         return None;
     }
-    let mir::StatementKind::Assign(box (lhs, rhs)) = &block.statements[0].kind else { return None };
+    let mir::StatementKind::Assign((lhs, rhs)) = &block.statements[0].kind else { return None };
     if lhs.local != mir::Local::from_u32(0) || lhs.projection.len() != 0 {
         return None;
     }

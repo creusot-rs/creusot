@@ -157,7 +157,7 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
                 self.live.seek_before_primary_effect(loc);
                 live = self.live.get().clone();
                 let lhs_pl = match self.body.stmt_at(loc).left() {
-                    Some(Statement { kind: StatementKind::Assign(box (pl, _)), .. }) => pl,
+                    Some(Statement { kind: StatementKind::Assign((pl, _)), .. }) => pl,
                     _ => unreachable!(),
                 };
                 match self.move_data().rev_lookup.find(lhs_pl.as_ref()) {
@@ -182,7 +182,7 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
                     }
                 }
                 if let Some(Statement {
-                    kind: StatementKind::Assign(box (_, Rvalue::Ref(_, _, place))),
+                    kind: StatementKind::Assign((_, Rvalue::Ref(_, _, place))),
                     ..
                 }) = self.body.stmt_at(loc).left()
                 {

@@ -46,7 +46,7 @@
 //! 7. [`prelude`][mod@prelude]: What you should import before doing anything with Creusot
 #![cfg_attr(feature = "nightly", allow(incomplete_features, internal_features))]
 #![cfg_attr(feature = "nightly", feature(step_trait, unboxed_closures, tuple_trait, edition_panic))]
-#![cfg_attr(all(feature = "nightly", feature = "std"), feature(allocator_api))]
+#![cfg_attr(all(feature = "nightly", feature = "std"), feature(allocator_ext))]
 #![cfg_attr(
     creusot,
     feature(
@@ -72,7 +72,7 @@
     )
 )]
 #![cfg_attr(all(doc, feature = "nightly"), feature(intra_doc_pointers))]
-#![cfg_attr(all(creusot, feature = "std"), feature(print_internals, libstd_sys_internals, rt,))]
+#![cfg_attr(all(creusot, feature = "std"), feature(print_internals, libstd_sys_internals, rt))]
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "512"]
 

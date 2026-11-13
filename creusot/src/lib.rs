@@ -1,8 +1,9 @@
 #![feature(rustc_private)]
-#![feature(box_patterns)]
-#![feature(never_type, try_blocks)]
+#![feature(deref_patterns)]
+#![feature(try_blocks)]
 #![feature(alloc_slice_into_array)]
 #![feature(iter_intersperse, map_try_insert)]
+#![feature(default_field_values)]
 
 extern crate either;
 #[macro_use]
@@ -11,6 +12,7 @@ extern crate rustc_abi;
 extern crate rustc_ast;
 extern crate rustc_ast_ir;
 extern crate rustc_ast_pretty;
+extern crate rustc_attr_ir;
 extern crate rustc_borrowck;
 extern crate rustc_data_structures;
 extern crate rustc_driver;
@@ -22,6 +24,7 @@ extern crate rustc_index;
 extern crate rustc_infer;
 extern crate rustc_interface;
 extern crate rustc_lint;
+extern crate rustc_lint_defs;
 extern crate rustc_macros;
 extern crate rustc_metadata;
 extern crate rustc_middle;

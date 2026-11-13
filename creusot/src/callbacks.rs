@@ -151,7 +151,10 @@ fn copy_mir_bodies<'tcx>(tcx: TyCtxt<'tcx>, def_id: LocalDefId) {
             for bbd in body.body.basic_blocks_mut().iter_mut() {
                 let term = bbd.terminator_mut();
                 if let mir::TerminatorKind::FalseEdge { real_target, .. } = term.kind {
-                    term.kind = mir::TerminatorKind::Goto { target: real_target };
+                    term.kind = mir::TerminatorKind::Goto {
+                        target: real_target,
+                        loop_hint_attrs: Default::default(),
+                    };
                 }
             }
             assert!(map.insert(def_id, body).is_none());
@@ -221,6 +224,9 @@ impl Callbacks for WithoutContracts {
             })
             .collect();
         c.sess.dcx().abort_if_errors();
+        // Metadata encoding requires `commit_end_of_determinism` to have been called,
+        // which happens during `analysis`.
+        let _ = tcx.analysis(());
         let metadata = BinaryMetadata::without_specs(erased_thir);
         crate::metadata::dump_exports(tcx, &Default::default(), metadata);
         Compilation::Continue

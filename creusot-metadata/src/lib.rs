@@ -4,6 +4,7 @@
 extern crate rustc_data_structures;
 extern crate rustc_driver;
 extern crate rustc_hir;
+extern crate rustc_index;
 extern crate rustc_metadata;
 extern crate rustc_middle;
 extern crate rustc_serialize;
@@ -28,6 +29,7 @@ pub use decoder::decode_metadata;
 pub use encoder::encode_metadata;
 use rustc_data_structures::fx::FxHashMap;
 use rustc_middle::ty::TyCtxt;
+use rustc_serialize::ContextOrd;
 use rustc_span::{SourceFile, StableSourceFileId, def_id::StableCrateId};
 use std::hash::Hash;
 
@@ -72,5 +74,7 @@ impl EncodedSourceFileId {
 struct Footer {
     file_index_to_stable_id: FxHashMap<SourceFileIndex, EncodedSourceFileId>,
     syntax_contexts: FxHashMap<u32, AbsoluteBytePos>,
-    expn_data: FxHashMap<(StableCrateId, u32), AbsoluteBytePos>,
+    expn_data: FxHashMap<u32, AbsoluteBytePos>,
 }
+
+impl<E> ContextOrd<E> for SourceFileIndex {}
