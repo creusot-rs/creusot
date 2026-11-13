@@ -3156,17 +3156,17 @@ module M_spec__impl_SeqLock__lock_write (* spec::SeqLock *)
       -> deep_model_usize (val_load_AtomicUsize c) <> deep_model_usize current'
       -> precondition_FnGhostWrapper_closure10 f (Err c))}
     any
-    [ return (result: t_Result_usize_usize) -> {[@stop_split] [@expl:compare_exchange ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicUsize_usize_SeqCst_SeqCst. not shot_store_AtomicUsize'0 c.current
+    [ return (result: t_Result_usize_usize) ->
+    {[@stop_split] [@expl:compare_exchange ensures] (exists c: MutBorrow.t t_Committer_AtomicUsize_usize_SeqCst_SeqCst. not shot_store_AtomicUsize'0 c.current
           /\ ward_AtomicUsize'1 c.current = self
           /\ deep_model_usize (val_load_AtomicUsize'0 c.current) = deep_model_usize current'
           /\ val_store_AtomicUsize c.current = new
-          /\ result'0 = val_load_AtomicUsize'0 c.current /\ postcondition_once_FnGhostWrapper_closure10 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicUsize_usize_SeqCst_unit. not shot_store_AtomicUsize c
-          /\ ward_AtomicUsize c = self
-          /\ deep_model_usize (val_load_AtomicUsize c) <> deep_model_usize current'
-          /\ result'0 = val_load_AtomicUsize c /\ postcondition_once_FnGhostWrapper_closure10 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicUsize'0 c.current)
+          /\ postcondition_once_FnGhostWrapper_closure10 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicUsize_usize_SeqCst_unit. not shot_store_AtomicUsize c
+        /\ ward_AtomicUsize c = self
+        /\ deep_model_usize (val_load_AtomicUsize c) <> deep_model_usize current'
+        /\ result = Err'0 (val_load_AtomicUsize c) /\ postcondition_once_FnGhostWrapper_closure10 f (Err c) ())}
       (! return {result}) ]
   
   let is_err_usize (self: t_Result_usize_usize) (return (x: bool)) = any

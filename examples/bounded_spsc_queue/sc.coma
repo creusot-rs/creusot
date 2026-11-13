@@ -2302,26 +2302,37 @@ module M_impl_Consumer_T__dequeue (* Consumer<'_, T> *)
     [ return (result: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> {[@stop_split] [@expl:new ensures] result = x}
       (! return {result}) ]
   
-  let uninit_T (return (x: t_MaybeUninit_T)) = any
-    [ return (result: t_MaybeUninit_T) -> {[@stop_split] [@expl:uninit ensures] view_MaybeUninit_T result = None'1}
-      (! return {result}) ]
-  
   function fin_Ghost_refmut_Perm_PCell_MaybeUninit_T [@inline:trivial] (self: MutBorrow.t t_Perm_PCell_MaybeUninit_T) : t_Perm_PCell_MaybeUninit_T
    = self.final
   
   meta "rewrite_def" function fin_Ghost_refmut_Perm_PCell_MaybeUninit_T
   
-  let replace_MaybeUninit_T (self: t_PCell_MaybeUninit_T) (perm: MutBorrow.t t_Perm_PCell_MaybeUninit_T)
-    (val': t_MaybeUninit_T) (return (x: t_MaybeUninit_T)) = {[@stop_split] [@expl:replace requires] self
+  let borrow_mut_MaybeUninit_T (self: t_PCell_MaybeUninit_T) (perm: MutBorrow.t t_Perm_PCell_MaybeUninit_T)
+    (return (x: MutBorrow.t t_MaybeUninit_T)) = {[@stop_split] [@expl:borrow_mut requires] self
     = ward_PCell_MaybeUninit_T perm.current}
     any
-    [ return (result: t_MaybeUninit_T) ->
-    {[@stop_split] [@expl:replace_MaybeUninit_T ensures] ([@stop_split] [@expl:replace ensures #0] val'
-        = val_PCell_MaybeUninit_T (fin_Ghost_refmut_Perm_PCell_MaybeUninit_T perm))
-      /\ ([@stop_split] [@expl:replace ensures #1] result = val_PCell_MaybeUninit_T perm.current)
-      /\ ([@stop_split] [@expl:replace ensures #2] self
-      = ward_PCell_MaybeUninit_T (fin_Ghost_refmut_Perm_PCell_MaybeUninit_T perm))}
+    [ return (result: MutBorrow.t t_MaybeUninit_T) ->
+    {[@stop_split] [@expl:borrow_mut_MaybeUninit_T ensures] ([@stop_split] [@expl:borrow_mut ensures #0] self
+        = ward_PCell_MaybeUninit_T (fin_Ghost_refmut_Perm_PCell_MaybeUninit_T perm))
+      /\ ([@stop_split] [@expl:borrow_mut ensures #1] result.current = val_unsized_PCell_MaybeUninit_T perm.current)
+      /\ ([@stop_split] [@expl:borrow_mut ensures #2] result.final
+      = val_unsized_PCell_MaybeUninit_T (fin_Ghost_refmut_Perm_PCell_MaybeUninit_T perm))}
       (! return {result}) ]
+  
+  let uninit_T (return (x: t_MaybeUninit_T)) = any
+    [ return (result: t_MaybeUninit_T) -> {[@stop_split] [@expl:uninit ensures] view_MaybeUninit_T result = None'1}
+      (! return {result}) ]
+  
+  let replace_MaybeUninit_T (dest: MutBorrow.t t_MaybeUninit_T) (src: t_MaybeUninit_T) (return (x: t_MaybeUninit_T)) =
+  any
+    [ return (result: t_MaybeUninit_T) ->
+    {[@stop_split] [@expl:replace_MaybeUninit_T ensures] ([@stop_split] [@expl:replace ensures #0] dest.final = src)
+      /\ ([@stop_split] [@expl:replace ensures #1] result = dest.current)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_MaybeUninit_T [@inline:trivial] (_1: MutBorrow.t t_MaybeUninit_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_MaybeUninit_T
   
   predicate inv_T (_1: t_T)
   
@@ -2903,56 +2914,61 @@ module M_impl_Consumer_T__dequeue (* Consumer<'_, T> *)
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_F f'0} any) ]
       | s1 = -{resolve_Ghost_Option_F'0 f'0}- s2
       | s2 = index_Vec_PCell_MaybeUninit_T_Global {queue.buffer} {self.current.tail'0}
-          (fun (_x: t_PCell_MaybeUninit_T) -> [ &_76 <- _x ] s3)
+          (fun (_x: t_PCell_MaybeUninit_T) -> [ &_78 <- _x ] s3)
       | s3 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {perm}
-          (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_87 <- _bor ] [ &perm <- _bor.final ] s4)
-      | s4 = deref_mut_Ghost_Option_Perm_PCell_MaybeUninit_T {_87}
-          (fun (_x: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_86 <- _x ] s5)
-      | s5 = MutBorrow.borrow_final <t_Option_Perm_PCell_MaybeUninit_T> {_86.current} {MutBorrow.get_id _86}
+          (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_89 <- _bor ] [ &perm <- _bor.final ] s4)
+      | s4 = deref_mut_Ghost_Option_Perm_PCell_MaybeUninit_T {_89}
+          (fun (_x: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_88 <- _x ] s5)
+      | s5 = MutBorrow.borrow_final <t_Option_Perm_PCell_MaybeUninit_T> {_88.current} {MutBorrow.get_id _88}
           (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
-            [ &_85 <- _bor ] [ &_86 <- { _86 with current = _bor.final } ] s6)
-      | s6 = as_mut_Perm_PCell_MaybeUninit_T {_85}
-          (fun (_x: t_Option_refmut_Perm_PCell_MaybeUninit_T) -> [ &_84 <- _x ] s7)
-      | s7 = unwrap_refmut_Perm_PCell_MaybeUninit_T {_84}
-          (fun (_x: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> [ &_83 <- _x ] s8)
-      | s8 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_83.current} {MutBorrow.get_id _83}
+            [ &_87 <- _bor ] [ &_88 <- { _88 with current = _bor.final } ] s6)
+      | s6 = as_mut_Perm_PCell_MaybeUninit_T {_87}
+          (fun (_x: t_Option_refmut_Perm_PCell_MaybeUninit_T) -> [ &_86 <- _x ] s7)
+      | s7 = unwrap_refmut_Perm_PCell_MaybeUninit_T {_86}
+          (fun (_x: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> [ &_85 <- _x ] s8)
+      | s8 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_85.current} {MutBorrow.get_id _85}
           (fun (_bor: MutBorrow.t t_Perm_PCell_MaybeUninit_T) ->
-            [ &_82 <- _bor ] [ &_83 <- { _83 with current = _bor.final } ] s9)
-      | s9 = -{resolve_refmut_Option_Perm_PCell_MaybeUninit_T _86}- s10
-      | s10 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _83}- s11
-      | s11 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_82.current} {MutBorrow.get_id _82}
+            [ &_84 <- _bor ] [ &_85 <- { _85 with current = _bor.final } ] s9)
+      | s9 = -{resolve_refmut_Option_Perm_PCell_MaybeUninit_T _88}- s10
+      | s10 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _85}- s11
+      | s11 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_84.current} {MutBorrow.get_id _84}
           (fun (_bor: MutBorrow.t t_Perm_PCell_MaybeUninit_T) ->
-            [ &_81 <- _bor ] [ &_82 <- { _82 with current = _bor.final } ] s12)
-      | s12 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _82}- s13
-      | s13 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_81.current} {MutBorrow.get_id _81}
+            [ &_83 <- _bor ] [ &_84 <- { _84 with current = _bor.final } ] s12)
+      | s12 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _84}- s13
+      | s13 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_83.current} {MutBorrow.get_id _83}
           (fun (_bor: MutBorrow.t t_Perm_PCell_MaybeUninit_T) ->
-            [ &_80 <- _bor ] [ &_81 <- { _81 with current = _bor.final } ] s14)
-      | s14 = new_refmut_Perm_PCell_MaybeUninit_T {_80}
-          (fun (_x: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> [ &_79 <- _x ] s15)
-      | s15 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _81}- s16
-      | s16 = uninit_T (fun (_x: t_MaybeUninit_T) -> [ &_88 <- _x ] s17)
-      | s17 = replace_MaybeUninit_T {_76} {_79} {_88} (fun (_x: t_MaybeUninit_T) -> [ &_74 <- _x ] s18)
-      | s18 = assume_init_T {_74} (fun (_x: t_T) -> [ &item <- _x ] s19)
-      | s19 = [ &_92 <- SeqCst ] s20
-      | s20 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-          (fun (_bor: MutBorrow.t t_Tokens) -> [ &_97 <- _bor ] [ &tokens <- _bor.final ] s21)
-      | s21 = MutBorrow.borrow_final <t_Fragment_ConsumerState> {self.current.state'0}
+            [ &_82 <- _bor ] [ &_83 <- { _83 with current = _bor.final } ] s14)
+      | s14 = new_refmut_Perm_PCell_MaybeUninit_T {_82}
+          (fun (_x: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> [ &_81 <- _x ] s15)
+      | s15 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _83}- s16
+      | s16 = borrow_mut_MaybeUninit_T {_78} {_81} (fun (_x: MutBorrow.t t_MaybeUninit_T) -> [ &_76 <- _x ] s17)
+      | s17 = uninit_T (fun (_x: t_MaybeUninit_T) -> [ &_90 <- _x ] s18)
+      | s18 = MutBorrow.borrow_final <t_MaybeUninit_T> {_76.current} {MutBorrow.get_id _76}
+          (fun (_bor: MutBorrow.t t_MaybeUninit_T) ->
+            [ &_75 <- _bor ] [ &_76 <- { _76 with current = _bor.final } ] s19)
+      | s19 = replace_MaybeUninit_T {_75} {_90} (fun (_x: t_MaybeUninit_T) -> [ &_74 <- _x ] s20)
+      | s20 = -{resolve_refmut_MaybeUninit_T _76}- s21
+      | s21 = assume_init_T {_74} (fun (_x: t_T) -> [ &item <- _x ] s22)
+      | s22 = [ &_94 <- SeqCst ] s23
+      | s23 = MutBorrow.borrow_mut <t_Tokens> {tokens}
+          (fun (_bor: MutBorrow.t t_Tokens) -> [ &_99 <- _bor ] [ &tokens <- _bor.final ] s24)
+      | s24 = MutBorrow.borrow_final <t_Fragment_ConsumerState> {self.current.state'0}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
           (fun (_bor: MutBorrow.t t_Fragment_ConsumerState) ->
-            [ &_98 <- _bor ] -{inv_Ghost_Fragment_ConsumerState _bor.final}-
-            [ &self <- { self with current = { self.current with state'0 = _bor.final } } ] s22)
+            [ &_100 <- _bor ] -{inv_Ghost_Fragment_ConsumerState _bor.final}-
+            [ &self <- { self with current = { self.current with state'0 = _bor.final } } ] s25)
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Fragment_ConsumerState self.current.state'0} any) ]
-      | s22 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {perm}
-          (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_99 <- _bor ] [ &perm <- _bor.final ] s23)
-      | s23 = [ &_95 <- { c0'1 = queue; c1'1 = _97; c2'1 = _98; c3'1 = _99 } ] s24
-      | s24 = __new_closure14 {_95} (fun (_x: t_FnGhostWrapper_closure14) -> [ &_94 <- _x ] s25)
-      | s25 = new_FnGhostWrapper_closure14 {_94} (fun (_x: t_FnGhostWrapper_closure14) -> [ &_93 <- _x ] s26)
-      | s26 = store_FnGhostWrapper_closure14 {queue.tail} {next} {_92} {_93} (fun (_x: ()) -> [ &_89 <- _x ] s27)
-      | s27 = [ &self <- { self with current = { self.current with tail'0 = next } } ] s28
-      | s28 = s29 [ _ck -> (! {[@expl:type invariant] inv_refmut_Consumer_T self} any) ]
-      | s29 = -{resolve_refmut_Consumer_T self}- s30
-      | s30 = [ &_ret <- item ] s31
-      | s31 = return {_ret} ] ]
+      | s25 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {perm}
+          (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_101 <- _bor ] [ &perm <- _bor.final ] s26)
+      | s26 = [ &_97 <- { c0'1 = queue; c1'1 = _99; c2'1 = _100; c3'1 = _101 } ] s27
+      | s27 = __new_closure14 {_97} (fun (_x: t_FnGhostWrapper_closure14) -> [ &_96 <- _x ] s28)
+      | s28 = new_FnGhostWrapper_closure14 {_96} (fun (_x: t_FnGhostWrapper_closure14) -> [ &_95 <- _x ] s29)
+      | s29 = store_FnGhostWrapper_closure14 {queue.tail} {next} {_94} {_95} (fun (_x: ()) -> [ &_91 <- _x ] s30)
+      | s30 = [ &self <- { self with current = { self.current with tail'0 = next } } ] s31
+      | s31 = s32 [ _ck -> (! {[@expl:type invariant] inv_refmut_Consumer_T self} any) ]
+      | s32 = -{resolve_refmut_Consumer_T self}- s33
+      | s33 = [ &_ret <- item ] s34
+      | s34 = return {_ret} ] ]
     [ & _ret: t_T = Any.any_l ()
     | & self: MutBorrow.t t_Consumer_T = self
     | & tokens: t_Tokens = tokens
@@ -2981,25 +2997,27 @@ module M_impl_Consumer_T__dequeue (* Consumer<'_, T> *)
     | & _69: bool = Any.any_l ()
     | & item: t_T = Any.any_l ()
     | & _74: t_MaybeUninit_T = Any.any_l ()
-    | & _76: t_PCell_MaybeUninit_T = Any.any_l ()
-    | & _79: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _80: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _75: MutBorrow.t t_MaybeUninit_T = Any.any_l ()
+    | & _76: MutBorrow.t t_MaybeUninit_T = Any.any_l ()
+    | & _78: t_PCell_MaybeUninit_T = Any.any_l ()
     | & _81: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
     | & _82: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
     | & _83: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _84: t_Option_refmut_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _85: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _86: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _84: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _85: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _86: t_Option_refmut_Perm_PCell_MaybeUninit_T = Any.any_l ()
     | & _87: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _88: t_MaybeUninit_T = Any.any_l ()
-    | & _89: () = Any.any_l ()
-    | & _92: t_Ordering = Any.any_l ()
-    | & _93: t_FnGhostWrapper_closure14 = Any.any_l ()
-    | & _94: t_FnGhostWrapper_closure14 = Any.any_l ()
-    | & _95: closure14 = Any.any_l ()
-    | & _97: MutBorrow.t t_Tokens = Any.any_l ()
-    | & _98: MutBorrow.t t_Fragment_ConsumerState = Any.any_l ()
-    | & _99: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _88: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _89: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _90: t_MaybeUninit_T = Any.any_l ()
+    | & _91: () = Any.any_l ()
+    | & _94: t_Ordering = Any.any_l ()
+    | & _95: t_FnGhostWrapper_closure14 = Any.any_l ()
+    | & _96: t_FnGhostWrapper_closure14 = Any.any_l ()
+    | & _97: closure14 = Any.any_l ()
+    | & _99: MutBorrow.t t_Tokens = Any.any_l ()
+    | & _100: MutBorrow.t t_Fragment_ConsumerState = Any.any_l ()
+    | & _101: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
     | & _old: t_Consumer_T = Any.any_l ()
     | & _old'0: t_Queue_T = Any.any_l ()
     | & _old'1: UInt64.t = Any.any_l () ])
@@ -3938,6 +3956,13 @@ module M_impl_Producer_T__enqueue (* Producer<'_, T> *)
   
   function producer_id_T (self: t_Queue_T) : t_Id = (public_QueueInv_T'0 self.inv).f3'0
   
+  predicate inv_T (_1: t_T)
+  
+  let new_T (val': t_T) (return (x: t_MaybeUninit_T)) = {[@stop_split] [@expl:new 'val' type invariant] inv_T val'}
+    any
+    [ return (result: t_MaybeUninit_T) -> {[@stop_split] [@expl:new ensures] view_MaybeUninit_T result = Some'0 val'}
+      (! return {result}) ]
+  
   predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq t_PCell_MaybeUninit_T) =
     UInt64.t'int self < Seq.length seq
   
@@ -3985,32 +4010,26 @@ module M_impl_Producer_T__enqueue (* Producer<'_, T> *)
     [ return (result: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> {[@stop_split] [@expl:new ensures] result = x}
       (! return {result}) ]
   
-  predicate inv_T (_1: t_T)
-  
-  let new_T (val': t_T) (return (x: t_MaybeUninit_T)) = {[@stop_split] [@expl:new 'val' type invariant] inv_T val'}
-    any
-    [ return (result: t_MaybeUninit_T) -> {[@stop_split] [@expl:new ensures] view_MaybeUninit_T result = Some'0 val'}
-      (! return {result}) ]
-  
   function fin_Ghost_refmut_Perm_PCell_MaybeUninit_T [@inline:trivial] (self: MutBorrow.t t_Perm_PCell_MaybeUninit_T) : t_Perm_PCell_MaybeUninit_T
    = self.final
   
   meta "rewrite_def" function fin_Ghost_refmut_Perm_PCell_MaybeUninit_T
   
-  predicate resolve_MaybeUninit_T [@inline:trivial] (_1: t_MaybeUninit_T) = true
-  
-  meta "rewrite_def" predicate resolve_MaybeUninit_T
-  
-  let set_MaybeUninit_T (self: t_PCell_MaybeUninit_T) (perm: MutBorrow.t t_Perm_PCell_MaybeUninit_T)
-    (val': t_MaybeUninit_T) (return (x: ())) = {[@stop_split] [@expl:set requires] self
+  let borrow_mut_MaybeUninit_T (self: t_PCell_MaybeUninit_T) (perm: MutBorrow.t t_Perm_PCell_MaybeUninit_T)
+    (return (x: MutBorrow.t t_MaybeUninit_T)) = {[@stop_split] [@expl:borrow_mut requires] self
     = ward_PCell_MaybeUninit_T perm.current}
     any
-    [ return (result: ()) -> {[@stop_split] [@expl:set_MaybeUninit_T ensures] ([@stop_split] [@expl:set ensures #0] val'
-        = val_PCell_MaybeUninit_T (fin_Ghost_refmut_Perm_PCell_MaybeUninit_T perm))
-      /\ ([@stop_split] [@expl:set ensures #1] resolve_MaybeUninit_T (val_PCell_MaybeUninit_T perm.current))
-      /\ ([@stop_split] [@expl:set ensures #2] self
-      = ward_PCell_MaybeUninit_T (fin_Ghost_refmut_Perm_PCell_MaybeUninit_T perm))}
+    [ return (result: MutBorrow.t t_MaybeUninit_T) ->
+    {[@stop_split] [@expl:borrow_mut_MaybeUninit_T ensures] ([@stop_split] [@expl:borrow_mut ensures #0] self
+        = ward_PCell_MaybeUninit_T (fin_Ghost_refmut_Perm_PCell_MaybeUninit_T perm))
+      /\ ([@stop_split] [@expl:borrow_mut ensures #1] result.current = val_unsized_PCell_MaybeUninit_T perm.current)
+      /\ ([@stop_split] [@expl:borrow_mut ensures #2] result.final
+      = val_unsized_PCell_MaybeUninit_T (fin_Ghost_refmut_Perm_PCell_MaybeUninit_T perm))}
       (! return {result}) ]
+  
+  predicate resolve_refmut_MaybeUninit_T [@inline:trivial] (_1: MutBorrow.t t_MaybeUninit_T) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_MaybeUninit_T
   
   type t_F
   
@@ -4681,55 +4700,57 @@ module M_impl_Producer_T__enqueue (* Producer<'_, T> *)
         | s10 = [ &_63 <- tail'1 <> next ] s11
         | s11 = any [ br0 -> {_63 = false} (! bb6) | br1 -> {_63} (! bb12) ] ] ]
     | bb12 = s0
-      [ s0 = index_Vec_PCell_MaybeUninit_T_Global {queue.buffer} {self.current.head'0}
-          (fun (_x: t_PCell_MaybeUninit_T) -> [ &_69 <- _x ] s1)
-      | s1 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {perm}
-          (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_80 <- _bor ] [ &perm <- _bor.final ] s2)
-      | s2 = deref_mut_Ghost_Option_Perm_PCell_MaybeUninit_T {_80}
-          (fun (_x: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_79 <- _x ] s3)
-      | s3 = MutBorrow.borrow_final <t_Option_Perm_PCell_MaybeUninit_T> {_79.current} {MutBorrow.get_id _79}
+      [ s0 = new_T {item} (fun (_x: t_MaybeUninit_T) -> [ &_68 <- _x ] s1)
+      | s1 = index_Vec_PCell_MaybeUninit_T_Global {queue.buffer} {self.current.head'0}
+          (fun (_x: t_PCell_MaybeUninit_T) -> [ &_72 <- _x ] s2)
+      | s2 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {perm}
+          (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_83 <- _bor ] [ &perm <- _bor.final ] s3)
+      | s3 = deref_mut_Ghost_Option_Perm_PCell_MaybeUninit_T {_83}
+          (fun (_x: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_82 <- _x ] s4)
+      | s4 = MutBorrow.borrow_final <t_Option_Perm_PCell_MaybeUninit_T> {_82.current} {MutBorrow.get_id _82}
           (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) ->
-            [ &_78 <- _bor ] [ &_79 <- { _79 with current = _bor.final } ] s4)
-      | s4 = as_mut_Perm_PCell_MaybeUninit_T {_78}
-          (fun (_x: t_Option_refmut_Perm_PCell_MaybeUninit_T) -> [ &_77 <- _x ] s5)
-      | s5 = unwrap_refmut_Perm_PCell_MaybeUninit_T {_77}
-          (fun (_x: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> [ &_76 <- _x ] s6)
-      | s6 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_76.current} {MutBorrow.get_id _76}
+            [ &_81 <- _bor ] [ &_82 <- { _82 with current = _bor.final } ] s5)
+      | s5 = as_mut_Perm_PCell_MaybeUninit_T {_81}
+          (fun (_x: t_Option_refmut_Perm_PCell_MaybeUninit_T) -> [ &_80 <- _x ] s6)
+      | s6 = unwrap_refmut_Perm_PCell_MaybeUninit_T {_80}
+          (fun (_x: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> [ &_79 <- _x ] s7)
+      | s7 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_79.current} {MutBorrow.get_id _79}
           (fun (_bor: MutBorrow.t t_Perm_PCell_MaybeUninit_T) ->
-            [ &_75 <- _bor ] [ &_76 <- { _76 with current = _bor.final } ] s7)
-      | s7 = -{resolve_refmut_Option_Perm_PCell_MaybeUninit_T _79}- s8
-      | s8 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _76}- s9
-      | s9 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_75.current} {MutBorrow.get_id _75}
+            [ &_78 <- _bor ] [ &_79 <- { _79 with current = _bor.final } ] s8)
+      | s8 = -{resolve_refmut_Option_Perm_PCell_MaybeUninit_T _82}- s9
+      | s9 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _79}- s10
+      | s10 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_78.current} {MutBorrow.get_id _78}
           (fun (_bor: MutBorrow.t t_Perm_PCell_MaybeUninit_T) ->
-            [ &_74 <- _bor ] [ &_75 <- { _75 with current = _bor.final } ] s10)
-      | s10 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _75}- s11
-      | s11 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_74.current} {MutBorrow.get_id _74}
+            [ &_77 <- _bor ] [ &_78 <- { _78 with current = _bor.final } ] s11)
+      | s11 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _78}- s12
+      | s12 = MutBorrow.borrow_final <t_Perm_PCell_MaybeUninit_T> {_77.current} {MutBorrow.get_id _77}
           (fun (_bor: MutBorrow.t t_Perm_PCell_MaybeUninit_T) ->
-            [ &_73 <- _bor ] [ &_74 <- { _74 with current = _bor.final } ] s12)
-      | s12 = new_refmut_Perm_PCell_MaybeUninit_T {_73}
-          (fun (_x: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> [ &_72 <- _x ] s13)
-      | s13 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _74}- s14
-      | s14 = new_T {item} (fun (_x: t_MaybeUninit_T) -> [ &_81 <- _x ] s15)
-      | s15 = set_MaybeUninit_T {_69} {_72} {_81} (fun (_x: ()) -> [ &_67 <- _x ] s16)
-      | s16 = [ &_86 <- SeqCst ] s17
-      | s17 = MutBorrow.borrow_mut <t_Tokens> {tokens}
-          (fun (_bor: MutBorrow.t t_Tokens) -> [ &_91 <- _bor ] [ &tokens <- _bor.final ] s18)
-      | s18 = MutBorrow.borrow_final <t_Fragment_ProducerState> {self.current.state'0}
+            [ &_76 <- _bor ] [ &_77 <- { _77 with current = _bor.final } ] s13)
+      | s13 = new_refmut_Perm_PCell_MaybeUninit_T {_76}
+          (fun (_x: MutBorrow.t t_Perm_PCell_MaybeUninit_T) -> [ &_75 <- _x ] s14)
+      | s14 = -{resolve_refmut_Perm_PCell_MaybeUninit_T _77}- s15
+      | s15 = borrow_mut_MaybeUninit_T {_72} {_75} (fun (_x: MutBorrow.t t_MaybeUninit_T) -> [ &_70 <- _x ] s16)
+      | s16 = [ &_70 <- { _70 with current = _68 } ] s17
+      | s17 = -{resolve_refmut_MaybeUninit_T _70}- s18
+      | s18 = [ &_87 <- SeqCst ] s19
+      | s19 = MutBorrow.borrow_mut <t_Tokens> {tokens}
+          (fun (_bor: MutBorrow.t t_Tokens) -> [ &_92 <- _bor ] [ &tokens <- _bor.final ] s20)
+      | s20 = MutBorrow.borrow_final <t_Fragment_ProducerState> {self.current.state'0}
           {MutBorrow.inherit_id (MutBorrow.get_id self) 2}
           (fun (_bor: MutBorrow.t t_Fragment_ProducerState) ->
-            [ &_92 <- _bor ] -{inv_Ghost_Fragment_ProducerState _bor.final}-
-            [ &self <- { self with current = { self.current with state'0 = _bor.final } } ] s19)
+            [ &_93 <- _bor ] -{inv_Ghost_Fragment_ProducerState _bor.final}-
+            [ &self <- { self with current = { self.current with state'0 = _bor.final } } ] s21)
         [ _ck -> (! {[@expl:type invariant] inv_Ghost_Fragment_ProducerState self.current.state'0} any) ]
-      | s19 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {perm}
-          (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_94 <- _bor ] [ &perm <- _bor.final ] s20)
-      | s20 = [ &_89 <- { c0'1 = queue; c1'1 = _91; c2'1 = _92; c3'1 = item_snap; c4'1 = f; c5'1 = _94 } ] s21
-      | s21 = __new_closure13 {_89} (fun (_x: t_FnGhostWrapper_closure13) -> [ &_88 <- _x ] s22)
-      | s22 = new_FnGhostWrapper_closure13 {_88} (fun (_x: t_FnGhostWrapper_closure13) -> [ &_87 <- _x ] s23)
-      | s23 = store_FnGhostWrapper_closure13 {queue.head} {next} {_86} {_87} (fun (_x: ()) -> [ &_83 <- _x ] s24)
-      | s24 = [ &self <- { self with current = { self.current with head'0 = next } } ] s25
-      | s25 = s26 [ _ck -> (! {[@expl:type invariant] inv_refmut_Producer_T self} any) ]
-      | s26 = -{resolve_refmut_Producer_T self}- s27
-      | s27 = return {_ret} ] ]
+      | s21 = MutBorrow.borrow_mut <t_Option_Perm_PCell_MaybeUninit_T> {perm}
+          (fun (_bor: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T) -> [ &_95 <- _bor ] [ &perm <- _bor.final ] s22)
+      | s22 = [ &_90 <- { c0'1 = queue; c1'1 = _92; c2'1 = _93; c3'1 = item_snap; c4'1 = f; c5'1 = _95 } ] s23
+      | s23 = __new_closure13 {_90} (fun (_x: t_FnGhostWrapper_closure13) -> [ &_89 <- _x ] s24)
+      | s24 = new_FnGhostWrapper_closure13 {_89} (fun (_x: t_FnGhostWrapper_closure13) -> [ &_88 <- _x ] s25)
+      | s25 = store_FnGhostWrapper_closure13 {queue.head} {next} {_87} {_88} (fun (_x: ()) -> [ &_84 <- _x ] s26)
+      | s26 = [ &self <- { self with current = { self.current with head'0 = next } } ] s27
+      | s27 = s28 [ _ck -> (! {[@expl:type invariant] inv_refmut_Producer_T self} any) ]
+      | s28 = -{resolve_refmut_Producer_T self}- s29
+      | s29 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & self: MutBorrow.t t_Producer_T = self
     | & item: t_T = item
@@ -4752,26 +4773,26 @@ module M_impl_Producer_T__enqueue (* Producer<'_, T> *)
     | & _60: MutBorrow.t t_Fragment_ProducerState = Any.any_l ()
     | & _62: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
     | & _63: bool = Any.any_l ()
-    | & _67: () = Any.any_l ()
-    | & _69: t_PCell_MaybeUninit_T = Any.any_l ()
-    | & _72: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _73: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _74: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _68: t_MaybeUninit_T = Any.any_l ()
+    | & _70: MutBorrow.t t_MaybeUninit_T = Any.any_l ()
+    | & _72: t_PCell_MaybeUninit_T = Any.any_l ()
     | & _75: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
     | & _76: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _77: t_Option_refmut_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _78: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _79: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _80: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _81: t_MaybeUninit_T = Any.any_l ()
-    | & _83: () = Any.any_l ()
-    | & _86: t_Ordering = Any.any_l ()
-    | & _87: t_FnGhostWrapper_closure13 = Any.any_l ()
+    | & _77: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _78: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _79: MutBorrow.t t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _80: t_Option_refmut_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _81: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _82: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _83: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _84: () = Any.any_l ()
+    | & _87: t_Ordering = Any.any_l ()
     | & _88: t_FnGhostWrapper_closure13 = Any.any_l ()
-    | & _89: closure13 = Any.any_l ()
-    | & _91: MutBorrow.t t_Tokens = Any.any_l ()
-    | & _92: MutBorrow.t t_Fragment_ProducerState = Any.any_l ()
-    | & _94: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _89: t_FnGhostWrapper_closure13 = Any.any_l ()
+    | & _90: closure13 = Any.any_l ()
+    | & _92: MutBorrow.t t_Tokens = Any.any_l ()
+    | & _93: MutBorrow.t t_Fragment_ProducerState = Any.any_l ()
+    | & _95: MutBorrow.t t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
     | & _old: t_Producer_T = Any.any_l ()
     | & _old'0: t_Queue_T = Any.any_l ()
     | & _old'1: UInt64.t = Any.any_l () ])
@@ -5101,6 +5122,16 @@ module M_impl_Queue_T_0__new (* Queue<T> *)
     [ return (result: t_FMap_Int_Perm_PCell_MaybeUninit_T) -> {[@stop_split] [@expl:new ensures] is_empty_Int result}
       (! return {result}) ]
   
+  let into_inner_FMap_Int_Perm_PCell_MaybeUninit_T (self: t_FMap_Int_Perm_PCell_MaybeUninit_T)
+    (return (x: t_FMap_Int_Perm_PCell_MaybeUninit_T)) = any
+    [ return (result: t_FMap_Int_Perm_PCell_MaybeUninit_T) -> {[@stop_split] [@expl:into_inner ensures] result = self}
+      (! return {result}) ]
+  
+  let new_FMap_Int_Perm_PCell_MaybeUninit_T (x: t_FMap_Int_Perm_PCell_MaybeUninit_T)
+    (return (x'0: t_FMap_Int_Perm_PCell_MaybeUninit_T)) = any
+    [ return (result: t_FMap_Int_Perm_PCell_MaybeUninit_T) -> {[@stop_split] [@expl:new ensures] result = x}
+      (! return {result}) ]
+  
   type t_Range_usize = { start: UInt64.t; end': UInt64.t }
   
   let into_iter_Range_usize (self: t_Range_usize) (return (x: t_Range_usize)) = any
@@ -5338,6 +5369,25 @@ module M_impl_Queue_T_0__new (* Queue<T> *)
       /\ val_ProducerState'0 result.f1'1 = v)}
       (! return {result}) ]
   
+  let into_inner_tup2_Authority_ProducerState_Fragment_ProducerState
+    (self: tup2_Authority_ProducerState_Fragment_ProducerState)
+    (return (x: tup2_Authority_ProducerState_Fragment_ProducerState)) =
+  {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_tup2_Authority_ProducerState_Fragment_ProducerState self}
+    any
+    [ return (result: tup2_Authority_ProducerState_Fragment_ProducerState) ->
+    {[@stop_split] [@expl:into_inner_tup2_Authority_ProducerState_Fragment_ProducerState ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_tup2_Authority_ProducerState_Fragment_ProducerState result)
+      /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
+      (! return {result}) ]
+  
+  let new_tup2_Authority_ProducerState_Fragment_ProducerState (x: tup2_Authority_ProducerState_Fragment_ProducerState)
+    (return (x'0: tup2_Authority_ProducerState_Fragment_ProducerState)) =
+  {[@stop_split] [@expl:new 'x' type invariant] inv_tup2_Authority_ProducerState_Fragment_ProducerState x}
+    any
+    [ return (result: tup2_Authority_ProducerState_Fragment_ProducerState) ->
+    {[@stop_split] [@expl:new_tup2_Authority_ProducerState_Fragment_ProducerState ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_tup2_Authority_ProducerState_Fragment_ProducerState result)
+      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      (! return {result}) ]
+  
   type tup2_Ghost_Authority_ProducerState_Ghost_Fragment_ProducerState = {
     f0'2: t_Authority_ProducerState;
     f1'2: t_Fragment_ProducerState }
@@ -5433,6 +5483,25 @@ module M_impl_Queue_T_0__new (* Queue<T> *)
       /\ val_ConsumerState'0 result.f1'3 = v)}
       (! return {result}) ]
   
+  let into_inner_tup2_Authority_ConsumerState_Fragment_ConsumerState
+    (self: tup2_Authority_ConsumerState_Fragment_ConsumerState)
+    (return (x: tup2_Authority_ConsumerState_Fragment_ConsumerState)) =
+  {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_tup2_Authority_ConsumerState_Fragment_ConsumerState self}
+    any
+    [ return (result: tup2_Authority_ConsumerState_Fragment_ConsumerState) ->
+    {[@stop_split] [@expl:into_inner_tup2_Authority_ConsumerState_Fragment_ConsumerState ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_tup2_Authority_ConsumerState_Fragment_ConsumerState result)
+      /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
+      (! return {result}) ]
+  
+  let new_tup2_Authority_ConsumerState_Fragment_ConsumerState (x: tup2_Authority_ConsumerState_Fragment_ConsumerState)
+    (return (x'0: tup2_Authority_ConsumerState_Fragment_ConsumerState)) =
+  {[@stop_split] [@expl:new 'x' type invariant] inv_tup2_Authority_ConsumerState_Fragment_ConsumerState x}
+    any
+    [ return (result: tup2_Authority_ConsumerState_Fragment_ConsumerState) ->
+    {[@stop_split] [@expl:new_tup2_Authority_ConsumerState_Fragment_ConsumerState ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_tup2_Authority_ConsumerState_Fragment_ConsumerState result)
+      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      (! return {result}) ]
+  
   type tup2_Ghost_Authority_ConsumerState_Ghost_Fragment_ConsumerState = {
     f0'4: t_Authority_ConsumerState;
     f1'4: t_Fragment_ConsumerState }
@@ -5522,6 +5591,24 @@ module M_impl_Queue_T_0__new (* Queue<T> *)
       /\ ([@stop_split] [@expl:alloc ensures #1] val_Seq_T result.f0'5 = v /\ val_Seq_T'0 result.f1'5 = v)}
       (! return {result}) ]
   
+  let into_inner_tup2_Authority_Seq_T_Fragment_Seq_T (self: tup2_Authority_Seq_T_Fragment_Seq_T)
+    (return (x: tup2_Authority_Seq_T_Fragment_Seq_T)) =
+  {[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_tup2_Authority_Seq_T_Fragment_Seq_T self}
+    any
+    [ return (result: tup2_Authority_Seq_T_Fragment_Seq_T) ->
+    {[@stop_split] [@expl:into_inner_tup2_Authority_Seq_T_Fragment_Seq_T ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_tup2_Authority_Seq_T_Fragment_Seq_T result)
+      /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
+      (! return {result}) ]
+  
+  let new_tup2_Authority_Seq_T_Fragment_Seq_T (x: tup2_Authority_Seq_T_Fragment_Seq_T)
+    (return (x'0: tup2_Authority_Seq_T_Fragment_Seq_T)) =
+  {[@stop_split] [@expl:new 'x' type invariant] inv_tup2_Authority_Seq_T_Fragment_Seq_T x}
+    any
+    [ return (result: tup2_Authority_Seq_T_Fragment_Seq_T) ->
+    {[@stop_split] [@expl:new_tup2_Authority_Seq_T_Fragment_Seq_T ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_tup2_Authority_Seq_T_Fragment_Seq_T result)
+      /\ ([@stop_split] [@expl:new ensures] result = x)}
+      (! return {result}) ]
+  
   type tup2_Ghost_Authority_Seq_T_Ghost_Fragment_Seq_T = { f0'6: t_Authority_Seq_T; f1'6: t_Fragment_Seq_T }
   
   predicate invariant_Ghost_Authority_Seq_T [@inline:trivial] (self: t_Authority_Seq_T) = inv_Authority_Seq_T self
@@ -5557,11 +5644,6 @@ module M_impl_Queue_T_0__new (* Queue<T> *)
   
   let into_inner_Perm_AtomicUsize (self: t_Perm_AtomicUsize) (return (x: t_Perm_AtomicUsize)) = any
     [ return (result: t_Perm_AtomicUsize) -> {[@stop_split] [@expl:into_inner ensures] result = self}
-      (! return {result}) ]
-  
-  let into_inner_FMap_Int_Perm_PCell_MaybeUninit_T (self: t_FMap_Int_Perm_PCell_MaybeUninit_T)
-    (return (x: t_FMap_Int_Perm_PCell_MaybeUninit_T)) = any
-    [ return (result: t_FMap_Int_Perm_PCell_MaybeUninit_T) -> {[@stop_split] [@expl:into_inner ensures] result = self}
       (! return {result}) ]
   
   let into_inner_Authority_ProducerState (self: t_Authority_ProducerState) (return (x: t_Authority_ProducerState)) =
@@ -5727,6 +5809,16 @@ module M_impl_Queue_T_0__new (* Queue<T> *)
       /\ ([@stop_split] [@expl:new ensures #1] namespace_QueueInv_T result = namespace)}
       (! return {result}) ]
   
+  let into_inner_AtomicInvariantSC_QueueInv_T (self: t_AtomicInvariantSC_QueueInv_T)
+    (return (x: t_AtomicInvariantSC_QueueInv_T)) = any
+    [ return (result: t_AtomicInvariantSC_QueueInv_T) -> {[@stop_split] [@expl:into_inner ensures] result = self}
+      (! return {result}) ]
+  
+  let new_AtomicInvariantSC_QueueInv_T (x: t_AtomicInvariantSC_QueueInv_T)
+    (return (x'0: t_AtomicInvariantSC_QueueInv_T)) = any
+    [ return (result: t_AtomicInvariantSC_QueueInv_T) -> {[@stop_split] [@expl:new ensures] result = x}
+      (! return {result}) ]
+  
   type t_Queue_T = {
     buffer'0: t_Vec_PCell_MaybeUninit_T_Global;
     head'0: t_AtomicUsize;
@@ -5852,16 +5944,20 @@ module M_impl_Queue_T_0__new (* Queue<T> *)
     (! bb0
     [ bb0 = s0
       [ s0 = new_PCell_MaybeUninit_T (fun (_x: t_Vec_PCell_MaybeUninit_T_Global) -> [ &buffer <- _x ] s1)
-      | s1 = new_Int (fun (_x: t_FMap_Int_Perm_PCell_MaybeUninit_T) -> [ &cell_perms'0 <- _x ] s2)
-      | s2 = [ &_11 <- { start = (0: UInt64.t); end' = len } ] s3
-      | s3 = into_iter_Range_usize {_11} (fun (_x: t_Range_usize) -> [ &_10 <- _x ] s4)
-      | s4 = [ &iter <- _10 ] s5
-      | s5 = [ &iter_old <- iter ] s6
-      | s6 = [ &_19 <- Seq.empty: Seq.seq UInt64.t ] s7
-      | s7 = [ &produced <- _19 ] s8
-      | s8 = bb6 ]
-    | bb6 = bb6
-      [ bb6 = {[@expl:for invariant] inv_Seq_usize produced}
+      | s1 = new_Int (fun (_x: t_FMap_Int_Perm_PCell_MaybeUninit_T) -> [ &_10 <- _x ] s2)
+      | s2 = into_inner_FMap_Int_Perm_PCell_MaybeUninit_T {_10}
+          (fun (_x: t_FMap_Int_Perm_PCell_MaybeUninit_T) -> [ &_9 <- _x ] s3)
+      | s3 = new_FMap_Int_Perm_PCell_MaybeUninit_T {_9}
+          (fun (_x: t_FMap_Int_Perm_PCell_MaybeUninit_T) -> [ &cell_perms'0 <- _x ] s4)
+      | s4 = [ &_13 <- { start = (0: UInt64.t); end' = len } ] s5
+      | s5 = into_iter_Range_usize {_13} (fun (_x: t_Range_usize) -> [ &_12 <- _x ] s6)
+      | s6 = [ &iter <- _12 ] s7
+      | s7 = [ &iter_old <- iter ] s8
+      | s8 = [ &_21 <- Seq.empty: Seq.seq UInt64.t ] s9
+      | s9 = [ &produced <- _21 ] s10
+      | s10 = bb8 ]
+    | bb8 = bb8
+      [ bb8 = {[@expl:for invariant] inv_Seq_usize produced}
         {[@expl:for invariant] produces_Range_usize iter_old produced iter}
         {[@expl:loop invariant #0] Seq.length (view_Vec_PCell_MaybeUninit_T_Global buffer) = Seq.length produced}
         {[@expl:loop invariant #1] forall j: int. 0 <= j /\ j < Seq.length produced
@@ -5872,182 +5968,207 @@ module M_impl_Queue_T_0__new (* Queue<T> *)
             end}
         (! s0)
         [ s0 = MutBorrow.borrow_mut <t_Range_usize> {iter}
-            (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_39 <- _bor ] [ &iter <- _bor.final ] s1)
-        | s1 = MutBorrow.borrow_final <t_Range_usize> {_39.current} {MutBorrow.get_id _39}
-            (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_38 <- _bor ] [ &_39 <- { _39 with current = _bor.final } ] s2)
-        | s2 = next_Range_usize {_38} (fun (_x: t_Option_usize) -> [ &_37 <- _x ] s3)
-        | s3 = -{resolve_refmut_Range_usize _39}- s4
-        | s4 = any [ br0 -> {_37 = None'0} (! bb12) | br1 (x0: UInt64.t) -> {_37 = Some'0 x0} (! bb11) ] ]
-        [ bb11 = s0
-          [ s0 = elim_Some {_37} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
-          | s1 = [ &_44 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
-          | s2 = [ &produced <- _44 ] s3
-          | s3 = uninit_T (fun (_x: t_MaybeUninit_T) -> [ &_51 <- _x ] s4)
-          | s4 = new_MaybeUninit_T {_51}
-              (fun (_x: tup2_PCell_MaybeUninit_T_Ghost_Perm_PCell_MaybeUninit_T) -> [ &_50 <- _x ] s5)
-          | s5 = [ &cell <- _50.f0 ] s6
-          | s6 = [ &cell_perm <- _50.f1 ] s7
+            (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_41 <- _bor ] [ &iter <- _bor.final ] s1)
+        | s1 = MutBorrow.borrow_final <t_Range_usize> {_41.current} {MutBorrow.get_id _41}
+            (fun (_bor: MutBorrow.t t_Range_usize) -> [ &_40 <- _bor ] [ &_41 <- { _41 with current = _bor.final } ] s2)
+        | s2 = next_Range_usize {_40} (fun (_x: t_Option_usize) -> [ &_39 <- _x ] s3)
+        | s3 = -{resolve_refmut_Range_usize _41}- s4
+        | s4 = any [ br0 -> {_39 = None'0} (! bb14) | br1 (x0: UInt64.t) -> {_39 = Some'0 x0} (! bb13) ] ]
+        [ bb13 = s0
+          [ s0 = elim_Some {_39} (fun (r0: UInt64.t) -> [ &__creusot_proc_iter_elem <- r0 ] s1)
+          | s1 = [ &_46 <- Seq.(++) produced (Seq.singleton __creusot_proc_iter_elem) ] s2
+          | s2 = [ &produced <- _46 ] s3
+          | s3 = uninit_T (fun (_x: t_MaybeUninit_T) -> [ &_53 <- _x ] s4)
+          | s4 = new_MaybeUninit_T {_53}
+              (fun (_x: tup2_PCell_MaybeUninit_T_Ghost_Perm_PCell_MaybeUninit_T) -> [ &_52 <- _x ] s5)
+          | s5 = [ &cell <- _52.f0 ] s6
+          | s6 = [ &cell_perm <- _52.f1 ] s7
           | s7 = MutBorrow.borrow_mut <t_FMap_Int_Perm_PCell_MaybeUninit_T> {cell_perms'0}
               (fun (_bor: MutBorrow.t t_FMap_Int_Perm_PCell_MaybeUninit_T) ->
-                [ &_57 <- _bor ] [ &cell_perms'0 <- _bor.final ] s8)
-          | s8 = deref_mut_Ghost_FMap_Int_Perm_PCell_MaybeUninit_T {_57}
-              (fun (_x: MutBorrow.t t_FMap_Int_Perm_PCell_MaybeUninit_T) -> [ &_56 <- _x ] s9)
+                [ &_59 <- _bor ] [ &cell_perms'0 <- _bor.final ] s8)
+          | s8 = deref_mut_Ghost_FMap_Int_Perm_PCell_MaybeUninit_T {_59}
+              (fun (_x: MutBorrow.t t_FMap_Int_Perm_PCell_MaybeUninit_T) -> [ &_58 <- _x ] s9)
           | s9 = any
             [ any_ (_dest: int) ->
             (! -{([@stop_split] [@expl:view ensures] Seq.length (view_Vec_PCell_MaybeUninit_T_Global buffer)
                 <= UInt64.t'int const_MAX)
               /\ _dest = Seq.length (view_Vec_PCell_MaybeUninit_T_Global buffer)}-
-              [ &_62 <- _dest ] s10) ] [ _ck -> (! any) ]
-          | s10 = into_ghost_Int {_62} (fun (_x: int) -> [ &_61 <- _x ] s11)
-          | s11 = deref_Ghost_Int {_61} (fun (_x: int) -> [ &_59 <- _x ] s12)
+              [ &_64 <- _dest ] s10) ] [ _ck -> (! any) ]
+          | s10 = into_ghost_Int {_64} (fun (_x: int) -> [ &_63 <- _x ] s11)
+          | s11 = deref_Ghost_Int {_63} (fun (_x: int) -> [ &_61 <- _x ] s12)
           | s12 = into_inner_Perm_PCell_MaybeUninit_T {cell_perm}
-              (fun (_x: t_Perm_PCell_MaybeUninit_T) -> [ &_65 <- _x ] s13)
-          | s13 = MutBorrow.borrow_final <t_FMap_Int_Perm_PCell_MaybeUninit_T> {_56.current} {MutBorrow.get_id _56}
+              (fun (_x: t_Perm_PCell_MaybeUninit_T) -> [ &_67 <- _x ] s13)
+          | s13 = MutBorrow.borrow_final <t_FMap_Int_Perm_PCell_MaybeUninit_T> {_58.current} {MutBorrow.get_id _58}
               (fun (_bor: MutBorrow.t t_FMap_Int_Perm_PCell_MaybeUninit_T) ->
-                [ &_55 <- _bor ] [ &_56 <- { _56 with current = _bor.final } ] s14)
-          | s14 = insert_Int {_55} {_59} {_65} (fun (_x: t_Option_Perm_PCell_MaybeUninit_T) -> [ &_54 <- _x ] s15)
-          | s15 = -{resolve_refmut_FMap_Int_Perm_PCell_MaybeUninit_T _56}- s16
-          | s16 = new_unit {_53} (fun (_x: ()) -> [ &_52 <- _x ] s17)
+                [ &_57 <- _bor ] [ &_58 <- { _58 with current = _bor.final } ] s14)
+          | s14 = insert_Int {_57} {_61} {_67} (fun (_x: t_Option_Perm_PCell_MaybeUninit_T) -> [ &_56 <- _x ] s15)
+          | s15 = -{resolve_refmut_FMap_Int_Perm_PCell_MaybeUninit_T _58}- s16
+          | s16 = new_unit {_55} (fun (_x: ()) -> [ &_54 <- _x ] s17)
           | s17 = MutBorrow.borrow_mut <t_Vec_PCell_MaybeUninit_T_Global> {buffer}
               (fun (_bor: MutBorrow.t t_Vec_PCell_MaybeUninit_T_Global) ->
-                [ &_68 <- _bor ] [ &buffer <- _bor.final ] s18)
-          | s18 = push_PCell_MaybeUninit_T {_68} {cell} (fun (_x: ()) -> [ &_67 <- _x ] s19)
-          | s19 = bb6 ] ] ]
-    | bb12 = s0
-      [ s0 = new {(0: UInt64.t)} (fun (_x: tup2_AtomicUsize_Ghost_Perm_AtomicUsize) -> [ &_72 <- _x ] s1)
-      | s1 = [ &head'1 <- _72.f0'0 ] s2
-      | s2 = [ &head_own'0 <- _72.f1'0 ] s3
-      | s3 = new {(0: UInt64.t)} (fun (_x: tup2_AtomicUsize_Ghost_Perm_AtomicUsize) -> [ &_75 <- _x ] s4)
-      | s4 = [ &tail'1 <- _75.f0'0 ] s5
-      | s5 = [ &tail_own'0 <- _75.f1'0 ] s6
-      | s6 = [ &_80 <- { head = 0; producing = false } ] s7
-      | s7 = alloc_ProducerState {_80}
-          (fun (_x: tup2_Authority_ProducerState_Fragment_ProducerState) -> [ &_79 <- _x ] s8)
-      | s8 = split_Authority_ProducerState {_79}
-          (fun (_x: tup2_Ghost_Authority_ProducerState_Ghost_Fragment_ProducerState) -> [ &_78 <- _x ] s9)
-      | s9 = [ &producer_auth'0 <- _78.f0'2 ] s10
-      | s10 = [ &producer_frag <- _78.f1'2 ] s11
-      | s11 = [ &_86 <- { tail = 0; consuming = false } ] s12
-      | s12 = alloc_ConsumerState {_86}
-          (fun (_x: tup2_Authority_ConsumerState_Fragment_ConsumerState) -> [ &_85 <- _x ] s13)
-      | s13 = split_Authority_ConsumerState {_85}
-          (fun (_x: tup2_Ghost_Authority_ConsumerState_Ghost_Fragment_ConsumerState) -> [ &_84 <- _x ] s14)
-      | s14 = [ &consumer_auth'0 <- _84.f0'4 ] s15
-      | s15 = [ &consumer_frag <- _84.f1'4 ] s16
-      | s16 = [ &_92 <- Seq.empty: Seq.seq t_T ] s17
-      | s17 = alloc_Seq_T {_92} (fun (_x: tup2_Authority_Seq_T_Fragment_Seq_T) -> [ &_91 <- _x ] s18)
-      | s18 = split_Authority_Seq_T {_91}
-          (fun (_x: tup2_Ghost_Authority_Seq_T_Ghost_Fragment_Seq_T) -> [ &_90 <- _x ] s19)
-      | s19 = [ &contents_auth'0 <- _90.f0'6 ] s20
-      | s20 = [ &contents_frag <- _90.f1'6 ] s21
-      | s21 = into_inner_Perm_AtomicUsize {head_own'0} (fun (_x: t_Perm_AtomicUsize) -> [ &_97 <- _x ] s22)
-      | s22 = into_inner_Perm_AtomicUsize {tail_own'0} (fun (_x: t_Perm_AtomicUsize) -> [ &_99 <- _x ] s23)
-      | s23 = any
+                [ &_70 <- _bor ] [ &buffer <- _bor.final ] s18)
+          | s18 = push_PCell_MaybeUninit_T {_70} {cell} (fun (_x: ()) -> [ &_69 <- _x ] s19)
+          | s19 = bb8 ] ] ]
+    | bb14 = s0
+      [ s0 = new {(0: UInt64.t)} (fun (_x: tup2_AtomicUsize_Ghost_Perm_AtomicUsize) -> [ &_74 <- _x ] s1)
+      | s1 = [ &head'1 <- _74.f0'0 ] s2
+      | s2 = [ &head_own'0 <- _74.f1'0 ] s3
+      | s3 = new {(0: UInt64.t)} (fun (_x: tup2_AtomicUsize_Ghost_Perm_AtomicUsize) -> [ &_77 <- _x ] s4)
+      | s4 = [ &tail'1 <- _77.f0'0 ] s5
+      | s5 = [ &tail_own'0 <- _77.f1'0 ] s6
+      | s6 = [ &_84 <- { head = 0; producing = false } ] s7
+      | s7 = alloc_ProducerState {_84}
+          (fun (_x: tup2_Authority_ProducerState_Fragment_ProducerState) -> [ &_83 <- _x ] s8)
+      | s8 = into_inner_tup2_Authority_ProducerState_Fragment_ProducerState {_83}
+          (fun (_x: tup2_Authority_ProducerState_Fragment_ProducerState) -> [ &_82 <- _x ] s9)
+      | s9 = new_tup2_Authority_ProducerState_Fragment_ProducerState {_82}
+          (fun (_x: tup2_Authority_ProducerState_Fragment_ProducerState) -> [ &_81 <- _x ] s10)
+      | s10 = split_Authority_ProducerState {_81}
+          (fun (_x: tup2_Ghost_Authority_ProducerState_Ghost_Fragment_ProducerState) -> [ &_80 <- _x ] s11)
+      | s11 = [ &producer_auth'0 <- _80.f0'2 ] s12
+      | s12 = [ &producer_frag <- _80.f1'2 ] s13
+      | s13 = [ &_92 <- { tail = 0; consuming = false } ] s14
+      | s14 = alloc_ConsumerState {_92}
+          (fun (_x: tup2_Authority_ConsumerState_Fragment_ConsumerState) -> [ &_91 <- _x ] s15)
+      | s15 = into_inner_tup2_Authority_ConsumerState_Fragment_ConsumerState {_91}
+          (fun (_x: tup2_Authority_ConsumerState_Fragment_ConsumerState) -> [ &_90 <- _x ] s16)
+      | s16 = new_tup2_Authority_ConsumerState_Fragment_ConsumerState {_90}
+          (fun (_x: tup2_Authority_ConsumerState_Fragment_ConsumerState) -> [ &_89 <- _x ] s17)
+      | s17 = split_Authority_ConsumerState {_89}
+          (fun (_x: tup2_Ghost_Authority_ConsumerState_Ghost_Fragment_ConsumerState) -> [ &_88 <- _x ] s18)
+      | s18 = [ &consumer_auth'0 <- _88.f0'4 ] s19
+      | s19 = [ &consumer_frag <- _88.f1'4 ] s20
+      | s20 = [ &_100 <- Seq.empty: Seq.seq t_T ] s21
+      | s21 = alloc_Seq_T {_100} (fun (_x: tup2_Authority_Seq_T_Fragment_Seq_T) -> [ &_99 <- _x ] s22)
+      | s22 = into_inner_tup2_Authority_Seq_T_Fragment_Seq_T {_99}
+          (fun (_x: tup2_Authority_Seq_T_Fragment_Seq_T) -> [ &_98 <- _x ] s23)
+      | s23 = new_tup2_Authority_Seq_T_Fragment_Seq_T {_98}
+          (fun (_x: tup2_Authority_Seq_T_Fragment_Seq_T) -> [ &_97 <- _x ] s24)
+      | s24 = split_Authority_Seq_T {_97}
+          (fun (_x: tup2_Ghost_Authority_Seq_T_Ghost_Fragment_Seq_T) -> [ &_96 <- _x ] s25)
+      | s25 = [ &contents_auth'0 <- _96.f0'6 ] s26
+      | s26 = [ &contents_frag <- _96.f1'6 ] s27
+      | s27 = into_inner_Perm_AtomicUsize {head_own'0} (fun (_x: t_Perm_AtomicUsize) -> [ &_107 <- _x ] s28)
+      | s28 = into_inner_Perm_AtomicUsize {tail_own'0} (fun (_x: t_Perm_AtomicUsize) -> [ &_109 <- _x ] s29)
+      | s29 = any
         [ any_ (_dest: Seq.seq t_PCell_MaybeUninit_T) ->
         (! -{([@stop_split] [@expl:view ensures] Seq.length (view_Vec_PCell_MaybeUninit_T_Global buffer)
             <= UInt64.t'int const_MAX)
           /\ _dest = view_Vec_PCell_MaybeUninit_T_Global buffer}-
-          [ &_101 <- _dest ] s24) ] [ _ck -> (! any) ]
-      | s24 = into_inner_FMap_Int_Perm_PCell_MaybeUninit_T {cell_perms'0}
-          (fun (_x: t_FMap_Int_Perm_PCell_MaybeUninit_T) -> [ &_104 <- _x ] s25)
-      | s25 = into_inner_Authority_ProducerState {producer_auth'0}
-          (fun (_x: t_Authority_ProducerState) -> [ &_106 <- _x ] s26)
-      | s26 = into_inner_Authority_ConsumerState {consumer_auth'0}
-          (fun (_x: t_Authority_ConsumerState) -> [ &_108 <- _x ] s27)
-      | s27 = into_inner_Authority_Seq_T {contents_auth'0} (fun (_x: t_Authority_Seq_T) -> [ &_110 <- _x ] s28)
-      | s28 = [ &_96 <- { head_own = _97;
-                          tail_own = _99;
-                          cells = _101;
-                          cell_perms = _104;
-                          producer_auth = _106;
-                          consumer_auth = _108;
-                          contents_auth = _110 } ] s29
-      | s29 = new_QueueInv_T {_96} (fun (_x: t_QueueInv_T) -> [ &_95 <- _x ] s30)
-      | s30 = [ &_112 <- Namespace_BOUNDED_SPSC_QUEUE 0 ] s31
-      | s31 = new_QueueInv_T'0 {_95} {_112} (fun (_x: t_AtomicInvariantSC_QueueInv_T) -> [ &inv <- _x ] s32)
-      | s32 = [ &queue <- { buffer'0 = buffer; head'0 = head'1; tail'0 = tail'1; inv'0 = inv } ] s33
-      | s33 = into_inner_Fragment_ProducerState {producer_frag}
-          (fun (_x: t_Fragment_ProducerState) -> [ &_121 <- _x ] s34)
-      | s34 = into_inner_Fragment_ConsumerState {consumer_frag}
-          (fun (_x: t_Fragment_ConsumerState) -> [ &_123 <- _x ] s35)
-      | s35 = [ &_120 <- { producer = _121; consumer = _123 } ] s36
-      | s36 = new_QueueTokens {_120} (fun (_x: t_QueueTokens) -> [ &tokens <- _x ] s37)
-      | s37 = into_inner_Fragment_Seq_T {contents_frag} (fun (_x: t_Fragment_Seq_T) -> [ &_129 <- _x ] s38)
-      | s38 = [ &_128 <- { f0'8 = _129 } ] s39
-      | s39 = new_QueueContents_T {_128} (fun (_x: t_QueueContents_T) -> [ &_127 <- _x ] s40)
-      | s40 = [ &_ret <- { f0'9 = queue; f1'9 = tokens; f2'9 = _127 } ] s41
-      | s41 = return {_ret} ] ]
+          [ &_111 <- _dest ] s30) ] [ _ck -> (! any) ]
+      | s30 = into_inner_FMap_Int_Perm_PCell_MaybeUninit_T {cell_perms'0}
+          (fun (_x: t_FMap_Int_Perm_PCell_MaybeUninit_T) -> [ &_114 <- _x ] s31)
+      | s31 = into_inner_Authority_ProducerState {producer_auth'0}
+          (fun (_x: t_Authority_ProducerState) -> [ &_116 <- _x ] s32)
+      | s32 = into_inner_Authority_ConsumerState {consumer_auth'0}
+          (fun (_x: t_Authority_ConsumerState) -> [ &_118 <- _x ] s33)
+      | s33 = into_inner_Authority_Seq_T {contents_auth'0} (fun (_x: t_Authority_Seq_T) -> [ &_120 <- _x ] s34)
+      | s34 = [ &_106 <- { head_own = _107;
+                           tail_own = _109;
+                           cells = _111;
+                           cell_perms = _114;
+                           producer_auth = _116;
+                           consumer_auth = _118;
+                           contents_auth = _120 } ] s35
+      | s35 = new_QueueInv_T {_106} (fun (_x: t_QueueInv_T) -> [ &_105 <- _x ] s36)
+      | s36 = [ &_122 <- Namespace_BOUNDED_SPSC_QUEUE 0 ] s37
+      | s37 = new_QueueInv_T'0 {_105} {_122} (fun (_x: t_AtomicInvariantSC_QueueInv_T) -> [ &_104 <- _x ] s38)
+      | s38 = into_inner_AtomicInvariantSC_QueueInv_T {_104}
+          (fun (_x: t_AtomicInvariantSC_QueueInv_T) -> [ &_103 <- _x ] s39)
+      | s39 = new_AtomicInvariantSC_QueueInv_T {_103} (fun (_x: t_AtomicInvariantSC_QueueInv_T) -> [ &inv <- _x ] s40)
+      | s40 = [ &queue <- { buffer'0 = buffer; head'0 = head'1; tail'0 = tail'1; inv'0 = inv } ] s41
+      | s41 = into_inner_Fragment_ProducerState {producer_frag}
+          (fun (_x: t_Fragment_ProducerState) -> [ &_131 <- _x ] s42)
+      | s42 = into_inner_Fragment_ConsumerState {consumer_frag}
+          (fun (_x: t_Fragment_ConsumerState) -> [ &_133 <- _x ] s43)
+      | s43 = [ &_130 <- { producer = _131; consumer = _133 } ] s44
+      | s44 = new_QueueTokens {_130} (fun (_x: t_QueueTokens) -> [ &tokens <- _x ] s45)
+      | s45 = into_inner_Fragment_Seq_T {contents_frag} (fun (_x: t_Fragment_Seq_T) -> [ &_139 <- _x ] s46)
+      | s46 = [ &_138 <- { f0'8 = _139 } ] s47
+      | s47 = new_QueueContents_T {_138} (fun (_x: t_QueueContents_T) -> [ &_137 <- _x ] s48)
+      | s48 = [ &_ret <- { f0'9 = queue; f1'9 = tokens; f2'9 = _137 } ] s49
+      | s49 = return {_ret} ] ]
     [ & _ret: tup3_Queue_T_Ghost_QueueTokens_Ghost_QueueContents_T = Any.any_l ()
     | & len: UInt64.t = len
     | & buffer: t_Vec_PCell_MaybeUninit_T_Global = Any.any_l ()
     | & cell_perms'0: t_FMap_Int_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _10: t_Range_usize = Any.any_l ()
-    | & _11: t_Range_usize = Any.any_l ()
+    | & _9: t_FMap_Int_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _10: t_FMap_Int_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _12: t_Range_usize = Any.any_l ()
+    | & _13: t_Range_usize = Any.any_l ()
     | & iter: t_Range_usize = Any.any_l ()
     | & iter_old: t_Range_usize = Any.any_l ()
     | & produced: Seq.seq UInt64.t = Any.any_l ()
-    | & _19: Seq.seq UInt64.t = Any.any_l ()
-    | & _37: t_Option_usize = Any.any_l ()
-    | & _38: MutBorrow.t t_Range_usize = Any.any_l ()
-    | & _39: MutBorrow.t t_Range_usize = Any.any_l ()
+    | & _21: Seq.seq UInt64.t = Any.any_l ()
+    | & _39: t_Option_usize = Any.any_l ()
+    | & _40: MutBorrow.t t_Range_usize = Any.any_l ()
+    | & _41: MutBorrow.t t_Range_usize = Any.any_l ()
     | & __creusot_proc_iter_elem: UInt64.t = Any.any_l ()
-    | & _44: Seq.seq UInt64.t = Any.any_l ()
+    | & _46: Seq.seq UInt64.t = Any.any_l ()
     | & cell: t_PCell_MaybeUninit_T = Any.any_l ()
     | & cell_perm: t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _50: tup2_PCell_MaybeUninit_T_Ghost_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _51: t_MaybeUninit_T = Any.any_l ()
-    | & _52: () = Any.any_l ()
-    | & _53: () = Any.any_l ()
-    | & _54: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _55: MutBorrow.t t_FMap_Int_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _56: MutBorrow.t t_FMap_Int_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _52: tup2_PCell_MaybeUninit_T_Ghost_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _53: t_MaybeUninit_T = Any.any_l ()
+    | & _54: () = Any.any_l ()
+    | & _55: () = Any.any_l ()
+    | & _56: t_Option_Perm_PCell_MaybeUninit_T = Any.any_l ()
     | & _57: MutBorrow.t t_FMap_Int_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _59: int = Any.any_l ()
+    | & _58: MutBorrow.t t_FMap_Int_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _59: MutBorrow.t t_FMap_Int_Perm_PCell_MaybeUninit_T = Any.any_l ()
     | & _61: int = Any.any_l ()
-    | & _62: int = Any.any_l ()
-    | & _65: t_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _67: () = Any.any_l ()
-    | & _68: MutBorrow.t t_Vec_PCell_MaybeUninit_T_Global = Any.any_l ()
+    | & _63: int = Any.any_l ()
+    | & _64: int = Any.any_l ()
+    | & _67: t_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _69: () = Any.any_l ()
+    | & _70: MutBorrow.t t_Vec_PCell_MaybeUninit_T_Global = Any.any_l ()
     | & head'1: t_AtomicUsize = Any.any_l ()
     | & head_own'0: t_Perm_AtomicUsize = Any.any_l ()
-    | & _72: tup2_AtomicUsize_Ghost_Perm_AtomicUsize = Any.any_l ()
+    | & _74: tup2_AtomicUsize_Ghost_Perm_AtomicUsize = Any.any_l ()
     | & tail'1: t_AtomicUsize = Any.any_l ()
     | & tail_own'0: t_Perm_AtomicUsize = Any.any_l ()
-    | & _75: tup2_AtomicUsize_Ghost_Perm_AtomicUsize = Any.any_l ()
+    | & _77: tup2_AtomicUsize_Ghost_Perm_AtomicUsize = Any.any_l ()
     | & producer_auth'0: t_Authority_ProducerState = Any.any_l ()
     | & producer_frag: t_Fragment_ProducerState = Any.any_l ()
-    | & _78: tup2_Ghost_Authority_ProducerState_Ghost_Fragment_ProducerState = Any.any_l ()
-    | & _79: tup2_Authority_ProducerState_Fragment_ProducerState = Any.any_l ()
-    | & _80: t_ProducerState = Any.any_l ()
+    | & _80: tup2_Ghost_Authority_ProducerState_Ghost_Fragment_ProducerState = Any.any_l ()
+    | & _81: tup2_Authority_ProducerState_Fragment_ProducerState = Any.any_l ()
+    | & _82: tup2_Authority_ProducerState_Fragment_ProducerState = Any.any_l ()
+    | & _83: tup2_Authority_ProducerState_Fragment_ProducerState = Any.any_l ()
+    | & _84: t_ProducerState = Any.any_l ()
     | & consumer_auth'0: t_Authority_ConsumerState = Any.any_l ()
     | & consumer_frag: t_Fragment_ConsumerState = Any.any_l ()
-    | & _84: tup2_Ghost_Authority_ConsumerState_Ghost_Fragment_ConsumerState = Any.any_l ()
-    | & _85: tup2_Authority_ConsumerState_Fragment_ConsumerState = Any.any_l ()
-    | & _86: t_ConsumerState = Any.any_l ()
+    | & _88: tup2_Ghost_Authority_ConsumerState_Ghost_Fragment_ConsumerState = Any.any_l ()
+    | & _89: tup2_Authority_ConsumerState_Fragment_ConsumerState = Any.any_l ()
+    | & _90: tup2_Authority_ConsumerState_Fragment_ConsumerState = Any.any_l ()
+    | & _91: tup2_Authority_ConsumerState_Fragment_ConsumerState = Any.any_l ()
+    | & _92: t_ConsumerState = Any.any_l ()
     | & contents_auth'0: t_Authority_Seq_T = Any.any_l ()
     | & contents_frag: t_Fragment_Seq_T = Any.any_l ()
-    | & _90: tup2_Ghost_Authority_Seq_T_Ghost_Fragment_Seq_T = Any.any_l ()
-    | & _91: tup2_Authority_Seq_T_Fragment_Seq_T = Any.any_l ()
-    | & _92: Seq.seq t_T = Any.any_l ()
+    | & _96: tup2_Ghost_Authority_Seq_T_Ghost_Fragment_Seq_T = Any.any_l ()
+    | & _97: tup2_Authority_Seq_T_Fragment_Seq_T = Any.any_l ()
+    | & _98: tup2_Authority_Seq_T_Fragment_Seq_T = Any.any_l ()
+    | & _99: tup2_Authority_Seq_T_Fragment_Seq_T = Any.any_l ()
+    | & _100: Seq.seq t_T = Any.any_l ()
     | & inv: t_AtomicInvariantSC_QueueInv_T = Any.any_l ()
-    | & _95: t_QueueInv_T = Any.any_l ()
-    | & _96: t_QueueInv_T = Any.any_l ()
-    | & _97: t_Perm_AtomicUsize = Any.any_l ()
-    | & _99: t_Perm_AtomicUsize = Any.any_l ()
-    | & _101: Seq.seq t_PCell_MaybeUninit_T = Any.any_l ()
-    | & _104: t_FMap_Int_Perm_PCell_MaybeUninit_T = Any.any_l ()
-    | & _106: t_Authority_ProducerState = Any.any_l ()
-    | & _108: t_Authority_ConsumerState = Any.any_l ()
-    | & _110: t_Authority_Seq_T = Any.any_l ()
-    | & _112: t_Namespace = Any.any_l ()
+    | & _103: t_AtomicInvariantSC_QueueInv_T = Any.any_l ()
+    | & _104: t_AtomicInvariantSC_QueueInv_T = Any.any_l ()
+    | & _105: t_QueueInv_T = Any.any_l ()
+    | & _106: t_QueueInv_T = Any.any_l ()
+    | & _107: t_Perm_AtomicUsize = Any.any_l ()
+    | & _109: t_Perm_AtomicUsize = Any.any_l ()
+    | & _111: Seq.seq t_PCell_MaybeUninit_T = Any.any_l ()
+    | & _114: t_FMap_Int_Perm_PCell_MaybeUninit_T = Any.any_l ()
+    | & _116: t_Authority_ProducerState = Any.any_l ()
+    | & _118: t_Authority_ConsumerState = Any.any_l ()
+    | & _120: t_Authority_Seq_T = Any.any_l ()
+    | & _122: t_Namespace = Any.any_l ()
     | & queue: t_Queue_T = Any.any_l ()
     | & tokens: t_QueueTokens = Any.any_l ()
-    | & _120: t_QueueTokens = Any.any_l ()
-    | & _121: t_Fragment_ProducerState = Any.any_l ()
-    | & _123: t_Fragment_ConsumerState = Any.any_l ()
-    | & _127: t_QueueContents_T = Any.any_l ()
-    | & _128: t_QueueContents_T = Any.any_l ()
-    | & _129: t_Fragment_Seq_T = Any.any_l () ])
+    | & _130: t_QueueTokens = Any.any_l ()
+    | & _131: t_Fragment_ProducerState = Any.any_l ()
+    | & _133: t_Fragment_ConsumerState = Any.any_l ()
+    | & _137: t_QueueContents_T = Any.any_l ()
+    | & _138: t_QueueContents_T = Any.any_l ()
+    | & _139: t_Fragment_Seq_T = Any.any_l () ])
     [ return (result: tup3_Queue_T_Ghost_QueueTokens_Ghost_QueueContents_T) ->
     {[@stop_split] [@expl:new_T ensures] ([@stop_split] [@expl:new result type invariant] inv_tup3_Queue_T_Ghost_QueueTokens_Ghost_QueueContents_T result)
       /\ ([@stop_split] [@expl:new ensures #0] wf_T result.f1'9 result.f0'9)

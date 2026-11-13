@@ -2255,16 +2255,15 @@ module M_impl_SpinLock_T__lock (* SpinLock<T> *)
     /\ ([@stop_split] [@expl:compare_exchange_weak requires #2] forall c: t_Committer_AtomicBool_bool_SeqCst_unit. not shot_store_AtomicBool'0 c
       -> ward_AtomicBool'1 c = self -> precondition_FnGhostWrapper_closure5 f (Err c))}
     any
-    [ return (result: t_Result_bool_bool) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicBool_bool_SeqCst_SeqCst. not shot_store_AtomicBool c.current
+    [ return (result: t_Result_bool_bool) ->
+    {[@stop_split] [@expl:compare_exchange_weak ensures] (exists c: MutBorrow.t t_Committer_AtomicBool_bool_SeqCst_SeqCst. not shot_store_AtomicBool c.current
           /\ ward_AtomicBool c.current = self
           /\ deep_model_bool (val_load_AtomicBool c.current) = deep_model_bool current'
           /\ val_store_AtomicBool c.current = new'0
-          /\ result'0 = val_load_AtomicBool c.current /\ postcondition_once_FnGhostWrapper_closure5 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicBool_bool_SeqCst_unit. not shot_store_AtomicBool'0 c
-          /\ ward_AtomicBool'1 c = self
-          /\ result'0 = val_load_AtomicBool'0 c /\ postcondition_once_FnGhostWrapper_closure5 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicBool c.current) /\ postcondition_once_FnGhostWrapper_closure5 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicBool_bool_SeqCst_unit. not shot_store_AtomicBool'0 c
+        /\ ward_AtomicBool'1 c = self
+        /\ result = Err'0 (val_load_AtomicBool'0 c) /\ postcondition_once_FnGhostWrapper_closure5 f (Err c) ())}
       (! return {result}) ]
   
   let into_inner_Option_Guarded_FullBorrow_Perm_PCell_T_PCell_T (self: t_Option_Guarded_FullBorrow_Perm_PCell_T_PCell_T)
