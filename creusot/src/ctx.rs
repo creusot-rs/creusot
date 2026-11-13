@@ -34,7 +34,7 @@ use rustc_ast::{
 };
 use rustc_borrowck::consumers::BodyWithBorrowckFacts;
 use rustc_data_structures::steal::Steal;
-use rustc_errors::{Diag, DiagMessage, FatalAbort};
+use rustc_errors::{Diag, DiagMessage};
 use rustc_hir::{
     def::{CtorKind, DefKind},
     def_id::{CrateNum, DefId, LOCAL_CRATE, LocalDefId, ModId},
@@ -43,11 +43,12 @@ use rustc_index::bit_set::DenseBitSet;
 use rustc_infer::traits::ObligationCause;
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
+    middle::resolve::ResolverAstLowering,
     mir::Promoted,
     thir,
     ty::{
-        self, Clause, FieldDef, GenericArg, GenericArgsRef, ParamEnv, Predicate,
-        ResolverAstLowering, Ty, TyCtxt, TypingEnv, TypingMode, Visibility,
+        self, Clause, FieldDef, GenericArg, GenericArgsRef, ParamEnv, Predicate, Ty, TyCtxt,
+        TypingEnv, TypingMode, Visibility,
     },
 };
 use rustc_span::{DUMMY_SP, Span, Symbol};
@@ -134,16 +135,12 @@ pub trait HasTyCtxt<'tcx> {
         self.tcx().dcx().span_fatal(span, msg)
     }
 
-    fn fatal_error(&self, span: Span, msg: impl Into<DiagMessage>) -> Diag<'tcx, FatalAbort> {
+    fn fatal_error(&self, span: Span, msg: impl Into<DiagMessage>) -> Diag<'tcx> {
         // TODO: try to add a code back in
         self.tcx().dcx().struct_span_fatal(span, msg)
     }
 
-    fn error(
-        &self,
-        span: Span,
-        msg: impl Into<DiagMessage>,
-    ) -> Diag<'tcx, rustc_errors::ErrorGuaranteed> {
+    fn error(&self, span: Span, msg: impl Into<DiagMessage>) -> Diag<'tcx> {
         self.tcx().dcx().struct_span_err(span, msg)
     }
 
@@ -151,7 +148,7 @@ pub trait HasTyCtxt<'tcx> {
         self.tcx().dcx().span_warn(span, msg)
     }
 
-    fn struct_error(&self, span: Span, msg: impl Into<DiagMessage>) -> Diag<'tcx, FatalAbort> {
+    fn struct_error(&self, span: Span, msg: impl Into<DiagMessage>) -> Diag<'tcx> {
         self.tcx().dcx().struct_span_fatal(span, msg)
     }
 
@@ -577,10 +574,10 @@ impl<'tcx> TranslationCtx<'tcx> {
         {
             let base_predicates =
                 self.tcx.param_env(def_id).caller_bounds().into_iter().map(Clause::as_predicate);
-            let additional_predicates = es.predicates_for(self.tcx, subst).into_iter();
+            let additional_predicates = es.predicates_for(self.tcx, subst);
             let clauses =
                 base_predicates.chain(additional_predicates).map(Predicate::expect_clause);
-            let res = ParamEnv::new(self.mk_clauses_from_iter(clauses));
+            let res = ParamEnv::new(self.tcx, self.mk_clauses_from_iter(clauses));
             normalize_param_env_or_error(self.tcx, res, ObligationCause::dummy())
         } else {
             self.tcx.param_env(def_id)

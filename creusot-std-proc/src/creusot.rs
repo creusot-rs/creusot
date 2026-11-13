@@ -26,11 +26,10 @@ use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::{TokenStreamExt as _, quote};
 use syn::{
-    Error, FnArg, Ident, LitStr, Macro, Result, Token, parse,
     parse::{Parse, ParseStream},
-    parse_macro_input, parse_quote,
     punctuated::Punctuated,
     spanned::Spanned as _,
+    *,
 };
 
 pub fn open_inv_result(_: TS1, tokens: TS1) -> TS1 {
@@ -225,18 +224,6 @@ impl ContractSubject {
             FnOrMethod(tr) => tr.sig.ident.to_string(),
             Closure(_) => "closure".to_string(),
             Const(item) => item.ident.to_string(),
-        }
-    }
-
-    fn mark_unused(&mut self) {
-        if let ContractSubject::FnOrMethod(sig) = self {
-            for arg in sig.sig.inputs.iter_mut() {
-                let attrs = match arg {
-                    FnArg::Receiver(r) => &mut r.attrs,
-                    FnArg::Typed(r) => &mut r.attrs,
-                };
-                attrs.push(parse_quote! { #[allow(unused)]});
-            }
         }
     }
 }

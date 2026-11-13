@@ -483,7 +483,7 @@ impl VisitMut for SelfEscaper {
         if let Type::Path(TypePath { path, .. }) = ty
             && path.segments[0].ident == "Self"
             && path.segments.len() == 1
-            && let SelfTypeKind::Type(box escty) = &self.escape
+            && let SelfTypeKind::Type(deref!(escty)) = &self.escape
         {
             *ty = escty.clone();
         }
@@ -493,7 +493,7 @@ impl VisitMut for SelfEscaper {
     fn visit_path_mut(&mut self, path: &mut Path) {
         if path.segments[0].ident == "Self" {
             match &self.escape {
-                SelfTypeKind::Type(box Type::Path(TypePath { path: pathty, .. }))
+                SelfTypeKind::Type(deref!(Type::Path(TypePath { path: pathty, .. })))
                     if path.segments.len() == 1 =>
                 {
                     *path = pathty.clone()

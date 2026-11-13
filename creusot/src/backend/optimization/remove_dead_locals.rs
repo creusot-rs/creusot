@@ -133,20 +133,22 @@ pub(super) struct PurityVisitor<'a, 'tcx> {
 impl<'tcx> FmirVisitor<'tcx> for PurityVisitor<'_, 'tcx> {
     fn visit_place(&mut self, pl: &Place<'tcx>) {
         let mut place_ty = PlaceTy::from_ty(self.locals[&pl.local].ty);
+        use rustc_middle::mir::ProjectionElem::*;
         for (elem, place_ty) in iter_projections_ty(self.ctx, &pl.projection, &mut place_ty) {
             match elem {
-                ProjectionElem::Deref => (),
-                ProjectionElem::Field(..) => match place_ty.ty.kind() {
+                Deref => (),
+                Field(..) => match place_ty.ty.kind() {
                     TyKind::Adt(def, _) if def.is_enum() || def.is_union() => self.pure = false,
                     _ => (),
                 },
-                ProjectionElem::Index(_) => self.pure = false,
-                ProjectionElem::Downcast(..) => (), // Handled in `Field` case
+                Index(_) => self.pure = false,
+                Downcast(..) => (), // Handled in `Field` case
                 // UNSUPPORTED
-                ProjectionElem::ConstantIndex { .. }
-                | ProjectionElem::Subslice { .. }
-                | ProjectionElem::OpaqueCast(_)
-                | ProjectionElem::UnwrapUnsafeBinder(_) => {
+                ConstantIndex { .. }
+                | Subslice { .. }
+                | OpaqueCast(_)
+                | UnwrapUnsafeBinder(_)
+                | PhantomDeref => {
                     self.ctx.dcx().span_bug(self.span, format!("Unsupported projection {elem:?}"))
                 }
             }

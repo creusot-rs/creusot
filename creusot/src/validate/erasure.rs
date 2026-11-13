@@ -45,6 +45,7 @@ use crate::{
 // * Top-level implementation
 
 pub(crate) fn validate_erasures(ctx: &TranslationCtx) {
+    debug!("Erasure check...");
     // Only do the erasure check for the primary package
     // to minimize the number of THIR bodies stored by dependencies
     if !ctx.opts.should_output || ctx.opts.erasure_check.is_no() {
@@ -156,7 +157,11 @@ fn equate_anf<'tcx>(
 }
 
 fn erasure_check_level(erasure_check: ErasureCheck) -> rustc_errors::Level {
-    if erasure_check.is_error() { rustc_errors::Level::Error } else { rustc_errors::Level::Warning }
+    if erasure_check.is_error() {
+        rustc_errors::Level::Error
+    } else {
+        rustc_errors::Level::Warning(None)
+    }
 }
 
 fn warn_or_error<'tcx>(
@@ -164,8 +169,8 @@ fn warn_or_error<'tcx>(
     level: rustc_errors::Level,
     span: Span,
     msg: impl Into<DiagMessage>,
-) -> Diag<'tcx, ()> {
-    Diag::<()>::new(tcx.dcx(), level, msg).with_span(span)
+) -> Diag<'tcx> {
+    Diag::new(tcx.dcx(), level, msg).with_span(span)
 }
 
 // * ANF expressions
@@ -995,7 +1000,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                     .collect::<Result<_, _>>()?;
                 AnfValue::Ctor(Ctor::Array, fields)
             }
-            Adt(box AdtExpr { adt_def, variant_index, fields, .. }) => {
+            Adt(AdtExpr { adt_def, variant_index, fields, .. }) => {
                 // Put the fields in a canonical order
                 let mut args: Vec<_> = vec![(AnfValue::Unit, Default::default()); fields.len()];
                 // The side effects are resolved in order in `stmts`
@@ -1008,7 +1013,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
             PointerCoercion { cast: MutToConstPointer, source, .. } => {
                 self.a_normal_form_expr(*source, stmts)?.0
             }
-            Use { source } => self.a_normal_form_expr(*source, stmts)?.0,
+            ValueExpr { source } => self.a_normal_form_expr(*source, stmts)?.0,
             Cast { source } => {
                 use rustc_type_ir::TyKind::{RawPtr, Slice};
                 let value = self.a_normal_form_expr(*source, stmts)?.0;
@@ -1347,7 +1352,7 @@ fn is_erasable(tcx: TyCtxt, thir: &Thir, expr: ExprId) -> bool {
     loop {
         match expr.kind {
             ExprKind::Scope { value, .. } => expr = &thir[value],
-            ExprKind::Closure(box thir::ClosureExpr { closure_id, .. }) => {
+            ExprKind::Closure(thir::ClosureExpr { closure_id, .. }) => {
                 let closure_id = closure_id.to_def_id();
                 return is_spec(tcx, closure_id)
                     || is_erasure(tcx, closure_id)

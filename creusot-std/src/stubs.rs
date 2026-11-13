@@ -96,7 +96,8 @@ pub trait IndexLogicStub<I: ?Sized>: IndexLogic<I> {
     fn __creusot_index_logic_stub(self, idx: I) -> Self::Item;
 }
 
-#[diagnostic::do_not_recommend]
+// FIXME: restore this attribute when it no longer suppresses the `on_unimplemented` message
+// #[diagnostic::do_not_recommend]
 impl<I: ?Sized, T: ?Sized + IndexLogic<I>> IndexLogicStub<I> for T {
     #[logic(opaque)]
     fn __creusot_index_logic_stub(self, _idx: I) -> Self::Item {
@@ -114,7 +115,8 @@ pub trait ViewStub: View {
     fn __creusot_view_stub(self) -> Self::ViewTy;
 }
 
-#[diagnostic::do_not_recommend]
+// FIXME: restore this attribute when it no longer suppresses the `on_unimplemented` message
+// #[diagnostic::do_not_recommend]
 impl<T: ?Sized + View> ViewStub for T {
     #[logic(opaque)]
     fn __creusot_view_stub(self) -> Self::ViewTy {

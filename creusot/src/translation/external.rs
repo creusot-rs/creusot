@@ -25,7 +25,7 @@ use rustc_middle::{
     },
 };
 use rustc_span::{Span, Symbol};
-use rustc_type_ir::{ConstKind, inherent::AdtDef as _};
+use rustc_type_ir::{AliasTerm, ConstKind, inherent::AdtDef as _};
 
 #[derive(Clone, Debug, TyEncodable, TyDecodable)]
 pub(crate) struct ExternSpec<'tcx> {
@@ -43,11 +43,49 @@ impl<'tcx> ExternSpec<'tcx> {
         &self,
         tcx: TyCtxt<'tcx>,
         sub: GenericArgsRef<'tcx>,
-    ) -> Vec<Predicate<'tcx>> {
-        // skip normalization: the instantiation should just be a renaming
-        EarlyBinder::bind(tcx, self.additional_predicates.clone())
-            .instantiate(tcx, sub)
-            .skip_normalization()
+    ) -> impl Iterator<Item = Predicate<'tcx>> {
+        use rustc_type_ir::{ClauseKind, PredicateKind, ProjectionClause};
+        self.additional_predicates.iter().cloned().filter_map(move |p| {
+            // We `skip_normalization` here because normalization will be handled
+            // by the caller, either via trait resolution (double check this?),
+            // or via `normalize_param_env_or_error` when constructing the
+            // predicates for an inherited extern spec.
+            let p = EarlyBinder::bind(tcx, p).instantiate(tcx, sub).skip_normalization();
+            // FIXME: Find something better to do than this hack.
+            // We ran into one case where `normalize_param_env_or_error` errors:
+            // when normalizing the additional predicates for
+            // `<Option<T> as PartialEq<Option<T>>>::eq`.
+            // We don't have a clean workaround for this.
+            // The problem is the equality constraint
+            // `Option<T>::DeepModelTy = Option<T>::DeepModelTy`, where
+            // 1. we don't have `T: DeepModel` in the context, needed to reduce the projection to `Option<T::DeepModelTy>`, and
+            // 2. the projection in the RHS has `IsRigid::No`.
+            // This causes the normalizer to keep trying to rewrite with this
+            // equality until it runs out of fuel.
+            // We avoid the error by manually removing such trivial constraints,
+            // but clearly this is not a general solution.
+            match p.kind().skip_binder() {
+                // Eliminate trivial equalities `T::Proj = T::Proj`
+                PredicateKind::Clause(ClauseKind::Projection(ProjectionClause {
+                    projection_term,
+                    term,
+                })) if eq_alias(projection_term, term) => None,
+                _ => Some(p),
+            }
+        })
+    }
+}
+
+fn eq_alias(lhs: AliasTerm<TyCtxt>, rhs: ty::Term) -> bool {
+    use rustc_type_ir::{AliasTermKind, AliasTyKind, TermKind, TyKind};
+    if let TermKind::Ty(rhs) = rhs.kind()
+        && let &TyKind::Alias(_, rhs) = rhs.kind()
+        && let AliasTyKind::Projection { def_id: rhs } = rhs.kind
+        && let AliasTermKind::ProjectionTy { def_id: lhs } = lhs.kind
+    {
+        lhs == rhs
+    } else {
+        false
     }
 }
 
@@ -95,9 +133,8 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
                 ctx.def_span(def_id),
                 "could not derive original instance from external specification",
             );
-
             err.span_warn(ctx.def_span(def_id), "the bounds on an external specification must be at least as strong as the original impl bounds");
-            err.emit()
+            err.emit_fatal()
         });
 
     // The following computes a substitution `subst` that we can apply to the contract of
