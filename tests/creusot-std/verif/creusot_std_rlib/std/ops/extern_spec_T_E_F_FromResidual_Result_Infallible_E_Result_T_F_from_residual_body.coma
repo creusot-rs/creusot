@@ -2,34 +2,33 @@ use creusot.prelude.Any
 
 type t_E
 
-type t_Result_Infallible_E = Ok () | Err t_E
+type t_Result_never_E = Ok () | Err t_E
 
-predicate inv_Infallible [@inline:trivial] (_1: ()) = false
+predicate inv_never [@inline:trivial] (_1: ()) = false
 
-meta "rewrite_def" predicate inv_Infallible
+meta "rewrite_def" predicate inv_never
 
 predicate inv_E (_1: t_E)
 
-predicate inv_Result_Infallible_E (_1: t_Result_Infallible_E)
+predicate inv_Result_never_E (_1: t_Result_never_E)
 
-axiom inv_axiom [@rewrite]: forall _1: t_Result_Infallible_E [inv_Result_Infallible_E _1]. inv_Result_Infallible_E _1
+axiom inv_axiom [@rewrite]: forall _1: t_Result_never_E [inv_Result_never_E _1]. inv_Result_never_E _1
     = match _1 with
-      | Ok f0 -> inv_Infallible f0
+      | Ok f0 -> inv_never f0
       | Err f0 -> inv_E f0
       end
 
 predicate resolve_E (_1: t_E)
 
-predicate resolve_Result_Infallible_E (_1: t_Result_Infallible_E)
+predicate resolve_Result_never_E (_1: t_Result_never_E)
 
-axiom resolve_axiom [@rewrite]:
-  forall _1: t_Result_Infallible_E [resolve_Result_Infallible_E _1]. resolve_Result_Infallible_E _1
+axiom resolve_axiom [@rewrite]: forall _1: t_Result_never_E [resolve_Result_never_E _1]. resolve_Result_never_E _1
     = match _1 with
       | Ok x0 -> true
       | Err x0 -> resolve_E x0
       end
 
-let elim_Err (_x: t_Result_Infallible_E) (return (f0: t_E)) = any
+let elim_Err (_x: t_Result_never_E) (return (f0: t_E)) = any
   [ _k (f0: t_E) -> {Err f0 = _x} (! return {f0})
   | _chk -> (! {[@expl:elim Err] match _x with
       | Err _ -> true
@@ -75,20 +74,20 @@ axiom inv_axiom'0 [@rewrite]: forall _1: t_Result_T_F [inv_Result_T_F _1]. inv_R
       | Err'0 f0 -> inv_F f0
       end
 
-type tup2_Result_T_F_Result_Infallible_E = { f0: t_Result_T_F; f1: t_Result_Infallible_E }
+type tup2_Result_T_F_Result_never_E = { f0: t_Result_T_F; f1: t_Result_never_E }
 
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_T_E_F_FromResidual_Result_Infallible_E_Result_T_F_from_residual_body_T (residual: t_Result_Infallible_E)
+let extern_spec_T_E_F_FromResidual_Result_Infallible_E_Result_T_F_from_residual_body_T (residual: t_Result_never_E)
   (return (x: t_Result_T_F)) =
-{[@stop_split] [@expl:extern_spec_T_E_F_FromResidual_Result_Infallible_E_Result_T_F_from_residual_body 'residual' type invariant] inv_Result_Infallible_E residual}
+{[@stop_split] [@expl:extern_spec_T_E_F_FromResidual_Result_Infallible_E_Result_T_F_from_residual_body 'residual' type invariant] inv_Result_never_E residual}
   (! bb0
   [ bb0 = any [ br0 (x0: ()) -> {residual = Ok x0} (! bb1) | br1 (x0: t_E) -> {residual = Err x0} (! bb2) ]
   | bb1 = s0
-    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Result_Infallible_E residual} any) ]
-    | s1 = -{resolve_Result_Infallible_E residual}- s2
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Result_never_E residual} any) ]
+    | s1 = -{resolve_Result_never_E residual}- s2
     | s2 = {false} any ]
   | bb2 = s0
     [ s0 = elim_Err {residual} (fun (r0: t_E) -> [ &e <- r0 ] s1)
@@ -96,7 +95,7 @@ let extern_spec_T_E_F_FromResidual_Result_Infallible_E_Result_T_F_from_residual_
     | s2 = [ &_ret <- Err'0 _6 ] s3
     | s3 = return {_ret} ] ]
   [ & _ret: t_Result_T_F = Any.any_l ()
-  | & residual: t_Result_Infallible_E = residual
+  | & residual: t_Result_never_E = residual
   | & e: t_E = Any.any_l ()
   | & _6: t_F = Any.any_l () ])
   [ return (result: t_Result_T_F) ->

@@ -1,21 +1,21 @@
 use creusot.prelude.Any
 
-type t_Option_Infallible = None | Some ()
+type t_Option_never = None | Some ()
 
 type t_T
 
 type t_Option_T = None'0 | Some'0 t_T
 
-predicate inv_Infallible [@inline:trivial] (_1: ()) = false
+predicate inv_never [@inline:trivial] (_1: ()) = false
 
-meta "rewrite_def" predicate inv_Infallible
+meta "rewrite_def" predicate inv_never
 
-predicate inv_Option_Infallible (_1: t_Option_Infallible)
+predicate inv_Option_never (_1: t_Option_never)
 
-axiom inv_axiom [@rewrite]: forall _1: t_Option_Infallible [inv_Option_Infallible _1]. inv_Option_Infallible _1
+axiom inv_axiom [@rewrite]: forall _1: t_Option_never [inv_Option_never _1]. inv_Option_never _1
     = match _1 with
       | None -> true
-      | Some f0 -> inv_Infallible f0
+      | Some f0 -> inv_never f0
       end
 
 predicate inv_T (_1: t_T)
@@ -32,14 +32,14 @@ meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
 
-let extern_spec_T_FromResidual_Option_Infallible_Option_T_from_residual_body_T (residual: t_Option_Infallible)
+let extern_spec_T_FromResidual_Option_Infallible_Option_T_from_residual_body_T (residual: t_Option_never)
   (return (x: t_Option_T)) =
-{[@stop_split] [@expl:extern_spec_T_FromResidual_Option_Infallible_Option_T_from_residual_body 'residual' type invariant] inv_Option_Infallible residual}
+{[@stop_split] [@expl:extern_spec_T_FromResidual_Option_Infallible_Option_T_from_residual_body 'residual' type invariant] inv_Option_never residual}
   (! bb0
   [ bb0 = any [ br0 -> {residual = None} (! bb2) | br1 (x0: ()) -> {residual = Some x0} (! bb1) ]
   | bb1 = {false} any
   | bb2 = s0 [ s0 = [ &_ret <- None'0 ] s1 | s1 = return {_ret} ] ]
-  [ & _ret: t_Option_T = Any.any_l () | & residual: t_Option_Infallible = residual ])
+  [ & _ret: t_Option_T = Any.any_l () | & residual: t_Option_never = residual ])
   [ return (result: t_Option_T) ->
   {[@stop_split] [@expl:extern_spec_T_FromResidual_Option_Infallible_Option_T_from_residual_body_T ensures] ([@stop_split] [@expl:extern_spec_T_FromResidual_Option_Infallible_Option_T_from_residual_body result type invariant] inv_Option_T result)
     /\ ([@stop_split] [@expl:extern_spec_T_FromResidual_Option_Infallible_Option_T_from_residual_body ensures] result
