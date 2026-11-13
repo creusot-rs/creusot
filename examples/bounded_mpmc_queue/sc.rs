@@ -855,20 +855,17 @@ impl<T> Queue<T> {
         );
 
         let tail_mod = tail % self.cells.len();
-        proof_assert!(tail_mod@ == tail@.rem_euclid(self.cells@.len()));
 
         let cell = &self.cells[tail_mod];
         let status = cell.status.load(
             Ordering::SeqCst,
             ghost! { |c: &Committer<_, _, SeqCst, _>| {
                 self.inv.open(tokens.reborrow(), |inv: &mut QueueInv<T>| {
-                    let old_inv = snapshot!(*inv);
                     let tail_mod_ghost: Ghost<Int> = snapshot!(tail_mod@).into_ghost();
                     c.shoot_load(&inv.statuses_own[*tail_mod_ghost]);
 
                     let status = snapshot!(c.val_load()@);
                     *witness = Some(inv.statuses_mono_auth[*tail_mod_ghost].get_fragment(status));
-                    proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
                 });
             }},
         );
@@ -894,7 +891,6 @@ impl<T> Queue<T> {
                     let tail_plus_len = snapshot!(*tail + inv.len());
                     let t_mod: Int = *snapshot!(inv.mod_len(*tail)).into_ghost();
                     snapshot!(inv.mod_len_wrap(*tail));
-                    proof_assert!(inv.mod_len(*tail_plus_len) == t_mod);
 
                     c.shoot_load(&inv.tail_own);
                     c.shoot_store(&mut inv.tail_own);
@@ -902,7 +898,6 @@ impl<T> Queue<T> {
 
                     inv.statuses_mono_auth[t_mod].frag_lemma(&witness);
 
-                    proof_assert!(inv.tokens_auth.val(*tail) == tokens::State::None);
                     proof_assert!(*tail < inv.head());
 
                     let old_seq = snapshot!(inv.seq());
@@ -927,9 +922,6 @@ impl<T> Queue<T> {
                     proof_assert!(cell_own.unwrap_logic().val()@ == Some(old_seq[0]));
                     proof_assert!(forall<k> inv.mod_len(k) == old_inv.mod_len(k));
                     let _ = snapshot!(QueueInv::<T>::mod_len_inj);
-                    proof_assert!(forall<k> *tail < k && k < *tail_plus_len ==> (^inv).three_statuses_inv(k));
-                    proof_assert!(inv.three_statuses_inv(*tail_plus_len));
-                    proof_assert!(old_inv.mod_len(token.unwrap_logic().index()) == t_mod);
                 });
             }},
         );
@@ -952,7 +944,6 @@ impl<T> Queue<T> {
                     let token = token.take().unwrap();
                     let old_inv = snapshot!(*inv);
                     let index_mod: Int = *snapshot!(inv.mod_len(token.index())).into_ghost();
-                    proof_assert!(index_mod == tail_mod@);
 
                     c.shoot_store(&mut inv.statuses_own[index_mod]);
 

@@ -377,16 +377,15 @@ module M_fetch_add
     /\ ([@stop_split] [@expl:compare_exchange_weak requires #2] forall c: t_Committer_AtomicI32_i32_SeqCst_unit. not shot_store_AtomicI32 c
       -> ward_AtomicI32 c = self -> precondition_FnGhostWrapper_closure6 f (Err c))}
     any
-    [ return (result: t_Result_i32_i32) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
-        | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst. not shot_store_AtomicI32'0 c.current
+    [ return (result: t_Result_i32_i32) ->
+    {[@stop_split] [@expl:compare_exchange_weak ensures] (exists c: MutBorrow.t t_Committer_AtomicI32_i32_SeqCst_SeqCst. not shot_store_AtomicI32'0 c.current
           /\ ward_AtomicI32'0 c.current = self
           /\ deep_model_i32 (val_load_AtomicI32'0 c.current) = deep_model_i32 current'
           /\ val_store_AtomicI32 c.current = new
-          /\ result'0 = val_load_AtomicI32'0 c.current /\ postcondition_once_FnGhostWrapper_closure6 f (Ok c) ()
-        | Err'0 result'0 -> exists c: t_Committer_AtomicI32_i32_SeqCst_unit. not shot_store_AtomicI32 c
-          /\ ward_AtomicI32 c = self
-          /\ result'0 = val_load_AtomicI32 c /\ postcondition_once_FnGhostWrapper_closure6 f (Err c) ()
-        end}
+          /\ result = Ok'0 (val_load_AtomicI32'0 c.current) /\ postcondition_once_FnGhostWrapper_closure6 f (Ok c) ())
+      \/ (exists c: t_Committer_AtomicI32_i32_SeqCst_unit. not shot_store_AtomicI32 c
+        /\ ward_AtomicI32 c = self
+        /\ result = Err'0 (val_load_AtomicI32 c) /\ postcondition_once_FnGhostWrapper_closure6 f (Err c) ())}
       (! return {result}) ]
   
   let elim_Err (_x: t_Result_i32_i32) (return (f0'1: Int32.t)) = any

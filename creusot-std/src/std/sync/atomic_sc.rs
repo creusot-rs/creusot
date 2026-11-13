@@ -61,24 +61,18 @@ macro_rules! impl_atomic {
                 f.precondition((Err(c),))
             )]
             #[ensures(
-                match result {
-                    Ok(result) => {
-                        exists<c: &mut Committer<Self, $type, SeqCst, SeqCst>>
-                            !c.shot_store() && c.ward() == *self &&
-                            c.val_load().deep_model() == current.deep_model() &&
-                            c.val_store() == new &&
-                            result == c.val_load() &&
-                            f.postcondition_once((Ok(c),), ())
-                    },
-                    Err(result) => {
-                       exists<c: &Committer<Self, $type, SeqCst, ()>>
-                            !c.shot_store() && c.ward() == *self &&
-                            // NOTE: This following line is not present for `weak`
-                            c.val_load().deep_model() != current.deep_model() &&
-                            result == c.val_load() &&
-                            f.postcondition_once((Err(c),), ())
-                    }
-                }
+                (exists<c: &mut Committer<Self, $type, SeqCst, SeqCst>>
+                    !c.shot_store() && c.ward() == *self &&
+                    c.val_load().deep_model() == current.deep_model() &&
+                    c.val_store() == new &&
+                    result == Ok(c.val_load()) &&
+                    f.postcondition_once((Ok(c),), ())) ||
+                (exists<c: &Committer<Self, $type, SeqCst, ()>>
+                    !c.shot_store() && c.ward() == *self &&
+                    // NOTE: This following line is not present for `weak`
+                    c.val_load().deep_model() != current.deep_model() &&
+                    result == Err(c.val_load()) &&
+                    f.postcondition_once((Err(c),), ()))
             )]
             #[inline(always)]
             #[trusted]
@@ -110,22 +104,16 @@ macro_rules! impl_atomic {
                 f.precondition((Err(c),))
             )]
             #[ensures(
-                match result {
-                    Ok(result) => {
-                        exists<c: &mut Committer<Self, $type, SeqCst, SeqCst>>
-                            !c.shot_store() && c.ward() == *self &&
-                            c.val_load().deep_model() == current.deep_model() &&
-                            c.val_store() == new &&
-                            result == c.val_load() &&
-                            f.postcondition_once((Ok(c),), ())
-                    },
-                    Err(result) => {
-                       exists<c: &Committer<Self, $type, SeqCst, ()>>
-                            !c.shot_store() && c.ward() == *self &&
-                            result == c.val_load() &&
-                            f.postcondition_once((Err(c),), ())
-                    }
-                }
+                (exists<c: &mut Committer<Self, $type, SeqCst, SeqCst>>
+                    !c.shot_store() && c.ward() == *self &&
+                    c.val_load().deep_model() == current.deep_model() &&
+                    c.val_store() == new &&
+                    result == Ok(c.val_load()) &&
+                    f.postcondition_once((Ok(c),), ())) ||
+                (exists<c: &Committer<Self, $type, SeqCst, ()>>
+                    !c.shot_store() && c.ward() == *self &&
+                    result == Err(c.val_load()) &&
+                    f.postcondition_once((Err(c),), ()))
             )]
             #[inline(always)]
             #[trusted]
