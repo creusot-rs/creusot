@@ -3,10 +3,10 @@ use crate::{
     SourceFileIndex, TAG_FULL_SPAN, TAG_PARTIAL_SPAN,
 };
 use rustc_data_structures::fx::FxHashMap;
-use rustc_hir::def_id::{CrateNum, DefId, DefIndex, DefPathHash, StableCrateId};
-use rustc_middle::{
-    implement_ty_decoder,
-    ty::{InternerDecoder, Ty, TyCtxt, codec::TyDecoder},
+use rustc_hir::def_id::{CrateNum, DefId, DefIndex, DefPathHash, LocalDefId, StableCrateId};
+use rustc_middle::ty::{
+    InternerDecoder, Ty, TyCtxt,
+    codec::{TyDecoder, forward_all_decoder_methods_to},
 };
 use rustc_serialize::{
     Decodable, Decoder,
@@ -15,19 +15,20 @@ use rustc_serialize::{
 use rustc_span::{
     BlobDecoder, BytePos, ByteSymbol, DUMMY_SP, ExpnData, ExpnHash, ExpnId, SourceFile, Span,
     Symbol, SyntaxContext,
-    hygiene::{HygieneDecodeContext, SyntaxContextKey},
+    hygiene::{ExpnIndex, HygieneDecodeContext, SyntaxContextKey},
 };
 use std::sync::Arc;
 
 // This is only safe to decode the metadata of a single crate or the `ty_rcache` might confuse shorthands (see #360)
 pub struct MetadataDecoder<'a, 'tcx> {
     opaque: MemDecoder<'a>,
+    cnum: CrateNum,
     tcx: TyCtxt<'tcx>,
     ty_rcache: FxHashMap<usize, Ty<'tcx>>,
     file_index_to_file: FxHashMap<SourceFileIndex, Arc<SourceFile>>,
     file_index_to_stable_id: FxHashMap<SourceFileIndex, EncodedSourceFileId>,
     syntax_contexts: &'a FxHashMap<u32, AbsoluteBytePos>,
-    expn_data: FxHashMap<(StableCrateId, u32), AbsoluteBytePos>,
+    expn_data: FxHashMap<u32, AbsoluteBytePos>,
     hygiene_context: &'a HygieneDecodeContext,
 }
 
@@ -74,7 +75,9 @@ impl<'a, 'tcx> MetadataDecoder<'a, 'tcx> {
     }
 }
 
-implement_ty_decoder!(MetadataDecoder<'a, 'tcx>);
+impl<'a, 'tcx> Decoder for MetadataDecoder<'a, 'tcx> {
+    forward_all_decoder_methods_to!(|self| self.opaque);
+}
 
 use rustc_span::{AttrId, SpanDecoder};
 
@@ -95,6 +98,9 @@ impl BlobDecoder for MetadataDecoder<'_, '_> {
     }
     fn decode_def_index(&mut self) -> DefIndex {
         panic!("trying to decode `DefIndex` outside the context of a `DefId`")
+    }
+    fn decode_local_def_id(&mut self) -> LocalDefId {
+        unimplemented!()
     }
 }
 
@@ -125,24 +131,33 @@ impl SpanDecoder for MetadataDecoder<'_, '_> {
         let cnum = self.tcx.stable_crate_id_to_crate_num(stable_id);
         let index = u32::decode(self);
 
-        let expn_id = rustc_span::hygiene::decode_expn_id(cnum, index, |_| {
-            let pos = self.expn_data.get(&(stable_id, index)).unwrap();
-            self.with_position(pos.to_usize(), |decoder| {
-                let data = ExpnData::decode(decoder);
-                let hash = ExpnHash::decode(decoder);
-                (data, hash)
+        assert_ne!(cnum, rustc_span::def_id::LOCAL_CRATE);
+        if cnum == self.cnum {
+            rustc_span::hygiene::decode_expn_id(cnum, index, |expn_id| {
+                let ExpnId { krate: _, local_id: index } = expn_id;
+                let pos = self.expn_data.get(&index.as_u32()).unwrap();
+                self.with_position(pos.to_usize(), |decoder| {
+                    let data = ExpnData::decode(decoder);
+                    let hash = ExpnHash::decode(decoder);
+                    (data, hash)
+                })
             })
-        });
-        expn_id
+        } else {
+            ExpnId { krate: cnum, local_id: ExpnIndex::from_u32(index) }
+        }
     }
     fn decode_syntax_context(&mut self) -> SyntaxContext {
         let syntax_contexts = self.syntax_contexts;
-        rustc_span::hygiene::decode_syntax_context(self, &self.hygiene_context, |this, id| {
-            // This closure is invoked if we haven't already decoded the data for the `SyntaxContext` we are deserializing.
-            // We look up the position of the associated `SyntaxData` and decode it.
-            let pos = syntax_contexts.get(&id).unwrap();
-            this.with_position(pos.to_usize(), |decoder| SyntaxContextKey::decode(decoder))
-        })
+        rustc_span::hygiene::decode_syntax_context(
+            self,
+            &self.hygiene_context,
+            |this, external_ctx| {
+                // This closure is invoked if we haven't already decoded the data for the `SyntaxContext` we are deserializing.
+                // We look up the position of the associated `SyntaxData` and decode it.
+                let pos = syntax_contexts.get(&external_ctx.as_u32()).unwrap();
+                this.with_position(pos.to_usize(), |decoder| SyntaxContextKey::decode(decoder))
+            },
+        )
     }
     fn decode_crate_num(&mut self) -> CrateNum {
         let stable_id = StableCrateId::decode(self);
@@ -205,6 +220,7 @@ impl<'a, 'tcx> InternerDecoder for MetadataDecoder<'a, 'tcx> {
 
 pub fn decode_metadata<'tcx, T: for<'a> Decodable<MetadataDecoder<'a, 'tcx>>>(
     tcx: TyCtxt<'tcx>,
+    cnum: CrateNum,
     blob: &[u8],
 ) -> T {
     let footer = {
@@ -218,6 +234,7 @@ pub fn decode_metadata<'tcx, T: for<'a> Decodable<MetadataDecoder<'a, 'tcx>>>(
 
     let mut decoder = MetadataDecoder {
         opaque: MemDecoder::new(blob, 0).unwrap(),
+        cnum,
         tcx,
         ty_rcache: Default::default(),
         file_index_to_stable_id: footer.file_index_to_stable_id,

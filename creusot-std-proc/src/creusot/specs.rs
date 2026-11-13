@@ -13,21 +13,19 @@ use proc_macro::TokenStream as TS1;
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{
-    Attribute, Block, Expr, Ident, Item, Pat, Path, ReturnType, Stmt, Token, Type, parenthesized,
     parse::{self, Parse},
-    parse_macro_input, parse_quote,
     punctuated::Punctuated,
     spanned::Spanned as _,
     token::{self, Comma},
+    *,
 };
 
 pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
     const REQUIRES_LEN: usize = "#[requires(".len();
     let documentation = document_spec("requires", doc::LogicBody::term(REQUIRES_LEN, attr.clone()));
 
-    let mut item = parse_macro_input!(tokens as ContractSubject);
+    let item = parse_macro_input!(tokens as ContractSubject);
     let req_body = pretyping::encode_term(&parse_macro_input!(attr as Term));
-    item.mark_unused();
 
     let req_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
     let name_tag = req_name.to_string();
@@ -43,11 +41,15 @@ pub fn requires(attr: TS1, tokens: TS1) -> TS1 {
 
             let mut companion = TokenStream::new();
             if let Some(b) = fn_or_meth.body.as_mut() {
+                mark_unused(&mut fn_or_meth.sig);
                 b.stmts.insert(0, Stmt::Item(Item::Verbatim(requires_tokens)));
             } else {
                 assert!(fn_or_meth.is_trait_signature());
+                // Note: Don't add `#[allow(unused)]` to parameters of the trait method signature `fn_or_meth`!
+                // The Rust parser has a temporary bug where this clobbers the function's own attributes.
                 let mut sig = fn_or_meth.sig.clone();
                 sig.ident = req_name.clone();
+                mark_unused(&mut sig);
                 // Make sure the spec method has a prototype which is very similar to the original one,
                 // To guarantee that they have the same ParamEnv
                 // (in particular, they have the same early/late bound variables)
@@ -94,11 +96,11 @@ fn ensures_inner(attr: TS1, tokens: TS1, has_logic_alias: Option<bool>) -> TS1 {
     const ENSURES_LEN: usize = "#[ensures(".len();
     let documentation = document_spec("ensures", doc::LogicBody::term(ENSURES_LEN, attr.clone()));
 
-    let mut item = parse_macro_input!(tokens as ContractSubject);
+    let item = parse_macro_input!(tokens as ContractSubject);
     let (result, ens_body) = match parse_macro_input!(attr as EnsuresTerm) {
         closure @ (EnsuresTerm::EnsuresClosure(..)
         | EnsuresTerm::TermWithTriggers(TermWithTriggers {
-            term: box Term::Closure(..),
+            term: Term::Closure(..),
             ..
         })) if matches!(item, ContractSubject::Closure(_)) => {
             return syn::Error::new(
@@ -113,7 +115,7 @@ fn ensures_inner(attr: TS1, tokens: TS1, has_logic_alias: Option<bool>) -> TS1 {
         }
         EnsuresTerm::TermWithTriggers(TermWithTriggers {
             trigger,
-            term: box Term::Closure(mut closure),
+            term: Term::Closure(mut closure),
         }) => {
             if closure.inputs.len() != 1 {
                 return syn::Error::new(
@@ -138,7 +140,6 @@ fn ensures_inner(attr: TS1, tokens: TS1, has_logic_alias: Option<bool>) -> TS1 {
             (result, pretyping::encode_term_with_triggers(&term))
         }
     };
-    item.mark_unused();
 
     let ens_name = crate::creusot::generate_unique_ident(&item.name(), Span::call_site());
     let name_tag = ens_name.clone().to_string();
@@ -173,11 +174,15 @@ fn ensures_inner(attr: TS1, tokens: TS1, has_logic_alias: Option<bool>) -> TS1 {
 
             let mut companion = TokenStream::new();
             if let Some(b) = fn_or_meth.body.as_mut() {
+                mark_unused(&mut fn_or_meth.sig);
                 b.stmts.insert(0, Stmt::Item(Item::Verbatim(ensures_tokens)));
             } else {
                 assert!(fn_or_meth.is_trait_signature());
+                // Note: Don't add `#[allow(unused)]` to parameters of the trait method signature `fn_or_meth`!
+                // The Rust parser has a temporary bug where this clobbers the function's own attributes.
                 let mut sig = fn_or_meth.sig.clone();
                 sig.ident = ens_name;
+                mark_unused(&mut sig);
                 // Make sure the spec method has a prototype which is very similar to the original one,
                 // To guarantee that they have the same ParamEnv
                 // (in particular, they have the same early/late bound variables)
@@ -381,6 +386,16 @@ pub fn variant(attr: TS1, tokens: TS1) -> TS1 {
     super::invariant::desugar_variant(attr.into(), tokens.into())
         .unwrap_or_else(|e| e.to_compile_error())
         .into()
+}
+
+fn mark_unused(sig: &mut Signature) {
+    for arg in sig.inputs.iter_mut() {
+        let attrs = match arg {
+            FnArg::Receiver(r) => &mut r.attrs,
+            FnArg::Typed(r) => &mut r.attrs,
+        };
+        attrs.push(parse_quote! { #[allow(unused)] });
+    }
 }
 
 /// A structure to parse some attributes followed by something else.

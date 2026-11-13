@@ -619,36 +619,36 @@ module M_impl_DoubleEndedIterator_for_Chain_A_B__next_back (* <Chain<A, B> as co
         /\ self.current = Some'0 (r.current) /\ self.final = Some'0 (r.final)))}
       (! return {result}) ]
   
-  type t_Option_Infallible = None'2 | Some'2 ()
+  type t_Option_never = None'2 | Some'2 ()
   
-  type t_ControlFlow_Option_Infallible_refmut_B = Continue (MutBorrow.t t_B) | Break t_Option_Infallible
+  type t_ControlFlow_Option_never_refmut_B = Continue (MutBorrow.t t_B) | Break t_Option_never
   
-  predicate inv_Infallible [@inline:trivial] (_1: ()) = false
+  predicate inv_never [@inline:trivial] (_1: ()) = false
   
-  meta "rewrite_def" predicate inv_Infallible
+  meta "rewrite_def" predicate inv_never
   
-  predicate inv_Option_Infallible (_1: t_Option_Infallible)
+  predicate inv_Option_never (_1: t_Option_never)
   
-  axiom inv_axiom'1 [@rewrite]: forall _1: t_Option_Infallible [inv_Option_Infallible _1]. inv_Option_Infallible _1
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_Option_never [inv_Option_never _1]. inv_Option_never _1
       = match _1 with
         | None'2 -> true
-        | Some'2 f0 -> inv_Infallible f0
+        | Some'2 f0 -> inv_never f0
         end
   
-  predicate inv_ControlFlow_Option_Infallible_refmut_B (_1: t_ControlFlow_Option_Infallible_refmut_B)
+  predicate inv_ControlFlow_Option_never_refmut_B (_1: t_ControlFlow_Option_never_refmut_B)
   
   axiom inv_axiom'2 [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_refmut_B [inv_ControlFlow_Option_Infallible_refmut_B _1]. inv_ControlFlow_Option_Infallible_refmut_B _1
+    forall _1: t_ControlFlow_Option_never_refmut_B [inv_ControlFlow_Option_never_refmut_B _1]. inv_ControlFlow_Option_never_refmut_B _1
       = match _1 with
         | Continue f0 -> inv_refmut_B f0
-        | Break f0 -> inv_Option_Infallible f0
+        | Break f0 -> inv_Option_never f0
         end
   
-  let branch_Option_refmut_B (self: t_Option_refmut_B) (return (x: t_ControlFlow_Option_Infallible_refmut_B)) =
+  let branch_Option_refmut_B (self: t_Option_refmut_B) (return (x: t_ControlFlow_Option_never_refmut_B)) =
   {[@stop_split] [@expl:branch 'self' type invariant] inv_Option_refmut_B self}
     any
-    [ return (result: t_ControlFlow_Option_Infallible_refmut_B) ->
-    {[@stop_split] [@expl:branch_Option_refmut_B ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_Infallible_refmut_B result)
+    [ return (result: t_ControlFlow_Option_never_refmut_B) ->
+    {[@stop_split] [@expl:branch_Option_refmut_B ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_never_refmut_B result)
       /\ ([@stop_split] [@expl:branch ensures] match self with
         | Some'1 v -> result = Continue v
         | None'1 -> result = Break (None'2)
@@ -659,17 +659,17 @@ module M_impl_DoubleEndedIterator_for_Chain_A_B__next_back (* <Chain<A, B> as co
   
   meta "rewrite_def" predicate resolve_refmut_B
   
-  predicate resolve_ControlFlow_Option_Infallible_refmut_B (_1: t_ControlFlow_Option_Infallible_refmut_B)
+  predicate resolve_ControlFlow_Option_never_refmut_B (_1: t_ControlFlow_Option_never_refmut_B)
   
   axiom resolve_axiom [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_refmut_B [resolve_ControlFlow_Option_Infallible_refmut_B _1]. resolve_ControlFlow_Option_Infallible_refmut_B _1
+    forall _1: t_ControlFlow_Option_never_refmut_B [resolve_ControlFlow_Option_never_refmut_B _1]. resolve_ControlFlow_Option_never_refmut_B _1
       = match _1 with
         | Continue x0 -> resolve_refmut_B x0
         | Break x0 -> true
         end
   
-  let elim_Break (_x: t_ControlFlow_Option_Infallible_refmut_B) (return (f0: t_Option_Infallible)) = any
-    [ _k (f0: t_Option_Infallible) -> {Break f0 = _x} (! return {f0})
+  let elim_Break (_x: t_ControlFlow_Option_never_refmut_B) (return (f0: t_Option_never)) = any
+    [ _k (f0: t_Option_never) -> {Break f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Break] match _x with
         | Break _ -> true
         | _ -> false
@@ -702,28 +702,28 @@ module M_impl_DoubleEndedIterator_for_Chain_A_B__next_back (* <Chain<A, B> as co
         | Some'3 f0 -> inv_Item f0
         end
   
-  predicate postcondition_from_residual (self: ()) (args: t_Option_Infallible) (result: t_Option_Item) =
+  predicate postcondition_from_residual (self: ()) (args: t_Option_never) (result: t_Option_Item) =
     let residual = args in inv_Option_Item result /\ result = None'3
   
   meta "rewrite_def" predicate postcondition_from_residual
   
-  let from_residual_Option_Item (residual: t_Option_Infallible) (return (x: t_Option_Item)) =
-  {[@stop_split] [@expl:from_residual 'residual' type invariant] inv_Option_Infallible residual}
+  let from_residual_Option_Item (residual: t_Option_never) (return (x: t_Option_Item)) =
+  {[@stop_split] [@expl:from_residual 'residual' type invariant] inv_Option_never residual}
     any
     [ return (result: t_Option_Item) ->
     {[@stop_split] [@expl:from_residual_Option_Item ensures] ([@stop_split] [@expl:from_residual result type invariant] inv_Option_Item result)
       /\ ([@stop_split] [@expl:from_residual ensures] result = None'3)}
       (! return {result}) ]
   
-  let residual_into_try_type_Option_Infallible (r: t_Option_Infallible) (return (x: t_Option_Item)) =
-  {[@stop_split] [@expl:residual_into_try_type 'r' type invariant] inv_Option_Infallible r}
+  let residual_into_try_type_Option_never (r: t_Option_never) (return (x: t_Option_Item)) =
+  {[@stop_split] [@expl:residual_into_try_type 'r' type invariant] inv_Option_never r}
     any
     [ return (result: t_Option_Item) ->
-    {[@stop_split] [@expl:residual_into_try_type_Option_Infallible ensures] ([@stop_split] [@expl:residual_into_try_type result type invariant] inv_Option_Item result)
+    {[@stop_split] [@expl:residual_into_try_type_Option_never ensures] ([@stop_split] [@expl:residual_into_try_type result type invariant] inv_Option_Item result)
       /\ ([@stop_split] [@expl:residual_into_try_type ensures] postcondition_from_residual () r result)}
       (! return {result}) ]
   
-  let elim_Continue (_x: t_ControlFlow_Option_Infallible_refmut_B) (return (f0: MutBorrow.t t_B)) = any
+  let elim_Continue (_x: t_ControlFlow_Option_never_refmut_B) (return (f0: MutBorrow.t t_B)) = any
     [ _k (f0: MutBorrow.t t_B) -> {Continue f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Continue] match _x with
         | Continue _ -> true
@@ -862,22 +862,22 @@ module M_impl_DoubleEndedIterator_for_Chain_A_B__next_back (* <Chain<A, B> as co
         | Some'0 x0 -> resolve_B x0
         end
   
-  type t_ControlFlow_Option_Infallible_Item = Continue'0 t_Item | Break'0 t_Option_Infallible
+  type t_ControlFlow_Option_never_Item = Continue'0 t_Item | Break'0 t_Option_never
   
-  predicate inv_ControlFlow_Option_Infallible_Item (_1: t_ControlFlow_Option_Infallible_Item)
+  predicate inv_ControlFlow_Option_never_Item (_1: t_ControlFlow_Option_never_Item)
   
   axiom inv_axiom'4 [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_Item [inv_ControlFlow_Option_Infallible_Item _1]. inv_ControlFlow_Option_Infallible_Item _1
+    forall _1: t_ControlFlow_Option_never_Item [inv_ControlFlow_Option_never_Item _1]. inv_ControlFlow_Option_never_Item _1
       = match _1 with
         | Continue'0 f0'0 -> inv_Item f0'0
-        | Break'0 f0'0 -> inv_Option_Infallible f0'0
+        | Break'0 f0'0 -> inv_Option_never f0'0
         end
   
-  let branch_Option_Item (self: t_Option_Item) (return (x: t_ControlFlow_Option_Infallible_Item)) =
+  let branch_Option_Item (self: t_Option_Item) (return (x: t_ControlFlow_Option_never_Item)) =
   {[@stop_split] [@expl:branch 'self' type invariant] inv_Option_Item self}
     any
-    [ return (result: t_ControlFlow_Option_Infallible_Item) ->
-    {[@stop_split] [@expl:branch_Option_Item ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_Infallible_Item result)
+    [ return (result: t_ControlFlow_Option_never_Item) ->
+    {[@stop_split] [@expl:branch_Option_Item ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_never_Item result)
       /\ ([@stop_split] [@expl:branch ensures] match self with
         | Some'3 v -> result = Continue'0 v
         | None'3 -> result = Break'0 (None'2)
@@ -886,24 +886,24 @@ module M_impl_DoubleEndedIterator_for_Chain_A_B__next_back (* <Chain<A, B> as co
   
   predicate resolve_Item (_1: t_Item)
   
-  predicate resolve_ControlFlow_Option_Infallible_Item (_1: t_ControlFlow_Option_Infallible_Item)
+  predicate resolve_ControlFlow_Option_never_Item (_1: t_ControlFlow_Option_never_Item)
   
   axiom resolve_axiom'1 [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_Item [resolve_ControlFlow_Option_Infallible_Item _1]. resolve_ControlFlow_Option_Infallible_Item _1
+    forall _1: t_ControlFlow_Option_never_Item [resolve_ControlFlow_Option_never_Item _1]. resolve_ControlFlow_Option_never_Item _1
       = match _1 with
         | Continue'0 x0 -> resolve_Item x0
         | Break'0 x0 -> true
         end
   
-  let elim_Break'0 (_x: t_ControlFlow_Option_Infallible_Item) (return (f0'0: t_Option_Infallible)) = any
-    [ _k (f0'0: t_Option_Infallible) -> {Break'0 f0'0 = _x} (! return {f0'0})
+  let elim_Break'0 (_x: t_ControlFlow_Option_never_Item) (return (f0'0: t_Option_never)) = any
+    [ _k (f0'0: t_Option_never) -> {Break'0 f0'0 = _x} (! return {f0'0})
     | _chk -> (! {[@expl:elim Break] match _x with
         | Break'0 _ -> true
         | _ -> false
         end}
       any) ]
   
-  let elim_Continue'0 (_x: t_ControlFlow_Option_Infallible_Item) (return (f0'0: t_Item)) = any
+  let elim_Continue'0 (_x: t_ControlFlow_Option_never_Item) (return (f0'0: t_Item)) = any
     [ _k (f0'0: t_Item) -> {Continue'0 f0'0 = _x} (! return {f0'0})
     | _chk -> (! {[@expl:elim Continue] match _x with
         | Continue'0 _ -> true
@@ -969,22 +969,22 @@ module M_impl_DoubleEndedIterator_for_Chain_A_B__next_back (* <Chain<A, B> as co
         /\ self.current = Some (r.current) /\ self.final = Some (r.final)))}
       (! return {result}) ]
   
-  type t_ControlFlow_Option_Infallible_refmut_A = Continue'1 (MutBorrow.t t_A) | Break'1 t_Option_Infallible
+  type t_ControlFlow_Option_never_refmut_A = Continue'1 (MutBorrow.t t_A) | Break'1 t_Option_never
   
-  predicate inv_ControlFlow_Option_Infallible_refmut_A (_1: t_ControlFlow_Option_Infallible_refmut_A)
+  predicate inv_ControlFlow_Option_never_refmut_A (_1: t_ControlFlow_Option_never_refmut_A)
   
   axiom inv_axiom'7 [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_refmut_A [inv_ControlFlow_Option_Infallible_refmut_A _1]. inv_ControlFlow_Option_Infallible_refmut_A _1
+    forall _1: t_ControlFlow_Option_never_refmut_A [inv_ControlFlow_Option_never_refmut_A _1]. inv_ControlFlow_Option_never_refmut_A _1
       = match _1 with
         | Continue'1 f0'0 -> inv_refmut_A f0'0
-        | Break'1 f0'0 -> inv_Option_Infallible f0'0
+        | Break'1 f0'0 -> inv_Option_never f0'0
         end
   
-  let branch_Option_refmut_A (self: t_Option_refmut_A) (return (x: t_ControlFlow_Option_Infallible_refmut_A)) =
+  let branch_Option_refmut_A (self: t_Option_refmut_A) (return (x: t_ControlFlow_Option_never_refmut_A)) =
   {[@stop_split] [@expl:branch 'self' type invariant] inv_Option_refmut_A self}
     any
-    [ return (result: t_ControlFlow_Option_Infallible_refmut_A) ->
-    {[@stop_split] [@expl:branch_Option_refmut_A ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_Infallible_refmut_A result)
+    [ return (result: t_ControlFlow_Option_never_refmut_A) ->
+    {[@stop_split] [@expl:branch_Option_refmut_A ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_never_refmut_A result)
       /\ ([@stop_split] [@expl:branch ensures] match self with
         | Some'5 v -> result = Continue'1 v
         | None'5 -> result = Break'1 (None'2)
@@ -995,17 +995,17 @@ module M_impl_DoubleEndedIterator_for_Chain_A_B__next_back (* <Chain<A, B> as co
   
   meta "rewrite_def" predicate resolve_refmut_A
   
-  predicate resolve_ControlFlow_Option_Infallible_refmut_A (_1: t_ControlFlow_Option_Infallible_refmut_A)
+  predicate resolve_ControlFlow_Option_never_refmut_A (_1: t_ControlFlow_Option_never_refmut_A)
   
   axiom resolve_axiom'2 [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_refmut_A [resolve_ControlFlow_Option_Infallible_refmut_A _1]. resolve_ControlFlow_Option_Infallible_refmut_A _1
+    forall _1: t_ControlFlow_Option_never_refmut_A [resolve_ControlFlow_Option_never_refmut_A _1]. resolve_ControlFlow_Option_never_refmut_A _1
       = match _1 with
         | Continue'1 x0 -> resolve_refmut_A x0
         | Break'1 x0 -> true
         end
   
-  let elim_Break'1 (_x: t_ControlFlow_Option_Infallible_refmut_A) (return (f0'0: t_Option_Infallible)) = any
-    [ _k (f0'0: t_Option_Infallible) -> {Break'1 f0'0 = _x} (! return {f0'0})
+  let elim_Break'1 (_x: t_ControlFlow_Option_never_refmut_A) (return (f0'0: t_Option_never)) = any
+    [ _k (f0'0: t_Option_never) -> {Break'1 f0'0 = _x} (! return {f0'0})
     | _chk -> (! {[@expl:elim Break] match _x with
         | Break'1 _ -> true
         | _ -> false
@@ -1024,7 +1024,7 @@ module M_impl_DoubleEndedIterator_for_Chain_A_B__next_back (* <Chain<A, B> as co
   
   meta "rewrite_def" predicate resolve_closure0
   
-  let elim_Continue'1 (_x: t_ControlFlow_Option_Infallible_refmut_A) (return (f0'0: MutBorrow.t t_A)) = any
+  let elim_Continue'1 (_x: t_ControlFlow_Option_never_refmut_A) (return (f0'0: MutBorrow.t t_A)) = any
     [ _k (f0'0: MutBorrow.t t_A) -> {Continue'1 f0'0 = _x} (! return {f0'0})
     | _chk -> (! {[@expl:elim Continue] match _x with
         | Continue'1 _ -> true
@@ -1134,14 +1134,14 @@ module M_impl_DoubleEndedIterator_for_Chain_A_B__next_back (* <Chain<A, B> as co
             [ &self <- { c0 = { self.c0 with current = _bor.final } } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_Option_A self.c0.current} any) ]
       | s1 = as_mut_A {_6} (fun (_x: t_Option_refmut_A) -> [ &_5 <- _x ] s2)
-      | s2 = branch_Option_refmut_A {_5} (fun (_x: t_ControlFlow_Option_Infallible_refmut_A) -> [ &_4 <- _x ] s3)
+      | s2 = branch_Option_refmut_A {_5} (fun (_x: t_ControlFlow_Option_never_refmut_A) -> [ &_4 <- _x ] s3)
       | s3 = any
         [ br0 (x0: MutBorrow.t t_A) -> {_4 = Continue'1 x0} (! bb5)
-        | br1 (x0: t_Option_Infallible) -> {_4 = Break'1 x0} (! bb4) ] ]
+        | br1 (x0: t_Option_never) -> {_4 = Break'1 x0} (! bb4) ] ]
     | bb4 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_Infallible_refmut_A _4} any) ]
-      | s1 = -{resolve_ControlFlow_Option_Infallible_refmut_A _4}- s2
-      | s2 = elim_Break'1 {_4} (fun (r0: t_Option_Infallible) -> [ &residual <- r0 ] s3)
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_never_refmut_A _4} any) ]
+      | s1 = -{resolve_ControlFlow_Option_never_refmut_A _4}- s2
+      | s2 = elim_Break'1 {_4} (fun (r0: t_Option_never) -> [ &residual <- r0 ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_closure0 self} any) ]
       | s4 = -{resolve_closure0 self}- s5
       | s5 = from_residual_Option_Item {residual} (fun (_x: t_Option_Item) -> [ &_ret <- _x ] s6)
@@ -1163,10 +1163,10 @@ module M_impl_DoubleEndedIterator_for_Chain_A_B__next_back (* <Chain<A, B> as co
     | & self: closure0 = self
     | & _2: MutBorrow.t t_A = Any.any_l ()
     | & _3: MutBorrow.t t_A = Any.any_l ()
-    | & _4: t_ControlFlow_Option_Infallible_refmut_A = Any.any_l ()
+    | & _4: t_ControlFlow_Option_never_refmut_A = Any.any_l ()
     | & _5: t_Option_refmut_A = Any.any_l ()
     | & _6: MutBorrow.t t_Option_A = Any.any_l ()
-    | & residual: t_Option_Infallible = Any.any_l ()
+    | & residual: t_Option_never = Any.any_l ()
     | & val': MutBorrow.t t_A = Any.any_l () ]
     [ return (result: t_Option_Item) -> {[@stop_split] [@expl:closure result type invariant] inv_Option_Item result}
       return {result} ]
@@ -1267,15 +1267,15 @@ module M_impl_DoubleEndedIterator_for_Chain_A_B__next_back (* <Chain<A, B> as co
             [ &self <- { self with current = { self.current with b = _bor.final } } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_Option_B self.current.b} any) ]
       | s1 = as_mut_B {_10} (fun (_x: t_Option_refmut_B) -> [ &_9 <- _x ] s2)
-      | s2 = branch_Option_refmut_B {_9} (fun (_x: t_ControlFlow_Option_Infallible_refmut_B) -> [ &_8 <- _x ] s3)
+      | s2 = branch_Option_refmut_B {_9} (fun (_x: t_ControlFlow_Option_never_refmut_B) -> [ &_8 <- _x ] s3)
       | s3 = any
         [ br0 (x0: MutBorrow.t t_B) -> {_8 = Continue x0} (! bb5)
-        | br1 (x0: t_Option_Infallible) -> {_8 = Break x0} (! bb4) ] ]
+        | br1 (x0: t_Option_never) -> {_8 = Break x0} (! bb4) ] ]
     | bb4 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_Infallible_refmut_B _8} any) ]
-      | s1 = -{resolve_ControlFlow_Option_Infallible_refmut_B _8}- s2
-      | s2 = elim_Break {_8} (fun (r0: t_Option_Infallible) -> [ &residual <- r0 ] s3)
-      | s3 = residual_into_try_type_Option_Infallible {residual} (fun (_x: t_Option_Item) -> [ &_4 <- _x ] s4)
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_never_refmut_B _8} any) ]
+      | s1 = -{resolve_ControlFlow_Option_never_refmut_B _8}- s2
+      | s2 = elim_Break {_8} (fun (r0: t_Option_never) -> [ &residual <- r0 ] s3)
+      | s3 = residual_into_try_type_Option_never {residual} (fun (_x: t_Option_Item) -> [ &_4 <- _x ] s4)
       | s4 = bb28 ]
     | bb5 = s0
       [ s0 = elim_Continue {_8} (fun (r0: MutBorrow.t t_B) -> [ &val' <- r0 ] s1)
@@ -1296,15 +1296,15 @@ module M_impl_DoubleEndedIterator_for_Chain_A_B__next_back (* <Chain<A, B> as co
       | s3 = [ &self <- { self with current = { self.current with b = _19 } } ] s4
       | s4 = bb15 ]
     | bb15 = s0
-      [ s0 = branch_Option_Item {x} (fun (_x: t_ControlFlow_Option_Infallible_Item) -> [ &_21 <- _x ] s1)
+      [ s0 = branch_Option_Item {x} (fun (_x: t_ControlFlow_Option_never_Item) -> [ &_21 <- _x ] s1)
       | s1 = any
         [ br0 (x0: t_Item) -> {_21 = Continue'0 x0} (! bb19)
-        | br1 (x0: t_Option_Infallible) -> {_21 = Break'0 x0} (! bb18) ] ]
+        | br1 (x0: t_Option_never) -> {_21 = Break'0 x0} (! bb18) ] ]
     | bb18 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_Infallible_Item _21} any) ]
-      | s1 = -{resolve_ControlFlow_Option_Infallible_Item _21}- s2
-      | s2 = elim_Break'0 {_21} (fun (r0: t_Option_Infallible) -> [ &residual'0 <- r0 ] s3)
-      | s3 = residual_into_try_type_Option_Infallible {residual'0} (fun (_x: t_Option_Item) -> [ &_4 <- _x ] s4)
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_never_Item _21} any) ]
+      | s1 = -{resolve_ControlFlow_Option_never_Item _21}- s2
+      | s2 = elim_Break'0 {_21} (fun (r0: t_Option_never) -> [ &residual'0 <- r0 ] s3)
+      | s3 = residual_into_try_type_Option_never {residual'0} (fun (_x: t_Option_Item) -> [ &_4 <- _x ] s4)
       | s4 = bb28 ]
     | bb19 = s0
       [ s0 = elim_Continue'0 {_21} (fun (r0: t_Item) -> [ &val''0 <- r0 ] s1)
@@ -1327,15 +1327,15 @@ module M_impl_DoubleEndedIterator_for_Chain_A_B__next_back (* <Chain<A, B> as co
     | & x: t_Option_Item = Any.any_l ()
     | & _6: MutBorrow.t t_B = Any.any_l ()
     | & _7: MutBorrow.t t_B = Any.any_l ()
-    | & _8: t_ControlFlow_Option_Infallible_refmut_B = Any.any_l ()
+    | & _8: t_ControlFlow_Option_never_refmut_B = Any.any_l ()
     | & _9: t_Option_refmut_B = Any.any_l ()
     | & _10: MutBorrow.t t_Option_B = Any.any_l ()
-    | & residual: t_Option_Infallible = Any.any_l ()
+    | & residual: t_Option_never = Any.any_l ()
     | & val': MutBorrow.t t_B = Any.any_l ()
     | & _17: bool = Any.any_l ()
     | & _19: t_Option_B = Any.any_l ()
-    | & _21: t_ControlFlow_Option_Infallible_Item = Any.any_l ()
-    | & residual'0: t_Option_Infallible = Any.any_l ()
+    | & _21: t_ControlFlow_Option_never_Item = Any.any_l ()
+    | & residual'0: t_Option_never = Any.any_l ()
     | & val''0: t_Item = Any.any_l ()
     | & _28: closure0 = Any.any_l ()
     | & _29: MutBorrow.t t_Option_A = Any.any_l () ])
@@ -3314,36 +3314,36 @@ module M_impl_Iterator_for_Chain_A_B__next (* <Chain<A, B> as common::Iterator> 
         /\ self.current = Some (r.current) /\ self.final = Some (r.final)))}
       (! return {result}) ]
   
-  type t_Option_Infallible = None'2 | Some'2 ()
+  type t_Option_never = None'2 | Some'2 ()
   
-  type t_ControlFlow_Option_Infallible_refmut_A = Continue (MutBorrow.t t_A) | Break t_Option_Infallible
+  type t_ControlFlow_Option_never_refmut_A = Continue (MutBorrow.t t_A) | Break t_Option_never
   
-  predicate inv_Infallible [@inline:trivial] (_1: ()) = false
+  predicate inv_never [@inline:trivial] (_1: ()) = false
   
-  meta "rewrite_def" predicate inv_Infallible
+  meta "rewrite_def" predicate inv_never
   
-  predicate inv_Option_Infallible (_1: t_Option_Infallible)
+  predicate inv_Option_never (_1: t_Option_never)
   
-  axiom inv_axiom'1 [@rewrite]: forall _1: t_Option_Infallible [inv_Option_Infallible _1]. inv_Option_Infallible _1
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_Option_never [inv_Option_never _1]. inv_Option_never _1
       = match _1 with
         | None'2 -> true
-        | Some'2 f0 -> inv_Infallible f0
+        | Some'2 f0 -> inv_never f0
         end
   
-  predicate inv_ControlFlow_Option_Infallible_refmut_A (_1: t_ControlFlow_Option_Infallible_refmut_A)
+  predicate inv_ControlFlow_Option_never_refmut_A (_1: t_ControlFlow_Option_never_refmut_A)
   
   axiom inv_axiom'2 [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_refmut_A [inv_ControlFlow_Option_Infallible_refmut_A _1]. inv_ControlFlow_Option_Infallible_refmut_A _1
+    forall _1: t_ControlFlow_Option_never_refmut_A [inv_ControlFlow_Option_never_refmut_A _1]. inv_ControlFlow_Option_never_refmut_A _1
       = match _1 with
         | Continue f0 -> inv_refmut_A f0
-        | Break f0 -> inv_Option_Infallible f0
+        | Break f0 -> inv_Option_never f0
         end
   
-  let branch_Option_refmut_A (self: t_Option_refmut_A) (return (x: t_ControlFlow_Option_Infallible_refmut_A)) =
+  let branch_Option_refmut_A (self: t_Option_refmut_A) (return (x: t_ControlFlow_Option_never_refmut_A)) =
   {[@stop_split] [@expl:branch 'self' type invariant] inv_Option_refmut_A self}
     any
-    [ return (result: t_ControlFlow_Option_Infallible_refmut_A) ->
-    {[@stop_split] [@expl:branch_Option_refmut_A ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_Infallible_refmut_A result)
+    [ return (result: t_ControlFlow_Option_never_refmut_A) ->
+    {[@stop_split] [@expl:branch_Option_refmut_A ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_never_refmut_A result)
       /\ ([@stop_split] [@expl:branch ensures] match self with
         | Some'1 v -> result = Continue v
         | None'1 -> result = Break (None'2)
@@ -3354,17 +3354,17 @@ module M_impl_Iterator_for_Chain_A_B__next (* <Chain<A, B> as common::Iterator> 
   
   meta "rewrite_def" predicate resolve_refmut_A
   
-  predicate resolve_ControlFlow_Option_Infallible_refmut_A (_1: t_ControlFlow_Option_Infallible_refmut_A)
+  predicate resolve_ControlFlow_Option_never_refmut_A (_1: t_ControlFlow_Option_never_refmut_A)
   
   axiom resolve_axiom [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_refmut_A [resolve_ControlFlow_Option_Infallible_refmut_A _1]. resolve_ControlFlow_Option_Infallible_refmut_A _1
+    forall _1: t_ControlFlow_Option_never_refmut_A [resolve_ControlFlow_Option_never_refmut_A _1]. resolve_ControlFlow_Option_never_refmut_A _1
       = match _1 with
         | Continue x0 -> resolve_refmut_A x0
         | Break x0 -> true
         end
   
-  let elim_Break (_x: t_ControlFlow_Option_Infallible_refmut_A) (return (f0: t_Option_Infallible)) = any
-    [ _k (f0: t_Option_Infallible) -> {Break f0 = _x} (! return {f0})
+  let elim_Break (_x: t_ControlFlow_Option_never_refmut_A) (return (f0: t_Option_never)) = any
+    [ _k (f0: t_Option_never) -> {Break f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Break] match _x with
         | Break _ -> true
         | _ -> false
@@ -3397,28 +3397,28 @@ module M_impl_Iterator_for_Chain_A_B__next (* <Chain<A, B> as common::Iterator> 
         | Some'3 f0 -> inv_Item f0
         end
   
-  predicate postcondition_from_residual (self: ()) (args: t_Option_Infallible) (result: t_Option_Item) =
+  predicate postcondition_from_residual (self: ()) (args: t_Option_never) (result: t_Option_Item) =
     let residual = args in inv_Option_Item result /\ result = None'3
   
   meta "rewrite_def" predicate postcondition_from_residual
   
-  let from_residual_Option_Item (residual: t_Option_Infallible) (return (x: t_Option_Item)) =
-  {[@stop_split] [@expl:from_residual 'residual' type invariant] inv_Option_Infallible residual}
+  let from_residual_Option_Item (residual: t_Option_never) (return (x: t_Option_Item)) =
+  {[@stop_split] [@expl:from_residual 'residual' type invariant] inv_Option_never residual}
     any
     [ return (result: t_Option_Item) ->
     {[@stop_split] [@expl:from_residual_Option_Item ensures] ([@stop_split] [@expl:from_residual result type invariant] inv_Option_Item result)
       /\ ([@stop_split] [@expl:from_residual ensures] result = None'3)}
       (! return {result}) ]
   
-  let residual_into_try_type_Option_Infallible (r: t_Option_Infallible) (return (x: t_Option_Item)) =
-  {[@stop_split] [@expl:residual_into_try_type 'r' type invariant] inv_Option_Infallible r}
+  let residual_into_try_type_Option_never (r: t_Option_never) (return (x: t_Option_Item)) =
+  {[@stop_split] [@expl:residual_into_try_type 'r' type invariant] inv_Option_never r}
     any
     [ return (result: t_Option_Item) ->
-    {[@stop_split] [@expl:residual_into_try_type_Option_Infallible ensures] ([@stop_split] [@expl:residual_into_try_type result type invariant] inv_Option_Item result)
+    {[@stop_split] [@expl:residual_into_try_type_Option_never ensures] ([@stop_split] [@expl:residual_into_try_type result type invariant] inv_Option_Item result)
       /\ ([@stop_split] [@expl:residual_into_try_type ensures] postcondition_from_residual () r result)}
       (! return {result}) ]
   
-  let elim_Continue (_x: t_ControlFlow_Option_Infallible_refmut_A) (return (f0: MutBorrow.t t_A)) = any
+  let elim_Continue (_x: t_ControlFlow_Option_never_refmut_A) (return (f0: MutBorrow.t t_A)) = any
     [ _k (f0: MutBorrow.t t_A) -> {Continue f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Continue] match _x with
         | Continue _ -> true
@@ -3478,22 +3478,22 @@ module M_impl_Iterator_for_Chain_A_B__next (* <Chain<A, B> as common::Iterator> 
         | Some x0 -> resolve_A x0
         end
   
-  type t_ControlFlow_Option_Infallible_Item = Continue'0 t_Item | Break'0 t_Option_Infallible
+  type t_ControlFlow_Option_never_Item = Continue'0 t_Item | Break'0 t_Option_never
   
-  predicate inv_ControlFlow_Option_Infallible_Item (_1: t_ControlFlow_Option_Infallible_Item)
+  predicate inv_ControlFlow_Option_never_Item (_1: t_ControlFlow_Option_never_Item)
   
   axiom inv_axiom'4 [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_Item [inv_ControlFlow_Option_Infallible_Item _1]. inv_ControlFlow_Option_Infallible_Item _1
+    forall _1: t_ControlFlow_Option_never_Item [inv_ControlFlow_Option_never_Item _1]. inv_ControlFlow_Option_never_Item _1
       = match _1 with
         | Continue'0 f0 -> inv_Item f0
-        | Break'0 f0 -> inv_Option_Infallible f0
+        | Break'0 f0 -> inv_Option_never f0
         end
   
-  let branch_Option_Item (self: t_Option_Item) (return (x: t_ControlFlow_Option_Infallible_Item)) =
+  let branch_Option_Item (self: t_Option_Item) (return (x: t_ControlFlow_Option_never_Item)) =
   {[@stop_split] [@expl:branch 'self' type invariant] inv_Option_Item self}
     any
-    [ return (result: t_ControlFlow_Option_Infallible_Item) ->
-    {[@stop_split] [@expl:branch_Option_Item ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_Infallible_Item result)
+    [ return (result: t_ControlFlow_Option_never_Item) ->
+    {[@stop_split] [@expl:branch_Option_Item ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_never_Item result)
       /\ ([@stop_split] [@expl:branch ensures] match self with
         | Some'3 v -> result = Continue'0 v
         | None'3 -> result = Break'0 (None'2)
@@ -3502,24 +3502,24 @@ module M_impl_Iterator_for_Chain_A_B__next (* <Chain<A, B> as common::Iterator> 
   
   predicate resolve_Item (_1: t_Item)
   
-  predicate resolve_ControlFlow_Option_Infallible_Item (_1: t_ControlFlow_Option_Infallible_Item)
+  predicate resolve_ControlFlow_Option_never_Item (_1: t_ControlFlow_Option_never_Item)
   
   axiom resolve_axiom'1 [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_Item [resolve_ControlFlow_Option_Infallible_Item _1]. resolve_ControlFlow_Option_Infallible_Item _1
+    forall _1: t_ControlFlow_Option_never_Item [resolve_ControlFlow_Option_never_Item _1]. resolve_ControlFlow_Option_never_Item _1
       = match _1 with
         | Continue'0 x0 -> resolve_Item x0
         | Break'0 x0 -> true
         end
   
-  let elim_Break'0 (_x: t_ControlFlow_Option_Infallible_Item) (return (f0: t_Option_Infallible)) = any
-    [ _k (f0: t_Option_Infallible) -> {Break'0 f0 = _x} (! return {f0})
+  let elim_Break'0 (_x: t_ControlFlow_Option_never_Item) (return (f0: t_Option_never)) = any
+    [ _k (f0: t_Option_never) -> {Break'0 f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Break] match _x with
         | Break'0 _ -> true
         | _ -> false
         end}
       any) ]
   
-  let elim_Continue'0 (_x: t_ControlFlow_Option_Infallible_Item) (return (f0: t_Item)) = any
+  let elim_Continue'0 (_x: t_ControlFlow_Option_never_Item) (return (f0: t_Item)) = any
     [ _k (f0: t_Item) -> {Continue'0 f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Continue] match _x with
         | Continue'0 _ -> true
@@ -3585,22 +3585,22 @@ module M_impl_Iterator_for_Chain_A_B__next (* <Chain<A, B> as common::Iterator> 
         /\ self.current = Some'0 (r.current) /\ self.final = Some'0 (r.final)))}
       (! return {result}) ]
   
-  type t_ControlFlow_Option_Infallible_refmut_B = Continue'1 (MutBorrow.t t_B) | Break'1 t_Option_Infallible
+  type t_ControlFlow_Option_never_refmut_B = Continue'1 (MutBorrow.t t_B) | Break'1 t_Option_never
   
-  predicate inv_ControlFlow_Option_Infallible_refmut_B (_1: t_ControlFlow_Option_Infallible_refmut_B)
+  predicate inv_ControlFlow_Option_never_refmut_B (_1: t_ControlFlow_Option_never_refmut_B)
   
   axiom inv_axiom'7 [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_refmut_B [inv_ControlFlow_Option_Infallible_refmut_B _1]. inv_ControlFlow_Option_Infallible_refmut_B _1
+    forall _1: t_ControlFlow_Option_never_refmut_B [inv_ControlFlow_Option_never_refmut_B _1]. inv_ControlFlow_Option_never_refmut_B _1
       = match _1 with
         | Continue'1 f0 -> inv_refmut_B f0
-        | Break'1 f0 -> inv_Option_Infallible f0
+        | Break'1 f0 -> inv_Option_never f0
         end
   
-  let branch_Option_refmut_B (self: t_Option_refmut_B) (return (x: t_ControlFlow_Option_Infallible_refmut_B)) =
+  let branch_Option_refmut_B (self: t_Option_refmut_B) (return (x: t_ControlFlow_Option_never_refmut_B)) =
   {[@stop_split] [@expl:branch 'self' type invariant] inv_Option_refmut_B self}
     any
-    [ return (result: t_ControlFlow_Option_Infallible_refmut_B) ->
-    {[@stop_split] [@expl:branch_Option_refmut_B ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_Infallible_refmut_B result)
+    [ return (result: t_ControlFlow_Option_never_refmut_B) ->
+    {[@stop_split] [@expl:branch_Option_refmut_B ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_never_refmut_B result)
       /\ ([@stop_split] [@expl:branch ensures] match self with
         | Some'4 v -> result = Continue'1 v
         | None'4 -> result = Break'1 (None'2)
@@ -3611,17 +3611,17 @@ module M_impl_Iterator_for_Chain_A_B__next (* <Chain<A, B> as common::Iterator> 
   
   meta "rewrite_def" predicate resolve_refmut_B
   
-  predicate resolve_ControlFlow_Option_Infallible_refmut_B (_1: t_ControlFlow_Option_Infallible_refmut_B)
+  predicate resolve_ControlFlow_Option_never_refmut_B (_1: t_ControlFlow_Option_never_refmut_B)
   
   axiom resolve_axiom'2 [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_refmut_B [resolve_ControlFlow_Option_Infallible_refmut_B _1]. resolve_ControlFlow_Option_Infallible_refmut_B _1
+    forall _1: t_ControlFlow_Option_never_refmut_B [resolve_ControlFlow_Option_never_refmut_B _1]. resolve_ControlFlow_Option_never_refmut_B _1
       = match _1 with
         | Continue'1 x0 -> resolve_refmut_B x0
         | Break'1 x0 -> true
         end
   
-  let elim_Break'1 (_x: t_ControlFlow_Option_Infallible_refmut_B) (return (f0: t_Option_Infallible)) = any
-    [ _k (f0: t_Option_Infallible) -> {Break'1 f0 = _x} (! return {f0})
+  let elim_Break'1 (_x: t_ControlFlow_Option_never_refmut_B) (return (f0: t_Option_never)) = any
+    [ _k (f0: t_Option_never) -> {Break'1 f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Break] match _x with
         | Break'1 _ -> true
         | _ -> false
@@ -3640,7 +3640,7 @@ module M_impl_Iterator_for_Chain_A_B__next (* <Chain<A, B> as common::Iterator> 
   
   meta "rewrite_def" predicate resolve_closure0
   
-  let elim_Continue'1 (_x: t_ControlFlow_Option_Infallible_refmut_B) (return (f0: MutBorrow.t t_B)) = any
+  let elim_Continue'1 (_x: t_ControlFlow_Option_never_refmut_B) (return (f0: MutBorrow.t t_B)) = any
     [ _k (f0: MutBorrow.t t_B) -> {Continue'1 f0 = _x} (! return {f0})
     | _chk -> (! {[@expl:elim Continue] match _x with
         | Continue'1 _ -> true
@@ -3699,14 +3699,14 @@ module M_impl_Iterator_for_Chain_A_B__next (* <Chain<A, B> as common::Iterator> 
             [ &self <- { c0 = { self.c0 with current = _bor.final } } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_Option_B self.c0.current} any) ]
       | s1 = as_mut_B {_6} (fun (_x: t_Option_refmut_B) -> [ &_5 <- _x ] s2)
-      | s2 = branch_Option_refmut_B {_5} (fun (_x: t_ControlFlow_Option_Infallible_refmut_B) -> [ &_4 <- _x ] s3)
+      | s2 = branch_Option_refmut_B {_5} (fun (_x: t_ControlFlow_Option_never_refmut_B) -> [ &_4 <- _x ] s3)
       | s3 = any
         [ br0 (x0: MutBorrow.t t_B) -> {_4 = Continue'1 x0} (! bb5)
-        | br1 (x0: t_Option_Infallible) -> {_4 = Break'1 x0} (! bb4) ] ]
+        | br1 (x0: t_Option_never) -> {_4 = Break'1 x0} (! bb4) ] ]
     | bb4 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_Infallible_refmut_B _4} any) ]
-      | s1 = -{resolve_ControlFlow_Option_Infallible_refmut_B _4}- s2
-      | s2 = elim_Break'1 {_4} (fun (r0: t_Option_Infallible) -> [ &residual <- r0 ] s3)
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_never_refmut_B _4} any) ]
+      | s1 = -{resolve_ControlFlow_Option_never_refmut_B _4}- s2
+      | s2 = elim_Break'1 {_4} (fun (r0: t_Option_never) -> [ &residual <- r0 ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_closure0 self} any) ]
       | s4 = -{resolve_closure0 self}- s5
       | s5 = from_residual_Option_Item {residual} (fun (_x: t_Option_Item) -> [ &_ret <- _x ] s6)
@@ -3728,10 +3728,10 @@ module M_impl_Iterator_for_Chain_A_B__next (* <Chain<A, B> as common::Iterator> 
     | & self: closure0 = self
     | & _2: MutBorrow.t t_B = Any.any_l ()
     | & _3: MutBorrow.t t_B = Any.any_l ()
-    | & _4: t_ControlFlow_Option_Infallible_refmut_B = Any.any_l ()
+    | & _4: t_ControlFlow_Option_never_refmut_B = Any.any_l ()
     | & _5: t_Option_refmut_B = Any.any_l ()
     | & _6: MutBorrow.t t_Option_B = Any.any_l ()
-    | & residual: t_Option_Infallible = Any.any_l ()
+    | & residual: t_Option_never = Any.any_l ()
     | & val': MutBorrow.t t_B = Any.any_l () ]
     [ return (result: t_Option_Item) -> {[@stop_split] [@expl:closure result type invariant] inv_Option_Item result}
       return {result} ]
@@ -3832,15 +3832,15 @@ module M_impl_Iterator_for_Chain_A_B__next (* <Chain<A, B> as common::Iterator> 
             [ &self <- { self with current = { self.current with a = _bor.final } } ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_Option_A self.current.a} any) ]
       | s1 = as_mut_A {_10} (fun (_x: t_Option_refmut_A) -> [ &_9 <- _x ] s2)
-      | s2 = branch_Option_refmut_A {_9} (fun (_x: t_ControlFlow_Option_Infallible_refmut_A) -> [ &_8 <- _x ] s3)
+      | s2 = branch_Option_refmut_A {_9} (fun (_x: t_ControlFlow_Option_never_refmut_A) -> [ &_8 <- _x ] s3)
       | s3 = any
         [ br0 (x0: MutBorrow.t t_A) -> {_8 = Continue x0} (! bb5)
-        | br1 (x0: t_Option_Infallible) -> {_8 = Break x0} (! bb4) ] ]
+        | br1 (x0: t_Option_never) -> {_8 = Break x0} (! bb4) ] ]
     | bb4 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_Infallible_refmut_A _8} any) ]
-      | s1 = -{resolve_ControlFlow_Option_Infallible_refmut_A _8}- s2
-      | s2 = elim_Break {_8} (fun (r0: t_Option_Infallible) -> [ &residual <- r0 ] s3)
-      | s3 = residual_into_try_type_Option_Infallible {residual} (fun (_x: t_Option_Item) -> [ &_4 <- _x ] s4)
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_never_refmut_A _8} any) ]
+      | s1 = -{resolve_ControlFlow_Option_never_refmut_A _8}- s2
+      | s2 = elim_Break {_8} (fun (r0: t_Option_never) -> [ &residual <- r0 ] s3)
+      | s3 = residual_into_try_type_Option_never {residual} (fun (_x: t_Option_Item) -> [ &_4 <- _x ] s4)
       | s4 = bb28 ]
     | bb5 = s0
       [ s0 = elim_Continue {_8} (fun (r0: MutBorrow.t t_A) -> [ &val' <- r0 ] s1)
@@ -3861,15 +3861,15 @@ module M_impl_Iterator_for_Chain_A_B__next (* <Chain<A, B> as common::Iterator> 
       | s3 = [ &self <- { self with current = { self.current with a = _19 } } ] s4
       | s4 = bb15 ]
     | bb15 = s0
-      [ s0 = branch_Option_Item {x} (fun (_x: t_ControlFlow_Option_Infallible_Item) -> [ &_21 <- _x ] s1)
+      [ s0 = branch_Option_Item {x} (fun (_x: t_ControlFlow_Option_never_Item) -> [ &_21 <- _x ] s1)
       | s1 = any
         [ br0 (x0: t_Item) -> {_21 = Continue'0 x0} (! bb19)
-        | br1 (x0: t_Option_Infallible) -> {_21 = Break'0 x0} (! bb18) ] ]
+        | br1 (x0: t_Option_never) -> {_21 = Break'0 x0} (! bb18) ] ]
     | bb18 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_Infallible_Item _21} any) ]
-      | s1 = -{resolve_ControlFlow_Option_Infallible_Item _21}- s2
-      | s2 = elim_Break'0 {_21} (fun (r0: t_Option_Infallible) -> [ &residual'0 <- r0 ] s3)
-      | s3 = residual_into_try_type_Option_Infallible {residual'0} (fun (_x: t_Option_Item) -> [ &_4 <- _x ] s4)
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_never_Item _21} any) ]
+      | s1 = -{resolve_ControlFlow_Option_never_Item _21}- s2
+      | s2 = elim_Break'0 {_21} (fun (r0: t_Option_never) -> [ &residual'0 <- r0 ] s3)
+      | s3 = residual_into_try_type_Option_never {residual'0} (fun (_x: t_Option_Item) -> [ &_4 <- _x ] s4)
       | s4 = bb28 ]
     | bb19 = s0
       [ s0 = elim_Continue'0 {_21} (fun (r0: t_Item) -> [ &val''0 <- r0 ] s1)
@@ -3892,15 +3892,15 @@ module M_impl_Iterator_for_Chain_A_B__next (* <Chain<A, B> as common::Iterator> 
     | & x: t_Option_Item = Any.any_l ()
     | & _6: MutBorrow.t t_A = Any.any_l ()
     | & _7: MutBorrow.t t_A = Any.any_l ()
-    | & _8: t_ControlFlow_Option_Infallible_refmut_A = Any.any_l ()
+    | & _8: t_ControlFlow_Option_never_refmut_A = Any.any_l ()
     | & _9: t_Option_refmut_A = Any.any_l ()
     | & _10: MutBorrow.t t_Option_A = Any.any_l ()
-    | & residual: t_Option_Infallible = Any.any_l ()
+    | & residual: t_Option_never = Any.any_l ()
     | & val': MutBorrow.t t_A = Any.any_l ()
     | & _17: bool = Any.any_l ()
     | & _19: t_Option_A = Any.any_l ()
-    | & _21: t_ControlFlow_Option_Infallible_Item = Any.any_l ()
-    | & residual'0: t_Option_Infallible = Any.any_l ()
+    | & _21: t_ControlFlow_Option_never_Item = Any.any_l ()
+    | & residual'0: t_Option_never = Any.any_l ()
     | & val''0: t_Item = Any.any_l ()
     | & _28: closure0 = Any.any_l ()
     | & _29: MutBorrow.t t_Option_B = Any.any_l () ])

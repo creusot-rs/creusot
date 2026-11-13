@@ -1,7 +1,7 @@
 #![cfg_attr(
     feature = "creusot",
     feature(
-        box_patterns,
+        deref_patterns,
         extend_one,
         hash_set_entry,
         proc_macro_def_site,
