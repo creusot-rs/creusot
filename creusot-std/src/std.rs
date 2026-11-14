@@ -31,6 +31,7 @@ mod tuples;
 
 #[cfg(feature = "std")]
 pub mod collections {
+    pub mod btree_map;
     pub mod hash_map;
     pub mod hash_set;
 }

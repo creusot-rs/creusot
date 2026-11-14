@@ -1,0 +1,24 @@
+(* <std::collections::btree_map::Keys<'a, K, V> as std::iter::DoubleEndedIteratorSpec> *)
+
+use seq.Seq
+use seq.Reverse
+
+type t_Keys_K_V
+
+type t_K
+
+function view_Keys_K_V (self: t_Keys_K_V) : Seq.seq t_K
+
+predicate produces_back_Keys_K_V (self: t_Keys_K_V) (visited: Seq.seq t_K) (tl: t_Keys_K_V) =
+  view_Keys_K_V self = Seq.(++) (view_Keys_K_V tl) (Reverse.reverse visited)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall a: t_Keys_K_V, ab: Seq.seq t_K, b: t_Keys_K_V, bc: Seq.seq t_K, c: t_Keys_K_V. produces_back_Keys_K_V a ab b
+    -> produces_back_Keys_K_V b bc c
+    -> produces_back_Keys_K_V a ab b
+    /\ produces_back_Keys_K_V b bc c
+    /\ (forall result: (). produces_back_Keys_K_V a (Seq.(++) ab bc) c -> produces_back_Keys_K_V a (Seq.(++) ab bc) c)

@@ -1,0 +1,24 @@
+(* <std::collections::btree_map::IntoIter<K, V, A> as std::iter::IteratorSpec> *)
+
+use seq.Seq
+
+type t_IntoIter_K_V_A
+
+type t_K
+
+type t_V
+
+type tup2_K_V = { f0: t_K; f1: t_V }
+
+function view_IntoIter_K_V_A (self: t_IntoIter_K_V_A) : Seq.seq tup2_K_V
+
+predicate produces_IntoIter_K_V_A (self: t_IntoIter_K_V_A) (visited: Seq.seq tup2_K_V) (tl: t_IntoIter_K_V_A) =
+  view_IntoIter_K_V_A self = Seq.(++) visited (view_IntoIter_K_V_A tl)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall self: t_IntoIter_K_V_A. forall result: (). produces_IntoIter_K_V_A self (Seq.empty: Seq.seq tup2_K_V) self
+      -> produces_IntoIter_K_V_A self (Seq.empty: Seq.seq tup2_K_V) self
