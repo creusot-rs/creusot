@@ -26,7 +26,7 @@
       hash = sha256;
     };
 
-    patches = [];
+    patches = [ ];
 
     postPatch = ''
       cp ${writeText "fix-pkg-config-paths.patch" ''
