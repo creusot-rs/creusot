@@ -3,7 +3,8 @@ use crate::{
     ctx::{HasTyCtxt, TranslationCtx},
 };
 use either::Either;
-use rustc_borrowck::consumers::{BorrowIndex, BorrowSet, PlaceExt, RegionInferenceContext};
+use rustc_borrowck::consumers::{BorrowIndex, BorrowSet, PlaceExt};
+use rustc_data_structures::fx::FxIndexMap;
 
 use rustc_index::bit_set::MixedBitSet;
 use rustc_middle::{
@@ -66,7 +67,7 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
         ctx: &'a TranslationCtx<'tcx>,
         body: &'a Body<'tcx>,
         borrow_set: &'a BorrowSet<'tcx>,
-        regioncx: &'a RegionInferenceContext<'tcx>,
+        borrows_out_of_scope_at_location: &'a FxIndexMap<Location, Vec<BorrowIndex>>,
         move_data: &'a MoveData<'tcx>,
     ) -> Resolver<'a, 'tcx> {
         let uninit = MaybeUninitializedPlaces::new(ctx.tcx, body, move_data)
@@ -80,7 +81,7 @@ impl<'a, 'tcx> Resolver<'a, 'tcx> {
             .iterate_to_fixpoint(ctx.tcx, body, None)
             .into_results_cursor(body);
 
-        let borrows = Borrows::new(ctx.tcx, body, regioncx, borrow_set)
+        let borrows = Borrows::new(ctx.tcx, body, borrows_out_of_scope_at_location, borrow_set)
             .iterate_to_fixpoint(ctx.tcx, body, None)
             .into_results_cursor(body);
 

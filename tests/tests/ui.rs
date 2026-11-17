@@ -52,6 +52,10 @@ struct Args {
     /// Run #[erasure] checks on creusot-std (and only that)
     #[clap(long)]
     erasure_check: bool,
+    /// Number of threads for rustc's parallel frontend (`-Zthreads`) in each test.
+    /// With more than one thread, the order of diagnostics is nondeterministic.
+    #[clap(long, default_value_t = 1)]
+    threads: usize,
     /// Only run tests which contain one of these strings
     filter: Vec<String>,
 }
@@ -103,12 +107,11 @@ fn main() -> ExitCode {
         (1, 0)
     };
 
-    let (fail1, blessed1, total1) = should_fail(&["tests/should_fail/**/*.rs"], &args, |p| {
-        run_creusot(p, &paths, args.with_spans)
-    });
+    let (fail1, blessed1, total1) =
+        should_fail(&["tests/should_fail/**/*.rs"], &args, |p| run_creusot(p, &paths, &args));
     let (fail2, blessed2, total2) =
         should_succeed(&["examples/**/*.rs", "tests/should_succeed/**/*.rs"], &args, |p| {
-            run_creusot(p, &paths, args.with_spans)
+            run_creusot(p, &paths, &args)
         });
 
     total += total1 + total2;
@@ -416,11 +419,7 @@ fn build_creusot_std(
     build.output()
 }
 
-fn run_creusot(
-    file: &Path,
-    paths: &CreusotPaths,
-    with_spans: bool,
-) -> Option<std::process::Command> {
+fn run_creusot(file: &Path, paths: &CreusotPaths, args: &Args) -> Option<std::process::Command> {
     // Magic comment with instructions for creusot
     let header_line = BufReader::new(File::open(file).unwrap()).lines().next().unwrap().unwrap();
     if header_line.contains("UISKIP") {
@@ -431,7 +430,7 @@ fn run_creusot(
     cmd.current_dir(file.parent().unwrap());
 
     // Find comment chunks of the form CREUSOT_ARG=ARGUMENT. Does not support spaces in arguments currently (would require real parser)
-    let args: Vec<_> = header_line
+    let header_args: Vec<_> = header_line
         .split(" ")
         .filter_map(|chunk| {
             let (first, rest) = chunk.split_once("=")?;
@@ -442,6 +441,7 @@ fn run_creusot(
     cmd.args(["--diagnostic-width=100", "-Zwrite-long-types-to-disk=no"]);
     cmd.args(["--edition=2024", "-Zno-codegen", "--crate-type=lib"]);
     cmd.args(["--extern", &format!("creusot_std={}", paths.rmeta.display())]);
+    cmd.arg(format!("-Zthreads={}", args.threads));
     cmd.arg(file.file_name().unwrap());
 
     for path in paths.libs.iter() {
@@ -458,14 +458,14 @@ fn run_creusot(
         // we will write the coma output next to the .rs file
         "--spans-relative-to=.",
     ]);
-    if !args.iter().any(|arg| arg.starts_with("--span-mode")) {
-        if with_spans {
+    if !header_args.iter().any(|arg| arg.starts_with("--span-mode")) {
+        if args.with_spans {
             cmd.arg("--span-mode=relative");
         } else {
             cmd.arg("--span-mode=off");
         }
     }
-    cmd.args(args);
+    cmd.args(header_args);
     cmd.args(["--creusot-extern", &format!("creusot_std={}", paths.cmeta.display())]);
 
     Some(cmd)

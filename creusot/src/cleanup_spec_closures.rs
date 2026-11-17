@@ -10,17 +10,18 @@ use rustc_middle::{
     },
     ty::TyCtxt,
 };
-use std::{cell::RefCell, collections::HashMap};
+use std::{
+    collections::HashMap,
+    sync::{LazyLock, Mutex},
+};
 
-thread_local! {
-    pub static PEARLITE_MIR:
-        RefCell<HashMap<LocalDefId, IndexVec<BasicBlock, BasicBlockData<'static>>>> =
-        RefCell::new(HashMap::new());
+// May be written and read by `mir_built` and `check_liveness` on different threads.
+static PEARLITE_MIR: LazyLock<
+    Mutex<HashMap<LocalDefId, IndexVec<BasicBlock, BasicBlockData<'static>>>>,
+> = LazyLock::new(Default::default);
 
-    pub static REMOVED_MIR:
-        RefCell<HashMap<LocalDefId, RemovedMir<'static>>> =
-        RefCell::new(HashMap::new());
-}
+static REMOVED_MIR: LazyLock<Mutex<HashMap<LocalDefId, RemovedMir<'static>>>> =
+    LazyLock::new(Default::default);
 
 pub(crate) fn restore_mir_for_liveness_check<'tcx>(tcx: TyCtxt<'tcx>, local_id: LocalDefId) {
     let def_id = local_id.to_def_id();
@@ -33,16 +34,13 @@ pub(crate) fn restore_mir_for_liveness_check<'tcx>(tcx: TyCtxt<'tcx>, local_id: 
         if is_opaque(tcx, def_id) {
             return;
         }
-        PEARLITE_MIR.with(|map| {
-            // SAFETY: The target lifetime 'tcx is the actual lifetime of the data before it was put in PEARLITE_MIR.
-            *mir.basic_blocks_mut() =
-                unsafe { std::mem::transmute(map.borrow_mut().remove(&local_id).unwrap()) };
-        });
+        let bbs = PEARLITE_MIR.lock().unwrap().remove(&local_id).unwrap();
+        // SAFETY: The target lifetime 'tcx is the actual lifetime of the data before it was put in PEARLITE_MIR.
+        *mir.basic_blocks_mut() = unsafe { std::mem::transmute(bbs) };
     } else {
         // SAFETY: The target lifetime 'tcx is the actual lifetime of the data before it was put in PEARLITE_MIR.
-        let removed = REMOVED_MIR.with(|map| unsafe {
-            std::mem::transmute(map.borrow_mut().remove(&local_id).unwrap())
-        });
+        let removed = REMOVED_MIR.lock().unwrap().remove(&local_id).unwrap();
+        let removed = unsafe { std::mem::transmute(removed) };
         restore_statements(&mut mir, removed);
     }
 }
@@ -80,11 +78,9 @@ fn cleanup_spec_closures_<'tcx>(
         trace!("replacing function body");
         let bb = std::mem::replace(body.basic_blocks_mut(), make_loop());
         if remember {
-            PEARLITE_MIR.with(|map| {
-                // SAFETY: Consumers cast the lifetime back to 'tcx
-                let bb = unsafe { std::mem::transmute(bb) };
-                map.borrow_mut().insert(local_id, bb);
-            });
+            // SAFETY: Consumers cast the lifetime back to 'tcx
+            let bb = unsafe { std::mem::transmute(bb) };
+            PEARLITE_MIR.lock().unwrap().insert(local_id, bb);
         }
     } else {
         let mut cleanup = NoTranslateNoMoves::new(tcx);
@@ -92,11 +88,9 @@ fn cleanup_spec_closures_<'tcx>(
         let closures = cleanup.closures;
         let assigns = cleanup_statements(body, &cleanup.unused);
         if remember {
-            REMOVED_MIR.with(|map| {
-                // SAFETY: Consumers cast the lifetime back to 'tcx
-                let removed = unsafe { std::mem::transmute(RemovedMir { closures, assigns }) };
-                map.borrow_mut().insert(local_id, removed);
-            });
+            // SAFETY: Consumers cast the lifetime back to 'tcx
+            let removed = unsafe { std::mem::transmute(RemovedMir { closures, assigns }) };
+            REMOVED_MIR.lock().unwrap().insert(local_id, removed);
         }
     }
 }
