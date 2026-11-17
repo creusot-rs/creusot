@@ -8,7 +8,9 @@ extern crate rustc_session;
 extern crate log;
 
 use creusot::callbacks::*;
-use creusot_args::{CREUSOT_RUSTC_ARGS, options::CreusotArgs};
+use creusot_args::{
+    CREUSOT_RUSTC_ARGS, DEFAULT_FRONTEND_THREADS, options::CreusotArgs, sets_frontend_threads,
+};
 use rustc_driver::run_compiler;
 use rustc_session::{EarlyDiagCtxt, config::ErrorOutputType};
 use std::env;
@@ -75,6 +77,9 @@ fn setup_plugin() {
         };
         for &arg in CREUSOT_RUSTC_ARGS {
             args.push(arg.to_owned());
+        }
+        if !sets_frontend_threads(&args) {
+            args.push(DEFAULT_FRONTEND_THREADS.to_owned());
         }
         debug!("creusot args={:?}", args);
         run_compiler(&args, &mut ToWhy::new(opts))

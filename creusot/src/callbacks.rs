@@ -5,7 +5,10 @@ use rustc_hir::def_id::{DefId, LocalDefId};
 use rustc_interface::{Config, interface::Compiler};
 use rustc_middle::{mir, ty::TyCtxt};
 
-use std::{cell::RefCell, collections::HashMap, thread_local};
+use std::{
+    collections::HashMap,
+    sync::{LazyLock, Mutex},
+};
 
 use crate::{
     cleanup_spec_closures::*,
@@ -60,11 +63,21 @@ impl ToWhy {
     }
 }
 
-thread_local! {
-    pub static MIR_BODIES:
-        RefCell<HashMap<LocalDefId, BodyWithBorrowckFacts<'static>>> =
-        RefCell::new(HashMap::new());
-}
+// Global (not thread-local) because rustc's parallel frontend may run `mir_borrowck`
+// on a different thread than the one that reads the bodies.
+// Bodies are boxed so that references returned by `get_body` remain valid when the map grows.
+// Entries are never removed.
+static MIR_BODIES: LazyLock<Mutex<HashMap<LocalDefId, SendBody>>> =
+    LazyLock::new(Default::default);
+
+struct SendBody(Box<BodyWithBorrowckFacts<'static>>);
+
+// SAFETY: `BodyWithBorrowckFacts` is not `Send` because it contains `Rc`s.
+// Bodies are inserted by `mir_borrowck` (possibly on a worker thread of the parallel frontend)
+// and are never touched again by that thread. They are only accessed by Creusot
+// after `tcx.analysis()` returns, from a single thread, so the `Rc` counts are
+// never modified concurrently.
+unsafe impl Send for SendBody {}
 
 impl Callbacks for ToWhy {
     fn config(&mut self, config: &mut Config) {
@@ -91,6 +104,11 @@ impl Callbacks for ToWhy {
             // We reintroduce the MIR of Pearlite code for this analysis.
             // Then we remove it again for good.
             providers.queries.check_liveness = |tcx, local_id| {
+                // With the parallel frontend, `check_liveness` of a closure may run concurrently
+                // with the borrow checking of its typeck root (which also borrow checks the closure).
+                // Make sure borrow checking is done before temporarily restoring Pearlite MIR,
+                // otherwise the borrow checker could see it.
+                tcx.ensure_ok().mir_borrowck(tcx.typeck_root_def_id_local(local_id));
                 restore_mir_for_liveness_check(tcx, local_id);
                 let value = (rustc_interface::DEFAULT_QUERY_PROVIDERS.queries.check_liveness)(
                     tcx, local_id,
@@ -140,8 +158,8 @@ fn copy_mir_bodies<'tcx>(tcx: TyCtxt<'tcx>, def_id: LocalDefId) {
     let bodies_with_facts: FxHashMap<LocalDefId, BodyWithBorrowckFacts<'static>> =
         unsafe { std::mem::transmute(bodies_with_facts) };
 
-    MIR_BODIES.with(|state| {
-        let mut map = state.borrow_mut();
+    {
+        let mut map = MIR_BODIES.lock().unwrap();
         for (def_id, mut body) in bodies_with_facts {
             // We need to remove false edges. They are used in compilation of pattern matchings
             // in ways that may result in move paths that are marked live and uninitilized at the
@@ -154,12 +172,12 @@ fn copy_mir_bodies<'tcx>(tcx: TyCtxt<'tcx>, def_id: LocalDefId) {
                     term.kind = mir::TerminatorKind::Goto { target: real_target };
                 }
             }
-            assert!(map.insert(def_id, body).is_none());
+            assert!(map.insert(def_id, SendBody(Box::new(body))).is_none());
         }
-    });
+    }
 }
 
-/// Try to retrieve the promoted MIR for a body from a thread local cache.
+/// Try to retrieve the promoted MIR for a body from a global cache.
 /// The cache is populated when rustc runs the `mir_borrowck` query.
 pub fn get_body<'tcx, 'a>(
     tcx: TyCtxt<'tcx>,
@@ -179,10 +197,10 @@ pub fn get_body<'tcx, 'a>(
 
 /// Just try to `get` from `MIR_BODIES`
 fn try_get_body<'tcx, 'a>(def_id: LocalDefId) -> Option<&'a BodyWithBorrowckFacts<'tcx>> {
-    MIR_BODIES.with(|state| {
-        let map = state.borrow();
-        map.get(&def_id).map(|body| unsafe { std::mem::transmute(body) })
-    })
+    let map = MIR_BODIES.lock().unwrap();
+    // SAFETY: bodies are boxed and never removed, so the reference outlives the lock guard.
+    // The 'static lifetime is cast back to the actual lifetime 'tcx.
+    map.get(&def_id).map(|body| unsafe { std::mem::transmute(&*body.0) })
 }
 
 /// Callback for libraries that don't depend on creusot-std, to store metadata needed in later passes

@@ -94,11 +94,11 @@ fn main() {
     let (mut failed, mut total) =
         (if creusot_std_success { 0 } else { 1 }, if test_creusot_std { 1 } else { 0 });
     let (fail1, total1) = should_fail(&["tests/should_fail/**/*.rs"], &args, |p| {
-        run_creusot(p, &paths, args.with_spans)
+        run_creusot(p, &paths, args.with_spans, true)
     });
     let (fail2, total2) =
         should_succeed(&["examples/**/*.rs", "tests/should_succeed/**/*.rs"], &args, |p| {
-            run_creusot(p, &paths, args.with_spans)
+            run_creusot(p, &paths, args.with_spans, false)
         });
 
     total += total1 + total2;
@@ -399,6 +399,7 @@ fn run_creusot(
     file: &Path,
     paths: &CreusotPaths,
     with_spans: bool,
+    single_thread: bool,
 ) -> Option<std::process::Command> {
     // Magic comment with instructions for creusot
     let header_line = BufReader::new(File::open(file).unwrap()).lines().next().unwrap().unwrap();
@@ -421,6 +422,10 @@ fn run_creusot(
     cmd.args(["--diagnostic-width=100", "-Zwrite-long-types-to-disk=no"]);
     cmd.args(["--edition=2024", "-Zno-codegen", "--crate-type=lib"]);
     cmd.args(["--extern", &format!("creusot_std={}", paths.rlib.display())]);
+    if single_thread {
+        // The parallel frontend makes the order of diagnostics nondeterministic.
+        cmd.arg("-Zthreads=1");
+    }
     cmd.arg(file.file_name().unwrap());
 
     for path in paths.libs.iter() {
