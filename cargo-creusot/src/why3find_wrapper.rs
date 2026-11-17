@@ -319,12 +319,12 @@ fn strip_coma_str(name: &str) -> Option<&str> {
 
 /// List files under `verif/` that match at least one pattern.
 fn match_patterns(patterns: &Patterns) -> Result<Vec<PathBuf>> {
-    let dir = PathBuf::from(OUTPUT_PREFIX);
-    if !std::fs::exists(&dir).context(format!("failed to check directory '{}'", dir.display()))? {
+    let dir: &Path = OUTPUT_PREFIX.as_ref();
+    if !std::fs::exists(dir).context(format!("failed to check directory '{}'", dir.display()))? {
         Ok(vec![])
     } else {
         let mut dest = vec![];
-        match_patterns_from(patterns, &dir, &mut dest)?;
+        match_patterns_from(patterns, dir, &mut dest)?;
         Ok(dest)
     }
 }

@@ -333,7 +333,7 @@ const OUTPUT_PREFIX: &str = "verif";
 
 /// Remove dangling files in `verif/`
 fn clean(options: CleanArgs) -> Result<()> {
-    let dangling = find_dangling(&PathBuf::from(OUTPUT_PREFIX))?;
+    let dangling = find_dangling(OUTPUT_PREFIX.as_ref())?;
     if dangling.is_empty() {
         eprintln!("No dangling files found");
         return Ok(());
@@ -363,7 +363,7 @@ fn clean(options: CleanArgs) -> Result<()> {
 
 /// Print a warning if there are dangling files in `verif/`
 fn warn_if_dangling() -> Result<()> {
-    let dangling = find_dangling(&PathBuf::from(OUTPUT_PREFIX))?;
+    let dangling = find_dangling(OUTPUT_PREFIX.as_ref())?;
     if !dangling.is_empty() {
         start_warning();
         eprintln!(": found dangling files and directories:");
@@ -409,12 +409,12 @@ impl FileOrDirectory {
 
 /// Find dangling files in directory `dir`: files named `why3session.xml`, `why3shapes.gz`, and `proof.json`
 /// that are not associated with a `.coma` file.
-fn find_dangling(dir: &PathBuf) -> Result<Vec<FileOrDirectory>> {
+fn find_dangling(dir: &Path) -> Result<Vec<FileOrDirectory>> {
     if !dir.is_dir() {
         return Ok(Vec::new());
     }
     match find_dangling_rec(dir)? {
-        None => Ok(vec![Directory(dir.clone())]),
+        None => Ok(vec![Directory(dir.to_path_buf())]),
         Some(dangling) => Ok(dangling),
     }
 }
@@ -423,7 +423,7 @@ fn find_dangling(dir: &PathBuf) -> Result<Vec<FileOrDirectory>> {
 /// Return `None` if the directory `dir` contains only dangling files,
 /// otherwise there must be some non-dangling files in `dir`, return `Some` of only the dangling files and subdirectories.
 /// Assumes `dir` exists and is a directory.
-fn find_dangling_rec(dir: &PathBuf) -> Result<Option<Vec<FileOrDirectory>>> {
+fn find_dangling_rec(dir: &Path) -> Result<Option<Vec<FileOrDirectory>>> {
     let mut all_dangling = true;
     let mut dangling = Vec::new();
     let mut has_coma = None; // whether the file "{dir}.coma" exists; only check if needed.
