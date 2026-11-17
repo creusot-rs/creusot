@@ -365,6 +365,24 @@ impl<T> Seq<T> {
         pearlite! { self[..index].concat(self[index+1..]) }
     }
 
+    #[doc(hidden)]
+    #[logic(opaque)]
+    #[builtin("seq.Occ.occ")]
+    pub fn occ(
+        #[allow(unused)] item: T,
+        #[allow(unused)] this: Self,
+        #[allow(unused)] l: Int,
+        #[allow(unused)] u: Int,
+    ) -> Int {
+        dead
+    }
+
+    /// Count the number of occurrences of `item` in `self`.
+    #[logic(open)]
+    pub fn count(self, #[allow(unused)] item: T) -> Int {
+        Self::occ(item, self, 0, self.len())
+    }
+
     /// Returns `true` if `other` is a permutation of `self`.
     #[logic(open)]
     pub fn permutation_of(self, other: Self) -> bool {
