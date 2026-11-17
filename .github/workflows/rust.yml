@@ -78,9 +78,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - image: ubuntu-latest
+            arch: x86_64-linux
+          - image: macos-latest
+            arch: aarch64-darwin
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.image }}
 
     env:
       NIXPKGS_ALLOW_UNFREE: 1 # Allow the use of unfree software (Alt-Ergo)
@@ -89,14 +93,22 @@ jobs:
       actions: write # Allow to purge the cache
 
     steps:
-    - uses: actions/checkout@v5
-    - uses: nixbuild/nix-quick-install-action@v34
-
-    - uses: nix-community/cache-nix-action@v6
+    - uses: actions/checkout@v7
+    - uses: NixOS/nix-installer-action@v1
       with:
-        primary-key: nix-${{ runner.os }}-${{ hashFiles('**/flake.lock', '**/*.nix') }}
-        gc-max-store-size: 10G
-        purge: true
+        extra-conf: |
+          experimental-features = nix-command flakes
+
+    - name: Download celler
+      run: |
+        curl https://cache.creusot.rs/celler/${{ matrix.arch }} -o attic
+        install -m 755 attic /usr/local/bin/
+
+    - uses: ryanccn/attic-action@v0
+      with:
+        endpoint: "https://cache.creusot.rs/"
+        cache: "creusot"
+        token: ${{ secrets.CELLER_TOKEN }}
 
     - name: Remove rustup
       run: |
