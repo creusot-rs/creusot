@@ -76,10 +76,10 @@ fn snapshot_closure_id<'tcx>(tcx: TyCtxt<'tcx>, ty: Ty<'tcx>) -> Option<DefId> {
 impl<'tcx> Visitor<'tcx> for Closures<'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
         match rvalue {
-            Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) => {
+            Rvalue::Aggregate(AggregateKind::Closure(id, _), _) => {
                 self.closures.insert(*id);
             }
-            Rvalue::Use(Operand::Constant(box ck), _) => {
+            Rvalue::Use(Operand::Constant(ck), _) => {
                 if let Some(def_id) = snapshot_closure_id(self.tcx, ck.const_.ty()) {
                     self.closures.insert(def_id);
                 }
@@ -148,7 +148,7 @@ impl InvariantsVisitor<'_, '_> {
 
 impl<'tcx> Visitor<'tcx> for InvariantsVisitor<'_, 'tcx> {
     fn visit_rvalue(&mut self, rvalue: &Rvalue<'tcx>, loc: Location) {
-        if let &Rvalue::Aggregate(box AggregateKind::Closure(id, _), _) = rvalue {
+        if let &Rvalue::Aggregate(AggregateKind::Closure(id, _), _) = rvalue {
             let kind = if let Some(expl) = get_invariant_expl(self.ctx.tcx, id) {
                 LoopSpecKind::Invariant(expl)
             } else if is_loop_variant(self.ctx.tcx, id) {

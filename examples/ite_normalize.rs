@@ -1,5 +1,3 @@
-#![feature(allocator_api)]
-
 extern crate creusot_std;
 
 use creusot_std::prelude::*;

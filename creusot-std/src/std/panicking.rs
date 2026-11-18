@@ -46,6 +46,22 @@ extern_spec! {
                 right: &U,
                 args: Option<Arguments<'_>>
             ) -> !;
+
+            #[check(ghost)]
+            #[requires(false)]
+            fn panic_default_msg() -> !;
+
+            #[check(ghost)]
+            #[requires(false)]
+            fn unreachable_default_msg() -> !;
+
+            #[check(ghost)]
+            #[requires(false)]
+            fn unimplemented_default_msg() -> !;
+
+            #[check(ghost)]
+            #[requires(false)]
+            fn todo_default_msg() -> !;
         }
     }
 }

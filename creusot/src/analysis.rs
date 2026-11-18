@@ -74,7 +74,8 @@ pub struct BorrowData<'tcx> {
     /// The `Location` of the original MIR `Call` terminator becomes the `Location` of the FMIR
     /// `Call` statement, and the successor `Location` is the FMIR `Goto` terminator.
     resolved_at: HashMap<Orphan<Location>, Resolves<'tcx>>,
-    resolved_between_blocks: HashMap<BasicBlock, HashMap<BasicBlock, Resolves<'tcx>>>,
+    resolved_between_blocks:
+        HashMap<Orphan<BasicBlock>, HashMap<Orphan<BasicBlock>, Resolves<'tcx>>>,
     /// Locations where final borrows are created.
     final_borrows: HashMap<Orphan<Location>, DerefPos>,
     /// Locations where two-phase borrows are created.
@@ -118,8 +119,8 @@ impl<'tcx> BorrowData<'tcx> {
     pub(crate) fn remove_resolved_between_blocks(
         &mut self,
         bb: BasicBlock,
-    ) -> Option<HashMap<BasicBlock, Resolves<'tcx>>> {
-        self.resolved_between_blocks.remove(&bb)
+    ) -> Option<HashMap<Orphan<BasicBlock>, Resolves<'tcx>>> {
+        self.resolved_between_blocks.remove(&Orphan(bb))
     }
 
     pub(crate) fn remove_resolved_places_at(&mut self, loc: Location) -> Resolves<'tcx> {
@@ -593,9 +594,9 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
             let current_resolved = std::mem::take(&mut self.current_resolved);
             self.data
                 .resolved_between_blocks
-                .entry(*pred)
+                .entry(Orphan(*pred))
                 .or_insert(HashMap::new())
-                .insert(bb, current_resolved);
+                .insert(Orphan(bb), current_resolved);
         }
     }
 
@@ -660,7 +661,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
         self.update_final_two_phases(loc);
         use mir::StatementKind::*;
         match statement.kind {
-            Assign(box (pl, ref rvalue)) => {
+            Assign((pl, ref rvalue)) => {
                 self.analyze_assign(rvalue, loc, statement.source_info);
 
                 // We first evaluate the RHS and resolve places that need to be resolved after RHS eval.
@@ -710,7 +711,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
         {
             self.check_final(pl, loc)
         }
-        if let mir::Rvalue::Aggregate(box mir::AggregateKind::Closure(def_id, _), _) = rvalue
+        if let mir::Rvalue::Aggregate(mir::AggregateKind::Closure(def_id, _), _) = rvalue
             && let Some(term) = self
                 .body_specs
                 .invariant_assertions
@@ -745,7 +746,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                 // If this is a snapshot, check that it doesn't use uninitialized or borrowed variables
                 let &TyKind::FnDef(_fun_def_id, subst) = func.ty(self.body(), self.tcx()).kind()
                 else {
-                    self.fatal_error(fn_span, "unsupported function call type").emit()
+                    self.fatal_error(fn_span, "unsupported function call type").emit_fatal()
                 };
                 if let Some(ty) = subst.no_bound_vars().unwrap().get(1)
                     && let ty::GenericArgKind::Type(ty) = ty.kind()

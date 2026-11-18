@@ -1,4 +1,4 @@
-#![feature(box_patterns)]
+#![feature(deref_patterns)]
 extern crate creusot_std;
 
 #[cfg(creusot)]
@@ -35,7 +35,7 @@ impl<K: DeepModel, V> Tree<K, V> {
     fn has_mapping(self, k: K::DeepModelTy, v: V) -> bool {
         match self {
             Tree { node: None } => false,
-            Tree { node: Some(box Node { left, key, val, right, .. }) } => {
+            Tree { node: Some(deref!(Node { left, key, val, right, .. })) } => {
                 left.has_mapping(k, v)
                     || right.has_mapping(k, v)
                     || k == key.deep_model() && v == val
@@ -47,7 +47,7 @@ impl<K: DeepModel, V> Tree<K, V> {
     fn model_acc(self, accu: <Self as View>::ViewTy) -> <Self as View>::ViewTy {
         match self {
             Tree { node: None } => accu,
-            Tree { node: Some(box Node { left, key, val, right, .. }) } => {
+            Tree { node: Some(deref!(Node { left, key, val, right, .. })) } => {
                 let accu1 = left.model_acc(accu);
                 let accu2 = accu1.set(key.deep_model(), Some(val));
                 right.model_acc(accu2)
@@ -61,7 +61,7 @@ impl<K: DeepModel, V> Tree<K, V> {
     fn model_acc_has_mapping(self, accu: <Self as View>::ViewTy, k: K::DeepModelTy) {
         match self {
             Tree { node: None } => (),
-            Tree { node: Some(box Node { left, key, val, right, .. }) } => {
+            Tree { node: Some(deref!(Node { left, key, val, right, .. })) } => {
                 left.model_acc_has_mapping(accu, k);
                 let accu1 = left.model_acc(accu);
                 let accu2 = accu1.set(key.deep_model(), Some(val));
@@ -78,7 +78,7 @@ impl<K: DeepModel<DeepModelTy: OrdLogic>, V> Tree<K, V> {
     fn has_mapping_model_acc(self, accu: <Self as View>::ViewTy, k: K::DeepModelTy) {
         match self {
             Tree { node: None } => (),
-            Tree { node: Some(box Node { left, key, val, right, .. }) } => {
+            Tree { node: Some(deref!(Node { left, key, val, right, .. })) } => {
                 left.has_mapping_model_acc(accu, k);
                 let accu1 = left.model_acc(accu);
                 let accu2 = accu1.set(key.deep_model(), Some(val));
@@ -186,7 +186,7 @@ impl<K: DeepModel<DeepModelTy: OrdLogic>, V> Tree<K, V> {
     fn bst_invariant(self) -> bool {
         match self {
             Tree { node: None } => true,
-            Tree { node: Some(box node @ Node { left, right, .. }) } => {
+            Tree { node: Some(deref!(node @ Node { left, right, .. })) } => {
                 node.bst_invariant_here() && left.bst_invariant() && right.bst_invariant()
             }
         }
@@ -211,7 +211,7 @@ impl CP {
     fn match_t<K, V>(self, tree: Tree<K, V>) -> bool {
         match self {
             CPL(color) => tree.color() == color && tree.color_invariant(),
-            CPN(color, box l, box r) => match tree.node {
+            CPN(color, deref!(l), deref!(r)) => match tree.node {
                 Some(node) => node.color == color && l.match_t(node.left) && r.match_t(node.right),
                 None => false,
             },
@@ -222,7 +222,7 @@ impl CP {
     fn match_n<K, V>(self, node: Node<K, V>) -> bool {
         match self {
             CPL(color) => node.color == color && node.color_invariant(),
-            CPN(color, box l, box r) => {
+            CPN(color, deref!(l), deref!(r)) => {
                 node.color == color && l.match_t(node.left) && r.match_t(node.right)
             }
         }
@@ -233,7 +233,7 @@ impl<K, V> Tree<K, V> {
     #[logic]
     fn color(self) -> Color {
         match self.node {
-            Some(box Node { color, .. }) => color,
+            Some(deref!(Node { color, .. })) => color,
             _ => Black,
         }
     }
@@ -242,7 +242,7 @@ impl<K, V> Tree<K, V> {
     fn color_invariant(self) -> bool {
         match self {
             Tree { node: None } => true,
-            Tree { node: Some(box node @ Node { left, right, .. }) } => {
+            Tree { node: Some(deref!(node @ Node { left, right, .. })) } => {
                 node.color_invariant_here() && left.color_invariant() && right.color_invariant()
             }
         }
@@ -269,8 +269,8 @@ impl<K: DeepModel, V> Tree<K, V> {
     fn height(self) -> Int {
         match self {
             Tree { node: None } => 0,
-            Tree { node: Some(box Node { left, color: Red, .. }) } => left.height(),
-            Tree { node: Some(box Node { left, color: Black, .. }) } => left.height() + 1,
+            Tree { node: Some(deref!(Node { left, color: Red, .. })) } => left.height(),
+            Tree { node: Some(deref!(Node { left, color: Black, .. })) } => left.height() + 1,
         }
     }
 
@@ -278,7 +278,7 @@ impl<K: DeepModel, V> Tree<K, V> {
     fn height_invariant(self) -> bool {
         match self {
             Tree { node: None } => true,
-            Tree { node: Some(box node @ Node { left, right, .. }) } => {
+            Tree { node: Some(deref!(node @ Node { left, right, .. })) } => {
                 node.height_invariant_here() && left.height_invariant() && right.height_invariant()
             }
         }
@@ -335,7 +335,7 @@ impl<K: DeepModel, V> Tree<K, V> {
     #[check(terminates)]
     fn is_red(&self) -> bool {
         match self.node {
-            Some(box Node { color: Red, .. }) => true,
+            Some(deref!(Node { color: Red, .. })) => true,
             _ => false,
         }
     }

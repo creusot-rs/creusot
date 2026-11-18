@@ -189,39 +189,37 @@ module M_impl_Map_K_V__delete (* Map<K, V> *)
         /\ self.current = Some (r.current) /\ self.final = Some (r.final)))}
       (! return {result}) ]
   
-  type t_Option_Infallible = None'2 | Some'2 ()
+  type t_Option_never = None'2 | Some'2 ()
   
-  type t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global =
-    | Continue (MutBorrow.t t_Node_K_V)
-    | Break t_Option_Infallible
+  type t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global = Continue (MutBorrow.t t_Node_K_V) | Break t_Option_never
   
-  predicate inv_Infallible [@inline:trivial] (_1: ()) = false
+  predicate inv_never [@inline:trivial] (_1: ()) = false
   
-  meta "rewrite_def" predicate inv_Infallible
+  meta "rewrite_def" predicate inv_never
   
-  predicate inv_Option_Infallible (_1: t_Option_Infallible)
+  predicate inv_Option_never (_1: t_Option_never)
   
-  axiom inv_axiom'3 [@rewrite]: forall _1: t_Option_Infallible [inv_Option_Infallible _1]. inv_Option_Infallible _1
+  axiom inv_axiom'3 [@rewrite]: forall _1: t_Option_never [inv_Option_never _1]. inv_Option_never _1
       = match _1 with
         | None'2 -> true
-        | Some'2 f0'0 -> inv_Infallible f0'0
+        | Some'2 f0'0 -> inv_never f0'0
         end
   
-  predicate inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global (_1: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)
+  predicate inv_ControlFlow_Option_never_refmut_Box_Node_K_V_Global (_1: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global)
   
   axiom inv_axiom'4 [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global [inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _1]. inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _1
+    forall _1: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global [inv_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _1]. inv_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _1
       = match _1 with
         | Continue f0'0 -> inv_refmut_Box_Node_K_V_Global f0'0
-        | Break f0'0 -> inv_Option_Infallible f0'0
+        | Break f0'0 -> inv_Option_never f0'0
         end
   
   let branch_Option_refmut_Box_Node_K_V_Global (self: t_Option_refmut_Box_Node_K_V_Global)
-    (return (x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)) =
+    (return (x: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global)) =
   {[@stop_split] [@expl:branch 'self' type invariant] inv_Option_refmut_Box_Node_K_V_Global self}
     any
-    [ return (result: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global) ->
-    {[@stop_split] [@expl:branch_Option_refmut_Box_Node_K_V_Global ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global result)
+    [ return (result: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global) ->
+    {[@stop_split] [@expl:branch_Option_refmut_Box_Node_K_V_Global ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_never_refmut_Box_Node_K_V_Global result)
       /\ ([@stop_split] [@expl:branch ensures] match self with
         | Some'1 v -> result = Continue v
         | None'1 -> result = Break (None'2)
@@ -232,18 +230,17 @@ module M_impl_Map_K_V__delete (* Map<K, V> *)
   
   meta "rewrite_def" predicate resolve_refmut_Box_Node_K_V_Global
   
-  predicate resolve_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global (_1: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)
+  predicate resolve_ControlFlow_Option_never_refmut_Box_Node_K_V_Global (_1: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global)
   
   axiom resolve_axiom [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global [resolve_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _1]. resolve_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _1
+    forall _1: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global [resolve_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _1]. resolve_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _1
       = match _1 with
         | Continue x0 -> resolve_refmut_Box_Node_K_V_Global x0
         | Break x0 -> true
         end
   
-  let elim_Break (_x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global) (return (f0'0: t_Option_Infallible)) =
-  any
-    [ _k (f0'0: t_Option_Infallible) -> {Break f0'0 = _x} (! return {f0'0})
+  let elim_Break (_x: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global) (return (f0'0: t_Option_never)) = any
+    [ _k (f0'0: t_Option_never) -> {Break f0'0 = _x} (! return {f0'0})
     | _chk -> (! {[@expl:elim Break] match _x with
         | Break _ -> true
         | _ -> false
@@ -325,15 +322,15 @@ module M_impl_Map_K_V__delete (* Map<K, V> *)
         | Some'3 f0'1 -> inv_tup2_K_V f0'1
         end
   
-  let from_residual_Option_tup2_K_V (residual: t_Option_Infallible) (return (x: t_Option_tup2_K_V)) =
-  {[@stop_split] [@expl:from_residual 'residual' type invariant] inv_Option_Infallible residual}
+  let from_residual_Option_tup2_K_V (residual: t_Option_never) (return (x: t_Option_tup2_K_V)) =
+  {[@stop_split] [@expl:from_residual 'residual' type invariant] inv_Option_never residual}
     any
     [ return (result: t_Option_tup2_K_V) ->
     {[@stop_split] [@expl:from_residual_Option_tup2_K_V ensures] ([@stop_split] [@expl:from_residual result type invariant] inv_Option_tup2_K_V result)
       /\ ([@stop_split] [@expl:from_residual ensures] result = None'3)}
       (! return {result}) ]
   
-  let elim_Continue (_x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)
+  let elim_Continue (_x: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global)
     (return (f0'1: MutBorrow.t t_Node_K_V)) = any
     [ _k (f0'1: MutBorrow.t t_Node_K_V) -> {Continue f0'1 = _x} (! return {f0'1})
     | _chk -> (! {[@expl:elim Continue] match _x with
@@ -443,15 +440,14 @@ module M_impl_Map_K_V__delete (* Map<K, V> *)
         [ _ck -> (! {[@expl:type invariant] inv_Option_Box_Node_K_V_Global self.current.f0.node} any) ]
       | s2 = as_mut_Box_Node_K_V_Global {_14} (fun (_x: t_Option_refmut_Box_Node_K_V_Global) -> [ &_13 <- _x ] s3)
       | s3 = branch_Option_refmut_Box_Node_K_V_Global {_13}
-          (fun (_x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global) -> [ &_12 <- _x ] s4)
+          (fun (_x: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global) -> [ &_12 <- _x ] s4)
       | s4 = any
         [ br0 (x0: MutBorrow.t t_Node_K_V) -> {_12 = Continue x0} (! bb6)
-        | br1 (x0: t_Option_Infallible) -> {_12 = Break x0} (! bb5) ] ]
+        | br1 (x0: t_Option_never) -> {_12 = Break x0} (! bb5) ] ]
     | bb5 = s0
-      [ s0 = s1
-        [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _12} any) ]
-      | s1 = -{resolve_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _12}- s2
-      | s2 = elim_Break {_12} (fun (r0: t_Option_Infallible) -> [ &residual <- r0 ] s3)
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _12} any) ]
+      | s1 = -{resolve_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _12}- s2
+      | s2 = elim_Break {_12} (fun (r0: t_Option_never) -> [ &residual <- r0 ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Map_K_V self} any) ]
       | s4 = -{resolve_refmut_Map_K_V self}- s5
       | s5 = from_residual_Option_tup2_K_V {residual} (fun (_x: t_Option_tup2_K_V) -> [ &_ret <- _x ] s6)
@@ -506,10 +502,10 @@ module M_impl_Map_K_V__delete (* Map<K, V> *)
     | & key'0: t_K = key'0
     | & _9: () = Any.any_l ()
     | & node'0: MutBorrow.t t_Node_K_V = Any.any_l ()
-    | & _12: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global = Any.any_l ()
+    | & _12: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global = Any.any_l ()
     | & _13: t_Option_refmut_Box_Node_K_V_Global = Any.any_l ()
     | & _14: MutBorrow.t t_Option_Box_Node_K_V_Global = Any.any_l ()
-    | & residual: t_Option_Infallible = Any.any_l ()
+    | & residual: t_Option_never = Any.any_l ()
     | & val''0: MutBorrow.t t_Node_K_V = Any.any_l ()
     | & _21: bool = Any.any_l ()
     | & _23: t_Color = Any.any_l ()
@@ -622,39 +618,37 @@ module M_impl_Map_K_V__delete_max (* Map<K, V> *)
         /\ self.current = Some (r.current) /\ self.final = Some (r.final)))}
       (! return {result}) ]
   
-  type t_Option_Infallible = None'1 | Some'1 ()
+  type t_Option_never = None'1 | Some'1 ()
   
-  type t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global =
-    | Continue (MutBorrow.t t_Node_K_V)
-    | Break t_Option_Infallible
+  type t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global = Continue (MutBorrow.t t_Node_K_V) | Break t_Option_never
   
-  predicate inv_Infallible [@inline:trivial] (_1: ()) = false
+  predicate inv_never [@inline:trivial] (_1: ()) = false
   
-  meta "rewrite_def" predicate inv_Infallible
+  meta "rewrite_def" predicate inv_never
   
-  predicate inv_Option_Infallible (_1: t_Option_Infallible)
+  predicate inv_Option_never (_1: t_Option_never)
   
-  axiom inv_axiom'3 [@rewrite]: forall _1: t_Option_Infallible [inv_Option_Infallible _1]. inv_Option_Infallible _1
+  axiom inv_axiom'3 [@rewrite]: forall _1: t_Option_never [inv_Option_never _1]. inv_Option_never _1
       = match _1 with
         | None'1 -> true
-        | Some'1 f0'0 -> inv_Infallible f0'0
+        | Some'1 f0'0 -> inv_never f0'0
         end
   
-  predicate inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global (_1: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)
+  predicate inv_ControlFlow_Option_never_refmut_Box_Node_K_V_Global (_1: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global)
   
   axiom inv_axiom'4 [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global [inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _1]. inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _1
+    forall _1: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global [inv_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _1]. inv_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _1
       = match _1 with
         | Continue f0'0 -> inv_refmut_Box_Node_K_V_Global f0'0
-        | Break f0'0 -> inv_Option_Infallible f0'0
+        | Break f0'0 -> inv_Option_never f0'0
         end
   
   let branch_Option_refmut_Box_Node_K_V_Global (self: t_Option_refmut_Box_Node_K_V_Global)
-    (return (x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)) =
+    (return (x: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global)) =
   {[@stop_split] [@expl:branch 'self' type invariant] inv_Option_refmut_Box_Node_K_V_Global self}
     any
-    [ return (result: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global) ->
-    {[@stop_split] [@expl:branch_Option_refmut_Box_Node_K_V_Global ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global result)
+    [ return (result: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global) ->
+    {[@stop_split] [@expl:branch_Option_refmut_Box_Node_K_V_Global ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_never_refmut_Box_Node_K_V_Global result)
       /\ ([@stop_split] [@expl:branch ensures] match self with
         | Some'0 v -> result = Continue v
         | None'0 -> result = Break (None'1)
@@ -665,18 +659,17 @@ module M_impl_Map_K_V__delete_max (* Map<K, V> *)
   
   meta "rewrite_def" predicate resolve_refmut_Box_Node_K_V_Global
   
-  predicate resolve_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global (_1: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)
+  predicate resolve_ControlFlow_Option_never_refmut_Box_Node_K_V_Global (_1: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global)
   
   axiom resolve_axiom [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global [resolve_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _1]. resolve_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _1
+    forall _1: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global [resolve_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _1]. resolve_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _1
       = match _1 with
         | Continue x0 -> resolve_refmut_Box_Node_K_V_Global x0
         | Break x0 -> true
         end
   
-  let elim_Break (_x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global) (return (f0'0: t_Option_Infallible)) =
-  any
-    [ _k (f0'0: t_Option_Infallible) -> {Break f0'0 = _x} (! return {f0'0})
+  let elim_Break (_x: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global) (return (f0'0: t_Option_never)) = any
+    [ _k (f0'0: t_Option_never) -> {Break f0'0 = _x} (! return {f0'0})
     | _chk -> (! {[@expl:elim Break] match _x with
         | Break _ -> true
         | _ -> false
@@ -798,15 +791,15 @@ module M_impl_Map_K_V__delete_max (* Map<K, V> *)
         | Some'2 f0'1 -> inv_tup2_K_V f0'1
         end
   
-  let from_residual_Option_tup2_K_V (residual: t_Option_Infallible) (return (x: t_Option_tup2_K_V)) =
-  {[@stop_split] [@expl:from_residual 'residual' type invariant] inv_Option_Infallible residual}
+  let from_residual_Option_tup2_K_V (residual: t_Option_never) (return (x: t_Option_tup2_K_V)) =
+  {[@stop_split] [@expl:from_residual 'residual' type invariant] inv_Option_never residual}
     any
     [ return (result: t_Option_tup2_K_V) ->
     {[@stop_split] [@expl:from_residual_Option_tup2_K_V ensures] ([@stop_split] [@expl:from_residual result type invariant] inv_Option_tup2_K_V result)
       /\ ([@stop_split] [@expl:from_residual ensures] result = None'2)}
       (! return {result}) ]
   
-  let elim_Continue (_x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)
+  let elim_Continue (_x: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global)
     (return (f0'1: MutBorrow.t t_Node_K_V)) = any
     [ _k (f0'1: MutBorrow.t t_Node_K_V) -> {Continue f0'1 = _x} (! return {f0'1})
     | _chk -> (! {[@expl:elim Continue] match _x with
@@ -936,15 +929,14 @@ module M_impl_Map_K_V__delete_max (* Map<K, V> *)
         [ _ck -> (! {[@expl:type invariant] inv_Option_Box_Node_K_V_Global self.current.f0.node} any) ]
       | s1 = as_mut_Box_Node_K_V_Global {_7} (fun (_x: t_Option_refmut_Box_Node_K_V_Global) -> [ &_6 <- _x ] s2)
       | s2 = branch_Option_refmut_Box_Node_K_V_Global {_6}
-          (fun (_x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global) -> [ &_5 <- _x ] s3)
+          (fun (_x: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global) -> [ &_5 <- _x ] s3)
       | s3 = any
         [ br0 (x0: MutBorrow.t t_Node_K_V) -> {_5 = Continue x0} (! bb5)
-        | br1 (x0: t_Option_Infallible) -> {_5 = Break x0} (! bb4) ] ]
+        | br1 (x0: t_Option_never) -> {_5 = Break x0} (! bb4) ] ]
     | bb4 = s0
-      [ s0 = s1
-        [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _5} any) ]
-      | s1 = -{resolve_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _5}- s2
-      | s2 = elim_Break {_5} (fun (r0: t_Option_Infallible) -> [ &residual <- r0 ] s3)
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _5} any) ]
+      | s1 = -{resolve_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _5}- s2
+      | s2 = elim_Break {_5} (fun (r0: t_Option_never) -> [ &residual <- r0 ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Map_K_V self} any) ]
       | s4 = -{resolve_refmut_Map_K_V self}- s5
       | s5 = from_residual_Option_tup2_K_V {residual} (fun (_x: t_Option_tup2_K_V) -> [ &_ret <- _x ] s6)
@@ -997,10 +989,10 @@ module M_impl_Map_K_V__delete_max (* Map<K, V> *)
     [ & _ret: t_Option_tup2_K_V = Any.any_l ()
     | & self: MutBorrow.t t_Map_K_V = self
     | & node'0: MutBorrow.t t_Node_K_V = Any.any_l ()
-    | & _5: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global = Any.any_l ()
+    | & _5: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global = Any.any_l ()
     | & _6: t_Option_refmut_Box_Node_K_V_Global = Any.any_l ()
     | & _7: MutBorrow.t t_Option_Box_Node_K_V_Global = Any.any_l ()
-    | & residual: t_Option_Infallible = Any.any_l ()
+    | & residual: t_Option_never = Any.any_l ()
     | & val''0: MutBorrow.t t_Node_K_V = Any.any_l ()
     | & _14: bool = Any.any_l ()
     | & _16: t_Color = Any.any_l ()
@@ -1192,39 +1184,37 @@ module M_impl_Map_K_V__delete_min (* Map<K, V> *)
         /\ self.current = Some (r.current) /\ self.final = Some (r.final)))}
       (! return {result}) ]
   
-  type t_Option_Infallible = None'2 | Some'2 ()
+  type t_Option_never = None'2 | Some'2 ()
   
-  type t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global =
-    | Continue (MutBorrow.t t_Node_K_V)
-    | Break t_Option_Infallible
+  type t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global = Continue (MutBorrow.t t_Node_K_V) | Break t_Option_never
   
-  predicate inv_Infallible [@inline:trivial] (_1: ()) = false
+  predicate inv_never [@inline:trivial] (_1: ()) = false
   
-  meta "rewrite_def" predicate inv_Infallible
+  meta "rewrite_def" predicate inv_never
   
-  predicate inv_Option_Infallible (_1: t_Option_Infallible)
+  predicate inv_Option_never (_1: t_Option_never)
   
-  axiom inv_axiom'3 [@rewrite]: forall _1: t_Option_Infallible [inv_Option_Infallible _1]. inv_Option_Infallible _1
+  axiom inv_axiom'3 [@rewrite]: forall _1: t_Option_never [inv_Option_never _1]. inv_Option_never _1
       = match _1 with
         | None'2 -> true
-        | Some'2 f0'0 -> inv_Infallible f0'0
+        | Some'2 f0'0 -> inv_never f0'0
         end
   
-  predicate inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global (_1: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)
+  predicate inv_ControlFlow_Option_never_refmut_Box_Node_K_V_Global (_1: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global)
   
   axiom inv_axiom'4 [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global [inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _1]. inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _1
+    forall _1: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global [inv_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _1]. inv_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _1
       = match _1 with
         | Continue f0'0 -> inv_refmut_Box_Node_K_V_Global f0'0
-        | Break f0'0 -> inv_Option_Infallible f0'0
+        | Break f0'0 -> inv_Option_never f0'0
         end
   
   let branch_Option_refmut_Box_Node_K_V_Global (self: t_Option_refmut_Box_Node_K_V_Global)
-    (return (x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)) =
+    (return (x: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global)) =
   {[@stop_split] [@expl:branch 'self' type invariant] inv_Option_refmut_Box_Node_K_V_Global self}
     any
-    [ return (result: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global) ->
-    {[@stop_split] [@expl:branch_Option_refmut_Box_Node_K_V_Global ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global result)
+    [ return (result: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global) ->
+    {[@stop_split] [@expl:branch_Option_refmut_Box_Node_K_V_Global ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_never_refmut_Box_Node_K_V_Global result)
       /\ ([@stop_split] [@expl:branch ensures] match self with
         | Some'1 v -> result = Continue v
         | None'1 -> result = Break (None'2)
@@ -1235,18 +1225,17 @@ module M_impl_Map_K_V__delete_min (* Map<K, V> *)
   
   meta "rewrite_def" predicate resolve_refmut_Box_Node_K_V_Global
   
-  predicate resolve_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global (_1: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)
+  predicate resolve_ControlFlow_Option_never_refmut_Box_Node_K_V_Global (_1: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global)
   
   axiom resolve_axiom [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global [resolve_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _1]. resolve_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _1
+    forall _1: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global [resolve_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _1]. resolve_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _1
       = match _1 with
         | Continue x0 -> resolve_refmut_Box_Node_K_V_Global x0
         | Break x0 -> true
         end
   
-  let elim_Break (_x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global) (return (f0'0: t_Option_Infallible)) =
-  any
-    [ _k (f0'0: t_Option_Infallible) -> {Break f0'0 = _x} (! return {f0'0})
+  let elim_Break (_x: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global) (return (f0'0: t_Option_never)) = any
+    [ _k (f0'0: t_Option_never) -> {Break f0'0 = _x} (! return {f0'0})
     | _chk -> (! {[@expl:elim Break] match _x with
         | Break _ -> true
         | _ -> false
@@ -1328,15 +1317,15 @@ module M_impl_Map_K_V__delete_min (* Map<K, V> *)
         | Some'3 f0'1 -> inv_tup2_K_V f0'1
         end
   
-  let from_residual_Option_tup2_K_V (residual: t_Option_Infallible) (return (x: t_Option_tup2_K_V)) =
-  {[@stop_split] [@expl:from_residual 'residual' type invariant] inv_Option_Infallible residual}
+  let from_residual_Option_tup2_K_V (residual: t_Option_never) (return (x: t_Option_tup2_K_V)) =
+  {[@stop_split] [@expl:from_residual 'residual' type invariant] inv_Option_never residual}
     any
     [ return (result: t_Option_tup2_K_V) ->
     {[@stop_split] [@expl:from_residual_Option_tup2_K_V ensures] ([@stop_split] [@expl:from_residual result type invariant] inv_Option_tup2_K_V result)
       /\ ([@stop_split] [@expl:from_residual ensures] result = None'3)}
       (! return {result}) ]
   
-  let elim_Continue (_x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global)
+  let elim_Continue (_x: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global)
     (return (f0'1: MutBorrow.t t_Node_K_V)) = any
     [ _k (f0'1: MutBorrow.t t_Node_K_V) -> {Continue f0'1 = _x} (! return {f0'1})
     | _chk -> (! {[@expl:elim Continue] match _x with
@@ -1430,15 +1419,14 @@ module M_impl_Map_K_V__delete_min (* Map<K, V> *)
         [ _ck -> (! {[@expl:type invariant] inv_Option_Box_Node_K_V_Global self.current.f0.node} any) ]
       | s2 = as_mut_Box_Node_K_V_Global {_9} (fun (_x: t_Option_refmut_Box_Node_K_V_Global) -> [ &_8 <- _x ] s3)
       | s3 = branch_Option_refmut_Box_Node_K_V_Global {_8}
-          (fun (_x: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global) -> [ &_7 <- _x ] s4)
+          (fun (_x: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global) -> [ &_7 <- _x ] s4)
       | s4 = any
         [ br0 (x0: MutBorrow.t t_Node_K_V) -> {_7 = Continue x0} (! bb6)
-        | br1 (x0: t_Option_Infallible) -> {_7 = Break x0} (! bb5) ] ]
+        | br1 (x0: t_Option_never) -> {_7 = Break x0} (! bb5) ] ]
     | bb5 = s0
-      [ s0 = s1
-        [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _7} any) ]
-      | s1 = -{resolve_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global _7}- s2
-      | s2 = elim_Break {_7} (fun (r0: t_Option_Infallible) -> [ &residual <- r0 ] s3)
+      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _7} any) ]
+      | s1 = -{resolve_ControlFlow_Option_never_refmut_Box_Node_K_V_Global _7}- s2
+      | s2 = elim_Break {_7} (fun (r0: t_Option_never) -> [ &residual <- r0 ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Map_K_V self} any) ]
       | s4 = -{resolve_refmut_Map_K_V self}- s5
       | s5 = from_residual_Option_tup2_K_V {residual} (fun (_x: t_Option_tup2_K_V) -> [ &_ret <- _x ] s6)
@@ -1492,10 +1480,10 @@ module M_impl_Map_K_V__delete_min (* Map<K, V> *)
     | & self: MutBorrow.t t_Map_K_V = self
     | & _4: () = Any.any_l ()
     | & node'0: MutBorrow.t t_Node_K_V = Any.any_l ()
-    | & _7: t_ControlFlow_Option_Infallible_refmut_Box_Node_K_V_Global = Any.any_l ()
+    | & _7: t_ControlFlow_Option_never_refmut_Box_Node_K_V_Global = Any.any_l ()
     | & _8: t_Option_refmut_Box_Node_K_V_Global = Any.any_l ()
     | & _9: MutBorrow.t t_Option_Box_Node_K_V_Global = Any.any_l ()
-    | & residual: t_Option_Infallible = Any.any_l ()
+    | & residual: t_Option_never = Any.any_l ()
     | & val''0: MutBorrow.t t_Node_K_V = Any.any_l ()
     | & _16: bool = Any.any_l ()
     | & _18: t_Color = Any.any_l ()
@@ -8047,61 +8035,60 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
       \/ (exists r: t_Node_K_V. result = Some'2 r /\ self = Some r))}
       (! return {result}) ]
   
-  type t_Option_Infallible = None'3 | Some'3 ()
+  type t_Option_never = None'3 | Some'3 ()
   
-  type t_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global = Continue t_Node_K_V | Break t_Option_Infallible
+  type t_ControlFlow_Option_never_ref_Box_Node_K_V_Global = Continue t_Node_K_V | Break t_Option_never
   
-  predicate inv_Infallible [@inline:trivial] (_1: ()) = false
+  predicate inv_never [@inline:trivial] (_1: ()) = false
   
-  meta "rewrite_def" predicate inv_Infallible
+  meta "rewrite_def" predicate inv_never
   
-  predicate inv_Option_Infallible (_1: t_Option_Infallible)
+  predicate inv_Option_never (_1: t_Option_never)
   
-  axiom inv_axiom'5 [@rewrite]: forall _1: t_Option_Infallible [inv_Option_Infallible _1]. inv_Option_Infallible _1
+  axiom inv_axiom'5 [@rewrite]: forall _1: t_Option_never [inv_Option_never _1]. inv_Option_never _1
       = match _1 with
         | None'3 -> true
-        | Some'3 f0'2 -> inv_Infallible f0'2
+        | Some'3 f0'2 -> inv_never f0'2
         end
   
-  predicate inv_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global (_1: t_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global)
+  predicate inv_ControlFlow_Option_never_ref_Box_Node_K_V_Global (_1: t_ControlFlow_Option_never_ref_Box_Node_K_V_Global)
   
   axiom inv_axiom'6 [@rewrite]:
-    forall _1: t_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global [inv_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global _1]. inv_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global _1
+    forall _1: t_ControlFlow_Option_never_ref_Box_Node_K_V_Global [inv_ControlFlow_Option_never_ref_Box_Node_K_V_Global _1]. inv_ControlFlow_Option_never_ref_Box_Node_K_V_Global _1
       = match _1 with
         | Continue f0'2 -> inv_ref_Box_Node_K_V_Global f0'2
-        | Break f0'2 -> inv_Option_Infallible f0'2
+        | Break f0'2 -> inv_Option_never f0'2
         end
   
   let branch_Option_ref_Box_Node_K_V_Global (self: t_Option_ref_Box_Node_K_V_Global)
-    (return (x: t_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global)) =
+    (return (x: t_ControlFlow_Option_never_ref_Box_Node_K_V_Global)) =
   {[@stop_split] [@expl:branch 'self' type invariant] inv_Option_ref_Box_Node_K_V_Global self}
     any
-    [ return (result: t_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global) ->
-    {[@stop_split] [@expl:branch_Option_ref_Box_Node_K_V_Global ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global result)
+    [ return (result: t_ControlFlow_Option_never_ref_Box_Node_K_V_Global) ->
+    {[@stop_split] [@expl:branch_Option_ref_Box_Node_K_V_Global ensures] ([@stop_split] [@expl:branch result type invariant] inv_ControlFlow_Option_never_ref_Box_Node_K_V_Global result)
       /\ ([@stop_split] [@expl:branch ensures] match self with
         | Some'2 v -> result = Continue v
         | None'2 -> result = Break (None'3)
         end)}
       (! return {result}) ]
   
-  let elim_Break (_x: t_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global) (return (f0'2: t_Option_Infallible)) =
-  any
-    [ _k (f0'2: t_Option_Infallible) -> {Break f0'2 = _x} (! return {f0'2})
+  let elim_Break (_x: t_ControlFlow_Option_never_ref_Box_Node_K_V_Global) (return (f0'2: t_Option_never)) = any
+    [ _k (f0'2: t_Option_never) -> {Break f0'2 = _x} (! return {f0'2})
     | _chk -> (! {[@expl:elim Break] match _x with
         | Break _ -> true
         | _ -> false
         end}
       any) ]
   
-  let from_residual_Option_tup2_K_V (residual: t_Option_Infallible) (return (x: t_Option_tup2_K_V)) =
-  {[@stop_split] [@expl:from_residual 'residual' type invariant] inv_Option_Infallible residual}
+  let from_residual_Option_tup2_K_V (residual: t_Option_never) (return (x: t_Option_tup2_K_V)) =
+  {[@stop_split] [@expl:from_residual 'residual' type invariant] inv_Option_never residual}
     any
     [ return (result: t_Option_tup2_K_V) ->
     {[@stop_split] [@expl:from_residual_Option_tup2_K_V ensures] ([@stop_split] [@expl:from_residual result type invariant] inv_Option_tup2_K_V result)
       /\ ([@stop_split] [@expl:from_residual ensures] result = None'1)}
       (! return {result}) ]
   
-  let elim_Continue (_x: t_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global) (return (f0'2: t_Node_K_V)) = any
+  let elim_Continue (_x: t_ControlFlow_Option_never_ref_Box_Node_K_V_Global) (return (f0'2: t_Node_K_V)) = any
     [ _k (f0'2: t_Node_K_V) -> {Continue f0'2 = _x} (! return {f0'2})
     | _chk -> (! {[@expl:elim Continue] match _x with
         | Continue _ -> true
@@ -8439,14 +8426,14 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
       [ s0 = as_ref_Box_Node_K_V_Global {node'0.current.right.node}
           (fun (_x: t_Option_ref_Box_Node_K_V_Global) -> [ &_96 <- _x ] s1)
       | s1 = branch_Option_ref_Box_Node_K_V_Global {_96}
-          (fun (_x: t_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global) -> [ &_95 <- _x ] s2)
+          (fun (_x: t_ControlFlow_Option_never_ref_Box_Node_K_V_Global) -> [ &_95 <- _x ] s2)
       | s2 = any
         [ br0 (x0: t_Node_K_V) -> {_95 = Continue x0} (! bb59)
-        | br1 (x0: t_Option_Infallible) -> {_95 = Break x0} (! bb58) ] ]
+        | br1 (x0: t_Option_never) -> {_95 = Break x0} (! bb58) ] ]
     | bb58 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_K_V node'0} any) ]
       | s1 = -{resolve_refmut_Node_K_V node'0}- s2
-      | s2 = elim_Break {_95} (fun (r0: t_Option_Infallible) -> [ &residual'0 <- r0 ] s3)
+      | s2 = elim_Break {_95} (fun (r0: t_Option_never) -> [ &residual'0 <- r0 ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Tree_K_V self} any) ]
       | s4 = -{resolve_refmut_Tree_K_V self}- s5
       | s5 = from_residual_Option_tup2_K_V {residual'0} (fun (_x: t_Option_tup2_K_V) -> [ &_ret <- _x ] s6)
@@ -8599,14 +8586,14 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
       [ s0 = as_ref_Box_Node_K_V_Global {node'0.current.left.node}
           (fun (_x: t_Option_ref_Box_Node_K_V_Global) -> [ &_41 <- _x ] s1)
       | s1 = branch_Option_ref_Box_Node_K_V_Global {_41}
-          (fun (_x: t_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global) -> [ &_40 <- _x ] s2)
+          (fun (_x: t_ControlFlow_Option_never_ref_Box_Node_K_V_Global) -> [ &_40 <- _x ] s2)
       | s2 = any
         [ br0 (x0: t_Node_K_V) -> {_40 = Continue x0} (! bb21)
-        | br1 (x0: t_Option_Infallible) -> {_40 = Break x0} (! bb20) ] ]
+        | br1 (x0: t_Option_never) -> {_40 = Break x0} (! bb20) ] ]
     | bb20 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Node_K_V node'0} any) ]
       | s1 = -{resolve_refmut_Node_K_V node'0}- s2
-      | s2 = elim_Break {_40} (fun (r0: t_Option_Infallible) -> [ &residual <- r0 ] s3)
+      | s2 = elim_Break {_40} (fun (r0: t_Option_never) -> [ &residual <- r0 ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Tree_K_V self} any) ]
       | s4 = -{resolve_refmut_Tree_K_V self}- s5
       | s5 = from_residual_Option_tup2_K_V {residual} (fun (_x: t_Option_tup2_K_V) -> [ &_ret <- _x ] s6)
@@ -8669,9 +8656,9 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
     | & _35: bool = Any.any_l ()
     | & _37: bool = Any.any_l ()
     | & _39: t_Node_K_V = Any.any_l ()
-    | & _40: t_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global = Any.any_l ()
+    | & _40: t_ControlFlow_Option_never_ref_Box_Node_K_V_Global = Any.any_l ()
     | & _41: t_Option_ref_Box_Node_K_V_Global = Any.any_l ()
-    | & residual: t_Option_Infallible = Any.any_l ()
+    | & residual: t_Option_never = Any.any_l ()
     | & val''0: t_Node_K_V = Any.any_l ()
     | & _48: MutBorrow.t t_Node_K_V = Any.any_l ()
     | & _49: MutBorrow.t t_Node_K_V = Any.any_l ()
@@ -8707,9 +8694,9 @@ module M_impl_Tree_K_V_6__delete_rec (* Tree<K, V> *)
     | & _89: MutBorrow.t t_V = Any.any_l ()
     | & _92: bool = Any.any_l ()
     | & _94: t_Node_K_V = Any.any_l ()
-    | & _95: t_ControlFlow_Option_Infallible_ref_Box_Node_K_V_Global = Any.any_l ()
+    | & _95: t_ControlFlow_Option_never_ref_Box_Node_K_V_Global = Any.any_l ()
     | & _96: t_Option_ref_Box_Node_K_V_Global = Any.any_l ()
-    | & residual'0: t_Option_Infallible = Any.any_l ()
+    | & residual'0: t_Option_never = Any.any_l ()
     | & val''1: t_Node_K_V = Any.any_l ()
     | & _103: MutBorrow.t t_Node_K_V = Any.any_l ()
     | & _104: MutBorrow.t t_Node_K_V = Any.any_l ()

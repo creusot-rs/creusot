@@ -1,3 +1,4 @@
+#![allow(deprecated)] // core::$t::MIN, core::$t::MAX
 use crate::{
     ghost::Plain,
     logic::ops::{
