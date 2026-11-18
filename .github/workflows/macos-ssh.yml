@@ -2,9 +2,9 @@ name: macOS SSH debug session
 
 # Push to a branch named `ssh-macos` (or `ssh-macos-*`) to get an SSH session
 # on a GitHub-hosted macOS runner. The SSH command is printed in the job log
-# (step "Open tmate session"). Only the GitHub user who triggered the run can
+# (step "Open upterm session"). Only the GitHub user who triggered the run can
 # connect, using one of the SSH keys registered on their GitHub account.
-# Run `touch continue` in the session to end the job early.
+# Run `touch continue` in the session (or cancel the run) to end the job early.
 
 on:
   push:
@@ -16,31 +16,12 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 360
     steps:
-    - uses: actions/checkout@v4
-    - run: rustup update
-    # Restore (but never save) the caches built by the regular CI on master.
-    - name: Restore Cargo cache
-      uses: actions/cache/restore@v4
-      with:
-        path: |
-          ~/.cargo/registry
-          ~/.cargo/git
-          target
-        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock', 'prelude-generator/**') }}
-        restore-keys: ${{ runner.os }}-cargo-
-    - name: Restore Opam cache
-      uses: actions/cache/restore@v4
-      with:
-        path: ~/.creusot/_opam
-        key: ${{ runner.os }}-opam-${{ hashFiles('creusot-deps.opam') }}
-        restore-keys: ${{ runner.os }}-opam-
+    - uses: actions/checkout@v5
+    - uses: nixbuild/nix-quick-install-action@v34
+
     - run: brew update && brew install opam autoconf zeromq zlib automake
-    - name: setup opam
-      run: |
-        opam init --bare
-        opam --cli=2.1 var --global in-creusot-ci=true
-    - name: Open tmate session
-      uses: mxschmitt/action-tmate@v3
+
+    - name: Open upterm session
+      uses: owenthereal/action-upterm@v1
       with:
         limit-access-to-actor: true
-        detached: false
