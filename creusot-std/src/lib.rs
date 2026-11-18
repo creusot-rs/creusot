@@ -651,6 +651,74 @@ pub mod macros {
     pub use base_macros::constant;
 
     pub(crate) use base_macros::intrinsic;
+
+    /// Scoped visibility modifiers.
+    ///
+    /// These attributes provide control over the opacity of a function item's contract when used within the associated scope.
+    /// By default, all contracts and logic bodies (within their `open` visibility scope) are revealed.
+    ///
+    /// These attributes can be applied to modules, impl blocks, trait declarations and functions.
+    ///
+    /// # Example
+    /// ```
+    /// # use creusot_std::prelude::*;
+    ///
+    /// #[logic]
+    /// #[ensures(result == x)]
+    /// fn identity<T>(x: T) -> T { x }
+    ///
+    /// #[conceal(identity::<Int>)]
+    /// mod outer {
+    ///     # use creusot_std::prelude::*;
+    ///     use super::*;
+    ///
+    ///     #[logic]
+    ///     #[ensures(identity(3) == 3)]
+    ///     fn fails() {}
+    ///
+    ///     #[logic]
+    ///     #[ensures(identity(7u32) == 7u32)]
+    ///     fn succeeds() {}
+    ///
+    ///     // undoes the effect of the previous `conceal` attribute.
+    ///     #[reveal(identity::<Int>)]
+    ///     mod inner {
+    ///         # use creusot_std::prelude::*;
+    ///         use super::*;
+    ///
+    ///         #[logic]
+    ///         #[ensures(identity(3) == 3)]
+    ///         fn succeeds() {}
+    ///     }
+    /// }
+    /// ```
+    pub use base_macros::{conceal, reveal};
+
+    /// Imports the definition, derived axioms and associated laws of a function item.
+    ///
+    /// This attribute can be applied to modules, impl blocks, trait declarations and functions.
+    ///
+    /// # Example
+    /// ```
+    /// # use creusot_std::prelude::*;
+    ///
+    /// #[logic]
+    /// #[ensures(x + y == y + x)]
+    /// fn commutative(x: Int, y: Int) {}
+    ///
+    /// #[import(commutative)]
+    /// mod A {
+    ///     # use creusot_std::prelude::*;
+    ///     use super::*;
+    ///
+    ///     #[logic]
+    ///     fn example() {
+    ///         // automatically imports into scope:
+    ///         // axiom: forall<x: Int, y: Int> x + y == y + x
+    ///     }
+    /// }
+    /// ```
+    pub use base_macros::import;
 }
 
 #[doc(hidden)]

@@ -5,6 +5,15 @@ use syn::{Block, parse_macro_input, visit_mut::VisitMut};
 
 // #[proc_macro]
 
+pub fn identity(attr: TS1, tokens: TS1) -> TS1 {
+    let _ = attr;
+    tokens
+}
+
+pub use identity as conceal;
+pub use identity as reveal;
+pub use identity as import;
+
 pub fn pearlite(_: TS1) -> TS1 {
     TS1::new()
 }

@@ -1,0 +1,149 @@
+module M_bar
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  function bar_T : int
+  
+  goal vc_bar_T: [@stop_split] [@expl:bar ensures] 4 = 4
+end
+module M_conceal_then_reveal__div1
+  use int.ComputerDivision
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : int
+  
+  function div1 (x: int) : int
+  
+  goal vc_div1: [@stop_split] [@expl:div1 ensures] ComputerDivision.div x 1 = x
+end
+module M_module__module__impl_S_T__no_foo (* module::S<T> *)
+  use int.Int
+  
+  constant foo : int
+  
+  constant bar_T: int = 4
+  
+  axiom bar_T_spec: bar_T = 4
+  
+  constant bar_ref_unit: int = 4
+  
+  axiom bar_ref_unit_spec: bar_ref_unit = 4
+  
+  constant bar_ref_T: int = 4
+  
+  axiom bar_ref_T_spec: bar_ref_T = 4
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  function no_foo_T : int
+  
+  goal vc_no_foo_T: ([@stop_split] [@expl:bar ensures] bar_T = 4)
+    -> ([@stop_split] [@expl:bar ensures] bar_ref_unit = 4)
+    -> ([@stop_split] [@expl:bar ensures] bar_ref_T = 4)
+    -> (let result = foo + bar_T + bar_ref_unit + bar_ref_T in [@stop_split] [@expl:no_foo ensures] result = result)
+end
+module M_module__module__impl_S_T__no_foo_no_bar_ref_t (* module::S<T> *)
+  use int.Int
+  
+  constant foo : int
+  
+  constant bar_T: int = 4
+  
+  axiom bar_T_spec: bar_T = 4
+  
+  constant bar_ref_unit: int = 4
+  
+  axiom bar_ref_unit_spec: bar_ref_unit = 4
+  
+  constant bar_ref_T : int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  function no_foo_no_bar_ref_t_T : int
+  
+  goal vc_no_foo_no_bar_ref_t_T: ([@stop_split] [@expl:bar ensures] bar_T = 4)
+    -> ([@stop_split] [@expl:bar ensures] bar_ref_unit = 4)
+    -> (let result = foo + bar_T + bar_ref_unit + bar_ref_T in [@stop_split] [@expl:no_foo_no_bar_ref_t ensures] result
+    = result)
+end
+module M_module__module__impl_Trait_for_ref_S_T__assoc (* <&module::S<T> as Trait<'_>> *)
+  constant bar_ref_T : int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  function assoc_ref_S_T : int
+  
+  goal vc_assoc_ref_S_T: let result = bar_ref_T in [@stop_split] [@expl:assoc ensures] result = result
+end
+module M_module__no_bar_ref_unit
+  use int.Int
+  
+  constant foo: int = 3
+  
+  constant bar_ref_unit : int
+  
+  constant bar_u32: int = 4
+  
+  axiom bar_u32_spec: bar_u32 = 4
+  
+  constant baz_unit: int = 5
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  function no_bar_ref_unit : int
+  
+  goal vc_no_bar_ref_unit: ([@stop_split] [@expl:bar ensures] bar_u32 = 4)
+    -> (let result = foo + bar_ref_unit + bar_u32 + baz_unit in [@stop_split] [@expl:no_bar_ref_unit ensures] result
+    = result)
+end
+module M_no_division
+  function div_Int (self: int) (other: int) : int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : int
+  
+  function no_division (x: int) : int
+  
+  goal vc_no_division: [@stop_split] [@expl:no_division ensures] div_Int x 1 = div_Int x 1
+end
+module M_recursive__cyclic
+  use int.Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+    ge_log_Int self 0 /\ gt_log_Int self other
+  
+  meta "rewrite_def" predicate well_founded_relation_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  constant x : int
+  
+  function cyclic (x: int) : ()
+  
+  goal vc_cyclic: if gt_log_Int x 0 then [@expl:variant decreases] well_founded_relation_Int x (x - 1) else true
+end
