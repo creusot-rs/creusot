@@ -155,4 +155,14 @@
             };
         };
     };
+
+  nixConfig = {
+    extra-substituters = [
+      "https://cache.creusot.rs/creusot"
+    ];
+
+    extra-trusted-public-keys = [
+      "creusot:v8x3T4Lw50lSw/GnKIVwiiqM6FbOk1JMEcyRdlUy4+s="
+    ];
+  };
 }
