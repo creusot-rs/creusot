@@ -1,7 +1,7 @@
 //! A logical/ghost finite map.
 
 #[cfg(creusot)]
-use crate::resolve::structural_resolve;
+use crate::{logic::such_that, resolve::structural_resolve};
 use crate::{
     logic::{FSet, Mapping, ops::IndexLogic},
     prelude::*,
@@ -662,4 +662,60 @@ impl<K, V> Resolve for Iter<K, V> {
     #[requires(structural_resolve(self))]
     #[ensures(self.resolve())]
     fn resolve_coherence(self) {}
+}
+
+pub struct LexFMap<K, V>(pub FMap<K, V>);
+
+impl<K: OrdLogic, V: PartialOrdLogic> PartialOrdLogic for LexFMap<K, V> {
+    #[logic(open)]
+    fn lt_log(self, other: Self) -> bool {
+        pearlite! {
+            exists<k0: K> is_lex_witness(self, other, k0)
+        }
+    }
+
+    #[logic(law)]
+    #[ensures(!(self < self))]
+    fn irreflexive(self) {}
+
+    #[logic(law)]
+    #[requires(x < y)]
+    #[requires(y < z)]
+    #[ensures(x < z)]
+    fn transitive(x: Self, y: Self, z: Self) {
+        pearlite! {
+            // FIXME
+            proof_assert! { forall<a, b: K> a < b || a == b || a > b };
+            let k0 = such_that(|k| is_lex_witness(x, y, k));
+            let k1 = such_that(|k| is_lex_witness(y, z, k));
+            if k0 < k1 {
+                proof_assert! { is_lex_witness(x, z, k0) }
+            } else {
+                proof_assert! { is_lex_witness(x, z, k1) }
+            }
+        }
+    }
+
+    #[logic(law)]
+    #[ensures((self <= other) == (self < other || self == other))]
+    fn le_lt_log(self, other: Self) {}
+}
+
+impl<K: OrdLogic, V: OrdLogic> OrdLogic for LexFMap<K, V> {
+    #[logic(law)]
+    #[ensures(self < other || self == other || other < self)]
+    fn lt_log_total(self, other: Self) {}
+}
+
+#[logic(open, inline)]
+pub fn is_lex_witness<K: OrdLogic, V: PartialOrdLogic>(
+    a: LexFMap<K, V>,
+    b: LexFMap<K, V>,
+    k0: K,
+) -> bool {
+    pearlite! {
+        a.0.contains(&k0) && b.0.contains(&k0)
+            && a.0[k0] < b.0[k0]
+            && forall<k: K> k < k0 ==> a.0.lookup(k) == b.0.lookup(k)
+    }
 }
