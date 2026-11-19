@@ -107,6 +107,32 @@ axiom iter_mut_Rev_I_spec: forall self: MutBorrow.t t_Rev_I [iter_mut_Rev_I self
 
 predicate completed_back_Rev_I (self: MutBorrow.t t_Rev_I) = completed_I (iter_mut_Rev_I self)
 
+predicate produces_back_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
+
+predicate completed_back_I (self: MutBorrow.t t_I)
+
+function size_hint_back_spec_I (self: t_I) (r: tup2_usize_Option_usize) : ()
+
+axiom size_hint_back_spec_I_spec: forall self: t_I, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+    -> (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_back_I self s i.current /\ completed_back_I i
+      -> UInt64.t'int r.f0 <= Seq.length s)
+
+axiom size_hint_back_spec_I_spec'0: forall self: t_I, r: tup2_usize_Option_usize. postcondition_size_hint () self r
+    -> match r.f1 with
+      | Some r'0 -> forall s: Seq.seq t_Item, i: t_I. produces_back_I self s i -> Seq.length s <= UInt64.t'int r'0
+      | None -> true
+      end
+
+function produces_back_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
+
+axiom produces_back_trans_I_spec:
+  forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_back_I a ab b
+    -> produces_back_I b bc c -> produces_back_I a (Seq.(++) ab bc) c
+
+function produces_back_refl_I (self: t_I) : ()
+
+axiom produces_back_refl_I_spec: forall self: t_I. produces_back_I self (Seq.empty: Seq.seq t_Item) self
+
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"

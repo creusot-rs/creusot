@@ -1,4 +1,5 @@
 use creusot.prelude.Any
+use seq.Seq
 
 type t_Self_
 
@@ -41,6 +42,20 @@ let from_iter_B (iter: t_Self_) (return (x: t_B)) =
   any
   [ return (result: t_B) -> {[@stop_split] [@expl:from_iter ensures] postcondition_once_from_iter () iter result}
     (! return {result}) ]
+
+type t_Item
+
+predicate produces_Self_ (self: t_Self_) (visited: Seq.seq t_Item) (o: t_Self_)
+
+function produces_trans_Self_ (a: t_Self_) (ab: Seq.seq t_Item) (b: t_Self_) (bc: Seq.seq t_Item) (c: t_Self_) : ()
+
+axiom produces_trans_Self__spec:
+  forall a: t_Self_, ab: Seq.seq t_Item, b: t_Self_, bc: Seq.seq t_Item, c: t_Self_. produces_Self_ a ab b
+    -> produces_Self_ b bc c -> produces_Self_ a (Seq.(++) ab bc) c
+
+function produces_refl_Self_ (self: t_Self_) : ()
+
+axiom produces_refl_Self__spec: forall self: t_Self_. produces_Self_ self (Seq.empty: Seq.seq t_Item) self
 
 meta "compute_max_steps" 1000000
 

@@ -2,6 +2,39 @@
 
 type t_FMap_K_V
 
+type t_V
+
+type t_Option_V = None | Some t_V
+
+function op_V (self: t_V) (other: t_V) : t_Option_V
+
+predicate incl_V (self: t_V) (other: t_V)
+
+axiom incl_V_spec: forall self: t_V, other: t_V [incl_V self other]. incl_V self other
+    = (exists factor: t_V. op_V self factor = Some other)
+
+function incl_transitive_V (a: t_V) (b: t_V) (c: t_V) : ()
+
+axiom incl_transitive_V_spec: forall a: t_V, b: t_V, c: t_V. incl_V a b -> incl_V b c -> incl_V a c
+
+function associative_some_V (a: t_V) (b: t_V) (c: t_V) (ab: t_V) (bc: t_V) : ()
+
+axiom associative_some_V_spec: forall a: t_V, b: t_V, c: t_V, ab: t_V, bc: t_V. op_V a b = Some ab
+    -> op_V b c = Some bc -> op_V a bc = op_V ab c
+
+function associative_none_V (a: t_V) (b: t_V) (c: t_V) (bc: t_V) : ()
+
+axiom associative_none_V_spec: forall a: t_V, b: t_V, c: t_V, bc: t_V. op_V a b = None
+    -> op_V b c = Some bc -> op_V a bc = None
+
+function commutative_V (a: t_V) (b: t_V) : ()
+
+axiom commutative_V_spec: forall a: t_V, b: t_V. op_V a b = op_V b a
+
+function incl_op_V (self: t_V) (other: t_V) (comb: t_V) : ()
+
+axiom incl_op_V_spec: forall self: t_V, other: t_V, comb: t_V. op_V self other = Some comb -> incl_V self comb
+
 meta "compute_max_steps" 1000000
 
 meta "select_lsinst" "all"
