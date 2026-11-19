@@ -8,12 +8,15 @@ let
 
     filter =
       path: type:
-      (rustLib.filterCargoSources path type)
-      || (builtins.match ".*/rust-toolchain" path != null)
-      || (builtins.match ".*/messages.ftl" path != null)
-      || (builtins.match ".*/.*\.coma" path != null)
-      || (builtins.match ".*/.*\.json" path != null)
-      || (builtins.match ".*/.*\.stderr" path != null);
+      let
+        filename = baseNameOf path;
+      in
+      final.lib.cleanSourceFilter path type
+      || rustLib.filterCargoSources path type
+      || builtins.elem filename [ "rust-toolchain" "messages.ftl" ]
+      || final.lib.hasSuffix ".coma" filename
+      || final.lib.hasSuffix ".json" filename
+      || final.lib.hasSuffix ".stderr" filename;
   };
 
   mkRustToolchain =

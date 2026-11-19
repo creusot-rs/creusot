@@ -72,7 +72,7 @@
             z3 = {
               version = "5.3.2";
               sha256 = "sha256-vKNrsm09LGu8pgkX5Yv0XlY3u/MAawoma3BIeavS8So=";
-           };
+            };
           };
         in
         {
@@ -155,4 +155,14 @@
             };
         };
     };
+
+  nixConfig = {
+    extra-substituters = [
+      "https://cache.creusot.rs/creusot"
+    ];
+
+    extra-trusted-public-keys = [
+      "creusot:v8x3T4Lw50lSw/GnKIVwiiqM6FbOk1JMEcyRdlUy4+s="
+    ];
+  };
 }

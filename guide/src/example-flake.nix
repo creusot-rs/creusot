@@ -40,7 +40,7 @@
           devShells.default = pkgs.mkShell {
             packages = [
               # `mkCreusotWrapped` produces a wrapped version of Creusot, along with all its dependencies (similar to `clang`).
-              (pkgs.creusot.mkCreusotWrapped { 
+              (pkgs.creusot.mkCreusotWrapped {
                 # Switch between free and non-free version of the prover `alt-ergo`.
                 isFree = true;
 
