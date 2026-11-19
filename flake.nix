@@ -162,7 +162,7 @@
     ];
 
     extra-trusted-public-keys = [
-      "creusot:v8x3T4Lw50lSw/GnKIVwiiqM6FbOk1JMEcyRdlUy4+s="
+      "creusot:cAi6flAiJFDgL3gl4Rv1bwrjmvJEsx8uav1suxfAoEk="
     ];
   };
 }
