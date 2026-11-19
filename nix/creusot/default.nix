@@ -38,7 +38,7 @@ in
 
     prelude = final.callPackage ./prelude.nix {
       inherit (attrs) meta version;
-      inherit rustBuilder src;
+      inherit rustBuilder;
     };
 
     creusot = final.callPackage ./creusot.nix {

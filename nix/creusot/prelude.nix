@@ -4,6 +4,7 @@
   libzip,
 
   # Librairies
+  formats,
   lib,
   runCommand,
   stdenv,
@@ -11,21 +12,47 @@
   # Attributes
   meta,
   rustBuilder,
-  src,
   version,
 }:
 let
   pname = "prelude-generator";
   cargoExtraArgs = "--bin prelude-generator";
 
-  cargoArtifacts = rustBuilder.buildDepsOnly {
-    inherit meta pname version;
-    inherit cargoExtraArgs src;
+  src = lib.fileset.toSource {
+    root = ../..;
+    fileset = lib.fileset.unions [
+      ../../Cargo.lock
+      ../../prelude-generator
+    ];
   };
+
+  cargoToml =
+    let
+      manifest = builtins.fromTOML (builtins.readFile ../../Cargo.toml);
+    in
+    (formats.toml { }).generate "Cargo.toml" (
+      manifest
+      // {
+        workspace = manifest.workspace // {
+          members = [ "prelude-generator" ];
+        };
+      }
+    );
+
+  postUnpack = ''
+    cp ${cargoToml} "$sourceRoot/Cargo.toml"
+  '';
 
   preludeBinary = rustBuilder.buildPackage {
     inherit meta pname version;
-    inherit cargoArtifacts cargoExtraArgs src;
+    inherit cargoExtraArgs src;
+    inherit postUnpack;
+
+    cargoArtifacts = rustBuilder.buildDepsOnly {
+      inherit meta pname version;
+      inherit cargoExtraArgs src;
+      inherit postUnpack;
+    };
 
     nativeBuildInputs = lib.optionals stdenv.isDarwin [
       libiconv
