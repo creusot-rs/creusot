@@ -12,27 +12,34 @@
   rustBuilder,
   rustToolchain,
   src,
+  postUnpack,
   version,
 }:
 
 let
   pname = "cargo-creusot";
-  cargoExtraArgs = "--workspace --exclude creusot-install --exclude prelude-generator";
+  cargoExtraArgs = "--workspace";
+
+  manifest = builtins.fromTOML (builtins.readFile ../../Cargo.toml);
+
+in
+rustBuilder.buildPackage rec {
+  inherit meta pname version;
+  inherit cargoExtraArgs src;
+  inherit postUnpack;
 
   cargoArtifacts = rustBuilder.buildDepsOnly {
     inherit meta pname version;
     inherit cargoExtraArgs src;
+    inherit postUnpack;
   };
-in
-rustBuilder.buildPackage rec {
-  inherit meta pname version;
-  inherit cargoArtifacts cargoExtraArgs src;
 
   nativeBuildInputs = lib.optionals stdenv.isDarwin [
     libiconv
     libzip
   ];
 
+  doCheck = false;
   doNotRemoveReferencesToRustToolchain = true;
 
   postInstall = ''
