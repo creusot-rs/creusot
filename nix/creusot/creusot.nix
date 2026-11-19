@@ -8,6 +8,7 @@
   stdenv,
 
   # Attributes
+  check,
   meta,
   rustBuilder,
   rustToolchain,
@@ -20,13 +21,15 @@ let
   pname = "cargo-creusot";
   cargoExtraArgs = "--workspace";
 
-  manifest = builtins.fromTOML (builtins.readFile ../../Cargo.toml);
-
+  nativeBuildInputs = lib.optionals stdenv.isDarwin [
+    libiconv
+    libzip
+  ];
 in
 rustBuilder.buildPackage rec {
   inherit meta pname version;
-  inherit cargoExtraArgs src;
-  inherit postUnpack;
+  inherit cargoExtraArgs nativeBuildInputs;
+  inherit src postUnpack;
 
   cargoArtifacts = rustBuilder.buildDepsOnly {
     inherit meta pname version;
@@ -34,13 +37,13 @@ rustBuilder.buildPackage rec {
     inherit postUnpack;
   };
 
-  nativeBuildInputs = lib.optionals stdenv.isDarwin [
-    libiconv
-    libzip
-  ];
-
   doCheck = false;
   doNotRemoveReferencesToRustToolchain = true;
+
+  passthru = {
+    inherit (check) src postUnpack;
+    inherit cargoArtifacts pname nativeBuildInputs;
+  };
 
   postInstall = ''
     mkdir $out/share

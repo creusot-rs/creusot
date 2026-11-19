@@ -122,6 +122,18 @@
               free = mkCreusot { isFree = true; };
             };
 
+          checks = {
+            ui = pkgs.creusot.rustBuilder.cargoTest ({
+              inherit (pkgs.creusot.creusot.passthru) pname src postUnpack;
+              inherit (pkgs.creusot.creusot.passthru) cargoArtifacts nativeBuildInputs;
+
+              cargoExtraArgs = "--offline";
+              cargoTestExtraArgs = "--test ui";
+
+              doInstallCargoArtifacts = false;
+            });
+          };
+
           devShells =
             let
               rustDevToolchain = pkgs.creusot.mkRustToolchain (
