@@ -1,23 +1,34 @@
 attrs: final: prev:
 let
-  rustLib = attrs.crane.mkLib final;
+  manifest = builtins.fromTOML (builtins.readFile ../../Cargo.toml);
+  mkSource =
+    members:
+    let
+      cargoToml = (final.formats.toml { }).generate "Cargo.toml" (
+        manifest
+        // {
+          workspace = manifest.workspace // {
+            inherit members;
+          };
+        }
+      );
+    in
+    {
+      src = final.lib.fileset.toSource {
+        root = ../..;
+        fileset = final.lib.fileset.unions (
+          [
+            ../../Cargo.lock
+            ../../rust-toolchain
+          ]
+          ++ map (member: ../.. + "/${member}") members
+        );
+      };
 
-  src = final.lib.cleanSourceWith {
-    name = "creusot-source";
-    src = ../..;
-
-    filter =
-      path: type:
-      let
-        filename = baseNameOf path;
-      in
-      final.lib.cleanSourceFilter path type
-      || rustLib.filterCargoSources path type
-      || builtins.elem filename [ "rust-toolchain" "messages.ftl" ]
-      || final.lib.hasSuffix ".coma" filename
-      || final.lib.hasSuffix ".json" filename
-      || final.lib.hasSuffix ".stderr" filename;
-  };
+      postUnpack = ''
+        cp ${cargoToml} "$sourceRoot/Cargo.toml"
+      '';
+    };
 
   mkRustToolchain =
     components:
@@ -28,6 +39,7 @@ let
       profile = "minimal";
     };
 
+  rustLib = attrs.crane.mkLib final;
   rustToolchain = mkRustToolchain attrs.toolchain.components;
   rustBuilder = rustLib.overrideToolchain rustToolchain;
 in
@@ -38,13 +50,26 @@ in
 
     prelude = final.callPackage ./prelude.nix {
       inherit (attrs) meta version;
+      inherit (mkSource [ "prelude-generator" ]) src postUnpack;
       inherit rustBuilder;
     };
 
-    creusot = final.callPackage ./creusot.nix {
-      inherit (attrs) meta version;
-      inherit rustBuilder rustToolchain src;
-    };
+    creusot =
+      let
+        members = builtins.filter (
+          member:
+          !builtins.elem member [
+            "creusot-install"
+            "prelude-generator"
+            "tests"
+          ]
+        ) manifest.workspace.members;
+      in
+      final.callPackage ./creusot.nix {
+        inherit (attrs) meta version;
+        inherit (mkSource members) src postUnpack;
+        inherit rustBuilder rustToolchain;
+      };
 
     mkWhy3Framework = final.callPackage ./mkWhy3Framework.nix { };
     mkCreusotWrapped = final.callPackage ./mkCreusotWrapped.nix {

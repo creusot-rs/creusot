@@ -4,7 +4,6 @@
   libzip,
 
   # Librairies
-  formats,
   lib,
   runCommand,
   stdenv,
@@ -12,36 +11,13 @@
   # Attributes
   meta,
   rustBuilder,
+  src,
+  postUnpack,
   version,
 }:
 let
   pname = "prelude-generator";
   cargoExtraArgs = "--bin prelude-generator";
-
-  src = lib.fileset.toSource {
-    root = ../..;
-    fileset = lib.fileset.unions [
-      ../../Cargo.lock
-      ../../prelude-generator
-    ];
-  };
-
-  cargoToml =
-    let
-      manifest = builtins.fromTOML (builtins.readFile ../../Cargo.toml);
-    in
-    (formats.toml { }).generate "Cargo.toml" (
-      manifest
-      // {
-        workspace = manifest.workspace // {
-          members = [ "prelude-generator" ];
-        };
-      }
-    );
-
-  postUnpack = ''
-    cp ${cargoToml} "$sourceRoot/Cargo.toml"
-  '';
 
   preludeBinary = rustBuilder.buildPackage {
     inherit meta pname version;
