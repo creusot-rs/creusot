@@ -19,7 +19,7 @@ mod set;
 mod well_founded;
 
 pub use self::{
-    fmap::FMap,
+    fmap::{FMap, LexFMap},
     fset::FSet,
     id::Id,
     int::{Int, Nat, Positive},

@@ -1,5 +1,8 @@
 extern crate creusot_std;
-use creusot_std::{logic::FMap, prelude::*};
+use creusot_std::{
+    logic::{FMap, LexFMap},
+    prelude::*,
+};
 
 #[ensures(*result == 2usize)]
 pub fn resolves() -> Ghost<usize> {
@@ -21,4 +24,22 @@ pub fn resolves() -> Ghost<usize> {
         }
         k + v
     }
+}
+
+#[requires(k < l)]
+#[requires(v < w)]
+pub fn ord<K: Copy + OrdLogic, V: Copy + OrdLogic>(k: K, l: K, v: V, w: V) {
+    ghost! {
+        let mut kv = FMap::new().into_inner();
+        kv.insert(k, v);
+        proof_assert! { LexFMap(FMap::empty()) < LexFMap(kv) };
+
+        let mut kw = FMap::new().into_inner();
+        kw.insert(k, w);
+        proof_assert! { LexFMap(kv) < LexFMap(kw) };
+
+        let mut lv = FMap::new().into_inner();
+        lv.insert(l, v);
+        proof_assert! { LexFMap(kv) < LexFMap(lv) };
+    };
 }

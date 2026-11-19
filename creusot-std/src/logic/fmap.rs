@@ -1,7 +1,7 @@
 //! A logical/ghost finite map.
 
 #[cfg(creusot)]
-use crate::resolve::structural_resolve;
+use crate::{logic::such_that, resolve::structural_resolve};
 use crate::{
     logic::{FSet, Mapping, ops::IndexLogic},
     prelude::*,
@@ -662,4 +662,72 @@ impl<K, V> Resolve for Iter<K, V> {
     #[requires(structural_resolve(self))]
     #[ensures(self.resolve())]
     fn resolve_coherence(self) {}
+}
+
+pub struct LexFMap<K, V>(pub FMap<K, V>);
+
+impl<K: OrdLogic, V: PartialOrdLogic> PartialOrdLogic for LexFMap<K, V> {
+    #[logic(open)]
+    fn lt_log(self, other: Self) -> bool {
+        pearlite! {
+            exists<k0: K> is_lex_witness(self, other, k0)
+        }
+    }
+
+    #[logic(law)]
+    #[ensures(!(self < self))]
+    fn irreflexive(self) {}
+
+    #[logic(law)]
+    #[requires(x < y)]
+    #[requires(y < z)]
+    #[ensures(x < z)]
+    fn transitive(x: Self, y: Self, z: Self) {
+        let _ = K::lt_log_total;
+    }
+
+    #[logic(law)]
+    #[ensures((self <= other) == (self < other || self == other))]
+    fn le_lt_log(self, other: Self) {}
+}
+
+impl<K: OrdLogic, V: OrdLogic> OrdLogic for LexFMap<K, V> {
+    #[logic(law)]
+    #[ensures(self < other || self == other || other < self)]
+    fn lt_log_total(self, other: Self) {
+        let _ = K::lt_log_total;
+        let _ = V::lt_log_total;
+        let _ = find_min_eq(self.0, other.0);
+    }
+}
+
+#[logic(open, inline)]
+pub fn is_lex_witness<K: OrdLogic, V: PartialOrdLogic>(a: LexFMap<K, V>, other: LexFMap<K, V>, k0: K) -> bool {
+    pearlite! {
+        (match (a.0.lookup(k0), other.0.lookup(k0)) {
+            (None, None) => false,
+            (None, Some(_)) => forall<k1: K> k0 < k1 ==> !a.0.contains(&k1),
+            (Some(v), Some(w)) => v < w,
+            (Some(_), None) => exists<k1: K> k0 < k1 && other.0.contains(&k1),
+        }) && forall<k: K> k < k0 ==> a.0.lookup(k) == other.0.lookup(k)
+    }
+}
+
+#[logic(opaque)]
+#[ensures(match result {
+    None => a == b,
+    Some(k0) => a.lookup(k0) != b.lookup(k0) && forall<k> k < k0 ==> a.lookup(k) == b.lookup(k),
+})]
+fn find_min_eq<K: OrdLogic, V>(a: FMap<K, V>, b: FMap<K, V>) -> Option<K> {
+    None
+}
+
+#[logic(opaque)]
+#[ensures(match result {
+    None => forall<k, v> a.lookup(k) == Some(v) ==> !p[(k, v)],
+    Some(k0) => a.contains(&k0) && p[(k0, a[k0])]
+        && forall<k: K> k < k0 && a.contains(&k) ==> !p[(k, a[k])],
+})]
+fn find_min<K: OrdLogic, V>(a: FMap<K, V>, p: Mapping<(K, V), bool>) -> Option<K> {
+    None
 }
