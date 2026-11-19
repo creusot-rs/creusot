@@ -52,7 +52,7 @@ in
 {
   creusot = prev.creusot or { } // {
     inherit (attrs.toolchain) components;
-    inherit mkRustToolchain;
+    inherit mkRustToolchain rustBuilder;
 
     prelude = final.callPackage ./prelude.nix {
       inherit (attrs) meta version;
@@ -62,19 +62,24 @@ in
 
     creusot =
       let
+        excludedMembers = [
+          "creusot-install"
+          "prelude-generator"
+          "tests"
+        ];
+
         members = builtins.filter (
-          member:
-          !builtins.elem member [
-            "creusot-install"
-            "prelude-generator"
-            "tests"
-          ]
+          member: !builtins.elem member excludedMembers
         ) manifest.workspace.members;
       in
       final.callPackage ./creusot.nix {
         inherit (attrs) meta version;
         inherit (mkSource members) src postUnpack;
         inherit rustBuilder rustToolchain;
+
+        check = {
+          inherit (mkSource (members ++ [ "tests" ])) src postUnpack;
+        };
       };
 
     mkWhy3Framework = final.callPackage ./mkWhy3Framework.nix { };
