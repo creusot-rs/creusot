@@ -9,6 +9,7 @@ let
         // {
           workspace = manifest.workspace // {
             inherit members;
+            lints.cargo.unused_workspace_package_fields = "allow";
           };
         }
       );
@@ -27,6 +28,11 @@ let
 
       postUnpack = ''
         cp ${cargoToml} "$sourceRoot/Cargo.toml"
+
+        for manifest in "$sourceRoot"/*/Cargo.toml; do
+          echo '[lints.cargo]' >> "$manifest"
+          echo 'unused_dependencies = "allow"' >> "$manifest"
+        done
       '';
     };
 
