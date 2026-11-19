@@ -6,9 +6,10 @@ use std::{
 
 use crate::{
     backend::{Why3Generator, dependency::Dependency, module_context::elaborator::Expander},
-    contracts_items::{Intrinsic, get_builtin, is_bitwise},
+    contracts_items::{Intrinsic, get_builtin, is_bitwise, is_law},
     ctx::*,
     naming::name,
+    resolution::TraitResolved,
     util::{erased_identity_for_item, path_of_span},
 };
 use creusot_args::options::SpanMode;
@@ -21,7 +22,7 @@ use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
-    GenericArgsRef, List, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitableExt, TypingEnv,
+    GenericArgsRef, List, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitableExt, TypingEnv,
     Unnormalized,
 };
 use rustc_span::Span;
@@ -510,9 +511,35 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
         let typing_env = self.typing_env();
         let source_id = self.source_id();
         let span = tcx.def_span(source_id);
+        let mut dep_graph = self.dep_graph.into_inner();
 
-        let graph =
-            Expander::new(ctx, &mut self.names, self.dep_graph.into_inner(), typing_env, span);
+        let parent = tcx.parent(source_id);
+        let in_trait = matches!(tcx.def_kind(parent), DefKind::Trait);
+        // Load laws from trait bounds
+        for bound in typing_env.param_env.caller_bounds() {
+            let Some(clause) = bound.as_trait_clause() else {
+                continue;
+            };
+            let TraitRef { def_id, args, .. } = clause.skip_binder().trait_ref;
+            // Within a trait, don't load laws of the trait being defined
+            if in_trait && parent == def_id {
+                match args.type_at(0).kind() {
+                    TyKind::Param(p) if p.index == 0 => continue,
+                    _ => {}
+                }
+            }
+            for &law in ctx.ctx.laws(def_id) {
+                let (def, args) = TraitResolved::resolve_item(tcx, typing_env, law, args)
+                    .to_opt(law, args)
+                    .unwrap();
+                // The lemma may be a law at the trait level but not at the impl level.
+                if is_law(tcx, def) {
+                    dep_graph.add_node(Dependency::Item(def, args));
+                }
+            }
+        }
+
+        let graph = Expander::new(ctx, &mut self.names, dep_graph, typing_env, span);
         let (graph, mut bodies) = graph.build_graph();
 
         let mut decls = self.names.namespace_type_decls();
@@ -573,7 +600,11 @@ impl<'a, 'tcx> Dependencies<'a, 'tcx> {
 
                 let mut bodies = scc
                     .iter()
-                    .map(|node| bodies.remove(node).unwrap_or_else(|| panic!("not found {scc:?}")))
+                    .map(|node| {
+                        bodies
+                            .remove(node)
+                            .unwrap_or_else(|| panic!("not found {scc:?}\n{typing_env:?}"))
+                    })
                     .collect::<Vec<_>>();
 
                 if bodies.len() > 1 {

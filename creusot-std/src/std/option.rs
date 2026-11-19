@@ -654,9 +654,7 @@ impl<T: PartialOrdLogic> PartialOrdLogic for Option<T> {
 impl<T: OrdLogic> OrdLogic for Option<T> {
     #[logic(law)]
     #[ensures(self < other || self == other || other < self)]
-    fn lt_log_total(self, other: Self) {
-        let _ = T::lt_log_total;
-    }
+    fn lt_log_total(self, other: Self) {}
 }
 
 impl<T> View for IntoIter<T> {

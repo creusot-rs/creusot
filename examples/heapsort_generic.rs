@@ -38,7 +38,6 @@ fn sift_down<T: Ord + DeepModel>(v: &mut Vec<T>, start: usize, end: usize)
 where
     T::DeepModelTy: OrdLogic,
 {
-    snapshot! { T::DeepModelTy::lt_log_total }; // FIXME: enable laws autoloading  even for subtraits
     let old_v = snapshot! { v };
     let mut i = start;
 

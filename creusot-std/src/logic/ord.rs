@@ -178,9 +178,7 @@ impl<T: PartialOrdLogic> PartialOrdLogic for &T {
 impl<T: OrdLogic> OrdLogic for &T {
     #[logic]
     #[ensures(self < other || self == other || other < self)]
-    fn lt_log_total(self, other: Self) {
-        let _ = T::lt_log_total;
-    }
+    fn lt_log_total(self, other: Self) {}
 }
 
 impl PartialOrdLogic for Int {
@@ -347,10 +345,7 @@ impl<A: PartialOrdLogic, B: PartialOrdLogic> PartialOrdLogic for (A, B) {
 impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
     #[logic]
     #[ensures(self < other || self == other || other < self)]
-    fn lt_log_total(self, other: Self) {
-        let _ = A::lt_log_total;
-        let _ = B::lt_log_total;
-    }
+    fn lt_log_total(self, other: Self) {}
 }
 
 pub trait SemiLattice: PartialOrdLogic + Sized {
@@ -367,7 +362,6 @@ impl<T: OrdLogic> SemiLattice for T {
     #[ensures(other <= result)]
     #[ensures(forall<r> self <= r ==> other <= r ==> result <= r)]
     fn join(self, other: Self) -> Self {
-        let _ = Self::lt_log_total;
         if self < other { other } else { self }
     }
 }

@@ -69,7 +69,6 @@ extern_spec! {
                 #[ensures(self.deep_model() <= o.deep_model() ==> result == o)]
                 #[ensures(o.deep_model() < self.deep_model() ==> result == self)]
                 fn max(self, o: Self) -> Self where Self: Sized {
-                    let _ = snapshot!(Self::DeepModelTy::lt_log_total);
                     if self <= o { o } else { self }
                 }
 
@@ -79,7 +78,6 @@ extern_spec! {
                 #[ensures(self.deep_model() <= o.deep_model() ==> result == self)]
                 #[ensures(o.deep_model() < self.deep_model() ==> result == o)]
                 fn min(self, o: Self) -> Self where Self: Sized {
-                    let _ = snapshot!(Self::DeepModelTy::lt_log_total);
                     if self <= o { self } else { o }
                 }
 
@@ -93,7 +91,6 @@ extern_spec! {
                     result == min
                 } else { result == self })]
                 fn clamp(self, min: Self, max: Self) -> Self where Self: Sized {
-                    let _ = snapshot!(Self::DeepModelTy::lt_log_total);
                     if self > max { max } else if self < min { min } else { self }
                 }
             }
