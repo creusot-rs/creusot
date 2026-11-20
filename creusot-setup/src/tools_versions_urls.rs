@@ -13,7 +13,7 @@ pub const WHY3FIND_VERSION: &'static str = "1.3.0"; // For the real version, see
 pub const ALTERGO_VERSION: &'static str = "2.6.4";
 pub const Z3_VERSION: &'static str = "5.4.1";
 pub const CVC4_VERSION: &'static str = "1.8";
-pub const CVC5_VERSION: &'static str = "1.4.1";
+pub const CVC5_VERSION: &'static str = "1.4.2";
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
 pub const URLS: Urls = Urls {
@@ -30,8 +30,8 @@ pub const URLS: Urls = Urls {
         sha256: "d38a79cf984592785eda41ec888d94ca107ac1f13058740238041e28c8472e51",
     }),
     cvc5: Some(Url {
-        url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.4.1/cvc5-Linux-x86_64-static-gpl.zip",
-        sha256: "d0b54324ec2129697975da8753767fd255309947b87832917d32a78da7d16666",
+        url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.4.2/cvc5-Linux-x86_64-static-gpl.zip",
+        sha256: "bcfc59e9a5ca8bfe2891bd024faa08bc86e48d79b5705f781b6f5738eeda13ad",
     }),
 };
 
@@ -48,8 +48,8 @@ pub const URLS: Urls = Urls {
     // aarch64-linux binary. CVC5 supersedes it.
     cvc4: None,
     cvc5: Some(Url {
-        url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.4.1/cvc5-Linux-arm64-static-gpl.zip",
-        sha256: "e6cac10f5b80177b21ef56660ea580120fb8b614ceacc8ba8907c0fcfd9a1e7c",
+        url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.4.2/cvc5-Linux-arm64-static-gpl.zip",
+        sha256: "62fc7a09edb0ae4dde0ec7cb25b9a105c5b3aab8217aa8c2dec4d7cf436d9e75",
     }),
 };
 
@@ -69,8 +69,8 @@ pub const URLS: Urls = Urls {
         sha256: "b8a0b8714dd947aa46182402d9caba27d3d696041e17704884bc3d8510066527",
     }),
     cvc5: Some(Url {
-        url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.4.1/cvc5-macOS-arm64-static-gpl.zip",
-        sha256: "9b3c16e9853475108db2022ba0882e57df60f93d888d148c246a819ce4716eef",
+        url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.4.2/cvc5-macOS-arm64-static-gpl.zip",
+        sha256: "82d06b330c68938739b28adb84d3f352ee058bc594efc25f32a7eebc2b507c74",
     }),
 };
 
