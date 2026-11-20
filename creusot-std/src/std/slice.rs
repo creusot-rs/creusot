@@ -535,6 +535,19 @@ extern_spec! {
         fn binary_search(&self, x: &T) -> Result<usize, usize>
             where T: Ord + DeepModel,  T::DeepModelTy: OrdLogic,;
 
+        #[ensures((^self)@.len() == (*self)@.len())]
+        #[ensures(forall<i> 0 <= i && i < (^self)@.len() ==> (^self)@[i] == value)]
+        fn fill(&mut self, value: T)
+            where T: Clone,;
+        
+        #[ensures((^self)@.len() == (*self)@.len())]
+        #[ensures(exists<s: Seq<F>> s.len() == (^self)@.len() + 1 &&
+            forall<i> 0 <= i && i < s.len() ==> f.hist_inv(s[i]) &&
+            forall<i> 0 <= i && i < (^self)@.len() ==> s[i].postcondition_mut((), s[i + 1], (^self)@[i])
+        )]
+        fn fill_with<F>(&mut self, f: F)
+            where F: FnMut() -> T,;
+
         #[check(ghost)]
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]
