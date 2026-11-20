@@ -48,6 +48,35 @@ impl Plain for Int {
     }
 }
 
+macro_rules! cast_int {
+    ($t:ident : $f_log:ident) => {
+        #[allow(clippy::from_over_into)] // FIXME: implement `From` when we have modes
+        impl Into<$t> for Int {
+            #[trusted]
+            #[check(ghost)]
+            #[requires($t::MIN@ <= self && self <= $t::MAX@)]
+            #[logic_alias(Int::$f_log)]
+            #[allow(unused_variables)]
+            fn into(self) -> $t {
+                panic!()
+            }
+        }
+    };
+}
+
+macro_rules! cast_int_log {
+    ($t:ident : $f:ident : $m:ident) => {
+        #[doc = concat!("Cast this `Int` to a `", stringify!($t), "`.")]
+        #[doc = ""]
+        #[doc = concat!("You can use `self.into()` instead.")]
+        #[logic(opaque)]
+        #[builtin(concat!("creusot.int.", stringify!($m), ".of_int"))]
+        pub fn $f(self) -> $t {
+            dead
+        }
+    };
+}
+
 // Logical functions
 impl Int {
     /// Compute `self^p`.
@@ -154,6 +183,27 @@ impl Int {
     pub fn abs_diff(self, other: Int) -> Int {
         if self < other { other - self } else { self - other }
     }
+
+    cast_int_log!(u8:to_u8:UInt8);
+    cast_int_log!(u16:to_u16:UInt16);
+    cast_int_log!(u32:to_u32:UInt32);
+    cast_int_log!(u64:to_u64:UInt64);
+    #[cfg(target_pointer_width = "16")]
+    cast_int_log!(usize:to_usize:UInt16);
+    #[cfg(target_pointer_width = "32")]
+    cast_int_log!(usize:to_usize:UInt32);
+    #[cfg(target_pointer_width = "64")]
+    cast_int_log!(usize:to_usize:UInt64);
+    cast_int_log!(i8:to_i8:Int8);
+    cast_int_log!(i16:to_i16:Int16);
+    cast_int_log!(i32:to_i32:Int32);
+    cast_int_log!(i64:to_i64:Int64);
+    #[cfg(target_pointer_width = "16")]
+    cast_int_log!(isize:to_isize:UInt16);
+    #[cfg(target_pointer_width = "32")]
+    cast_int_log!(isize:to_isize:UInt32);
+    #[cfg(target_pointer_width = "64")]
+    cast_int_log!(isize:to_isize:UInt64);
 }
 
 impl AddLogic for Int {
@@ -252,6 +302,17 @@ impl Int {
     #[ensures(^self == *self - 1)]
     pub fn decr_ghost(&mut self) {}
 }
+
+cast_int!(u8:to_u8);
+cast_int!(u16:to_u16);
+cast_int!(u32:to_u32);
+cast_int!(u64:to_u64);
+cast_int!(usize:to_usize);
+cast_int!(i8:to_i8);
+cast_int!(i16:to_i16);
+cast_int!(i32:to_i32);
+cast_int!(i64:to_i64);
+cast_int!(isize:to_isize);
 
 impl PartialEq for Int {
     #[trusted]
