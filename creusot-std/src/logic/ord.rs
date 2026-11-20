@@ -3,6 +3,42 @@
 use crate::prelude::*;
 use core::cmp::Ordering;
 
+/// Derives the `PartialOrdLogic` trait.
+///
+/// This macro works similarly to `PartialOrd` and can be placed on a type to derive
+/// `PartialOrdLogic`, assuming all of its fields implement `PartialOrdLogic`. However, unlike
+/// `PartialOrd`, this macro generally should not be used on any type but a type that is intended
+/// to be used as `DeepModelTy` of the [`DeepModel`] trait. For that reason it has special support.
+///
+/// In short, if you're implementing the comparison traits using derives only, you don't need to
+/// worry about special cases. They will be handled for you. But if you need  to do something
+/// advanced here's the explanation:
+///
+/// This derive looks for an attribute `#[DeepModelTy]` and, if found, switches its handling of
+/// generics to add the `DeepModel` bound to the parameters instead of `PartialOrdLogic` and
+/// instead place the `PartialOrdLogic` bound on the `DeepModelTy`. This attribute is emitted by
+/// the `DeepModel` derive macro when its derive list is non-empty but you can also add it yourself
+/// if you need to implement `DeepModel` manually but still want to use this derive in the same way.
+pub use crate::base_macros::PartialOrdLogic;
+
+/// Derives the `OrdLogic` trait.
+///
+/// This macro works similarly to `Ord` and can be placed on a type to derive `OrdLogic`, assuming
+/// all of its fields implement `OrdLogic`. However, unlike `Ord`, this macro generally should not
+/// be used on any type but a type that is intended to be used as `DeepModelTy` of the [`DeepModel`]
+/// trait. For that reason it has special support.
+///
+/// In short, if you're implementing the comparison traits using derives only, you don't need to
+/// worry about special cases. They will be handled for you. But if you need  to do something
+/// advanced here's the explanation:
+///
+/// This derive looks for an attribute `#[DeepModelTy]` and, if found, switches its handling of
+/// generics to add the `DeepModel` bound to the parameters instead of `OrdLogic` and
+/// instead place the `OrdLogic` bound on the `DeepModelTy`. This attribute is emitted by
+/// the `DeepModel` derive macro when its derive list is non-empty but you can also add it yourself
+/// if you need to implement `DeepModel` manually but still want to use this derive in the same way.
+pub use crate::base_macros::OrdLogic;
+
 /// Trait for comparison operations (`<`, `>`, `<=`, `>=`) in Pearlite.
 ///
 /// Types that implement this trait must satisfy some properties (see [`PartialOrd`] trait in Rust).

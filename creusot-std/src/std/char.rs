@@ -45,6 +45,12 @@ impl Plain for char {
 pub trait CharExt {
     #[logic]
     pub fn to_utf8(self) -> Seq<u8>;
+
+    #[logic]
+    #[requires(num >= 0)]
+    #[requires(num <= 0x10FFFF)]
+    #[requires(num < 0xD800 || num > 0xDFFF)]
+    pub fn from_int(num: Int) -> Self;
 }
 
 impl CharExt for char {
@@ -54,6 +60,16 @@ impl CharExt for char {
     #[ensures((self@ <= 127) == (result.len() == 1))]
     #[ensures(self@ <= 127 ==> result[0]@ == self@)]
     fn to_utf8(self) -> Seq<u8> {
+        dead
+    }
+
+    #[trusted]
+    #[logic(opaque)]
+    #[requires(num >= 0)]
+    #[requires(num <= 0x10FFFF)]
+    #[requires(num < 0xD800 || num > 0xDFFF)]
+    #[ensures(result@ == num)]
+    fn from_int(num: Int) -> Self {
         dead
     }
 }

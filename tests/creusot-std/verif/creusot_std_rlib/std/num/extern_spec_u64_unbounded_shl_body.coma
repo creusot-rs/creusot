@@ -1,0 +1,31 @@
+use creusot.int.UInt32
+use creusot.int.UInt64
+use creusot.prelude.Any
+use creusot.int.UInt8
+
+constant const_BITS: UInt32.t = (64: UInt32.t)
+
+function shl_u64 [@inline:trivial] (self: UInt64.t) (rhs: UInt32.t) : UInt64.t =
+  UInt64.shl self (UInt64.of_int (UInt32.t'int rhs))
+
+meta "rewrite_def" function shl_u64
+
+let unchecked_shl (self: UInt64.t) (rhs: UInt32.t) (return (x: UInt64.t)) =
+{[@stop_split] [@expl:unchecked_shl requires] UInt32.lt rhs const_BITS}
+  any
+  [ return (result: UInt64.t) -> {[@stop_split] [@expl:unchecked_shl ensures] result = shl_u64 self rhs}
+    (! return {result}) ]
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_u64_unbounded_shl_body (self_: UInt64.t) (rhs: UInt32.t) (return (x: UInt64.t)) = (! bb0
+  [ bb0 = s0
+    [ s0 = [ &_6 <- UInt32.lt rhs const_BITS ] s1 | s1 = any [ br0 -> {_6 = false} (! bb3) | br1 -> {_6} (! bb1) ] ]
+  | bb1 = s0 [ s0 = unchecked_shl {self_} {rhs} (fun (_x: UInt64.t) -> [ &_ret <- _x ] s1) | s1 = return {_ret} ]
+  | bb3 = s0 [ s0 = [ &_ret <- (0: UInt64.t) ] s1 | s1 = return {_ret} ] ]
+  [ & _ret: UInt64.t = Any.any_l () | & self_: UInt64.t = self_ | & rhs: UInt32.t = rhs | & _6: bool = Any.any_l () ])
+  [ return (result: UInt64.t) -> {[@stop_split] [@expl:extern_spec_u64_unbounded_shl_body ensures] result
+    = (if UInt32.lt rhs const_BITS then shl_u64 self_ rhs else UInt64.of_int (UInt8.t'int (0: UInt8.t)))}
+    (! return {result}) ]

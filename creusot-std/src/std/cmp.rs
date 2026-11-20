@@ -2,10 +2,10 @@ use crate::{partial_ord_laws_impl, prelude::*};
 use core::cmp::*;
 
 #[cfg(creusot)]
-pub use creusot_std_proc::PartialEq;
+pub use creusot_std_proc::{Eq, Ord, PartialEq, PartialOrd};
 
 #[cfg(not(creusot))]
-pub use core::cmp::PartialEq;
+pub use core::cmp::{Eq, Ord, PartialEq, PartialOrd};
 
 extern_spec! {
     mod core {
@@ -116,6 +116,28 @@ extern_spec! {
                 <T as Ord>::min(v1, v2)
             }
         }
+    }
+
+    impl Ordering {
+        #[check(ghost)]
+        #[ensures(result == (self == Self::Greater))]
+        fn is_gt(self) -> bool;
+
+        #[check(ghost)]
+        #[ensures(result == (self == Self::Greater || self == Self::Equal))]
+        fn is_ge(self) -> bool;
+
+        #[check(ghost)]
+        #[ensures(result == (self == Self::Less))]
+        fn is_lt(self) -> bool;
+
+        #[check(ghost)]
+        #[ensures(result == (self == Self::Less || self == Self::Equal))]
+        fn is_le(self) -> bool;
+
+        #[check(ghost)]
+        #[ensures(result == (self != Self::Equal))]
+        fn is_ne(self) -> bool;
     }
 }
 
