@@ -1,0 +1,24 @@
+(* <std::collections::btree_map::ValuesMut<'a, K, V> as std::iter::IteratorSpec> *)
+
+use creusot.prelude.MutBorrow
+use seq.Seq
+
+type t_ValuesMut_K_V
+
+type t_V
+
+function view_ValuesMut_K_V (self: t_ValuesMut_K_V) : Seq.seq (MutBorrow.t t_V)
+
+predicate produces_ValuesMut_K_V (self: t_ValuesMut_K_V) (visited: Seq.seq (MutBorrow.t t_V)) (tl: t_ValuesMut_K_V) =
+  view_ValuesMut_K_V self = Seq.(++) visited (view_ValuesMut_K_V tl)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall a: t_ValuesMut_K_V, ab: Seq.seq (MutBorrow.t t_V), b: t_ValuesMut_K_V, bc: Seq.seq (MutBorrow.t t_V), c: t_ValuesMut_K_V. produces_ValuesMut_K_V a ab b
+    -> produces_ValuesMut_K_V b bc c
+    -> produces_ValuesMut_K_V a ab b
+    /\ produces_ValuesMut_K_V b bc c
+    /\ (forall result: (). produces_ValuesMut_K_V a (Seq.(++) ab bc) c -> produces_ValuesMut_K_V a (Seq.(++) ab bc) c)

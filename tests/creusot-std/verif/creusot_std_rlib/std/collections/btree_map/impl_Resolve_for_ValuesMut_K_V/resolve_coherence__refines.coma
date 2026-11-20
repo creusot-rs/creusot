@@ -1,0 +1,34 @@
+(* <std::collections::btree_map::ValuesMut<'a, K, V> as resolve::Resolve> *)
+
+use seq.Seq
+use creusot.prelude.MutBorrow
+use int.Int
+
+type t_ValuesMut_K_V
+
+predicate inv_ValuesMut_K_V (_1: t_ValuesMut_K_V)
+
+predicate structural_resolve_ValuesMut_K_V (_1: t_ValuesMut_K_V)
+
+type t_V
+
+function view_ValuesMut_K_V (self: t_ValuesMut_K_V) : Seq.seq (MutBorrow.t t_V)
+
+predicate resolve_refmut_V [@inline:trivial] (_1: MutBorrow.t t_V) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_V
+
+predicate resolve_ValuesMut_K_V [@inline:trivial] (self: t_ValuesMut_K_V) =
+  forall i: int. 0 <= i /\ i < Seq.length (view_ValuesMut_K_V self)
+    -> resolve_refmut_V (Seq.get (view_ValuesMut_K_V self) i)
+
+meta "rewrite_def" predicate resolve_ValuesMut_K_V
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: t_ValuesMut_K_V. inv_ValuesMut_K_V self
+    -> structural_resolve_ValuesMut_K_V self
+    -> structural_resolve_ValuesMut_K_V self
+    /\ (forall result: (). resolve_ValuesMut_K_V self -> resolve_ValuesMut_K_V self)
