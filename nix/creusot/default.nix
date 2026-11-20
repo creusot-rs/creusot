@@ -2,7 +2,10 @@ attrs: final: prev:
 let
   manifest = builtins.fromTOML (builtins.readFile ../../Cargo.toml);
   mkSource =
-    members:
+    {
+      members,
+      extraPaths ? [ ],
+    }:
     let
       cargoToml = (final.formats.toml { }).generate "Cargo.toml" (
         manifest
@@ -23,6 +26,7 @@ let
             ../../rust-toolchain
           ]
           ++ map (member: ../.. + "/${member}") members
+          ++ map (path: ../.. + "/${path}") extraPaths
         );
       };
 
@@ -56,7 +60,7 @@ in
 
     prelude = final.callPackage ./prelude.nix {
       inherit (attrs) meta version;
-      inherit (mkSource [ "prelude-generator" ]) src postUnpack;
+      inherit (mkSource { members = [ "prelude-generator" ]; }) src postUnpack;
       inherit rustBuilder;
     };
 
@@ -74,12 +78,19 @@ in
       in
       final.callPackage ./creusot.nix {
         inherit (attrs) meta version;
-        inherit (mkSource members) src postUnpack;
+        inherit (mkSource { inherit members; }) src postUnpack;
         inherit rustBuilder rustToolchain;
 
-        check = {
-          inherit (mkSource (members ++ [ "tests" ])) src postUnpack;
-        };
+        check =
+          let
+            attrs = {
+              members = members ++ [ "tests" ];
+              extraPaths = [ "examples" ];
+            };
+          in
+          {
+            inherit (mkSource attrs) src postUnpack;
+          };
       };
 
     mkWhy3Framework = final.callPackage ./mkWhy3Framework.nix { };
