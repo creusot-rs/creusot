@@ -79,7 +79,7 @@ fn main() -> ExitCode {
     build_creusot_rustc(args.force_color);
     build_cargo_creusot(args.force_color);
 
-    let base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let base_path: &Path = env!("CARGO_MANIFEST_DIR").as_ref();
     let mut paths = CreusotPaths::new(base_path.parent().unwrap());
 
     if args.erasure_check {
@@ -487,9 +487,8 @@ where
 
 /// Replace global paths in `s` with ".", provided `s` is in fact a string.
 fn erase_global_paths(s: &mut Vec<u8>) {
-    let mut base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    base_path.pop();
-    let base_path = base_path.display().to_string();
+    let base_path: &Path = env!("CARGO_MANIFEST_DIR").as_ref();
+    let base_path = base_path.parent().unwrap().display().to_string();
 
     let Ok(err) = std::str::from_utf8(s) else { return };
     if err.contains(&base_path) {

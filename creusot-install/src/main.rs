@@ -194,7 +194,7 @@ fn install_why3(paths: &CreusotPaths, args: &Args) -> anyhow::Result<()> {
     let opam_dir = switch_dir.join("_opam");
     if fs::exists(&opam_dir)? {
         // Upgrade existing switch
-        args.copy(&PathBuf::from("creusot-deps.opam"), &switch_dir.join("creusot-deps.opam"))?;
+        args.copy("creusot-deps.opam".as_ref(), &switch_dir.join("creusot-deps.opam"))?;
         let mut cmd = Command::new("opam");
         cmd.args(["install", "--yes", "--update-invariant", "--switch"])
             .arg(&switch_dir)
@@ -202,7 +202,7 @@ fn install_why3(paths: &CreusotPaths, args: &Args) -> anyhow::Result<()> {
         args.run(cmd)?;
     } else {
         args.create_dir_all(&switch_dir)?;
-        args.copy(&PathBuf::from("creusot-deps.opam"), &switch_dir.join("creusot-deps.opam"))?;
+        args.copy("creusot-deps.opam".as_ref(), &switch_dir.join("creusot-deps.opam"))?;
         let mut cmd = Command::new("opam");
         cmd.args(["switch", "create", "-y"]).arg(switch_dir);
         args.run(cmd)?;
@@ -282,7 +282,7 @@ fn install_prelude(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<(
     args.comment();
     println!("Installing prelude...");
     let out_dir = &paths.why3find_libs().join("packages/creusot/creusot");
-    for entry in fs::read_dir(&PathBuf::from("target/creusot/packages/creusot/creusot"))? {
+    for entry in fs::read_dir::<&Path>("target/creusot/packages/creusot/creusot".as_ref())? {
         let entry = entry?;
         assert!(entry.file_type()?.is_file());
         args.copy(&entry.path(), &out_dir.join(&entry.file_name()))?;
@@ -292,9 +292,9 @@ fn install_prelude(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<(
 
 fn install_config(paths: &CreusotPaths, args: &Args) -> anyhow::Result<()> {
     // Default why3find.json for `cargo creusot new`.
-    args.copy(&PathBuf::from("why3find.json"), &paths.data_dir().join("why3find.json"))?;
+    args.copy("why3find.json".as_ref(), &paths.data_dir().join("why3find.json"))?;
     args.copy(
-        &PathBuf::from("creusot-install/creusot_why3.conf"),
+        "creusot-install/creusot_why3.conf".as_ref(),
         &paths.data_dir().join("creusot_why3.conf"),
     )?;
     if args.dry_run {
