@@ -6,7 +6,7 @@ use std::{
     fs::{self, File},
     io::{self, BufRead, BufReader, IsTerminal, Write},
     path::{Path, PathBuf},
-    process::{Command, Output},
+    process::{Command, ExitCode, Output},
     sync::{
         Mutex,
         atomic::{AtomicUsize, Ordering::SeqCst},
@@ -66,7 +66,7 @@ impl Args {
     }
 }
 
-fn main() {
+fn main() -> ExitCode {
     let mut args = Args::parse();
     if env::var("CI").is_ok() {
         args.quiet = true;
@@ -84,33 +84,47 @@ fn main() {
 
     if args.erasure_check {
         erasure_check(&paths);
-        return;
+        return ExitCode::SUCCESS;
     }
 
     let test_creusot_std =
         args.filter.is_empty() || args.filter.iter().any(|filter| filter == "creusot-std");
-    let creusot_std_success = translate_creusot_std(&args, &mut paths, test_creusot_std);
+    let Some(creusot_std_success) = translate_creusot_std(&args, &mut paths, test_creusot_std)
+    else {
+        return ExitCode::FAILURE;
+    };
 
-    let (mut failed, mut total) =
-        (if creusot_std_success { 0 } else { 1 }, if test_creusot_std { 1 } else { 0 });
-    let (fail1, total1) = should_fail(&["tests/should_fail/**/*.rs"], &args, |p| {
+    let mut total = if test_creusot_std { 1 } else { 0 };
+    let (mut failed, mut blessed) = if creusot_std_success {
+        (0, 0)
+    } else if args.bless {
+        (0, 1)
+    } else {
+        (1, 0)
+    };
+
+    let (fail1, blessed1, total1) = should_fail(&["tests/should_fail/**/*.rs"], &args, |p| {
         run_creusot(p, &paths, args.with_spans)
     });
-    let (fail2, total2) =
+    let (fail2, blessed2, total2) =
         should_succeed(&["examples/**/*.rs", "tests/should_succeed/**/*.rs"], &args, |p| {
             run_creusot(p, &paths, args.with_spans)
         });
 
     total += total1 + total2;
+    blessed += blessed1 + blessed2;
     failed += fail1 + fail2;
     if failed > 0 {
         let mut out = args.stream();
         writeln_color!(out, Color::Red, "{failed} failures out of {total} tests");
-        drop(out);
-        std::process::exit(1);
+        return ExitCode::FAILURE;
+    } else if blessed > 0 {
+        let mut out = args.stream();
+        writeln_color!(out, Color::Blue, "{blessed} blessed out of {total} tests");
     }
 
     println!("All tests passed!");
+    ExitCode::SUCCESS
 }
 
 const CARGO_CREUSOT: &str = "target/debug/cargo-creusot";
@@ -164,11 +178,14 @@ const CREUSOT_STD: &'static str = "tests/creusot-std";
 ///
 /// - Output translation to `CREUSOT_STD_ACTUAL`, to be compared with `CREUSOT_STD`.
 /// - Record compiled artifacts in `paths` (for invoking creusot-rustc ourselves, without cargo).
-///
-/// - Exit if the translation failed.
-/// - Returns `false` if the translation succeeded but changed.
-/// This will only check the output of `creusot-std` if `test_creusot_std` is true.
-fn translate_creusot_std(args: &Args, paths: &mut CreusotPaths, test_creusot_std: bool) -> bool {
+/// - Return `None` if the translation failed
+/// - Return `Some(false)` if `test_creusot_std` is true and the translation succeeded
+///   but changed or produced warnings.
+fn translate_creusot_std(
+    args: &Args,
+    paths: &mut CreusotPaths,
+    test_creusot_std: bool,
+) -> Option<bool> {
     print!("Translating creusot-std... ");
     std::io::stdout().flush().unwrap();
     if test_creusot_std {
@@ -184,7 +201,7 @@ fn translate_creusot_std(args: &Args, paths: &mut CreusotPaths, test_creusot_std
         writeln_color!(out, Color::Red, "could not translate");
         out.flush().unwrap();
         eprintln!("{}", String::from_utf8(output.stderr).unwrap());
-        std::process::exit(1);
+        return None;
     }
 
     use serde_json::Value;
@@ -224,7 +241,7 @@ fn translate_creusot_std(args: &Args, paths: &mut CreusotPaths, test_creusot_std
 
     if !test_creusot_std {
         println!();
-        return true;
+        return Some(true);
     };
 
     let has_stderr = !output.stderr.is_empty();
@@ -265,7 +282,7 @@ fn translate_creusot_std(args: &Args, paths: &mut CreusotPaths, test_creusot_std
         out.flush().unwrap();
     }
 
-    unchanged && !has_stderr
+    Some(unchanged && !has_stderr)
 }
 
 /// Compare Coma files in directories `creusot-std.actual` and `creusot-std`
@@ -454,14 +471,14 @@ fn run_creusot(
     Some(cmd)
 }
 
-fn should_succeed<B>(s: &[&str], args: &Args, b: B) -> (usize, usize)
+fn should_succeed<B>(s: &[&str], args: &Args, b: B) -> (usize, usize, usize)
 where
     B: Fn(&Path) -> Option<std::process::Command> + Send + Sync,
 {
     glob_runner(s, args, b, true)
 }
 
-fn should_fail<B>(s: &[&str], args: &Args, b: B) -> (usize, usize)
+fn should_fail<B>(s: &[&str], args: &Args, b: B) -> (usize, usize, usize)
 where
     B: Fn(&Path) -> Option<std::process::Command> + Send + Sync,
 {
@@ -487,13 +504,14 @@ fn glob_runner<B>(
     args: &Args,
     command_builder: B,
     should_succeed: bool,
-) -> (usize, usize)
+) -> (usize, usize, usize)
 where
     B: Fn(&Path) -> Option<std::process::Command> + Send + Sync,
 {
     let out = args.stream();
-    let test_count = AtomicUsize::new(0);
     let test_failures = AtomicUsize::new(0);
+    let test_blessed = AtomicUsize::new(0);
+    let test_count = AtomicUsize::new(0);
 
     let entries = Mutex::new(pats.into_iter().flat_map(|s| glob::glob(s).unwrap()));
     let nb_threads = thread::available_parallelism().map(|n| n.into()).unwrap_or(1usize);
@@ -607,6 +625,7 @@ where
                         } else {
                             writeln_color!(out, Color::Magenta, "blessed (with warnings)");
                         }
+                        test_blessed.fetch_add(1, SeqCst);
                     }
                 } else {
                     if !success {
@@ -634,10 +653,7 @@ where
         }
     });
 
-    let test_count = test_count.load(SeqCst);
-    let test_failures = test_failures.load(SeqCst);
-
-    (test_failures, test_count)
+    (test_failures.load(SeqCst), test_blessed.load(SeqCst), test_count.load(SeqCst))
 }
 
 /// This test runs on its own because it sets `-Zbuild-std`
