@@ -89,9 +89,6 @@ jobs:
     env:
       NIXPKGS_ALLOW_UNFREE: 1 # Allow the use of unfree software (Alt-Ergo)
 
-    permissions:
-      actions: write # Allow to purge the cache
-
     steps:
     - uses: actions/checkout@v7
     - uses: NixOS/nix-installer-action@v1
@@ -109,6 +106,7 @@ jobs:
         endpoint: "https://cache.creusot.rs/"
         cache: "creusot"
         token: ${{ secrets.CELLER_TOKEN }}
+        skip-push: ${{ github.event_name != 'push' }}
 
     - name: Remove rustup
       run: |
@@ -131,6 +129,9 @@ jobs:
       run: nix build --impure . --print-build-logs
 
     - name: Run tests
+      run: nix flake check --impure
+
+    - name: Create a new project
       run: |
         nix shell --impure --command bash -c '
           cd .. &&
@@ -139,7 +140,7 @@ jobs:
           cargo creusot
         '
 
-    - name: Run tests (guide)
+    - name: Create a new project, from the guide
       run: |
         export CREUSOT_PATH=$(pwd)
         mkdir ../test-project-guide &&

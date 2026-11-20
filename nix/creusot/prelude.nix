@@ -12,20 +12,23 @@
   meta,
   rustBuilder,
   src,
+  postUnpack,
   version,
 }:
 let
   pname = "prelude-generator";
   cargoExtraArgs = "--bin prelude-generator";
 
-  cargoArtifacts = rustBuilder.buildDepsOnly {
-    inherit meta pname version;
-    inherit cargoExtraArgs src;
-  };
-
   preludeBinary = rustBuilder.buildPackage {
     inherit meta pname version;
-    inherit cargoArtifacts cargoExtraArgs src;
+    inherit cargoExtraArgs src;
+    inherit postUnpack;
+
+    cargoArtifacts = rustBuilder.buildDepsOnly {
+      inherit meta pname version;
+      inherit cargoExtraArgs src;
+      inherit postUnpack;
+    };
 
     nativeBuildInputs = lib.optionals stdenv.isDarwin [
       libiconv
