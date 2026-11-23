@@ -23,7 +23,7 @@ mod normalize;
 pub mod visit;
 
 pub(crate) use from_thir::from_thir;
-pub(crate) use normalize::normalize;
+pub(crate) use normalize::{NormalizeError, normalize, try_normalize};
 
 type Inputs<'tcx> = [(PIdent, Span, Ty<'tcx>)];
 

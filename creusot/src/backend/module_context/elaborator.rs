@@ -1505,7 +1505,10 @@ fn term<'tcx>(
         Intrinsic::IsAlignedLogic => is_aligned_logic_term(ctx, names, subst.type_at(0), inputs),
         Intrinsic::MetadataMatches => metadata_matches_term(ctx, names, subst, inputs),
         _ => {
-            let term = EarlyBinder::bind(ctx.tcx, ctx.logic_term(def_id).unwrap().clone());
+            let term = EarlyBinder::bind(
+                ctx.tcx,
+                ctx.logic_term(def_id).unwrap_or_else(|| panic!("{def_id:?}")).clone(),
+            );
             Some(normalize(ctx, typing_env, term.instantiate(ctx.tcx, subst).skip_normalization()))
         }
     }

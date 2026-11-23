@@ -88,7 +88,9 @@ impl<'tcx> TranslationCtx<'tcx> {
                 impl_id,
                 trait_ref.args,
             );
-            let refn = logic_refinement_term(self, impl_item, trait_item, subst);
+            let Some(refn) = logic_refinement_term(self, impl_item, trait_item, subst) else {
+                continue;
+            };
             refinements.push(Refinement { impl_item, refn });
         }
 
@@ -125,7 +127,7 @@ fn logic_refinement_term<'tcx>(
     impl_item_id: DefId,
     trait_item_id: DefId,
     refn_subst: GenericArgsRef<'tcx>,
-) -> Refn<'tcx> {
+) -> Option<Refn<'tcx>> {
     let typing_env = TypingEnv::non_body_analysis(ctx.tcx, impl_item_id);
 
     // Get the contract of the trait version
@@ -134,6 +136,10 @@ fn logic_refinement_term<'tcx>(
         .skip_normalization()
         .normalize_contract(ctx, typing_env);
 
+    let impl_sig = ctx.sig(impl_item_id);
+    if impl_sig.contract.inherited() {
+        return None;
+    }
     let mut impl_sig = ctx.sig(impl_item_id).clone();
 
     if !is_pearlite(ctx.tcx, impl_item_id) {
@@ -162,5 +168,5 @@ fn logic_refinement_term<'tcx>(
 
     // refn = args.into_iter().rfold(refn, |acc, r| acc.forall(r).span(span));
 
-    Refn { args, pre: trait_precond, post: impl_precond.conj(post_refn) }
+    Some(Refn { args, pre: trait_precond, post: impl_precond.conj(post_refn) })
 }

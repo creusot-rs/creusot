@@ -18,7 +18,8 @@ use crate::{
         fmir,
         pearlite::{self, PIdent, Term, TermSort, TermWithTriggers},
         specification::{
-            PreContract, PreSignature, inherited_extern_spec, inputs_and_output, pre_sig_of,
+            ContractSource, PreContract, PreSignature, ProgramPurity, inherited_extern_spec,
+            inputs_and_output, pre_sig_of,
         },
         traits::Refinement,
     },
@@ -670,7 +671,10 @@ impl<'tcx> TranslationCtx<'tcx> {
             self.extern_specs.insert(
                 def_id,
                 ExternSpec {
-                    contract: PreContract::new_extern(),
+                    contract: PreContract::new(
+                        ProgramPurity::Impure,
+                        ContractSource::InheritedExtern,
+                    ),
                     inputs: Box::new([]),
                     output: Ty::new_bool(self.tcx), // dummy
                     additional_predicates,
