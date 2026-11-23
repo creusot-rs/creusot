@@ -193,6 +193,9 @@ fn deep_model(src_ident: &Ident, tgt_ident: &Path, data: &Data) -> syn::Result<T
             }),
         },
         Data::Enum(ref data) => {
+            if data.variants.is_empty() {
+                return Ok(quote! { ::creusot_std::logic::any() });
+            }
             let arms = data.variants.iter().map(|v| {
                 let ident = &v.ident;
                 match &v.fields {
