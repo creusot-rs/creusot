@@ -1,0 +1,251 @@
+use creusot.prelude.MutBorrow
+use creusot.slice.Slice64
+use seq.Seq
+use creusot.int.UInt64
+use creusot.prelude.Opaque
+use creusot.prelude.Any
+use int.Int
+
+type t_T
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_T
+
+predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+
+meta "rewrite_def" predicate inv_Seq_T
+
+predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
+
+predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
+
+meta "rewrite_def" predicate inv_slice_T
+
+predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+
+meta "rewrite_def" predicate invariant_ref_slice_T
+
+predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
+
+meta "rewrite_def" predicate inv_ref_slice_T
+
+let len_T (self: Slice64.slice t_T) (return (x: UInt64.t)) =
+{[@stop_split] [@expl:len 'self' type invariant] inv_ref_slice_T self}
+  any
+  [ return (result: UInt64.t) -> {[@stop_split] [@expl:len ensures] Seq.length (Slice64.view self)
+    = UInt64.t'int result}
+    (! return {result}) ]
+
+type t_F
+
+predicate postcondition_once_F (self: t_F) (args: ()) (result: t_T)
+
+predicate resolve_F (_1: t_F)
+
+predicate postcondition_mut_F (self: t_F) (args: ()) (result_state: t_F) (result: t_T)
+
+function fn_mut_once_F (self: t_F) (args: ()) (res: t_T) : ()
+
+axiom fn_mut_once_F_spec:
+  forall self: t_F, args: (), res: t_T [postcondition_once_F self args res]. postcondition_once_F self args res
+    = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+
+predicate hist_inv_F (self: t_F) (result_state: t_F)
+
+function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
+
+axiom hist_inv_trans_F_spec:
+  forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
+    -> hist_inv_F b c -> hist_inv_F self c
+
+function hist_inv_refl_F (self: t_F) : ()
+
+axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
+
+function postcondition_mut_hist_inv_F (self: t_F) (args: ()) (res_state: t_F) (res: t_T) : ()
+
+axiom postcondition_mut_hist_inv_F_spec:
+  forall self: t_F, args: (), res_state: t_F, res: t_T [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    -> hist_inv_F self res_state
+
+predicate inv_F (_1: t_F)
+
+predicate invariant_refmut_slice_T [@inline:trivial] (self: MutBorrow.t (Slice64.slice t_T)) =
+  inv_slice_T self.current /\ inv_slice_T self.final
+
+meta "rewrite_def" predicate invariant_refmut_slice_T
+
+predicate inv_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = invariant_refmut_slice_T _1
+
+meta "rewrite_def" predicate inv_refmut_slice_T
+
+type t_RangeTo_Int = { end': int }
+
+function index_Seq_T [@inline:trivial] (self: Seq.seq t_T) (range: t_RangeTo_Int) : Seq.seq t_T =
+  Seq.([..]) self 0 range.end'
+
+meta "rewrite_def" function index_Seq_T
+
+predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+
+meta "rewrite_def" predicate invariant_refmut_F
+
+predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
+
+meta "rewrite_def" predicate inv_refmut_F
+
+predicate precondition_F (self: t_F) (args: ())
+
+let call_mut_F (self: MutBorrow.t t_F) (args: ()) (return (x: t_T)) =
+{[@stop_split] [@expl:call_mut_F requires] ([@stop_split] [@expl:call_mut 'self' type invariant] inv_refmut_F self)
+  /\ ([@stop_split] [@expl:call_mut requires] precondition_F self.current args)}
+  any
+  [ return (result: t_T) ->
+  {[@stop_split] [@expl:call_mut_F ensures] ([@stop_split] [@expl:call_mut result type invariant] inv_T result)
+    /\ ([@stop_split] [@expl:call_mut ensures] postcondition_mut_F self.current args self.final result)}
+    (! return {result}) ]
+
+function index_slice_T [@inline:trivial] (self: Slice64.slice t_T) (ix: UInt64.t) : t_T =
+  Seq.get (Slice64.view self) (UInt64.t'int ix)
+
+meta "rewrite_def" function index_slice_T
+
+predicate resolve_T (_1: t_T)
+
+predicate resolve_refmut_slice_T [@inline:trivial] (_1: MutBorrow.t (Slice64.slice t_T)) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_slice_T
+
+predicate invariant_ref_F [@inline:trivial] (self: t_F) = inv_F self
+
+meta "rewrite_def" predicate invariant_ref_F
+
+predicate inv_ref_F [@inline:trivial] (_1: t_F) = invariant_ref_F _1
+
+meta "rewrite_def" predicate inv_ref_F
+
+predicate invariant_Seq_F [@inline:trivial] (self: Seq.seq t_F) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_F (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_F
+
+predicate inv_Seq_F [@inline:trivial] (_1: Seq.seq t_F) = invariant_Seq_F _1
+
+meta "rewrite_def" predicate inv_Seq_F
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T__slice_T_fill_with_body_T (self_: MutBorrow.t (Slice64.slice t_T)) (f: t_F) (return (x: ())) =
+{[@stop_split] [@expl:extern_spec_T__slice_T_fill_with_body_T requires] ([@stop_split] [@expl:extern_spec_T__slice_T_fill_with_body 'self_' type invariant] inv_refmut_slice_T self_)
+  /\ ([@stop_split] [@expl:extern_spec_T__slice_T_fill_with_body 'f' type invariant] inv_F f)
+  /\ ([@stop_split] [@expl:extern_spec_T__slice_T_fill_with_body requires] forall s: Seq.seq t_F, e: Seq.seq t_T [precondition_F (Seq.get s (Seq.length e)) ()]. Seq.length s
+      = Seq.length e + 1
+    -> Seq.get s 0 = f
+    -> (forall j: int. 0 <= j /\ j < Seq.length e
+        -> postcondition_mut_F (Seq.get s j) () (Seq.get s (j + 1)) (Seq.get e j))
+    -> inv_Seq_F s /\ inv_Seq_T e /\ hist_inv_F f (Seq.get s (Seq.length e))
+    -> Seq.length e < Seq.length (Slice64.view self_.current) -> precondition_F (Seq.get s (Seq.length e)) ())}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = [ &_sl <- Seq.length (Slice64.view self_.current) ] s1
+    | s1 = [ &_f <- f ] s2
+    | s2 = [ &i <- (0: UInt64.t) ] s3
+    | s3 = [ &f'0 <- f ] s4
+    | s4 = [ &_hist <- Seq.create 1 [|f'0|] ] s5
+    | s5 = [ &_old <- self_.final ] s6
+    | s6 = bb4 ]
+  | bb4 = bb4
+    [ bb4 = {[@expl:inferred invariant: type invariant] inv_F f'0}
+      {[@expl:inferred invariant: type invariant] inv_refmut_slice_T self_}
+      {[@expl:inferred invariant: unchanged value] _old = self_.final}
+      {[@expl:loop invariant #0] Seq.length (Slice64.view self_.current) = _sl}
+      {[@expl:loop invariant #1] UInt64.t'int i <= Seq.length (Slice64.view self_.current)}
+      {[@expl:loop invariant #2] Seq.length _hist = UInt64.t'int i + 1}
+      {[@expl:loop invariant #3] Seq.get _hist 0 = _f}
+      {[@expl:loop invariant #4] Seq.get _hist (UInt64.t'int i) = f'0}
+      {[@expl:loop invariant #5] forall j: int. 0 <= j /\ j < Seq.length _hist
+        -> inv_F (Seq.get _hist j) /\ hist_inv_F _f (Seq.get _hist j)}
+      {[@expl:loop invariant #6] forall j: int. 0 <= j /\ j < UInt64.t'int i
+        -> postcondition_mut_F (Seq.get _hist j) () (Seq.get _hist (j + 1)) (Seq.get (Slice64.view self_.current) j)}
+      (! s0)
+      [ s0 = len_T {self_.current} (fun (_x: UInt64.t) -> [ &_49 <- _x ] s1)
+      | s1 = [ &_47 <- UInt64.lt i _49 ] s2
+      | s2 = any [ br0 -> {_47 = false} (! bb15) | br1 -> {_47} (! bb7) ] ]
+      [ bb7 = s0
+        [ s0 = [ &_e <- index_Seq_T (Slice64.view self_.current) { end' = UInt64.t'int i } ] s1
+        | s1 = {[@expl:assertion] forall j: int. 0 <= j /\ j < Seq.length _e
+            -> postcondition_mut_F (Seq.get _hist j) () (Seq.get _hist (j + 1)) (Seq.get _e j)}
+          s2
+        | s2 = MutBorrow.borrow_mut <t_F> {f'0}
+            (fun (_bor: MutBorrow.t t_F) -> [ &_60 <- _bor ] -{inv_F _bor.final}- [ &f'0 <- _bor.final ] s3)
+          [ _ck -> (! {[@expl:type invariant] inv_F f'0} any) ]
+        | s3 = call_mut_F {_60} {_61} (fun (_x: t_T) -> [ &_59 <- _x ] s4)
+        | s4 = [ &_62 <- i ] s5
+        | s5 = Opaque.fresh_ptr
+            (fun (_ptr: Opaque.ptr) ->
+              -{Slice64.slice_ptr_len _ptr = Slice64.length self_.current}-
+              [ &_63 <- _ptr ] s6)
+        | s6 = [ &_64 <- Slice64.slice_ptr_len _63 ] s7
+        | s7 = [ &_65 <- UInt64.lt _62 _64 ] s8
+        | s8 = {[@expl:index in bounds] _65} s9
+        | s9 = s10 [ _ck -> (! {[@expl:type invariant] inv_T (index_slice_T self_.current _62)} any) ]
+        | s10 = -{resolve_T (index_slice_T self_.current _62)}- s11
+        | s11 = Slice64.set <t_T> {self_.current} {_62} {_59}
+            (fun (r: Slice64.slice t_T) -> [ &self_ <- { self_ with current = r } ] s12)
+        | s12 = [ &_66 <- Seq.snoc _hist f'0 ] s13
+        | s13 = [ &_hist <- _66 ] s14
+        | s14 = UInt64.add {i} {(1: UInt64.t)} (fun (_x: UInt64.t) -> [ &i <- _x ] s15)
+        | s15 = bb4 ] ] ]
+  | bb15 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_F f'0} any) ]
+    | s1 = -{resolve_F f'0}- s2
+    | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_slice_T self_} any) ]
+    | s3 = -{resolve_refmut_slice_T self_}- s4
+    | s4 = return {_ret} ] ]
+  [ & _ret: () = Any.any_l ()
+  | & self_: MutBorrow.t (Slice64.slice t_T) = self_
+  | & f: t_F = f
+  | & _sl: int = Any.any_l ()
+  | & _f: t_F = Any.any_l ()
+  | & i: UInt64.t = Any.any_l ()
+  | & f'0: t_F = Any.any_l ()
+  | & _hist: Seq.seq t_F = Any.any_l ()
+  | & _47: bool = Any.any_l ()
+  | & _49: UInt64.t = Any.any_l ()
+  | & _e: Seq.seq t_T = Any.any_l ()
+  | & _59: t_T = Any.any_l ()
+  | & _60: MutBorrow.t t_F = Any.any_l ()
+  | & _61: () = Any.any_l ()
+  | & _62: UInt64.t = Any.any_l ()
+  | & _63: Opaque.ptr = Any.any_l ()
+  | & _64: UInt64.t = Any.any_l ()
+  | & _65: bool = Any.any_l ()
+  | & _66: Seq.seq t_F = Any.any_l ()
+  | & _old: Slice64.slice t_T = Any.any_l () ])
+  [ return (result: ()) ->
+  {[@stop_split] [@expl:extern_spec_T__slice_T_fill_with_body_T ensures] ([@stop_split] [@expl:extern_spec_T__slice_T_fill_with_body ensures #0] Seq.length (Slice64.view self_.final)
+      = Seq.length (Slice64.view self_.current))
+    /\ ([@stop_split] [@expl:extern_spec_T__slice_T_fill_with_body ensures #1] exists s: Seq.seq t_F. Seq.length s
+        = Seq.length (Slice64.view self_.final) + 1
+      /\ Seq.get s 0 = f
+      /\ resolve_F (Seq.get s (Seq.length (Slice64.view self_.final)))
+      /\ (forall i: int. 0 <= i /\ i < Seq.length s
+        -> inv_F (Seq.get s i)
+        /\ hist_inv_F f (Seq.get s i)
+        /\ (forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length (Slice64.view self_.final)
+          -> postcondition_mut_F (Seq.get s i'0) () (Seq.get s (i'0 + 1)) (Seq.get (Slice64.view self_.final) i'0))))}
+    (! return {result}) ]
