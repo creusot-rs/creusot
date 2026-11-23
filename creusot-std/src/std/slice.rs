@@ -535,6 +535,61 @@ extern_spec! {
         fn binary_search(&self, x: &T) -> Result<usize, usize>
             where T: Ord + DeepModel,  T::DeepModelTy: OrdLogic,;
 
+        #[ensures((^self)@.len() == (*self)@.len())]
+        #[ensures(forall<i> 0 <= i && i < (^self)@.len() ==> T::clone.postcondition((&value,), (^self)@[i]))]
+        fn fill(&mut self, value: T)
+            where T: Clone,
+        {
+            let _sl = snapshot!(self@.len());
+            let mut i = 0;
+            #[invariant(self@.len() == *_sl)]
+            #[invariant(i@ <= self@.len())]
+            #[invariant(forall<j> 0 <= j && j < i@ ==> T::clone.postcondition((&value,), self@[j]))]
+            while i < self.len() {
+                self[i] = value.clone();
+                i += 1;
+            }
+        }
+
+        #[requires(forall<s: Seq<F>, e: Seq<T>> #[trigger(s[e.len()].precondition(()))]
+            s.len() == e.len() + 1 ==>
+            s[0] == f ==>
+            (forall<j> 0 <= j && j < e.len() ==> s[j].postcondition_mut((), s[j + 1], e[j])) ==>
+            inv(s) && inv(e) && f.hist_inv(s[e.len()]) ==>
+            e.len() < self@.len() ==>
+            s[e.len()].precondition(())
+        )]
+        #[ensures((^self)@.len() == (*self)@.len())]
+        #[ensures(exists<s: Seq<F>> s.len() == (^self)@.len() + 1 &&
+            s[0] == f &&
+            resolve(s[(^self)@.len()]) &&
+            forall<i> 0 <= i && i < s.len() ==> inv(s[i]) && f.hist_inv(s[i]) &&
+            forall<i> 0 <= i && i < (^self)@.len() ==> s[i].postcondition_mut((), s[i + 1], (^self)@[i])
+        )]
+        fn fill_with<F>(&mut self, f: F)
+            where F: FnMut() -> T,
+        {
+            let _sl = snapshot!(self@.len());
+            let _f = snapshot!(f);
+            let mut i = 0;
+            let mut f = f;
+            let mut _hist: Snapshot<Seq<F>> = snapshot!(seq![f]);
+            #[invariant(self@.len() == *_sl)]
+            #[invariant(i@ <= self@.len())]
+            #[invariant(_hist.len() == i@ + 1)]
+            #[invariant(_hist[0] == *_f)]
+            #[invariant(_hist[i@] == f)]
+            #[invariant(forall<j> 0 <= j && j < _hist.len() ==> inv(_hist[j]) && _f.hist_inv(_hist[j]))]
+            #[invariant(forall<j> 0 <= j && j < i@ ==> _hist[j].postcondition_mut((), _hist[j + 1], self@[j]))]
+            while i < self.len() {
+                let _e = snapshot!(self@[..i@]);
+                proof_assert!(forall<j> 0 <= j && j < _e.len() ==> _hist[j].postcondition_mut((), _hist[j + 1], _e[j]));
+                self[i] = f();
+                _hist = snapshot!(_hist.snoc(f));
+                i += 1;
+            }
+        }
+
         #[check(ghost)]
         #[requires(ix.in_bounds(self@))]
         #[ensures(ix.has_value(self@, *result))]

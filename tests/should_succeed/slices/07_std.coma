@@ -1,0 +1,284 @@
+module M_fill
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.prelude.MutBorrow
+  use creusot.slice.Slice64
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Vec_usize_Global
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
+  
+  axiom view_Vec_usize_Global_spec:
+    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
+      <= UInt64.t'int const_MAX
+  
+  function index_Vec_usize_Global [@inline:trivial] (self: t_Vec_usize_Global) (ix: int) : UInt64.t =
+    Seq.get (view_Vec_usize_Global self) ix
+  
+  meta "rewrite_def" function index_Vec_usize_Global
+  
+  let from_elem_usize (elem: UInt64.t) (n: UInt64.t) (return (x: t_Vec_usize_Global)) = any
+    [ return (result: t_Vec_usize_Global) ->
+    {[@stop_split] [@expl:from_elem_usize ensures] ([@stop_split] [@expl:from_elem ensures #0] Seq.length (view_Vec_usize_Global result)
+        = UInt64.t'int n)
+      /\ ([@stop_split] [@expl:from_elem ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int n
+        -> index_Vec_usize_Global result i = elem)}
+      (! return {result}) ]
+  
+  let deref_mut_Vec_usize_Global (self: MutBorrow.t t_Vec_usize_Global)
+    (return (x: MutBorrow.t (Slice64.slice UInt64.t))) = any
+    [ return (result: MutBorrow.t (Slice64.slice UInt64.t)) ->
+    {[@stop_split] [@expl:deref_mut_Vec_usize_Global ensures] ([@stop_split] [@expl:deref_mut ensures #0] Slice64.view result.current
+        = view_Vec_usize_Global self.current)
+      /\ ([@stop_split] [@expl:deref_mut ensures #1] Seq.length (view_Vec_usize_Global self.final)
+        = Seq.length (view_Vec_usize_Global self.current))
+      /\ ([@stop_split] [@expl:deref_mut ensures #2] Slice64.view result.final = view_Vec_usize_Global self.final)}
+      (! return {result}) ]
+  
+  predicate postcondition_clone (self: ()) (args: UInt64.t) (result: UInt64.t) = let self'0 = args in result = self'0
+  
+  meta "rewrite_def" predicate postcondition_clone
+  
+  let clone_usize (self: UInt64.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
+  
+  let fill_usize (self: MutBorrow.t (Slice64.slice UInt64.t)) (value: UInt64.t) (return (x: ())) = any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:fill_usize ensures] ([@stop_split] [@expl:fill ensures #0] Seq.length (Slice64.view self.final)
+        = Seq.length (Slice64.view self.current))
+      /\ ([@stop_split] [@expl:fill ensures #1] forall i: int. 0 <= i /\ i < Seq.length (Slice64.view self.final)
+        -> postcondition_clone () value (Seq.get (Slice64.view self.final) i))}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_slice_usize [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt64.t)) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_slice_usize
+  
+  predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) =
+    UInt64.t'int self < Seq.length seq
+  
+  meta "rewrite_def" predicate in_bounds_usize
+  
+  predicate has_value_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) (out: UInt64.t) =
+    Seq.get seq (UInt64.t'int self) = out
+  
+  meta "rewrite_def" predicate has_value_usize
+  
+  let index_Vec_usize_Global'0 (self: t_Vec_usize_Global) (index: UInt64.t) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:index requires] in_bounds_usize index (view_Vec_usize_Global self)}
+    any
+    [ return (result: UInt64.t) ->
+    {[@stop_split] [@expl:index ensures] has_value_usize index (view_Vec_usize_Global self) result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let fill (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = from_elem_usize {(0: UInt64.t)} {(10: UInt64.t)} (fun (_x: t_Vec_usize_Global) -> [ &test <- _x ] s1)
+      | s1 = MutBorrow.borrow_mut <t_Vec_usize_Global> {test}
+          (fun (_bor: MutBorrow.t t_Vec_usize_Global) -> [ &_5 <- _bor ] [ &test <- _bor.final ] s2)
+      | s2 = deref_mut_Vec_usize_Global {_5} (fun (_x: MutBorrow.t (Slice64.slice UInt64.t)) -> [ &_4 <- _x ] s3)
+      | s3 = MutBorrow.borrow_final <Slice64.slice UInt64.t> {_4.current} {MutBorrow.get_id _4}
+          (fun (_bor: MutBorrow.t (Slice64.slice UInt64.t)) ->
+            [ &_3 <- _bor ] [ &_4 <- { _4 with current = _bor.final } ] s4)
+      | s4 = fill_usize {_3} {(42: UInt64.t)} (fun (_x: ()) -> [ &_2 <- _x ] s5)
+      | s5 = -{resolve_refmut_slice_usize _4}- s6
+      | s6 = index_Vec_usize_Global'0 {test} {(3: UInt64.t)} (fun (_x: UInt64.t) -> [ &_7 <- _x ] s7)
+      | s7 = [ &x <- _7 ] s8
+      | s8 = {[@expl:assertion] x = (42: UInt64.t)} s9
+      | s9 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & test: t_Vec_usize_Global = Any.any_l ()
+    | & _2: () = Any.any_l ()
+    | & _3: MutBorrow.t (Slice64.slice UInt64.t) = Any.any_l ()
+    | & _4: MutBorrow.t (Slice64.slice UInt64.t) = Any.any_l ()
+    | & _5: MutBorrow.t t_Vec_usize_Global = Any.any_l ()
+    | & x: UInt64.t = Any.any_l ()
+    | & _7: UInt64.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_fill_with
+  use creusot.int.UInt64
+  use seq.Seq
+  use creusot.prelude.MutBorrow
+  use creusot.slice.Slice64
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_Vec_usize_Global
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_Vec_usize_Global (self: t_Vec_usize_Global) : Seq.seq UInt64.t
+  
+  axiom view_Vec_usize_Global_spec:
+    forall self: t_Vec_usize_Global [view_Vec_usize_Global self]. Seq.length (view_Vec_usize_Global self)
+      <= UInt64.t'int const_MAX
+  
+  function index_Vec_usize_Global [@inline:trivial] (self: t_Vec_usize_Global) (ix: int) : UInt64.t =
+    Seq.get (view_Vec_usize_Global self) ix
+  
+  meta "rewrite_def" function index_Vec_usize_Global
+  
+  let from_elem_usize (elem: UInt64.t) (n: UInt64.t) (return (x: t_Vec_usize_Global)) = any
+    [ return (result: t_Vec_usize_Global) ->
+    {[@stop_split] [@expl:from_elem_usize ensures] ([@stop_split] [@expl:from_elem ensures #0] Seq.length (view_Vec_usize_Global result)
+        = UInt64.t'int n)
+      /\ ([@stop_split] [@expl:from_elem ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int n
+        -> index_Vec_usize_Global result i = elem)}
+      (! return {result}) ]
+  
+  let deref_mut_Vec_usize_Global (self: MutBorrow.t t_Vec_usize_Global)
+    (return (x: MutBorrow.t (Slice64.slice UInt64.t))) = any
+    [ return (result: MutBorrow.t (Slice64.slice UInt64.t)) ->
+    {[@stop_split] [@expl:deref_mut_Vec_usize_Global ensures] ([@stop_split] [@expl:deref_mut ensures #0] Slice64.view result.current
+        = view_Vec_usize_Global self.current)
+      /\ ([@stop_split] [@expl:deref_mut ensures #1] Seq.length (view_Vec_usize_Global self.final)
+        = Seq.length (view_Vec_usize_Global self.current))
+      /\ ([@stop_split] [@expl:deref_mut ensures #2] Slice64.view result.final = view_Vec_usize_Global self.final)}
+      (! return {result}) ]
+  
+  type closure0 = { c0: MutBorrow.t UInt64.t }
+  
+  predicate resolve_refmut_closure0 [@inline:trivial] (_1: MutBorrow.t closure0) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_closure0
+  
+  predicate hist_inv_closure0 (self: closure0) (result_state: closure0) = result_state.c0.final = self.c0.final
+  
+  let closure0 [@coma:extspec] (self: MutBorrow.t closure0) (return (x: UInt64.t)) = bb0
+    [ bb0 = s0
+      [ s0 = [ &res <- self.current.c0.current ] s1
+      | s1 = UInt64.add {self.current.c0.current} {(1: UInt64.t)}
+          (fun (_x: UInt64.t) -> [ &self <- { self with current = { c0 = { self.current.c0 with current = _x } } } ] s2)
+      | s2 = -{resolve_refmut_closure0 self}- s3
+      | s3 = [ &_ret <- res ] s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: UInt64.t = Any.any_l () | & self: MutBorrow.t closure0 = self | & res: UInt64.t = Any.any_l () ]
+    [ return (result: UInt64.t) ->
+    {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure0 self.current self.final}
+      return {result} ]
+  
+  meta "rewrite_def" predicate closure0'pre
+  
+  meta "rewrite_def" predicate closure0'post'return
+  
+  predicate postcondition_mut_closure0 (self: closure0) (args: ()) (result_state: closure0) (result: UInt64.t) =
+    exists bor_self: MutBorrow.t closure0. bor_self.current = self
+      /\ bor_self.final = result_state /\ closure0'post'return bor_self result /\ hist_inv_closure0 self result_state
+  
+  meta "rewrite_def" predicate postcondition_mut_closure0
+  
+  predicate inv_Seq_closure0 [@inline:trivial] (_1: Seq.seq closure0) = true
+  
+  meta "rewrite_def" predicate inv_Seq_closure0
+  
+  predicate inv_Seq_usize [@inline:trivial] (_1: Seq.seq UInt64.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_usize
+  
+  predicate precondition_closure0 (self: closure0) (args: ()) =
+    forall bor_self: MutBorrow.t closure0. bor_self.current = self -> closure0'pre bor_self
+  
+  meta "rewrite_def" predicate precondition_closure0
+  
+  predicate resolve_refmut_usize [@inline:trivial] (_1: MutBorrow.t UInt64.t) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_usize
+  
+  predicate resolve_closure0 [@inline:trivial] (_1: closure0) = resolve_refmut_usize _1.c0
+  
+  meta "rewrite_def" predicate resolve_closure0
+  
+  predicate inv_closure0 [@inline:trivial] (_1: closure0) = true
+  
+  meta "rewrite_def" predicate inv_closure0
+  
+  let fill_with_usize (self: MutBorrow.t (Slice64.slice UInt64.t)) (f: closure0) (return (x: ())) =
+  {[@stop_split] [@expl:fill_with requires] forall s: Seq.seq closure0, e: Seq.seq UInt64.t [precondition_closure0 (Seq.get s (Seq.length e)) ()]. Seq.length s
+        = Seq.length e + 1
+      -> Seq.get s 0 = f
+      -> (forall j: int. 0 <= j /\ j < Seq.length e
+          -> postcondition_mut_closure0 (Seq.get s j) () (Seq.get s (j + 1)) (Seq.get e j))
+      -> inv_Seq_closure0 s /\ inv_Seq_usize e /\ hist_inv_closure0 f (Seq.get s (Seq.length e))
+      -> Seq.length e < Seq.length (Slice64.view self.current) -> precondition_closure0 (Seq.get s (Seq.length e)) ()}
+    any
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:fill_with_usize ensures] ([@stop_split] [@expl:fill_with ensures #0] Seq.length (Slice64.view self.final)
+        = Seq.length (Slice64.view self.current))
+      /\ ([@stop_split] [@expl:fill_with ensures #1] exists s: Seq.seq closure0. Seq.length s
+          = Seq.length (Slice64.view self.final) + 1
+        /\ Seq.get s 0 = f
+        /\ resolve_closure0 (Seq.get s (Seq.length (Slice64.view self.final)))
+        /\ (forall i: int. 0 <= i /\ i < Seq.length s
+          -> inv_closure0 (Seq.get s i)
+          /\ hist_inv_closure0 f (Seq.get s i)
+          /\ (forall i'0: int. 0 <= i'0 /\ i'0 < Seq.length (Slice64.view self.final)
+            -> postcondition_mut_closure0 (Seq.get s i'0) () (Seq.get s (i'0
+            + 1)) (Seq.get (Slice64.view self.final) i'0))))}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_slice_usize [@inline:trivial] (_1: MutBorrow.t (Slice64.slice UInt64.t)) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_slice_usize
+  
+  predicate in_bounds_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) =
+    UInt64.t'int self < Seq.length seq
+  
+  meta "rewrite_def" predicate in_bounds_usize
+  
+  predicate has_value_usize [@inline:trivial] (self: UInt64.t) (seq: Seq.seq UInt64.t) (out: UInt64.t) =
+    Seq.get seq (UInt64.t'int self) = out
+  
+  meta "rewrite_def" predicate has_value_usize
+  
+  let index_Vec_usize_Global'0 (self: t_Vec_usize_Global) (index: UInt64.t) (return (x: UInt64.t)) =
+  {[@stop_split] [@expl:index requires] in_bounds_usize index (view_Vec_usize_Global self)}
+    any
+    [ return (result: UInt64.t) ->
+    {[@stop_split] [@expl:index ensures] has_value_usize index (view_Vec_usize_Global self) result}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let fill_with (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = from_elem_usize {(0: UInt64.t)} {(10: UInt64.t)} (fun (_x: t_Vec_usize_Global) -> [ &test <- _x ] s1)
+      | s1 = [ &i <- (0: UInt64.t) ] s2
+      | s2 = MutBorrow.borrow_mut <t_Vec_usize_Global> {test}
+          (fun (_bor: MutBorrow.t t_Vec_usize_Global) -> [ &_6 <- _bor ] [ &test <- _bor.final ] s3)
+      | s3 = deref_mut_Vec_usize_Global {_6} (fun (_x: MutBorrow.t (Slice64.slice UInt64.t)) -> [ &_5 <- _x ] s4)
+      | s4 = MutBorrow.borrow_mut <UInt64.t> {i}
+          (fun (_bor: MutBorrow.t UInt64.t) -> [ &_8 <- _bor ] [ &i <- _bor.final ] s5)
+      | s5 = [ &_7 <- { c0 = _8 } ] s6
+      | s6 = MutBorrow.borrow_final <Slice64.slice UInt64.t> {_5.current} {MutBorrow.get_id _5}
+          (fun (_bor: MutBorrow.t (Slice64.slice UInt64.t)) ->
+            [ &_4 <- _bor ] [ &_5 <- { _5 with current = _bor.final } ] s7)
+      | s7 = fill_with_usize {_4} {_7} (fun (_x: ()) -> [ &_3 <- _x ] s8)
+      | s8 = -{resolve_refmut_slice_usize _5}- s9
+      | s9 = index_Vec_usize_Global'0 {test} {(5: UInt64.t)} (fun (_x: UInt64.t) -> [ &_10 <- _x ] s10)
+      | s10 = [ &x <- _10 ] s11
+      | s11 = {[@expl:assertion] x = (5: UInt64.t)} s12
+      | s12 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l ()
+    | & test: t_Vec_usize_Global = Any.any_l ()
+    | & i: UInt64.t = Any.any_l ()
+    | & _3: () = Any.any_l ()
+    | & _4: MutBorrow.t (Slice64.slice UInt64.t) = Any.any_l ()
+    | & _5: MutBorrow.t (Slice64.slice UInt64.t) = Any.any_l ()
+    | & _6: MutBorrow.t t_Vec_usize_Global = Any.any_l ()
+    | & _7: closure0 = Any.any_l ()
+    | & _8: MutBorrow.t UInt64.t = Any.any_l ()
+    | & x: UInt64.t = Any.any_l ()
+    | & _10: UInt64.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
