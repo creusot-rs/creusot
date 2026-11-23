@@ -1,0 +1,608 @@
+(* std::sync::atomic_sc::AtomicPtr<T> *)
+
+use creusot.prelude.Any
+use creusot.prelude.Opaque
+use creusot.prelude.MutBorrow
+use creusot.int.UInt64
+use creusot.prelude.Ptr
+
+type t_Committer_AtomicPtr_T_ptr_T_SeqCst_unit
+
+let closure3 [@coma:extspec] (self: ()) (_0: t_Committer_AtomicPtr_T_ptr_T_SeqCst_unit) (return (x: ())) = bb0
+  [ bb0 = return {_ret} ] [ & _ret: () = Any.any_l () ] [ return (result: ()) -> return {result} ]
+
+meta "rewrite_def" predicate closure3'pre
+
+meta "rewrite_def" predicate closure3'post'return
+
+type t_FnGhostWrapper_closure3 = { f0: () }
+
+let __new_closure3 (f: ()) (return (x: t_FnGhostWrapper_closure3)) = any
+  [ return (result: t_FnGhostWrapper_closure3) -> {[@stop_split] [@expl:__new ensures] result.f0 = f}
+    (! return {result}) ]
+
+let new_FnGhostWrapper_closure3 (x: t_FnGhostWrapper_closure3) (return (x'0: t_FnGhostWrapper_closure3)) = any
+  [ return (result: t_FnGhostWrapper_closure3) -> {[@stop_split] [@expl:new ensures] result = x} (! return {result}) ]
+
+type t_Atomic_ptr_T
+
+type t_AtomicPtr_T = { f0'0: t_Atomic_ptr_T }
+
+predicate inv_Atomic_ptr_T (_1: t_Atomic_ptr_T)
+
+predicate inv_AtomicPtr_T (_1: t_AtomicPtr_T)
+
+axiom inv_axiom [@rewrite]: forall _1: t_AtomicPtr_T [inv_AtomicPtr_T _1]. inv_AtomicPtr_T _1 = inv_Atomic_ptr_T _1.f0'0
+
+predicate invariant_ref_AtomicPtr_T [@inline:trivial] (self: t_AtomicPtr_T) = inv_AtomicPtr_T self
+
+meta "rewrite_def" predicate invariant_ref_AtomicPtr_T
+
+predicate inv_ref_AtomicPtr_T [@inline:trivial] (_1: t_AtomicPtr_T) = invariant_ref_AtomicPtr_T _1
+
+meta "rewrite_def" predicate inv_ref_AtomicPtr_T
+
+predicate shot_store_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_SeqCst_unit)
+
+function ward_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_SeqCst_unit) : t_AtomicPtr_T
+
+predicate precondition_closure3 (self: ()) (args: t_Committer_AtomicPtr_T_ptr_T_SeqCst_unit) =
+  let _0 = args in closure3'pre self _0
+
+meta "rewrite_def" predicate precondition_closure3
+
+predicate precondition_FnGhostWrapper_closure3 (self: t_FnGhostWrapper_closure3) (args: t_Committer_AtomicPtr_T_ptr_T_SeqCst_unit) =
+  precondition_closure3 self.f0 args
+
+meta "rewrite_def" predicate precondition_FnGhostWrapper_closure3
+
+function val_load_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_SeqCst_unit) : Opaque.ptr
+
+predicate postcondition_once_closure3 (self: ()) (args: t_Committer_AtomicPtr_T_ptr_T_SeqCst_unit) (result: ()) =
+  let _0 = args in closure3'post'return self _0 result
+
+meta "rewrite_def" predicate postcondition_once_closure3
+
+predicate postcondition_once_FnGhostWrapper_closure3 (self: t_FnGhostWrapper_closure3) (args: t_Committer_AtomicPtr_T_ptr_T_SeqCst_unit) (result: ()) =
+  postcondition_once_closure3 self.f0 args result
+
+meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure3
+
+let load_T (self: t_AtomicPtr_T) (f: t_FnGhostWrapper_closure3) (return (x: Opaque.ptr)) =
+{[@stop_split] [@expl:load_T requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicPtr_T self)
+  /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicPtr_T_ptr_T_SeqCst_unit. not shot_store_AtomicPtr_T c
+    -> ward_AtomicPtr_T c = self -> precondition_FnGhostWrapper_closure3 f c)}
+  any
+  [ return (result: Opaque.ptr) ->
+  {[@stop_split] [@expl:load ensures] exists c: t_Committer_AtomicPtr_T_ptr_T_SeqCst_unit. not shot_store_AtomicPtr_T c
+      /\ ward_AtomicPtr_T c = self
+      /\ val_load_AtomicPtr_T c = result /\ postcondition_once_FnGhostWrapper_closure3 f c ()}
+    (! return {result}) ]
+
+type t_G
+
+predicate inv_G (_1: t_G)
+
+predicate invariant_Ghost_G [@inline:trivial] (self: t_G) = inv_G self
+
+meta "rewrite_def" predicate invariant_Ghost_G
+
+predicate inv_Ghost_G [@inline:trivial] (_1: t_G) = invariant_Ghost_G _1
+
+meta "rewrite_def" predicate inv_Ghost_G
+
+let into_inner_G (self: t_G) (return (x: t_G)) =
+{[@stop_split] [@expl:into_inner 'self' type invariant] inv_Ghost_G self}
+  any
+  [ return (result: t_G) ->
+  {[@stop_split] [@expl:into_inner_G ensures] ([@stop_split] [@expl:into_inner result type invariant] inv_G result)
+    /\ ([@stop_split] [@expl:into_inner ensures] result = self)}
+    (! return {result}) ]
+
+type t_Option_G = None | Some t_G
+
+predicate inv_Option_G (_1: t_Option_G)
+
+axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_G [inv_Option_G _1]. inv_Option_G _1
+    = match _1 with
+      | None -> true
+      | Some f0'1 -> inv_G f0'1
+      end
+
+predicate invariant_Ghost_Option_G [@inline:trivial] (self: t_Option_G) = inv_Option_G self
+
+meta "rewrite_def" predicate invariant_Ghost_Option_G
+
+predicate inv_Ghost_Option_G [@inline:trivial] (_1: t_Option_G) = invariant_Ghost_Option_G _1
+
+meta "rewrite_def" predicate inv_Ghost_Option_G
+
+let new_Option_G (x: t_Option_G) (return (x'0: t_Option_G)) =
+{[@stop_split] [@expl:new 'x' type invariant] inv_Option_G x}
+  any
+  [ return (result: t_Option_G) ->
+  {[@stop_split] [@expl:new_Option_G ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_Option_G result)
+    /\ ([@stop_split] [@expl:new ensures] result = x)}
+    (! return {result}) ]
+
+type t_F
+
+predicate inv_F (_1: t_F)
+
+type t_Option_ptr_T = None'0 | Some'0 Opaque.ptr
+
+predicate invariant_refmut_F [@inline:trivial] (self: MutBorrow.t t_F) = inv_F self.current /\ inv_F self.final
+
+meta "rewrite_def" predicate invariant_refmut_F
+
+predicate inv_refmut_F [@inline:trivial] (_1: MutBorrow.t t_F) = invariant_refmut_F _1
+
+meta "rewrite_def" predicate inv_refmut_F
+
+predicate precondition_F (self: t_F) (args: Opaque.ptr)
+
+predicate postcondition_once_F (self: t_F) (args: Opaque.ptr) (result: t_Option_ptr_T)
+
+predicate resolve_F (_1: t_F)
+
+predicate postcondition_mut_F (self: t_F) (args: Opaque.ptr) (result_state: t_F) (result: t_Option_ptr_T)
+
+function fn_mut_once_F (self: t_F) (args: Opaque.ptr) (res: t_Option_ptr_T) : ()
+
+axiom fn_mut_once_F_spec:
+  forall self: t_F, args: Opaque.ptr, res: t_Option_ptr_T [postcondition_once_F self args res]. postcondition_once_F self args res
+    = (exists res_state: t_F. postcondition_mut_F self args res_state res /\ resolve_F res_state)
+
+predicate hist_inv_F (self: t_F) (result_state: t_F)
+
+function hist_inv_trans_F (self: t_F) (b: t_F) (c: t_F) : ()
+
+axiom hist_inv_trans_F_spec:
+  forall self: t_F, b: t_F, c: t_F [hist_inv_F self b, hist_inv_F b c | hist_inv_F self b, hist_inv_F self c | hist_inv_F b c, hist_inv_F self c]. hist_inv_F self b
+    -> hist_inv_F b c -> hist_inv_F self c
+
+function hist_inv_refl_F (self: t_F) : ()
+
+axiom hist_inv_refl_F_spec: forall self: t_F [hist_inv_F self self]. hist_inv_F self self
+
+function postcondition_mut_hist_inv_F (self: t_F) (args: Opaque.ptr) (res_state: t_F) (res: t_Option_ptr_T) : ()
+
+axiom postcondition_mut_hist_inv_F_spec:
+  forall self: t_F, args: Opaque.ptr, res_state: t_F, res: t_Option_ptr_T [postcondition_mut_F self args res_state res | hist_inv_F self res_state]. postcondition_mut_F self args res_state res
+    -> hist_inv_F self res_state
+
+let call_mut_F (self: MutBorrow.t t_F) (args: Opaque.ptr) (return (x: t_Option_ptr_T)) =
+{[@stop_split] [@expl:call_mut_F requires] ([@stop_split] [@expl:call_mut 'self' type invariant] inv_refmut_F self)
+  /\ ([@stop_split] [@expl:call_mut requires] precondition_F self.current args)}
+  any
+  [ return (result: t_Option_ptr_T) ->
+  {[@stop_split] [@expl:call_mut ensures] postcondition_mut_F self.current args self.final result}
+    (! return {result}) ]
+
+let elim_Some (_x: t_Option_ptr_T) (return (f0'1: Opaque.ptr)) = any
+  [ _k (f0'1: Opaque.ptr) -> {Some'0 f0'1 = _x} (! return {f0'1})
+  | _chk -> (! {[@expl:elim Some] match _x with
+      | Some'0 _ -> true
+      | _ -> false
+      end}
+    any) ]
+
+type t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst
+
+type t_Result_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst_ref_Committer_AtomicPtr_T_ptr_T_SeqCst_unit =
+  | Ok (MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst)
+  | Err t_Committer_AtomicPtr_T_ptr_T_SeqCst_unit
+
+predicate resolve_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst [@inline:trivial] (_1: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst) =
+  _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst
+
+predicate resolve_Result_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst_ref_Committer_AtomicPtr_T_ptr_T_SeqCst_unit (_1: t_Result_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst_ref_Committer_AtomicPtr_T_ptr_T_SeqCst_unit)
+
+axiom resolve_axiom [@rewrite]:
+  forall _1: t_Result_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst_ref_Committer_AtomicPtr_T_ptr_T_SeqCst_unit [resolve_Result_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst_ref_Committer_AtomicPtr_T_ptr_T_SeqCst_unit _1]. resolve_Result_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst_ref_Committer_AtomicPtr_T_ptr_T_SeqCst_unit _1
+    = match _1 with
+      | Ok x0 -> resolve_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst x0
+      | Err x0 -> true
+      end
+
+type closure9 = { c0: MutBorrow.t t_Option_G }
+
+predicate invariant_refmut_Ghost_Option_G [@inline:trivial] (self: MutBorrow.t t_Option_G) =
+  inv_Ghost_Option_G self.current /\ inv_Ghost_Option_G self.final
+
+meta "rewrite_def" predicate invariant_refmut_Ghost_Option_G
+
+predicate inv_refmut_Ghost_Option_G [@inline:trivial] (_1: MutBorrow.t t_Option_G) = invariant_refmut_Ghost_Option_G _1
+
+meta "rewrite_def" predicate inv_refmut_Ghost_Option_G
+
+predicate inv_closure9 [@inline:trivial] (_1: closure9) = let {c0 = x0} = _1 in inv_refmut_Ghost_Option_G x0
+
+meta "rewrite_def" predicate inv_closure9
+
+predicate invariant_refmut_closure9 [@inline:trivial] (self: MutBorrow.t closure9) =
+  inv_closure9 self.current /\ inv_closure9 self.final
+
+meta "rewrite_def" predicate invariant_refmut_closure9
+
+predicate inv_refmut_closure9 [@inline:trivial] (_1: MutBorrow.t closure9) = invariant_refmut_closure9 _1
+
+meta "rewrite_def" predicate inv_refmut_closure9
+
+predicate resolve_refmut_closure9 [@inline:trivial] (_1: MutBorrow.t closure9) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_closure9
+
+let elim_Ok (_x: t_Result_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst_ref_Committer_AtomicPtr_T_ptr_T_SeqCst_unit)
+  (return (f0'1: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst)) = any
+  [ _k (f0'1: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst) -> {Ok f0'1 = _x} (! return {f0'1})
+  | _chk -> (! {[@expl:elim Ok] match _x with
+      | Ok _ -> true
+      | _ -> false
+      end}
+    any) ]
+
+predicate invariant_refmut_Option_G [@inline:trivial] (self: MutBorrow.t t_Option_G) =
+  inv_Option_G self.current /\ inv_Option_G self.final
+
+meta "rewrite_def" predicate invariant_refmut_Option_G
+
+predicate inv_refmut_Option_G [@inline:trivial] (_1: MutBorrow.t t_Option_G) = invariant_refmut_Option_G _1
+
+meta "rewrite_def" predicate inv_refmut_Option_G
+
+let deref_mut_Ghost_Option_G (self: MutBorrow.t t_Option_G) (return (x: MutBorrow.t t_Option_G)) =
+{[@stop_split] [@expl:deref_mut 'self' type invariant] inv_refmut_Ghost_Option_G self}
+  any
+  [ return (result: MutBorrow.t t_Option_G) ->
+  {[@stop_split] [@expl:deref_mut_Ghost_Option_G ensures] ([@stop_split] [@expl:deref_mut result type invariant] inv_refmut_Option_G result)
+    /\ ([@stop_split] [@expl:deref_mut ensures] result = self)}
+    (! return {result}) ]
+
+let take_G (self: MutBorrow.t t_Option_G) (return (x: t_Option_G)) =
+{[@stop_split] [@expl:take 'self' type invariant] inv_refmut_Option_G self}
+  any
+  [ return (result: t_Option_G) ->
+  {[@stop_split] [@expl:take_G ensures] ([@stop_split] [@expl:take result type invariant] inv_Option_G result)
+    /\ ([@stop_split] [@expl:take ensures] result = self.current /\ self.final = None)}
+    (! return {result}) ]
+
+predicate resolve_refmut_Option_G [@inline:trivial] (_1: MutBorrow.t t_Option_G) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Option_G
+
+let unwrap_G (self: t_Option_G) (return (x: t_G)) =
+{[@stop_split] [@expl:unwrap_G requires] ([@stop_split] [@expl:unwrap 'self' type invariant] inv_Option_G self)
+  /\ ([@stop_split] [@expl:unwrap requires] self <> None)}
+  any
+  [ return (result: t_G) ->
+  {[@stop_split] [@expl:unwrap_G ensures] ([@stop_split] [@expl:unwrap result type invariant] inv_G result)
+    /\ ([@stop_split] [@expl:unwrap ensures] Some result = self)}
+    (! return {result}) ]
+
+predicate precondition_G (self: t_G) (args: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst)
+
+predicate postcondition_once_G (self: t_G) (args: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst) (result: ())
+
+let call_once_G (self: t_G) (args: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst) (return (x: ())) =
+{[@stop_split] [@expl:call_once_G requires] ([@stop_split] [@expl:call_once 'self' type invariant] inv_G self)
+  /\ ([@stop_split] [@expl:call_once requires] precondition_G self args)}
+  any
+  [ return (result: ()) -> {[@stop_split] [@expl:call_once ensures] postcondition_once_G self args result}
+    (! return {result}) ]
+
+predicate hist_inv_closure9 (self: closure9) (result_state: closure9) = result_state.c0.final = self.c0.final
+
+let closure9 [@coma:extspec] (self: MutBorrow.t closure9)
+  (c: t_Result_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst_ref_Committer_AtomicPtr_T_ptr_T_SeqCst_unit)
+  (return (x: ())) = {[@stop_split] [@expl:closure 'self' type invariant] inv_refmut_closure9 self}
+  bb0
+  [ bb0 = any
+    [ br0 (x0: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst) -> {c = Ok x0} (! bb4)
+    | br1 (x0: t_Committer_AtomicPtr_T_ptr_T_SeqCst_unit) -> {c = Err x0} (! bb3) ]
+  | bb3 = s0
+    [ s0 =
+      -{resolve_Result_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst_ref_Committer_AtomicPtr_T_ptr_T_SeqCst_unit c}-
+      s1
+    | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure9 self} any) ]
+    | s2 = -{resolve_refmut_closure9 self}- s3
+    | s3 = return {_ret} ]
+  | bb4 = s0
+    [ s0 = elim_Ok {c} (fun (r0: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst) -> [ &c'0 <- r0 ] s1)
+    | s1 = MutBorrow.borrow_mut <t_Option_G> {self.current.c0.current}
+        (fun (_bor: MutBorrow.t t_Option_G) ->
+          [ &_9 <- _bor ] -{inv_Ghost_Option_G _bor.final}-
+          [ &self <- { self with current = { c0 = { self.current.c0 with current = _bor.final } } } ] s2)
+      [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_G self.current.c0.current} any) ]
+    | s2 = deref_mut_Ghost_Option_G {_9} (fun (_x: MutBorrow.t t_Option_G) -> [ &_8 <- _x ] s3)
+    | s3 = MutBorrow.borrow_final <t_Option_G> {_8.current} {MutBorrow.get_id _8}
+        (fun (_bor: MutBorrow.t t_Option_G) ->
+          [ &_7 <- _bor ] -{inv_Option_G _bor.final}-
+          [ &_8 <- { _8 with current = _bor.final } ] s4)
+      [ _ck -> (! {[@expl:type invariant] inv_Option_G _8.current} any) ]
+    | s4 = take_G {_7} (fun (_x: t_Option_G) -> [ &_6 <- _x ] s5)
+    | s5 = s6 [ _ck -> (! {[@expl:type invariant] inv_refmut_Option_G _8} any) ]
+    | s6 = -{resolve_refmut_Option_G _8}- s7
+    | s7 = s8 [ _ck -> (! {[@expl:type invariant] inv_refmut_closure9 self} any) ]
+    | s8 = -{resolve_refmut_closure9 self}- s9
+    | s9 = unwrap_G {_6} (fun (_x: t_G) -> [ &_5 <- _x ] s10)
+    | s10 = MutBorrow.borrow_final <t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst> {c'0.current} {MutBorrow.get_id c'0}
+        (fun (_bor: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst) ->
+          [ &_11 <- _bor ] [ &c'0 <- { c'0 with current = _bor.final } ] s11)
+    | s11 = [ &_10 <- _11 ] s12
+    | s12 = call_once_G {_5} {_10} (fun (_x: ()) -> [ &_ret <- _x ] s13)
+    | s13 = -{resolve_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst c'0}- s14
+    | s14 = return {_ret} ] ]
+  [ & _ret: () = Any.any_l ()
+  | & self: MutBorrow.t closure9 = self
+  | & c: t_Result_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst_ref_Committer_AtomicPtr_T_ptr_T_SeqCst_unit = c
+  | & c'0: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst = Any.any_l ()
+  | & _5: t_G = Any.any_l ()
+  | & _6: t_Option_G = Any.any_l ()
+  | & _7: MutBorrow.t t_Option_G = Any.any_l ()
+  | & _8: MutBorrow.t t_Option_G = Any.any_l ()
+  | & _9: MutBorrow.t t_Option_G = Any.any_l ()
+  | & _10: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst = Any.any_l ()
+  | & _11: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst = Any.any_l () ]
+  [ return (result: ()) -> {[@stop_split] [@expl:closure hist_inv post] hist_inv_closure9 self.current self.final}
+    return {result} ]
+
+meta "rewrite_def" predicate closure9'pre
+
+meta "rewrite_def" predicate closure9'post'return
+
+type t_FnGhostWrapper_closure9 = { f0'1: closure9 }
+
+predicate inv_FnGhostWrapper_closure9 (_1: t_FnGhostWrapper_closure9)
+
+axiom inv_axiom'1 [@rewrite]:
+  forall _1: t_FnGhostWrapper_closure9 [inv_FnGhostWrapper_closure9 _1]. inv_FnGhostWrapper_closure9 _1
+    = inv_closure9 _1.f0'1
+
+let __new_closure9 (f: closure9) (return (x: t_FnGhostWrapper_closure9)) =
+{[@stop_split] [@expl:__new 'f' type invariant] inv_closure9 f}
+  any
+  [ return (result: t_FnGhostWrapper_closure9) ->
+  {[@stop_split] [@expl:__new_closure9 ensures] ([@stop_split] [@expl:__new result type invariant] inv_FnGhostWrapper_closure9 result)
+    /\ ([@stop_split] [@expl:__new ensures] result.f0'1 = f)}
+    (! return {result}) ]
+
+predicate invariant_Ghost_FnGhostWrapper_closure9 [@inline:trivial] (self: t_FnGhostWrapper_closure9) =
+  inv_FnGhostWrapper_closure9 self
+
+meta "rewrite_def" predicate invariant_Ghost_FnGhostWrapper_closure9
+
+predicate inv_Ghost_FnGhostWrapper_closure9 [@inline:trivial] (_1: t_FnGhostWrapper_closure9) =
+  invariant_Ghost_FnGhostWrapper_closure9 _1
+
+meta "rewrite_def" predicate inv_Ghost_FnGhostWrapper_closure9
+
+let new_FnGhostWrapper_closure9 (x: t_FnGhostWrapper_closure9) (return (x'0: t_FnGhostWrapper_closure9)) =
+{[@stop_split] [@expl:new 'x' type invariant] inv_FnGhostWrapper_closure9 x}
+  any
+  [ return (result: t_FnGhostWrapper_closure9) ->
+  {[@stop_split] [@expl:new_FnGhostWrapper_closure9 ensures] ([@stop_split] [@expl:new result type invariant] inv_Ghost_FnGhostWrapper_closure9 result)
+    /\ ([@stop_split] [@expl:new ensures] result = x)}
+    (! return {result}) ]
+
+type t_Result_ptr_T_ptr_T = Ok'0 Opaque.ptr | Err'0 Opaque.ptr
+
+predicate shot_store_AtomicPtr_T'0 (self: t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst)
+
+function ward_AtomicPtr_T'0 (self: t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst) : t_AtomicPtr_T
+
+type t_PtrDeepModel__private
+
+type t_PtrDeepModel = { addr: UInt64.t; t_PtrDeepModel__private: t_PtrDeepModel__private }
+
+function deep_model_ptr_T (self: Opaque.ptr) : t_PtrDeepModel
+
+axiom deep_model_ptr_T_spec: forall self: Opaque.ptr [deep_model_ptr_T self]. (deep_model_ptr_T self).addr
+    = Ptr.addr_logic_u64 self
+
+function val_load_AtomicPtr_T'0 (self: t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst) : Opaque.ptr
+
+function val_store_AtomicPtr_T (self: t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst) : Opaque.ptr
+
+predicate precondition_closure9 (self: closure9) (args: t_Result_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst_ref_Committer_AtomicPtr_T_ptr_T_SeqCst_unit) =
+  let c = args in forall bor_self: MutBorrow.t closure9. bor_self.current = self /\ inv_closure9 bor_self.final
+    -> closure9'pre bor_self c
+
+meta "rewrite_def" predicate precondition_closure9
+
+predicate precondition_FnGhostWrapper_closure9 (self: t_FnGhostWrapper_closure9) (args: t_Result_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst_ref_Committer_AtomicPtr_T_ptr_T_SeqCst_unit) =
+  precondition_closure9 self.f0'1 args
+
+meta "rewrite_def" predicate precondition_FnGhostWrapper_closure9
+
+predicate resolve_refmut_Ghost_Option_G [@inline:trivial] (_1: MutBorrow.t t_Option_G) = _1.final = _1.current
+
+meta "rewrite_def" predicate resolve_refmut_Ghost_Option_G
+
+predicate resolve_closure9 [@inline:trivial] (_1: closure9) = resolve_refmut_Ghost_Option_G _1.c0
+
+meta "rewrite_def" predicate resolve_closure9
+
+predicate postcondition_once_closure9 (self: closure9) (args: t_Result_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst_ref_Committer_AtomicPtr_T_ptr_T_SeqCst_unit) (result: ()) =
+  let c = args in exists e: closure9. (exists bor_self: MutBorrow.t closure9. bor_self.current = self
+        /\ bor_self.final = e /\ closure9'post'return bor_self c result /\ hist_inv_closure9 self e)
+    /\ resolve_closure9 e
+
+meta "rewrite_def" predicate postcondition_once_closure9
+
+predicate postcondition_once_FnGhostWrapper_closure9 (self: t_FnGhostWrapper_closure9) (args: t_Result_refmut_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst_ref_Committer_AtomicPtr_T_ptr_T_SeqCst_unit) (result: ()) =
+  postcondition_once_closure9 self.f0'1 args result
+
+meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure9
+
+let compare_exchange_weak_T (self: t_AtomicPtr_T) (current': Opaque.ptr) (new: Opaque.ptr)
+  (f: t_FnGhostWrapper_closure9) (return (x: t_Result_ptr_T_ptr_T)) =
+{[@stop_split] [@expl:compare_exchange_weak_T requires] ([@stop_split] [@expl:compare_exchange_weak 'self' type invariant] inv_ref_AtomicPtr_T self)
+  /\ ([@stop_split] [@expl:compare_exchange_weak 'f' type invariant] inv_Ghost_FnGhostWrapper_closure9 f)
+  /\ ([@stop_split] [@expl:compare_exchange_weak requires #0] forall c: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst. not shot_store_AtomicPtr_T'0 c.current
+      -> ward_AtomicPtr_T'0 c.current = self
+      -> deep_model_ptr_T (val_load_AtomicPtr_T'0 c.current) = deep_model_ptr_T current'
+      -> val_store_AtomicPtr_T c.current = new
+      -> precondition_FnGhostWrapper_closure9 f (Ok c)
+      /\ (postcondition_once_FnGhostWrapper_closure9 f (Ok c) () -> shot_store_AtomicPtr_T'0 c.final))
+  /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicPtr_T_ptr_T_SeqCst_unit. not shot_store_AtomicPtr_T c
+    -> ward_AtomicPtr_T c = self -> precondition_FnGhostWrapper_closure9 f (Err c))}
+  any
+  [ return (result: t_Result_ptr_T_ptr_T) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
+      | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst. not shot_store_AtomicPtr_T'0 c.current
+        /\ ward_AtomicPtr_T'0 c.current = self
+        /\ deep_model_ptr_T (val_load_AtomicPtr_T'0 c.current) = deep_model_ptr_T current'
+        /\ val_store_AtomicPtr_T c.current = new
+        /\ result'0 = val_load_AtomicPtr_T'0 c.current /\ postcondition_once_FnGhostWrapper_closure9 f (Ok c) ()
+      | Err'0 result'0 -> exists c: t_Committer_AtomicPtr_T_ptr_T_SeqCst_unit. not shot_store_AtomicPtr_T c
+        /\ ward_AtomicPtr_T c = self
+        /\ result'0 = val_load_AtomicPtr_T c /\ postcondition_once_FnGhostWrapper_closure9 f (Err c) ()
+      end}
+    (! return {result}) ]
+
+let elim_Err (_x: t_Result_ptr_T_ptr_T) (return (f0'2: Opaque.ptr)) = any
+  [ _k (f0'2: Opaque.ptr) -> {Err'0 f0'2 = _x} (! return {f0'2})
+  | _chk -> (! {[@expl:elim Err] match _x with
+      | Err'0 _ -> true
+      | _ -> false
+      end}
+    any) ]
+
+predicate resolve_G (_1: t_G)
+
+predicate resolve_Option_G (_1: t_Option_G)
+
+axiom resolve_axiom'0 [@rewrite]: forall _1: t_Option_G [resolve_Option_G _1]. resolve_Option_G _1
+    = match _1 with
+      | None -> true
+      | Some x0 -> resolve_G x0
+      end
+
+predicate resolve_Ghost_Option_G [@inline:trivial] (self: t_Option_G) = resolve_Option_G self
+
+meta "rewrite_def" predicate resolve_Ghost_Option_G
+
+predicate resolve_Ghost_Option_G'0 [@inline:trivial] (_1: t_Option_G) = resolve_Ghost_Option_G _1
+
+meta "rewrite_def" predicate resolve_Ghost_Option_G'0
+
+predicate resolve_Ghost_G [@inline:trivial] (self: t_G) = resolve_G self
+
+meta "rewrite_def" predicate resolve_Ghost_G
+
+predicate resolve_Ghost_G'0 [@inline:trivial] (_1: t_G) = resolve_Ghost_G _1
+
+meta "rewrite_def" predicate resolve_Ghost_G'0
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let try_update_T (self: t_AtomicPtr_T) (f: t_F) (g: t_G) (return (x: t_Result_ptr_T_ptr_T)) =
+{[@stop_split] [@expl:try_update_T requires] ([@stop_split] [@expl:try_update 'self' type invariant] inv_ref_AtomicPtr_T self)
+  /\ ([@stop_split] [@expl:try_update 'f' type invariant] inv_F f)
+  /\ ([@stop_split] [@expl:try_update 'g' type invariant] inv_Ghost_G g)
+  /\ ([@stop_split] [@expl:try_update requires #0] forall x: Opaque.ptr, f2: t_F. hist_inv_F f f2
+      -> precondition_F f2 x)
+  /\ ([@stop_split] [@expl:try_update requires #1] forall current': Opaque.ptr, new: Opaque.ptr, c: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst, f2: t_F, f3: t_F. not shot_store_AtomicPtr_T'0 c.current
+    -> ward_AtomicPtr_T'0 c.current = self
+    -> hist_inv_F f f2
+    -> postcondition_mut_F f2 current' f3 (Some'0 new)
+    -> deep_model_ptr_T (val_load_AtomicPtr_T'0 c.current) = deep_model_ptr_T current'
+    -> val_store_AtomicPtr_T c.current = new
+    -> precondition_G g c /\ (postcondition_once_G g c () -> shot_store_AtomicPtr_T'0 c.final))}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = [ &_18 <- () ] s1
+    | s1 = __new_closure3 {_18} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_17 <- _x ] s2)
+    | s2 = new_FnGhostWrapper_closure3 {_17} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_16 <- _x ] s3)
+    | s3 = load_T {self} {_16} (fun (_x: Opaque.ptr) -> [ &prev <- _x ] s4)
+    | s4 = [ &f_snap <- f ] s5
+    | s5 = [ &g_snap <- g ] s6
+    | s6 = into_inner_G {g} (fun (_x: t_G) -> [ &_27 <- _x ] s7)
+    | s7 = [ &_26 <- Some _27 ] s8
+    | s8 = new_Option_G {_26} (fun (_x: t_Option_G) -> [ &g'0 <- _x ] s9)
+    | s9 = bb9 ]
+  | bb9 = bb9
+    [ bb9 = {[@expl:inferred invariant: type invariant] inv_Ghost_Option_G g'0}
+      {[@expl:inferred invariant: type invariant] inv_F f}
+      {[@expl:loop invariant #0] g'0 = Some g_snap}
+      {[@expl:loop invariant #1] hist_inv_F f_snap f}
+      (! s0)
+      [ s0 = MutBorrow.borrow_mut <t_F> {f}
+          (fun (_bor: MutBorrow.t t_F) -> [ &_39 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
+      | s1 = [ &_40 <- prev ] s2
+      | s2 = call_mut_F {_39} {_40} (fun (_x: t_Option_ptr_T) -> [ &_38 <- _x ] s3)
+      | s3 = any [ br0 -> {_38 = None'0} (! bb21) | br1 (x0: Opaque.ptr) -> {_38 = Some'0 x0} (! bb13) ] ]
+      [ bb13 = s0
+        [ s0 = elim_Some {_38} (fun (r0: Opaque.ptr) -> [ &next <- r0 ] s1)
+        | s1 = MutBorrow.borrow_mut <t_Option_G> {g'0}
+            (fun (_bor: MutBorrow.t t_Option_G) ->
+              [ &_51 <- _bor ] -{inv_Ghost_Option_G _bor.final}-
+              [ &g'0 <- _bor.final ] s2) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_G g'0} any) ]
+        | s2 = [ &_50 <- { c0 = _51 } ] s3
+        | s3 = __new_closure9 {_50} (fun (_x: t_FnGhostWrapper_closure9) -> [ &_49 <- _x ] s4)
+        | s4 = new_FnGhostWrapper_closure9 {_49} (fun (_x: t_FnGhostWrapper_closure9) -> [ &_48 <- _x ] s5)
+        | s5 = compare_exchange_weak_T {self} {prev} {next} {_48} (fun (_x: t_Result_ptr_T_ptr_T) -> [ &_44 <- _x ] s6)
+        | s6 = any
+          [ br0 (x0: Opaque.ptr) -> {_44 = Ok'0 x0} (! bb18) | br1 (x0: Opaque.ptr) -> {_44 = Err'0 x0} (! bb19) ] ]
+      | bb19 = s0
+        [ s0 = elim_Err {_44} (fun (r0: Opaque.ptr) -> [ &next_prev <- r0 ] s1)
+        | s1 = [ &prev <- next_prev ] s2
+        | s2 = bb9 ] ] ]
+  | bb21 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_G g'0} any) ]
+    | s1 = -{resolve_Ghost_Option_G'0 g'0}- s2
+    | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
+    | s3 = -{resolve_F f}- s4
+    | s4 = [ &_ret <- Err'0 prev ] s5
+    | s5 = return {_ret} ]
+  | bb18 = s0
+    [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_G g'0} any) ]
+    | s1 = -{resolve_Ghost_Option_G'0 g'0}- s2
+    | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
+    | s3 = -{resolve_F f}- s4
+    | s4 = [ &x <- _44 ] s5
+    | s5 = [ &_ret <- x ] s6
+    | s6 = return {_ret} ] ]
+  [ & _ret: t_Result_ptr_T_ptr_T = Any.any_l ()
+  | & self: t_AtomicPtr_T = self
+  | & f: t_F = f
+  | & g: t_G = g
+  | & prev: Opaque.ptr = Any.any_l ()
+  | & _16: t_FnGhostWrapper_closure3 = Any.any_l ()
+  | & _17: t_FnGhostWrapper_closure3 = Any.any_l ()
+  | & _18: () = Any.any_l ()
+  | & f_snap: t_F = Any.any_l ()
+  | & g_snap: t_G = Any.any_l ()
+  | & g'0: t_Option_G = Any.any_l ()
+  | & _26: t_Option_G = Any.any_l ()
+  | & _27: t_G = Any.any_l ()
+  | & _38: t_Option_ptr_T = Any.any_l ()
+  | & _39: MutBorrow.t t_F = Any.any_l ()
+  | & _40: Opaque.ptr = Any.any_l ()
+  | & next: Opaque.ptr = Any.any_l ()
+  | & _44: t_Result_ptr_T_ptr_T = Any.any_l ()
+  | & _48: t_FnGhostWrapper_closure9 = Any.any_l ()
+  | & _49: t_FnGhostWrapper_closure9 = Any.any_l ()
+  | & _50: closure9 = Any.any_l ()
+  | & _51: MutBorrow.t t_Option_G = Any.any_l ()
+  | & x: t_Result_ptr_T_ptr_T = Any.any_l ()
+  | & next_prev: Opaque.ptr = Any.any_l () ])
+  [ return (result: t_Result_ptr_T_ptr_T) -> {[@stop_split] [@expl:try_update ensures] match result with
+      | Ok'0 res -> exists current': Opaque.ptr, new: Opaque.ptr, f2: t_F, f3: t_F. deep_model_ptr_T current'
+          = deep_model_ptr_T res
+        /\ hist_inv_F f f2
+        /\ postcondition_mut_F f2 current' f3 (Some'0 new)
+        /\ resolve_F f3
+        /\ (exists c: MutBorrow.t t_Committer_AtomicPtr_T_ptr_T_SeqCst_SeqCst. not shot_store_AtomicPtr_T'0 c.current
+          /\ ward_AtomicPtr_T'0 c.current = self
+          /\ deep_model_ptr_T (val_load_AtomicPtr_T'0 c.current) = deep_model_ptr_T res
+          /\ val_store_AtomicPtr_T c.current = new /\ postcondition_once_G g c ())
+      | Err'0 current' -> exists f2: t_F, f3: t_F. hist_inv_F f f2
+        /\ postcondition_mut_F f2 current' f3 (None'0) /\ resolve_F f3 /\ resolve_Ghost_G'0 g
+      end}
+    (! return {result}) ]

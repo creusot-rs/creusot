@@ -175,6 +175,61 @@ macro_rules! impl_atomic {
             {
                 self.0.store(val, OrderingTy::SeqCst)
             }
+
+            #[doc = concat!("Wrapper for [`std::sync::atomic::", stringify!($atomic_type), "::try_update`].")]
+            #[doc = ""]
+            #[doc = "All operations are always sequentially consistent"]
+            #[requires(forall<x, f2> f.hist_inv(f2) ==> f2.precondition(x))]
+            #[requires(forall<current: $type, new: $type, c: &mut Committer<Self, $type, SeqCst, SeqCst>, f2, f3>
+                !c.shot_store() ==> c.ward() == *self ==>
+                f.hist_inv(f2) ==>
+                f2.postcondition_mut((current,), f3, Some(new)) ==>
+                c.val_load().deep_model() == current.deep_model() ==>
+                c.val_store() == new ==>
+                g.precondition((c,)) && (g.postcondition_once((c,), ()) ==> (^c).shot_store())
+            )]
+            #[ensures(match result {
+                Ok(res) => exists<current: $type, new, f2, f3>
+                    current.deep_model() == res.deep_model() &&
+                    f.hist_inv(f2) && f2.postcondition_mut((current,), f3, Some(new)) &&
+                    resolve(f3) &&
+                    exists<c: &mut Committer<Self, $type, SeqCst, SeqCst>>
+                        !c.shot_store() && c.ward() == *self &&
+                        c.val_load().deep_model() == res.deep_model() &&
+                        c.val_store() == new &&
+                        g.postcondition_once((c,), ()),
+                Err(current) => exists<f2, f3> f.hist_inv(f2) && f2.postcondition_mut((current,), f3, None) &&
+                    resolve(f3) && resolve(g),
+            })]
+            pub fn try_update<F, G>(&self, mut f: F, g: Ghost<G>) -> Result<$type, $type>
+            where
+                F: FnMut($type) -> Option<$type>,
+                G: FnGhost + FnOnce(&mut Committer<Self, $type, SeqCst, SeqCst>),
+            {
+                let mut prev = self.load(ghost!(|_: &_| {}));
+                let f_snap = snapshot!(f);
+                let g_snap = snapshot!(*g);
+                let mut g = ghost!(Some(g.into_inner()));
+                #[invariant(*g == Some(*g_snap))]
+                #[invariant(f_snap.hist_inv(f))]
+                while let Some(next) = f(prev) {
+                    match self.compare_exchange_weak(
+                        prev,
+                        next,
+                        ghost!(|c: Result<&mut _, &_>| match c {
+                            Ok(c) => {
+                                (g.take().unwrap())(c)
+                            }
+                            Err(_) => {}
+                        }),
+                    ) {
+                        x @ Ok(_) => return x,
+                        Err(next_prev) => prev = next_prev,
+                    }
+                }
+                Err(prev)
+            }
+
         }
 
     )* };
