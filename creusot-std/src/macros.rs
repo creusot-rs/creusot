@@ -592,11 +592,10 @@ macro_rules! erase {
     () => {};
 }
 
-#[cfg(not(feature = "creusot"))]
+#[cfg(not(creusot))]
 #[macro_export]
 macro_rules! erase {
     ($($_:tt)*) => {};
 }
 
-#[cfg(not(feature = "creusot"))]
 pub use erase;

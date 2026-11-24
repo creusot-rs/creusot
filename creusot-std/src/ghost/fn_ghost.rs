@@ -84,7 +84,7 @@ impl<F> private::_Sealed for FnGhostWrapper<F> {}
 impl<F> FnGhost for FnGhostWrapper<F> {}
 
 #[cfg(creusot)]
-pub struct ErasedGhostFn<T, A, R>(std::marker::PhantomData<(T, A, R)>);
+pub struct ErasedGhostFn<T, A, R>(core::marker::PhantomData<(T, A, R)>);
 
 #[cfg(creusot)]
 impl<T, A, R> FnGhost for ErasedGhostFn<T, A, R> {}

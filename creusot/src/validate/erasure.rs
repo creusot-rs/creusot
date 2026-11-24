@@ -17,7 +17,7 @@ use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_ast::{BindingMode, ByRef, Mutability};
 use rustc_errors::{Diag, DiagMessage};
 use rustc_hir::{
-    HirId, ItemLocalId,
+    HirId, ItemLocalId, OwnerId,
     def_id::{DefId, LocalDefId},
 };
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
@@ -188,12 +188,19 @@ pub(crate) struct AnfBlock<'tcx> {
     span: Span,
 }
 
+/// Variables are identified by their owner (the body they come from) and an index local to that owner.
+/// The owner is a `DefId` rather than a `LocalDefId` so that `Var` can go through cross-crate serialization.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum Var {
-    /// Only the `local_id` component of a `HirId` can go through cross-crate serialization
-    /// We throw away the `owner` which should be the enclosing function anyway.
-    HirId(HirId),
-    ExprId(LocalDefId, ExprId),
+    /// A `HirId`, with its owner as a `DefId`
+    HirId(DefId, ItemLocalId),
+    ExprId(DefId, ExprId),
+}
+
+impl Var {
+    fn hir_id(hir_id: HirId) -> Self {
+        Var::HirId(hir_id.owner.to_def_id(), hir_id.local_id)
+    }
 }
 
 impl<I: Interner> ty::TypeVisitable<I> for Var {
@@ -215,9 +222,9 @@ impl<I: Interner> ty::TypeFoldable<I> for Var {
 impl<D: SpanDecoder> Decodable<D> for Var {
     fn decode(d: &mut D) -> Self {
         if d.read_bool() {
-            Var::HirId(Decodable::decode(d))
+            Var::HirId(DefId::decode(d), ItemLocalId::decode(d))
         } else {
-            Var::ExprId(LocalDefId::decode(d), ODecodable::odecode(d))
+            Var::ExprId(DefId::decode(d), ODecodable::odecode(d))
         }
     }
 }
@@ -225,13 +232,14 @@ impl<D: SpanDecoder> Decodable<D> for Var {
 impl<E: SpanEncoder> Encodable<E> for Var {
     fn encode(&self, e: &mut E) {
         match self {
-            Var::HirId(v) => {
+            Var::HirId(owner, local_id) => {
                 e.emit_bool(true);
-                v.encode(e)
+                owner.encode(e);
+                local_id.encode(e)
             }
-            Var::ExprId(i, v) => {
-                i.encode(e);
+            Var::ExprId(owner, v) => {
                 e.emit_bool(false);
+                owner.encode(e);
                 v.oencode(e)
             }
         }
@@ -784,7 +792,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
         stmts: &mut Vec<AnfStmt<'tcx>>,
     ) -> Result<(AnfValue<'tcx>, Span), ()> {
         let expr = &self.thir[expr_id];
-        let owner = self.def_id;
+        let owner = self.def_id.to_def_id();
         let bind_var = |stmts: &mut Vec<AnfStmt<'tcx>>, rhs| {
             stmts.push(AnfStmt {
                 pattern: AnfPattern::Var(Var::ExprId(owner, expr_id)),
@@ -1197,15 +1205,15 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                     && expr_id2 == expr_id
                 {
                     // expr_id was just bound so we can use it as a place
-                    Ok(AnfPlace::mut_var(Var::ExprId(self.def_id, expr_id)))
+                    Ok(AnfPlace::mut_var(Var::ExprId(self.def_id.to_def_id(), expr_id)))
                 } else {
                     // we create a place for expr_id
                     stmts.push(AnfStmt {
-                        pattern: AnfPattern::Var(Var::ExprId(self.def_id, expr_id)),
+                        pattern: AnfPattern::Var(Var::ExprId(self.def_id.to_def_id(), expr_id)),
                         rhs: AnfOp::value(v),
                         span: expr.span,
                     });
-                    Ok(AnfPlace::mut_var(Var::ExprId(self.def_id, expr_id)))
+                    Ok(AnfPlace::mut_var(Var::ExprId(self.def_id.to_def_id(), expr_id)))
                 }
             }
         }
@@ -1405,7 +1413,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
     }
 
     fn var(&self, hir_id: thir::LocalVarId) -> Var {
-        Var::HirId(hir_id.0)
+        Var::hir_id(hir_id.0)
     }
 }
 
@@ -1839,7 +1847,12 @@ impl<'tcx> PrintAnf<'tcx> {
 
     fn print_var(&self, var: Var, f: &mut Formatter) -> Result<(), std::fmt::Error> {
         match var {
-            Var::HirId(hir_id) => self.print_hir_id(hir_id, f),
+            Var::HirId(owner, local_id) => match owner.as_local() {
+                Some(owner) => {
+                    self.print_hir_id(HirId { owner: OwnerId { def_id: owner }, local_id }, f)
+                }
+                None => write!(f, "#h{}", local_id.as_u32()),
+            },
             Var::ExprId(_, expr_id) => write!(f, "#e{}", expr_id.as_u32()),
         }
     }
