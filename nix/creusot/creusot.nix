@@ -8,32 +8,42 @@
   stdenv,
 
   # Attributes
+  check,
   meta,
   rustBuilder,
   rustToolchain,
   src,
+  postUnpack,
   version,
 }:
 
 let
   pname = "cargo-creusot";
-  cargoExtraArgs = "--workspace --exclude creusot-install --exclude prelude-generator";
-
-  cargoArtifacts = rustBuilder.buildDepsOnly {
-    inherit meta pname version;
-    inherit cargoExtraArgs src;
-  };
-in
-rustBuilder.buildPackage rec {
-  inherit meta pname version;
-  inherit cargoArtifacts cargoExtraArgs src;
+  cargoExtraArgs = "--workspace";
 
   nativeBuildInputs = lib.optionals stdenv.isDarwin [
     libiconv
     libzip
   ];
+in
+rustBuilder.buildPackage rec {
+  inherit meta pname version;
+  inherit cargoExtraArgs nativeBuildInputs;
+  inherit src postUnpack;
 
+  cargoArtifacts = rustBuilder.buildDepsOnly {
+    inherit meta pname version;
+    inherit cargoExtraArgs src;
+    inherit postUnpack;
+  };
+
+  doCheck = false;
   doNotRemoveReferencesToRustToolchain = true;
+
+  passthru = {
+    inherit (check) src postUnpack;
+    inherit cargoArtifacts pname nativeBuildInputs;
+  };
 
   postInstall = ''
     mkdir $out/share

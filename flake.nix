@@ -122,6 +122,18 @@
               free = mkCreusot { isFree = true; };
             };
 
+          checks = {
+            ui = pkgs.creusot.rustBuilder.cargoTest ({
+              inherit (pkgs.creusot.creusot.passthru) pname src postUnpack;
+              inherit (pkgs.creusot.creusot.passthru) cargoArtifacts nativeBuildInputs;
+
+              cargoExtraArgs = "--offline";
+              cargoTestExtraArgs = "--test ui";
+
+              doInstallCargoArtifacts = false;
+            });
+          };
+
           devShells =
             let
               rustDevToolchain = pkgs.creusot.mkRustToolchain (
@@ -162,7 +174,7 @@
     ];
 
     extra-trusted-public-keys = [
-      "creusot:v8x3T4Lw50lSw/GnKIVwiiqM6FbOk1JMEcyRdlUy4+s="
+      "creusot:cAi6flAiJFDgL3gl4Rv1bwrjmvJEsx8uav1suxfAoEk="
     ];
   };
 }
