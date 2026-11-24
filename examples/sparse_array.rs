@@ -12,8 +12,6 @@
 // requires to reason about permutation,
 
 extern crate creusot_std;
-#[cfg(creusot)]
-use creusot_std::resolve::structural_resolve;
 use creusot_std::{
     logic::{FSet, Int, Seq},
     prelude::*,
@@ -52,9 +50,6 @@ impl<T, const SIZE: usize> Resolve for Sparse<T, SIZE> {
     }
 
     #[logic(open, prophetic)]
-    #[requires(inv(self))]
-    #[requires(structural_resolve(self))]
-    #[ensures(self.resolve())]
     fn resolve_coherence(self) {}
 }
 

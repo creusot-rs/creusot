@@ -78,7 +78,6 @@ mod hashmap {
     }
 
     impl<U: Hash, V: Hash> Hash for (U, V) {
-        #[ensures(result@ == Self::hash_log(self.deep_model()))]
         fn hash(&self) -> u64 {
             self.0.hash().wrapping_add(self.1.hash().wrapping_mul(17))
         }

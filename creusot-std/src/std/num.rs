@@ -871,8 +871,6 @@ impl<T: ZeroablePrimitive + DeepModel> DeepModel for NonZero<T> {
 
 #[cfg(creusot)]
 impl<T: ZeroablePrimitive + Plain + View<ViewTy = Int>> Plain for NonZero<T> {
-    #[requires(inv(*snap))]
-    #[ensures(*result == *snap)]
     #[check(ghost)]
     fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
         ghost! {

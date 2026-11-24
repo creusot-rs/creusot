@@ -30,23 +30,16 @@ impl<'a, T> Iterator for IterMut<'a, T> {
     }
 
     #[logic(open, law)]
-    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {
         let _ = Seq::<Self::Item>::concat_empty;
     }
 
     #[logic(open, law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
+    #[allow(unused_variables)]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         let _ = Seq::<Self::Item>::concat_assoc;
     }
 
-    #[ensures(match result {
-        None => self.completed(),
-        Some(v) => (*self).produces(Seq::singleton(v), ^self)
-    })]
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.split_off_first_mut()
     }
@@ -73,8 +66,6 @@ impl<'a, T> ExactSizeIterator for IterMut<'a, T> {
     }
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
-    #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 }
@@ -91,37 +82,22 @@ impl<'a, T> DoubleEndedIterator for IterMut<'a, T> {
     }
 
     #[logic(law)]
-    #[ensures(self.produces_back(Seq::empty(), self))]
     fn produces_back_refl(self) {
         let _ = Seq::<Self::Item>::reverse_empty();
         let _ = Seq::<Self::Item>::concat_empty;
     }
 
     #[logic(law)]
-    #[requires(a.produces_back(ab, b))]
-    #[requires(b.produces_back(bc, c))]
-    #[ensures(a.produces_back(ab.concat(bc), c))]
+    #[allow(unused_variables)]
     fn produces_back_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         let _ = ab.reverse_concat(bc);
         let _ = Seq::<Self::Item>::concat_assoc;
     }
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
-    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
-        self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
-    #[ensures(match r.1 {
-        Some(r) => {
-            forall<s: Seq<Self::Item>, i: Self> self.produces_back(s, i) ==> s.len() <= r@
-        }
-        None => true
-    })]
+    #[allow(unused_variables)]
     fn size_hint_back_spec(&self, r: (usize, Option<usize>)) {}
 
-    #[ensures(match result {
-        None => self.completed_back(),
-        Some(v) => (*self).produces_back(Seq::singleton(v), ^self)
-    })]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.inner.split_off_last_mut()
     }

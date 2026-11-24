@@ -45,8 +45,7 @@ impl WellFounded for Int {
 
     #[trusted]
     #[logic(opaque)]
-    #[ensures(result >= 0)]
-    #[ensures(!Self::well_founded_relation(s[result], s[result + 1]))]
+    #[allow(unused_variables)]
     fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int {
         dead
     }
@@ -63,8 +62,6 @@ macro_rules! impl_well_founded {
             }
 
             #[logic]
-            #[ensures(result >= 0)]
-            #[ensures(!Self::well_founded_relation(s[result], s[result + 1]))]
             fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int {
                 pearlite! {
                     Int::no_infinite_decreasing_sequence(|i| s[i]@ - $t::MIN@)
@@ -85,8 +82,6 @@ impl<T: WellFounded> WellFounded for &T {
     }
 
     #[logic]
-    #[ensures(result >= 0)]
-    #[ensures(!Self::well_founded_relation(s[result], s[result + 1]))]
     fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int {
         T::no_infinite_decreasing_sequence(|i| *s[i])
     }
@@ -100,8 +95,6 @@ impl<T: WellFounded> WellFounded for Box<T> {
     }
 
     #[logic]
-    #[ensures(result >= 0)]
-    #[ensures(!Self::well_founded_relation(s[result], s[result + 1]))]
     fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int {
         T::no_infinite_decreasing_sequence(|i| *s[i])
     }
@@ -116,8 +109,7 @@ impl WellFounded for () {
     }
 
     #[logic]
-    #[ensures(result >= 0)]
-    #[ensures(!Self::well_founded_relation(s[result], s[result + 1]))]
+    #[allow(unused_variables)]
     fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int {
         0
     }
@@ -166,8 +158,6 @@ macro_rules! wf_tuples {
             wf_tuples!( @wf_relation self other {} [] $($ts=$idxs)+ );
 
             #[logic]
-            #[ensures(result >= 0)]
-            #[ensures(!Self::well_founded_relation(s[result], s[result + 1]))]
             fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int {
                 pearlite! {
                     match try_such_that(|r| r >= 0 && !Self::well_founded_relation(s[r], s[r + 1])) {

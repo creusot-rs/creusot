@@ -14,8 +14,6 @@ impl WellFounded for CustomVariant {
     }
 
     #[logic]
-    #[ensures(result >= 0)]
-    #[ensures(!Self::well_founded_relation(s[result], s[result + 1]))]
     fn no_infinite_decreasing_sequence(s: Mapping<Int, Self>) -> Int {
         // An infinite decreasing sequence means, in particular, that the first
         // component of CustomVariant is infinitely decreasing.

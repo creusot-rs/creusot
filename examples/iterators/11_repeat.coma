@@ -323,10 +323,10 @@ module M_impl_Iterator_for_Repeat_A__next (* <Repeat<A> as common::Iterator> *)
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_refmut_Repeat_A self} any) ]
       | s1 = -{resolve_refmut_Repeat_A self}- s2
-      | s2 = clone_A {self.current.element} (fun (_x: t_A) -> [ &_4 <- _x ] s3)
-      | s3 = [ &_ret <- Some _4 ] s4
+      | s2 = clone_A {self.current.element} (fun (_x: t_A) -> [ &_2 <- _x ] s3)
+      | s3 = [ &_ret <- Some _2 ] s4
       | s4 = return {_ret} ] ]
-    [ & _ret: t_Option_A = Any.any_l () | & self: MutBorrow.t t_Repeat_A = self | & _4: t_A = Any.any_l () ])
+    [ & _ret: t_Option_A = Any.any_l () | & self: MutBorrow.t t_Repeat_A = self | & _2: t_A = Any.any_l () ])
     [ return (result: t_Option_A) ->
     {[@stop_split] [@expl:next_Repeat_A ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_A result)
       /\ ([@stop_split] [@expl:next ensures] match result with
@@ -334,69 +334,6 @@ module M_impl_Iterator_for_Repeat_A__next (* <Repeat<A> as common::Iterator> *)
         | Some v -> produces_Repeat_A self.current (Seq.singleton v) self.final
         end)}
       (! return {result}) ]
-end
-module M_impl_Iterator_for_Repeat_A__next__refines (* <Repeat<A> as common::Iterator> *)
-  use creusot.prelude.MutBorrow
-  use seq.Seq
-  use int.Int
-  
-  type t_A
-  
-  type t_Repeat_A = { element: t_A }
-  
-  predicate inv_A (_1: t_A)
-  
-  predicate inv_Repeat_A (_1: t_Repeat_A)
-  
-  axiom inv_axiom [@rewrite]: forall _1: t_Repeat_A [inv_Repeat_A _1]. inv_Repeat_A _1 = inv_A _1.element
-  
-  predicate invariant_refmut_Repeat_A [@inline:trivial] (self: MutBorrow.t t_Repeat_A) =
-    inv_Repeat_A self.current /\ inv_Repeat_A self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Repeat_A
-  
-  predicate inv_refmut_Repeat_A [@inline:trivial] (_1: MutBorrow.t t_Repeat_A) = invariant_refmut_Repeat_A _1
-  
-  meta "rewrite_def" predicate inv_refmut_Repeat_A
-  
-  type t_Option_A = None | Some t_A
-  
-  predicate inv_Option_A (_1: t_Option_A)
-  
-  axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_A [inv_Option_A _1]. inv_Option_A _1
-      = match _1 with
-        | None -> true
-        | Some f0 -> inv_A f0
-        end
-  
-  predicate completed_Repeat_A (self: MutBorrow.t t_Repeat_A) = false
-  
-  predicate postcondition_clone (self: ()) (args: t_A) (result: t_A)
-  
-  axiom postcondition_fndef:
-    forall args: t_A, result: t_A [postcondition_clone () args result]. postcondition_clone () args result
-      -> (let self = args in inv_A result)
-  
-  predicate produces_Repeat_A (self: t_Repeat_A) (visited: Seq.seq t_A) (o: t_Repeat_A) =
-    self = o
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> postcondition_clone () self.element (Seq.get visited i))
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: MutBorrow.t t_Repeat_A. inv_refmut_Repeat_A self
-      -> inv_refmut_Repeat_A self
-      /\ (forall result: t_Option_A. inv_Option_A result
-          /\ match result with
-            | None -> completed_Repeat_A self
-            | Some v -> produces_Repeat_A self.current (Seq.singleton v) self.final
-            end
-        -> inv_Option_A result
-        /\ match result with
-          | None -> completed_Repeat_A self
-          | Some v -> produces_Repeat_A self.current (Seq.singleton v) self.final
-          end)
 end
 module M_impl_Iterator_for_Repeat_A__produces_refl (* <Repeat<A> as common::Iterator> *)
   use seq.Seq
@@ -428,33 +365,6 @@ module M_impl_Iterator_for_Repeat_A__produces_refl (* <Repeat<A> as common::Iter
   
   goal vc_produces_refl_Repeat_A:
     [@stop_split] [@expl:produces_refl ensures] produces_Repeat_A self (Seq.empty: Seq.seq t_A) self
-end
-module M_impl_Iterator_for_Repeat_A__produces_refl__refines (* <Repeat<A> as common::Iterator> *)
-  use seq.Seq
-  use int.Int
-  
-  type t_A
-  
-  type t_Repeat_A = { element: t_A }
-  
-  predicate inv_A (_1: t_A)
-  
-  predicate postcondition_clone (self: ()) (args: t_A) (result: t_A)
-  
-  axiom postcondition_fndef:
-    forall args: t_A, result: t_A [postcondition_clone () args result]. postcondition_clone () args result
-      -> (let self = args in inv_A result)
-  
-  predicate produces_Repeat_A (self: t_Repeat_A) (visited: Seq.seq t_A) (o: t_Repeat_A) =
-    self = o
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> postcondition_clone () self.element (Seq.get visited i))
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Repeat_A. forall result: (). produces_Repeat_A self (Seq.empty: Seq.seq t_A) self
-        -> produces_Repeat_A self (Seq.empty: Seq.seq t_A) self
 end
 module M_impl_Iterator_for_Repeat_A__produces_trans (* <Repeat<A> as common::Iterator> *)
   use seq.Seq
@@ -494,37 +404,6 @@ module M_impl_Iterator_for_Repeat_A__produces_trans (* <Repeat<A> as common::Ite
   
   goal vc_produces_trans_Repeat_A: produces_Repeat_A a ab b
     -> produces_Repeat_A b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Repeat_A a (Seq.(++) ab bc) c)
-end
-module M_impl_Iterator_for_Repeat_A__produces_trans__refines (* <Repeat<A> as common::Iterator> *)
-  use seq.Seq
-  use int.Int
-  
-  type t_A
-  
-  type t_Repeat_A = { element: t_A }
-  
-  predicate inv_A (_1: t_A)
-  
-  predicate postcondition_clone (self: ()) (args: t_A) (result: t_A)
-  
-  axiom postcondition_fndef:
-    forall args: t_A, result: t_A [postcondition_clone () args result]. postcondition_clone () args result
-      -> (let self = args in inv_A result)
-  
-  predicate produces_Repeat_A (self: t_Repeat_A) (visited: Seq.seq t_A) (o: t_Repeat_A) =
-    self = o
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> postcondition_clone () self.element (Seq.get visited i))
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall a: t_Repeat_A, ab: Seq.seq t_A, b: t_Repeat_A, bc: Seq.seq t_A, c: t_Repeat_A. produces_Repeat_A a ab b
-      -> produces_Repeat_A b bc c
-      -> produces_Repeat_A a ab b
-      /\ produces_Repeat_A b bc c
-      /\ (forall result: (). produces_Repeat_A a (Seq.(++) ab bc) c -> produces_Repeat_A a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Repeat_A__size_hint (* <Repeat<A> as common::Iterator> *)
   use creusot.int.UInt64

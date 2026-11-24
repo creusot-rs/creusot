@@ -117,13 +117,9 @@ impl<T: DeepModel, A: Allocator> IteratorSpec for IntoIter<T, A> {
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         set_produces_trans(a, ab, b, bc, c);
     }
@@ -140,8 +136,6 @@ extern_spec! {
 #[cfg(feature = "nightly")]
 impl<T: DeepModel, A: Allocator> ExactSizeIteratorSpec for IntoIter<T, A> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
-    #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 }
@@ -167,13 +161,9 @@ impl<'a, T: DeepModel> IteratorSpec for Iter<'a, T> {
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         set_produces_trans(a, ab, b, bc, c);
     }
@@ -189,8 +179,6 @@ extern_spec! {
 
 impl<'a, T: DeepModel> ExactSizeIteratorSpec for Iter<'a, T> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
-    #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 }
@@ -227,13 +215,9 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> IteratorSpec for Intersection
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         set_produces_trans(a, ab, b, bc, c);
     }
@@ -251,13 +235,9 @@ impl<'a, T: Eq + Hash + DeepModel, S: BuildHasher> IteratorSpec for Difference<'
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         set_produces_trans(a, ab, b, bc, c);
     }

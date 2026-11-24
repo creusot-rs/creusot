@@ -70,9 +70,8 @@ macro_rules! impl_atomic {
             }
 
             #[logic(law)]
-            #[requires(x <= y)]
-            #[ensures(self.get_timestamp(x) <= self.get_timestamp(y))]
             #[trusted]
+            #[allow(unused_variables)]
             fn get_timestamp_monotonic(self, x: SyncView, y: SyncView) {}
         }
 

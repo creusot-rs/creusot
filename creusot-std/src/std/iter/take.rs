@@ -70,13 +70,10 @@ impl<I: IteratorSpec> IteratorSpec for Take<I> {
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
+    #[allow(unused_variables)]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 
@@ -100,8 +97,6 @@ extern_spec! {
 
 impl<I: ExactSizeIteratorSpec> ExactSizeIteratorSpec for Take<I> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
-    #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {
         let _ = I::size_hint_exact;

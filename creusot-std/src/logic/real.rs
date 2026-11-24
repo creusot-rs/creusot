@@ -56,23 +56,20 @@ impl PartialOrdLogic for Real {
     }
 
     #[logic]
-    #[ensures(!(self < self))]
     fn irreflexive(self) {}
 
     #[logic]
-    #[requires(x < y)]
-    #[requires(y < z)]
-    #[ensures(x < z)]
+    #[allow(unused_variables)]
     fn transitive(x: Self, y: Self, z: Self) {}
 
     #[logic]
-    #[ensures((self <= other) == (self < other || self == other))]
+    #[allow(unused_variables)]
     fn le_lt_log(self, other: Self) {}
 }
 
 impl OrdLogic for Real {
     #[logic]
-    #[ensures(self < other || self == other || other < self)]
+    #[allow(unused_variables)]
     fn lt_log_total(self, other: Self) {}
 }
 
@@ -136,7 +133,6 @@ impl Invariant for PositiveRealInner {
 
 impl InhabitedInvariant for PositiveRealInner {
     #[logic]
-    #[ensures(result.invariant())]
     fn inhabits() -> Self {
         Self(Real::from_int(1))
     }
@@ -190,17 +186,14 @@ impl PartialOrdLogic for PositiveReal {
     }
 
     #[logic]
-    #[ensures(!(self < self))]
     fn irreflexive(self) {}
 
     #[logic]
-    #[requires(x < y)]
-    #[requires(y < z)]
-    #[ensures(x < z)]
+    #[allow(unused_variables)]
     fn transitive(x: Self, y: Self, z: Self) {}
 
     #[logic(law)]
-    #[ensures((self <= other) == (self < other || self == other))]
+    #[allow(unused_variables)]
     fn le_lt_log(self, other: Self) {
         let _ = PositiveReal::ext_eq;
     }
@@ -208,7 +201,7 @@ impl PartialOrdLogic for PositiveReal {
 
 impl OrdLogic for PositiveReal {
     #[logic(law)]
-    #[ensures(self < other || self == other || other < self)]
+    #[allow(unused_variables)]
     fn lt_log_total(self, other: Self) {
         let _ = PositiveReal::ext_eq;
     }

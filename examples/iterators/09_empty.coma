@@ -291,51 +291,6 @@ module M_impl_ExactSizeIterator_for_Empty_T__size_hint_exact (* <Empty<T> as com
   goal vc_size_hint_exact_Empty_T: postcondition_size_hint () self r
     -> ([@stop_split] [@expl:size_hint_exact ensures] r.f1'0 = Some (r.f0'0))
 end
-module M_impl_ExactSizeIterator_for_Empty_T__size_hint_exact__refines (* <Empty<T> as common::ExactSizeIterator> *)
-  use creusot.int.UInt64
-  use seq.Seq
-  
-  type t_Empty_T = { f0: () }
-  
-  type t_Option_usize = None | Some UInt64.t
-  
-  type tup2_usize_Option_usize = { f0'0: UInt64.t; f1'0: t_Option_usize }
-  
-  predicate postcondition_size_hint (self: ()) (args: t_Empty_T) (result: tup2_usize_Option_usize) =
-    let self'0 = args in result = { f0'0 = (0: UInt64.t); f1'0 = Some (0: UInt64.t) }
-  
-  meta "rewrite_def" predicate postcondition_size_hint
-  
-  type t_T
-  
-  predicate produces_Empty_T [@inline:trivial] (self: t_Empty_T) (visited: Seq.seq t_T) (o: t_Empty_T) =
-    visited = (Seq.empty: Seq.seq t_T) /\ self = o
-  
-  meta "rewrite_def" predicate produces_Empty_T
-  
-  function produces_trans_Empty_T (a: t_Empty_T) (ab: Seq.seq t_T) (b: t_Empty_T) (bc: Seq.seq t_T) (c: t_Empty_T) : ()
-   = ()
-  
-  axiom produces_trans_Empty_T_spec:
-    forall a: t_Empty_T, ab: Seq.seq t_T, b: t_Empty_T, bc: Seq.seq t_T, c: t_Empty_T. produces_Empty_T a ab b
-      -> produces_Empty_T b bc c -> produces_Empty_T a (Seq.(++) ab bc) c
-  
-  function produces_refl_Empty_T (self: t_Empty_T) : () = ()
-  
-  axiom produces_refl_Empty_T_spec: forall self: t_Empty_T. produces_Empty_T self (Seq.empty: Seq.seq t_T) self
-  
-  let size_hint_Empty_T (self: t_Empty_T) (return (x: tup2_usize_Option_usize)) = any
-    [ return (result: tup2_usize_Option_usize) -> {[@stop_split] [@expl:size_hint ensures] result
-      = { f0'0 = (0: UInt64.t); f1'0 = Some (0: UInt64.t) }}
-      (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Empty_T, r: tup2_usize_Option_usize. postcondition_size_hint () self r
-      -> postcondition_size_hint () self r /\ (forall result: (). r.f1'0 = Some (r.f0'0) -> r.f1'0 = Some (r.f0'0))
-end
 module M_impl_Iterator_for_Empty_T__next (* <Empty<T> as common::Iterator> *)
   use creusot.prelude.MutBorrow
   use creusot.prelude.Any
@@ -383,52 +338,6 @@ module M_impl_Iterator_for_Empty_T__next (* <Empty<T> as common::Iterator> *)
         end)}
       (! return {result}) ]
 end
-module M_impl_Iterator_for_Empty_T__next__refines (* <Empty<T> as common::Iterator> *)
-  use creusot.prelude.MutBorrow
-  use seq.Seq
-  
-  type t_Empty_T = { f0: () }
-  
-  type t_T
-  
-  type t_Option_T = None | Some t_T
-  
-  predicate inv_T (_1: t_T)
-  
-  predicate inv_Option_T (_1: t_Option_T)
-  
-  axiom inv_axiom [@rewrite]: forall _1: t_Option_T [inv_Option_T _1]. inv_Option_T _1
-      = match _1 with
-        | None -> true
-        | Some f0'0 -> inv_T f0'0
-        end
-  
-  predicate resolve_refmut_Empty_T [@inline:trivial] (_1: MutBorrow.t t_Empty_T) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Empty_T
-  
-  predicate completed_Empty_T (self: MutBorrow.t t_Empty_T) = resolve_refmut_Empty_T self
-  
-  predicate produces_Empty_T [@inline:trivial] (self: t_Empty_T) (visited: Seq.seq t_T) (o: t_Empty_T) =
-    visited = (Seq.empty: Seq.seq t_T) /\ self = o
-  
-  meta "rewrite_def" predicate produces_Empty_T
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: MutBorrow.t t_Empty_T. forall result: t_Option_T. inv_Option_T result
-          /\ match result with
-            | None -> completed_Empty_T self
-            | Some v -> produces_Empty_T self.current (Seq.singleton v) self.final
-            end
-        -> inv_Option_T result
-        /\ match result with
-          | None -> completed_Empty_T self
-          | Some v -> produces_Empty_T self.current (Seq.singleton v) self.final
-          end
-end
 module M_impl_Iterator_for_Empty_T__produces_refl (* <Empty<T> as common::Iterator> *)
   use seq.Seq
   
@@ -451,25 +360,6 @@ module M_impl_Iterator_for_Empty_T__produces_refl (* <Empty<T> as common::Iterat
   
   goal vc_produces_refl_Empty_T:
     [@stop_split] [@expl:produces_refl ensures] produces_Empty_T self (Seq.empty: Seq.seq t_T) self
-end
-module M_impl_Iterator_for_Empty_T__produces_refl__refines (* <Empty<T> as common::Iterator> *)
-  use seq.Seq
-  
-  type t_Empty_T = { f0: () }
-  
-  type t_T
-  
-  predicate produces_Empty_T [@inline:trivial] (self: t_Empty_T) (visited: Seq.seq t_T) (o: t_Empty_T) =
-    visited = (Seq.empty: Seq.seq t_T) /\ self = o
-  
-  meta "rewrite_def" predicate produces_Empty_T
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Empty_T. forall result: (). produces_Empty_T self (Seq.empty: Seq.seq t_T) self
-        -> produces_Empty_T self (Seq.empty: Seq.seq t_T) self
 end
 module M_impl_Iterator_for_Empty_T__produces_trans (* <Empty<T> as common::Iterator> *)
   use seq.Seq
@@ -501,29 +391,6 @@ module M_impl_Iterator_for_Empty_T__produces_trans (* <Empty<T> as common::Itera
   
   goal vc_produces_trans_Empty_T: produces_Empty_T a ab b
     -> produces_Empty_T b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Empty_T a (Seq.(++) ab bc) c)
-end
-module M_impl_Iterator_for_Empty_T__produces_trans__refines (* <Empty<T> as common::Iterator> *)
-  use seq.Seq
-  
-  type t_Empty_T = { f0: () }
-  
-  type t_T
-  
-  predicate produces_Empty_T [@inline:trivial] (self: t_Empty_T) (visited: Seq.seq t_T) (o: t_Empty_T) =
-    visited = (Seq.empty: Seq.seq t_T) /\ self = o
-  
-  meta "rewrite_def" predicate produces_Empty_T
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall a: t_Empty_T, ab: Seq.seq t_T, b: t_Empty_T, bc: Seq.seq t_T, c: t_Empty_T. produces_Empty_T a ab b
-      -> produces_Empty_T b bc c
-      -> produces_Empty_T a ab b
-      /\ produces_Empty_T b bc c
-      /\ (forall result: (). produces_Empty_T a (Seq.(++) ab bc) c -> produces_Empty_T a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Empty_T__size_hint (* <Empty<T> as common::Iterator> *)
   use creusot.int.UInt64

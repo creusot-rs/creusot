@@ -80,19 +80,16 @@ impl PartialOrdLogic for SyncView {
     }
 
     #[logic(law)]
-    #[ensures(!(self < self))]
     #[trusted]
     fn irreflexive(self) {}
 
     #[logic(law)]
-    #[requires(x < y)]
-    #[requires(y < z)]
-    #[ensures(x < z)]
     #[trusted]
+    #[allow(unused_variables)]
     fn transitive(x: Self, y: Self, z: Self) {}
 
     #[logic(law)]
-    #[ensures((self <= other) == (self < other || self == other))]
+    #[allow(unused_variables)]
     fn le_lt_log(self, other: Self) {}
 }
 

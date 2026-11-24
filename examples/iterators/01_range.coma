@@ -267,12 +267,12 @@ module M_impl_DoubleEndedIterator_for_Range__next_back (* <Range as common::Doub
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
   
-  function produces_trans_Range (a: t_Range) (ab: Seq.seq Int64.t) (b: t_Range) (bc: Seq.seq Int64.t) (c: t_Range) : ()
+  function produces_trans_Range (_1: t_Range) (_2: Seq.seq Int64.t) (_3: t_Range) (_4: Seq.seq Int64.t) (_5: t_Range) : ()
    = ()
   
   axiom produces_trans_Range_spec:
-    forall a: t_Range, ab: Seq.seq Int64.t, b: t_Range, bc: Seq.seq Int64.t, c: t_Range. produces_Range a ab b
-      -> produces_Range b bc c -> produces_Range a (Seq.(++) ab bc) c
+    forall _1: t_Range, _2: Seq.seq Int64.t, _3: t_Range, _4: Seq.seq Int64.t, _5: t_Range. produces_Range _1 _2 _3
+      -> produces_Range _3 _4 _5 -> produces_Range _1 (Seq.(++) _2 _4) _5
   
   function produces_refl_Range (self: t_Range) : () = ()
   
@@ -301,8 +301,8 @@ module M_impl_DoubleEndedIterator_for_Range__next_back (* <Range as common::Doub
   
   let next_back_Range (self: MutBorrow.t t_Range) (return (x: t_Option_isize)) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &_4 <- Int64.ge self.current.start self.current.end' ] s1
-      | s1 = any [ br0 -> {_4 = false} (! bb2) | br1 -> {_4} (! bb1) ] ]
+      [ s0 = [ &_2 <- Int64.ge self.current.start self.current.end' ] s1
+      | s1 = any [ br0 -> {_2 = false} (! bb2) | br1 -> {_2} (! bb1) ] ]
     | bb1 = s0 [ s0 = -{resolve_refmut_Range self}- s1 | s1 = [ &_ret <- None ] s2 | s2 = return {_ret} ]
     | bb2 = s0
       [ s0 = Int64.sub {self.current.end'} {(1: Int64.t)}
@@ -310,79 +310,12 @@ module M_impl_DoubleEndedIterator_for_Range__next_back (* <Range as common::Doub
       | s1 = -{resolve_refmut_Range self}- s2
       | s2 = [ &_ret <- Some (self.current.end') ] s3
       | s3 = return {_ret} ] ]
-    [ & _ret: t_Option_isize = Any.any_l () | & self: MutBorrow.t t_Range = self | & _4: bool = Any.any_l () ])
+    [ & _ret: t_Option_isize = Any.any_l () | & self: MutBorrow.t t_Range = self | & _2: bool = Any.any_l () ])
     [ return (result: t_Option_isize) -> {[@stop_split] [@expl:next_back ensures] match result with
         | None -> completed_back_Range self
         | Some v -> produces_back_Range self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
-end
-module M_impl_DoubleEndedIterator_for_Range__next_back__refines (* <Range as common::DoubleEndedIterator> *)
-  use creusot.prelude.MutBorrow
-  use creusot.int.Int64
-  use seq.Seq
-  use int.Int
-  
-  type t_Range = { start: Int64.t; end': Int64.t }
-  
-  type t_Option_isize = None | Some Int64.t
-  
-  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
-  
-  meta "rewrite_def" predicate gt_log_Int
-  
-  predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
-    self.end' = o.end'
-    /\ Int64.le self.start o.start
-    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
-    /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
-  
-  function produces_trans_Range (a: t_Range) (ab: Seq.seq Int64.t) (b: t_Range) (bc: Seq.seq Int64.t) (c: t_Range) : ()
-   = ()
-  
-  axiom produces_trans_Range_spec:
-    forall a: t_Range, ab: Seq.seq Int64.t, b: t_Range, bc: Seq.seq Int64.t, c: t_Range. produces_Range a ab b
-      -> produces_Range b bc c -> produces_Range a (Seq.(++) ab bc) c
-  
-  function produces_refl_Range (self: t_Range) : () = ()
-  
-  axiom produces_refl_Range_spec: forall self: t_Range. produces_Range self (Seq.empty: Seq.seq Int64.t) self
-  
-  predicate resolve_refmut_Range [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Range
-  
-  predicate ge_log_isize [@inline:trivial] (self: Int64.t) (other: Int64.t) = Int64.le other self
-  
-  meta "rewrite_def" predicate ge_log_isize
-  
-  predicate completed_Range (self: MutBorrow.t t_Range) =
-    resolve_refmut_Range self /\ ge_log_isize self.current.start self.current.end'
-  
-  predicate completed_back_Range (self: MutBorrow.t t_Range) = completed_Range self
-  
-  predicate produces_back_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
-    self.start = o.start
-    /\ ge_log_isize self.end' o.end'
-    /\ (gt_log_Int (Seq.length visited) 0 -> ge_log_isize o.end' o.start)
-    /\ Seq.length visited = Int64.to_int self.end' - Int64.to_int o.end'
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.end' - i - 1)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: MutBorrow.t t_Range. forall result: t_Option_isize. match result with
-            | None -> completed_back_Range self
-            | Some v -> produces_back_Range self.current (Seq.singleton v) self.final
-            end
-        -> match result with
-          | None -> completed_back_Range self
-          | Some v -> produces_back_Range self.current (Seq.singleton v) self.final
-          end
 end
 module M_impl_DoubleEndedIterator_for_Range__produces_back_refl (* <Range as common::DoubleEndedIterator> *)
   use creusot.int.Int64
@@ -417,36 +350,6 @@ module M_impl_DoubleEndedIterator_for_Range__produces_back_refl (* <Range as com
   
   goal vc_produces_back_refl_Range:
     [@stop_split] [@expl:produces_back_refl ensures] produces_back_Range self (Seq.empty: Seq.seq Int64.t) self
-end
-module M_impl_DoubleEndedIterator_for_Range__produces_back_refl__refines (* <Range as common::DoubleEndedIterator> *)
-  use creusot.int.Int64
-  use seq.Seq
-  use int.Int
-  
-  type t_Range = { start: Int64.t; end': Int64.t }
-  
-  predicate ge_log_isize [@inline:trivial] (self: Int64.t) (other: Int64.t) = Int64.le other self
-  
-  meta "rewrite_def" predicate ge_log_isize
-  
-  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
-  
-  meta "rewrite_def" predicate gt_log_Int
-  
-  predicate produces_back_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
-    self.start = o.start
-    /\ ge_log_isize self.end' o.end'
-    /\ (gt_log_Int (Seq.length visited) 0 -> ge_log_isize o.end' o.start)
-    /\ Seq.length visited = Int64.to_int self.end' - Int64.to_int o.end'
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.end' - i - 1)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Range. forall result: (). produces_back_Range self (Seq.empty: Seq.seq Int64.t) self
-        -> produces_back_Range self (Seq.empty: Seq.seq Int64.t) self
 end
 module M_impl_DoubleEndedIterator_for_Range__produces_back_trans (* <Range as common::DoubleEndedIterator> *)
   use creusot.int.Int64
@@ -490,40 +393,6 @@ module M_impl_DoubleEndedIterator_for_Range__produces_back_trans (* <Range as co
   goal vc_produces_back_trans_Range: produces_back_Range a ab b
     -> produces_back_Range b bc c
     -> ([@stop_split] [@expl:produces_back_trans ensures] produces_back_Range a (Seq.(++) ab bc) c)
-end
-module M_impl_DoubleEndedIterator_for_Range__produces_back_trans__refines (* <Range as common::DoubleEndedIterator> *)
-  use creusot.int.Int64
-  use seq.Seq
-  use int.Int
-  
-  type t_Range = { start: Int64.t; end': Int64.t }
-  
-  predicate ge_log_isize [@inline:trivial] (self: Int64.t) (other: Int64.t) = Int64.le other self
-  
-  meta "rewrite_def" predicate ge_log_isize
-  
-  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
-  
-  meta "rewrite_def" predicate gt_log_Int
-  
-  predicate produces_back_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
-    self.start = o.start
-    /\ ge_log_isize self.end' o.end'
-    /\ (gt_log_Int (Seq.length visited) 0 -> ge_log_isize o.end' o.start)
-    /\ Seq.length visited = Int64.to_int self.end' - Int64.to_int o.end'
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.end' - i - 1)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall a: t_Range, ab: Seq.seq Int64.t, b: t_Range, bc: Seq.seq Int64.t, c: t_Range. produces_back_Range a ab b
-      -> produces_back_Range b bc c
-      -> produces_back_Range a ab b
-      /\ produces_back_Range b bc c
-      /\ (forall result: (). produces_back_Range a (Seq.(++) ab bc) c -> produces_back_Range a (Seq.(++) ab bc) c)
 end
 module M_impl_DoubleEndedIterator_for_Range__size_hint_back_spec (* <Range as common::DoubleEndedIterator> *)
   use creusot.int.Int64
@@ -570,12 +439,12 @@ module M_impl_DoubleEndedIterator_for_Range__size_hint_back_spec (* <Range as co
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
   
-  function produces_trans_Range (a: t_Range) (ab: Seq.seq Int64.t) (b: t_Range) (bc: Seq.seq Int64.t) (c: t_Range) : ()
+  function produces_trans_Range (_1: t_Range) (_2: Seq.seq Int64.t) (_3: t_Range) (_4: Seq.seq Int64.t) (_5: t_Range) : ()
    = ()
   
   axiom produces_trans_Range_spec:
-    forall a: t_Range, ab: Seq.seq Int64.t, b: t_Range, bc: Seq.seq Int64.t, c: t_Range. produces_Range a ab b
-      -> produces_Range b bc c -> produces_Range a (Seq.(++) ab bc) c
+    forall _1: t_Range, _2: Seq.seq Int64.t, _3: t_Range, _4: Seq.seq Int64.t, _5: t_Range. produces_Range _1 _2 _3
+      -> produces_Range _3 _4 _5 -> produces_Range _1 (Seq.(++) _2 _4) _5
   
   function produces_refl_Range (self: t_Range) : () = ()
   
@@ -631,115 +500,6 @@ module M_impl_DoubleEndedIterator_for_Range__size_hint_back_spec (* <Range as co
         -> Seq.length s <= UInt64.t'int r'0
       | None -> true
       end))
-end
-module M_impl_DoubleEndedIterator_for_Range__size_hint_back_spec__refines (* <Range as common::DoubleEndedIterator> *)
-  use creusot.int.Int64
-  use creusot.int.UInt64
-  use seq.Seq
-  use creusot.prelude.MutBorrow
-  use int.Int
-  
-  type t_Range = { start: Int64.t; end': Int64.t }
-  
-  type t_Option_usize = None | Some UInt64.t
-  
-  type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
-  
-  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
-  
-  meta "rewrite_def" predicate ge_log_Int
-  
-  function deep_model_isize [@inline:trivial] (self: Int64.t) : int = Int64.to_int self
-  
-  meta "rewrite_def" function deep_model_isize
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
-  
-  meta "rewrite_def" predicate gt_log_Int
-  
-  predicate postcondition_size_hint (self: ()) (args: t_Range) (result: tup2_usize_Option_usize) =
-    let self'0 = args in (ge_log_Int (deep_model_isize self'0.start) (deep_model_isize self'0.end')
-      -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-    /\ (let s = deep_model_isize self'0.end' - deep_model_isize self'0.start in ge_log_Int s 0
-        /\ s <= UInt64.t'int const_MAX -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-    /\ (gt_log_Int (deep_model_isize self'0.end' - deep_model_isize self'0.start) (UInt64.t'int const_MAX)
-    -> result = { f0 = const_MAX; f1 = None })
-  
-  meta "rewrite_def" predicate postcondition_size_hint
-  
-  predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
-    self.end' = o.end'
-    /\ Int64.le self.start o.start
-    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
-    /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
-  
-  function produces_trans_Range (a: t_Range) (ab: Seq.seq Int64.t) (b: t_Range) (bc: Seq.seq Int64.t) (c: t_Range) : ()
-   = ()
-  
-  axiom produces_trans_Range_spec:
-    forall a: t_Range, ab: Seq.seq Int64.t, b: t_Range, bc: Seq.seq Int64.t, c: t_Range. produces_Range a ab b
-      -> produces_Range b bc c -> produces_Range a (Seq.(++) ab bc) c
-  
-  function produces_refl_Range (self: t_Range) : () = ()
-  
-  axiom produces_refl_Range_spec: forall self: t_Range. produces_Range self (Seq.empty: Seq.seq Int64.t) self
-  
-  let size_hint_Range (self: t_Range) (return (x: tup2_usize_Option_usize)) = any
-    [ return (result: tup2_usize_Option_usize) ->
-    {[@stop_split] [@expl:size_hint_Range ensures] ([@stop_split] [@expl:size_hint ensures #0] ge_log_Int (deep_model_isize self.start) (deep_model_isize self.end')
-        -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-      /\ ([@stop_split] [@expl:size_hint ensures #1] let s = deep_model_isize self.end'
-        - deep_model_isize self.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
-        -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-      /\ ([@stop_split] [@expl:size_hint ensures #2] gt_log_Int (deep_model_isize self.end'
-        - deep_model_isize self.start) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })}
-      (! return {result}) ]
-  
-  predicate ge_log_isize [@inline:trivial] (self: Int64.t) (other: Int64.t) = Int64.le other self
-  
-  meta "rewrite_def" predicate ge_log_isize
-  
-  predicate produces_back_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
-    self.start = o.start
-    /\ ge_log_isize self.end' o.end'
-    /\ (gt_log_Int (Seq.length visited) 0 -> ge_log_isize o.end' o.start)
-    /\ Seq.length visited = Int64.to_int self.end' - Int64.to_int o.end'
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.end' - i - 1)
-  
-  predicate resolve_refmut_Range [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Range
-  
-  predicate completed_Range (self: MutBorrow.t t_Range) =
-    resolve_refmut_Range self /\ ge_log_isize self.current.start self.current.end'
-  
-  predicate completed_back_Range (self: MutBorrow.t t_Range) = completed_Range self
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Range, r: tup2_usize_Option_usize. postcondition_size_hint () self r
-      -> postcondition_size_hint () self r
-      /\ (forall result: (). (forall s: Seq.seq Int64.t, i: MutBorrow.t t_Range. produces_back_Range self s i.current
-                /\ completed_back_Range i -> UInt64.t'int r.f0 <= Seq.length s)
-          /\ match r.f1 with
-            | Some r'0 -> forall s: Seq.seq Int64.t, i: t_Range. produces_back_Range self s i
-              -> Seq.length s <= UInt64.t'int r'0
-            | None -> true
-            end
-        -> (forall s: Seq.seq Int64.t, i: MutBorrow.t t_Range. produces_back_Range self s i.current
-              /\ completed_back_Range i -> UInt64.t'int r.f0 <= Seq.length s)
-        /\ match r.f1 with
-          | Some r'0 -> forall s: Seq.seq Int64.t, i: t_Range. produces_back_Range self s i
-            -> Seq.length s <= UInt64.t'int r'0
-          | None -> true
-          end)
 end
 module M_impl_DoubleEndedIterator_for_RangeInclusive__next_back (* <RangeInclusive as common::DoubleEndedIterator> *)
   use creusot.int.Int32
@@ -808,8 +568,8 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__next_back (* <RangeInclusi
   
   let next_back_RangeInclusive (self: MutBorrow.t t_RangeInclusive) (return (x: t_Option_i32)) = (! bb0
     [ bb0 = s0
-      [ s0 = is_empty {self.current} (fun (_x: bool) -> [ &_5 <- _x ] s1)
-      | s1 = any [ br0 -> {_5 = false} (! bb3) | br1 -> {_5} (! bb2) ] ]
+      [ s0 = is_empty {self.current} (fun (_x: bool) -> [ &_3 <- _x ] s1)
+      | s1 = any [ br0 -> {_3 = false} (! bb3) | br1 -> {_3} (! bb2) ] ]
     | bb2 = s0 [ s0 = -{resolve_refmut_RangeInclusive self}- s1 | s1 = [ &_ret <- None ] s2 | s2 = return {_ret} ]
     | bb3 = s0
       [ s0 = [ &is_iterating <- Int32.lt self.current.start self.current.end' ] s1
@@ -819,91 +579,25 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__next_back (* <RangeInclusi
       | s1 = Int32.sub {self.current.end'} {(1: Int32.t)}
           (fun (_x: Int32.t) -> [ &self <- { self with current = { self.current with end' = _x } } ] s2)
       | s2 = -{resolve_refmut_RangeInclusive self}- s3
-      | s3 = [ &_11 <- r ] s4
+      | s3 = [ &_9 <- r ] s4
       | s4 = bb6 ]
     | bb5 = s0
       [ s0 = [ &self <- { self with current = { self.current with exhausted = true } } ] s1
       | s1 = -{resolve_refmut_RangeInclusive self}- s2
-      | s2 = [ &_11 <- self.current.end' ] s3
+      | s2 = [ &_9 <- self.current.end' ] s3
       | s3 = bb6 ]
-    | bb6 = s0 [ s0 = [ &_ret <- Some _11 ] s1 | s1 = return {_ret} ] ]
+    | bb6 = s0 [ s0 = [ &_ret <- Some _9 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_i32 = Any.any_l ()
     | & self: MutBorrow.t t_RangeInclusive = self
-    | & _5: bool = Any.any_l ()
+    | & _3: bool = Any.any_l ()
     | & is_iterating: bool = Any.any_l ()
-    | & _11: Int32.t = Any.any_l ()
+    | & _9: Int32.t = Any.any_l ()
     | & r: Int32.t = Any.any_l () ])
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next_back ensures] match result with
         | None -> completed_back_RangeInclusive self
         | Some v -> produces_back_RangeInclusive self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
-end
-module M_impl_DoubleEndedIterator_for_RangeInclusive__next_back__refines (* <RangeInclusive as common::DoubleEndedIterator> *)
-  use creusot.prelude.MutBorrow
-  use creusot.int.Int32
-  use seq.Seq
-  use int.Int
-  
-  type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
-  
-  type t_Option_i32 = None | Some Int32.t
-  
-  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
-  
-  meta "rewrite_def" predicate gt_log_i32
-  
-  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
-  
-  function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
-      0
-    else
-      Int32.to_int self.end' - Int32.to_int self.start + 1
-  
-  
-  predicate produces_RangeInclusive (self: t_RangeInclusive) (visited: Seq.seq Int32.t) (o: t_RangeInclusive) =
-    Seq.length visited = len_log self - len_log o
-    /\ (is_empty_log self -> is_empty_log o)
-    /\ (is_empty_log o \/ self.end' = o.end')
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int32.to_int (Seq.get visited i) = Int32.to_int self.start + i)
-  
-  function produces_trans_RangeInclusive (a: t_RangeInclusive) (ab: Seq.seq Int32.t) (b: t_RangeInclusive) (bc: Seq.seq Int32.t) (c: t_RangeInclusive) : ()
-   = ()
-  
-  axiom produces_trans_RangeInclusive_spec:
-    forall a: t_RangeInclusive, ab: Seq.seq Int32.t, b: t_RangeInclusive, bc: Seq.seq Int32.t, c: t_RangeInclusive. produces_RangeInclusive a ab b
-      -> produces_RangeInclusive b bc c -> produces_RangeInclusive a (Seq.(++) ab bc) c
-  
-  function produces_refl_RangeInclusive (self: t_RangeInclusive) : () = ()
-  
-  axiom produces_refl_RangeInclusive_spec:
-    forall self: t_RangeInclusive. produces_RangeInclusive self (Seq.empty: Seq.seq Int32.t) self
-  
-  predicate completed_RangeInclusive (self: MutBorrow.t t_RangeInclusive) =
-    is_empty_log self.current /\ is_empty_log self.final
-  
-  predicate completed_back_RangeInclusive (self: MutBorrow.t t_RangeInclusive) = completed_RangeInclusive self
-  
-  predicate produces_back_RangeInclusive (self: t_RangeInclusive) (visited: Seq.seq Int32.t) (o: t_RangeInclusive) =
-    Seq.length visited = len_log self - len_log o
-    /\ (is_empty_log self -> is_empty_log o)
-    /\ (is_empty_log o \/ self.start = o.start)
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int32.to_int (Seq.get visited i) = Int32.to_int self.end' - i)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: MutBorrow.t t_RangeInclusive. forall result: t_Option_i32. match result with
-            | None -> completed_back_RangeInclusive self
-            | Some v -> produces_back_RangeInclusive self.current (Seq.singleton v) self.final
-            end
-        -> match result with
-          | None -> completed_back_RangeInclusive self
-          | Some v -> produces_back_RangeInclusive self.current (Seq.singleton v) self.final
-          end
 end
 module M_impl_DoubleEndedIterator_for_RangeInclusive__produces_back_refl (* <RangeInclusive as common::DoubleEndedIterator> *)
   use creusot.int.Int32
@@ -941,40 +635,6 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__produces_back_refl (* <Ran
   
   goal vc_produces_back_refl_RangeInclusive:
     [@stop_split] [@expl:produces_back_refl ensures] produces_back_RangeInclusive self (Seq.empty: Seq.seq Int32.t) self
-end
-module M_impl_DoubleEndedIterator_for_RangeInclusive__produces_back_refl__refines (* <RangeInclusive as common::DoubleEndedIterator> *)
-  use creusot.int.Int32
-  use seq.Seq
-  use int.Int
-  
-  type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
-  
-  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
-  
-  meta "rewrite_def" predicate gt_log_i32
-  
-  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
-  
-  function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
-      0
-    else
-      Int32.to_int self.end' - Int32.to_int self.start + 1
-  
-  
-  predicate produces_back_RangeInclusive (self: t_RangeInclusive) (visited: Seq.seq Int32.t) (o: t_RangeInclusive) =
-    Seq.length visited = len_log self - len_log o
-    /\ (is_empty_log self -> is_empty_log o)
-    /\ (is_empty_log o \/ self.start = o.start)
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int32.to_int (Seq.get visited i) = Int32.to_int self.end' - i)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall self: t_RangeInclusive. forall result: (). produces_back_RangeInclusive self (Seq.empty: Seq.seq Int32.t) self
-        -> produces_back_RangeInclusive self (Seq.empty: Seq.seq Int32.t) self
 end
 module M_impl_DoubleEndedIterator_for_RangeInclusive__produces_back_trans (* <RangeInclusive as common::DoubleEndedIterator> *)
   use creusot.int.Int32
@@ -1021,44 +681,6 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__produces_back_trans (* <Ra
   goal vc_produces_back_trans_RangeInclusive: produces_back_RangeInclusive a ab b
     -> produces_back_RangeInclusive b bc c
     -> ([@stop_split] [@expl:produces_back_trans ensures] produces_back_RangeInclusive a (Seq.(++) ab bc) c)
-end
-module M_impl_DoubleEndedIterator_for_RangeInclusive__produces_back_trans__refines (* <RangeInclusive as common::DoubleEndedIterator> *)
-  use creusot.int.Int32
-  use seq.Seq
-  use int.Int
-  
-  type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
-  
-  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
-  
-  meta "rewrite_def" predicate gt_log_i32
-  
-  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
-  
-  function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
-      0
-    else
-      Int32.to_int self.end' - Int32.to_int self.start + 1
-  
-  
-  predicate produces_back_RangeInclusive (self: t_RangeInclusive) (visited: Seq.seq Int32.t) (o: t_RangeInclusive) =
-    Seq.length visited = len_log self - len_log o
-    /\ (is_empty_log self -> is_empty_log o)
-    /\ (is_empty_log o \/ self.start = o.start)
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int32.to_int (Seq.get visited i) = Int32.to_int self.end' - i)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall a: t_RangeInclusive, ab: Seq.seq Int32.t, b: t_RangeInclusive, bc: Seq.seq Int32.t, c: t_RangeInclusive. produces_back_RangeInclusive a ab b
-      -> produces_back_RangeInclusive b bc c
-      -> produces_back_RangeInclusive a ab b
-      /\ produces_back_RangeInclusive b bc c
-      /\ (forall result: (). produces_back_RangeInclusive a (Seq.(++) ab bc) c
-        -> produces_back_RangeInclusive a (Seq.(++) ab bc) c)
 end
 module M_impl_DoubleEndedIterator_for_RangeInclusive__size_hint_back_spec (* <RangeInclusive as common::DoubleEndedIterator> *)
   use creusot.int.Int32
@@ -1156,104 +778,6 @@ module M_impl_DoubleEndedIterator_for_RangeInclusive__size_hint_back_spec (* <Ra
       | None -> true
       end))
 end
-module M_impl_DoubleEndedIterator_for_RangeInclusive__size_hint_back_spec__refines (* <RangeInclusive as common::DoubleEndedIterator> *)
-  use creusot.int.Int32
-  use creusot.int.UInt64
-  use seq.Seq
-  use creusot.prelude.MutBorrow
-  use int.Int
-  
-  type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
-  
-  type t_Option_usize = None | Some UInt64.t
-  
-  type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
-  
-  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
-  
-  meta "rewrite_def" predicate gt_log_i32
-  
-  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
-  
-  function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
-      0
-    else
-      Int32.to_int self.end' - Int32.to_int self.start + 1
-  
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
-  
-  meta "rewrite_def" predicate gt_log_Int
-  
-  predicate postcondition_size_hint (self: ()) (args: t_RangeInclusive) (result: tup2_usize_Option_usize) =
-    let self'0 = args in (len_log self'0 <= UInt64.t'int const_MAX
-      -> UInt64.t'int result.f0 = len_log self'0 /\ result.f1 = Some (result.f0))
-    /\ (gt_log_Int (len_log self'0) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })
-  
-  meta "rewrite_def" predicate postcondition_size_hint
-  
-  predicate produces_RangeInclusive (self: t_RangeInclusive) (visited: Seq.seq Int32.t) (o: t_RangeInclusive) =
-    Seq.length visited = len_log self - len_log o
-    /\ (is_empty_log self -> is_empty_log o)
-    /\ (is_empty_log o \/ self.end' = o.end')
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int32.to_int (Seq.get visited i) = Int32.to_int self.start + i)
-  
-  function produces_trans_RangeInclusive (a: t_RangeInclusive) (ab: Seq.seq Int32.t) (b: t_RangeInclusive) (bc: Seq.seq Int32.t) (c: t_RangeInclusive) : ()
-   = ()
-  
-  axiom produces_trans_RangeInclusive_spec:
-    forall a: t_RangeInclusive, ab: Seq.seq Int32.t, b: t_RangeInclusive, bc: Seq.seq Int32.t, c: t_RangeInclusive. produces_RangeInclusive a ab b
-      -> produces_RangeInclusive b bc c -> produces_RangeInclusive a (Seq.(++) ab bc) c
-  
-  function produces_refl_RangeInclusive (self: t_RangeInclusive) : () = ()
-  
-  axiom produces_refl_RangeInclusive_spec:
-    forall self: t_RangeInclusive. produces_RangeInclusive self (Seq.empty: Seq.seq Int32.t) self
-  
-  let size_hint_RangeInclusive (self: t_RangeInclusive) (return (x: tup2_usize_Option_usize)) = any
-    [ return (result: tup2_usize_Option_usize) ->
-    {[@stop_split] [@expl:size_hint_RangeInclusive ensures] ([@stop_split] [@expl:size_hint ensures #0] len_log self
-          <= UInt64.t'int const_MAX -> UInt64.t'int result.f0 = len_log self /\ result.f1 = Some (result.f0))
-      /\ ([@stop_split] [@expl:size_hint ensures #1] gt_log_Int (len_log self) (UInt64.t'int const_MAX)
-      -> result = { f0 = const_MAX; f1 = None })}
-      (! return {result}) ]
-  
-  predicate produces_back_RangeInclusive (self: t_RangeInclusive) (visited: Seq.seq Int32.t) (o: t_RangeInclusive) =
-    Seq.length visited = len_log self - len_log o
-    /\ (is_empty_log self -> is_empty_log o)
-    /\ (is_empty_log o \/ self.start = o.start)
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int32.to_int (Seq.get visited i) = Int32.to_int self.end' - i)
-  
-  predicate completed_RangeInclusive (self: MutBorrow.t t_RangeInclusive) =
-    is_empty_log self.current /\ is_empty_log self.final
-  
-  predicate completed_back_RangeInclusive (self: MutBorrow.t t_RangeInclusive) = completed_RangeInclusive self
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_RangeInclusive, r: tup2_usize_Option_usize. postcondition_size_hint () self r
-      -> postcondition_size_hint () self r
-      /\ (forall result: (). (forall s: Seq.seq Int32.t, i: MutBorrow.t t_RangeInclusive. produces_back_RangeInclusive self s i.current
-                /\ completed_back_RangeInclusive i -> UInt64.t'int r.f0 <= Seq.length s)
-          /\ match r.f1 with
-            | Some r'0 -> forall s: Seq.seq Int32.t, i: t_RangeInclusive. produces_back_RangeInclusive self s i
-              -> Seq.length s <= UInt64.t'int r'0
-            | None -> true
-            end
-        -> (forall s: Seq.seq Int32.t, i: MutBorrow.t t_RangeInclusive. produces_back_RangeInclusive self s i.current
-              /\ completed_back_RangeInclusive i -> UInt64.t'int r.f0 <= Seq.length s)
-        /\ match r.f1 with
-          | Some r'0 -> forall s: Seq.seq Int32.t, i: t_RangeInclusive. produces_back_RangeInclusive self s i
-            -> Seq.length s <= UInt64.t'int r'0
-          | None -> true
-          end)
-end
 module M_impl_ExactSizeIterator_for_Range__size_hint_exact (* <Range as common::ExactSizeIterator> *)
   use creusot.int.Int64
   use creusot.int.UInt64
@@ -1298,12 +822,12 @@ module M_impl_ExactSizeIterator_for_Range__size_hint_exact (* <Range as common::
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
   
-  function produces_trans_Range (a: t_Range) (ab: Seq.seq Int64.t) (b: t_Range) (bc: Seq.seq Int64.t) (c: t_Range) : ()
+  function produces_trans_Range (_1: t_Range) (_2: Seq.seq Int64.t) (_3: t_Range) (_4: Seq.seq Int64.t) (_5: t_Range) : ()
    = ()
   
   axiom produces_trans_Range_spec:
-    forall a: t_Range, ab: Seq.seq Int64.t, b: t_Range, bc: Seq.seq Int64.t, c: t_Range. produces_Range a ab b
-      -> produces_Range b bc c -> produces_Range a (Seq.(++) ab bc) c
+    forall _1: t_Range, _2: Seq.seq Int64.t, _3: t_Range, _4: Seq.seq Int64.t, _5: t_Range. produces_Range _1 _2 _3
+      -> produces_Range _3 _4 _5 -> produces_Range _1 (Seq.(++) _2 _4) _5
   
   function produces_refl_Range (self: t_Range) : () = ()
   
@@ -1332,79 +856,6 @@ module M_impl_ExactSizeIterator_for_Range__size_hint_exact (* <Range as common::
   
   goal vc_size_hint_exact_Range: postcondition_size_hint () self r
     -> ([@stop_split] [@expl:size_hint_exact ensures] r.f1 = Some (r.f0))
-end
-module M_impl_ExactSizeIterator_for_Range__size_hint_exact__refines (* <Range as common::ExactSizeIterator> *)
-  use creusot.int.Int64
-  use creusot.int.UInt64
-  use seq.Seq
-  use int.Int
-  
-  type t_Range = { start: Int64.t; end': Int64.t }
-  
-  type t_Option_usize = None | Some UInt64.t
-  
-  type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
-  
-  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
-  
-  meta "rewrite_def" predicate ge_log_Int
-  
-  function deep_model_isize [@inline:trivial] (self: Int64.t) : int = Int64.to_int self
-  
-  meta "rewrite_def" function deep_model_isize
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
-  
-  meta "rewrite_def" predicate gt_log_Int
-  
-  predicate postcondition_size_hint (self: ()) (args: t_Range) (result: tup2_usize_Option_usize) =
-    let self'0 = args in (ge_log_Int (deep_model_isize self'0.start) (deep_model_isize self'0.end')
-      -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-    /\ (let s = deep_model_isize self'0.end' - deep_model_isize self'0.start in ge_log_Int s 0
-        /\ s <= UInt64.t'int const_MAX -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-    /\ (gt_log_Int (deep_model_isize self'0.end' - deep_model_isize self'0.start) (UInt64.t'int const_MAX)
-    -> result = { f0 = const_MAX; f1 = None })
-  
-  meta "rewrite_def" predicate postcondition_size_hint
-  
-  predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
-    self.end' = o.end'
-    /\ Int64.le self.start o.start
-    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
-    /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
-  
-  function produces_trans_Range (a: t_Range) (ab: Seq.seq Int64.t) (b: t_Range) (bc: Seq.seq Int64.t) (c: t_Range) : ()
-   = ()
-  
-  axiom produces_trans_Range_spec:
-    forall a: t_Range, ab: Seq.seq Int64.t, b: t_Range, bc: Seq.seq Int64.t, c: t_Range. produces_Range a ab b
-      -> produces_Range b bc c -> produces_Range a (Seq.(++) ab bc) c
-  
-  function produces_refl_Range (self: t_Range) : () = ()
-  
-  axiom produces_refl_Range_spec: forall self: t_Range. produces_Range self (Seq.empty: Seq.seq Int64.t) self
-  
-  let size_hint_Range (self: t_Range) (return (x: tup2_usize_Option_usize)) = any
-    [ return (result: tup2_usize_Option_usize) ->
-    {[@stop_split] [@expl:size_hint_Range ensures] ([@stop_split] [@expl:size_hint ensures #0] ge_log_Int (deep_model_isize self.start) (deep_model_isize self.end')
-        -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-      /\ ([@stop_split] [@expl:size_hint ensures #1] let s = deep_model_isize self.end'
-        - deep_model_isize self.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
-        -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-      /\ ([@stop_split] [@expl:size_hint ensures #2] gt_log_Int (deep_model_isize self.end'
-        - deep_model_isize self.start) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })}
-      (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Range, r: tup2_usize_Option_usize. postcondition_size_hint () self r
-      -> postcondition_size_hint () self r /\ (forall result: (). r.f1 = Some (r.f0) -> r.f1 = Some (r.f0))
 end
 module M_impl_ExactSizeIterator_for_RangeInclusive__size_hint_exact (* <RangeInclusive as common::ExactSizeIterator> *)
   use creusot.int.Int32
@@ -1483,77 +934,6 @@ module M_impl_ExactSizeIterator_for_RangeInclusive__size_hint_exact (* <RangeInc
   goal vc_size_hint_exact_RangeInclusive: postcondition_size_hint () self r
     -> ([@stop_split] [@expl:size_hint_exact ensures] r.f1 = Some (r.f0))
 end
-module M_impl_ExactSizeIterator_for_RangeInclusive__size_hint_exact__refines (* <RangeInclusive as common::ExactSizeIterator> *)
-  use creusot.int.Int32
-  use creusot.int.UInt64
-  use seq.Seq
-  use int.Int
-  
-  type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
-  
-  type t_Option_usize = None | Some UInt64.t
-  
-  type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
-  
-  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
-  
-  meta "rewrite_def" predicate gt_log_i32
-  
-  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
-  
-  function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
-      0
-    else
-      Int32.to_int self.end' - Int32.to_int self.start + 1
-  
-  
-  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-  
-  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
-  
-  meta "rewrite_def" predicate gt_log_Int
-  
-  predicate postcondition_size_hint (self: ()) (args: t_RangeInclusive) (result: tup2_usize_Option_usize) =
-    let self'0 = args in (len_log self'0 <= UInt64.t'int const_MAX
-      -> UInt64.t'int result.f0 = len_log self'0 /\ result.f1 = Some (result.f0))
-    /\ (gt_log_Int (len_log self'0) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })
-  
-  meta "rewrite_def" predicate postcondition_size_hint
-  
-  predicate produces_RangeInclusive (self: t_RangeInclusive) (visited: Seq.seq Int32.t) (o: t_RangeInclusive) =
-    Seq.length visited = len_log self - len_log o
-    /\ (is_empty_log self -> is_empty_log o)
-    /\ (is_empty_log o \/ self.end' = o.end')
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int32.to_int (Seq.get visited i) = Int32.to_int self.start + i)
-  
-  function produces_trans_RangeInclusive (a: t_RangeInclusive) (ab: Seq.seq Int32.t) (b: t_RangeInclusive) (bc: Seq.seq Int32.t) (c: t_RangeInclusive) : ()
-   = ()
-  
-  axiom produces_trans_RangeInclusive_spec:
-    forall a: t_RangeInclusive, ab: Seq.seq Int32.t, b: t_RangeInclusive, bc: Seq.seq Int32.t, c: t_RangeInclusive. produces_RangeInclusive a ab b
-      -> produces_RangeInclusive b bc c -> produces_RangeInclusive a (Seq.(++) ab bc) c
-  
-  function produces_refl_RangeInclusive (self: t_RangeInclusive) : () = ()
-  
-  axiom produces_refl_RangeInclusive_spec:
-    forall self: t_RangeInclusive. produces_RangeInclusive self (Seq.empty: Seq.seq Int32.t) self
-  
-  let size_hint_RangeInclusive (self: t_RangeInclusive) (return (x: tup2_usize_Option_usize)) = any
-    [ return (result: tup2_usize_Option_usize) ->
-    {[@stop_split] [@expl:size_hint_RangeInclusive ensures] ([@stop_split] [@expl:size_hint ensures #0] len_log self
-          <= UInt64.t'int const_MAX -> UInt64.t'int result.f0 = len_log self /\ result.f1 = Some (result.f0))
-      /\ ([@stop_split] [@expl:size_hint ensures #1] gt_log_Int (len_log self) (UInt64.t'int const_MAX)
-      -> result = { f0 = const_MAX; f1 = None })}
-      (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_RangeInclusive, r: tup2_usize_Option_usize. postcondition_size_hint () self r
-      -> postcondition_size_hint () self r /\ (forall result: (). r.f1 = Some (r.f0) -> r.f1 = Some (r.f0))
-end
 module M_impl_Iterator_for_Range__next (* <Range as common::Iterator> *)
   use creusot.int.Int64
   use creusot.prelude.MutBorrow
@@ -1594,8 +974,8 @@ module M_impl_Iterator_for_Range__next (* <Range as common::Iterator> *)
   
   let next_Range (self: MutBorrow.t t_Range) (return (x: t_Option_isize)) = (! bb0
     [ bb0 = s0
-      [ s0 = [ &_4 <- Int64.ge self.current.start self.current.end' ] s1
-      | s1 = any [ br0 -> {_4 = false} (! bb2) | br1 -> {_4} (! bb1) ] ]
+      [ s0 = [ &_2 <- Int64.ge self.current.start self.current.end' ] s1
+      | s1 = any [ br0 -> {_2 = false} (! bb2) | br1 -> {_2} (! bb1) ] ]
     | bb1 = s0 [ s0 = -{resolve_refmut_Range self}- s1 | s1 = [ &_ret <- None ] s2 | s2 = return {_ret} ]
     | bb2 = s0
       [ s0 = [ &r <- self.current.start ] s1
@@ -1606,59 +986,13 @@ module M_impl_Iterator_for_Range__next (* <Range as common::Iterator> *)
       | s4 = return {_ret} ] ]
     [ & _ret: t_Option_isize = Any.any_l ()
     | & self: MutBorrow.t t_Range = self
-    | & _4: bool = Any.any_l ()
+    | & _2: bool = Any.any_l ()
     | & r: Int64.t = Any.any_l () ])
     [ return (result: t_Option_isize) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_Range self
         | Some v -> produces_Range self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
-end
-module M_impl_Iterator_for_Range__next__refines (* <Range as common::Iterator> *)
-  use creusot.prelude.MutBorrow
-  use creusot.int.Int64
-  use seq.Seq
-  use int.Int
-  
-  type t_Range = { start: Int64.t; end': Int64.t }
-  
-  type t_Option_isize = None | Some Int64.t
-  
-  predicate resolve_refmut_Range [@inline:trivial] (_1: MutBorrow.t t_Range) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Range
-  
-  predicate ge_log_isize [@inline:trivial] (self: Int64.t) (other: Int64.t) = Int64.le other self
-  
-  meta "rewrite_def" predicate ge_log_isize
-  
-  predicate completed_Range (self: MutBorrow.t t_Range) =
-    resolve_refmut_Range self /\ ge_log_isize self.current.start self.current.end'
-  
-  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
-  
-  meta "rewrite_def" predicate gt_log_Int
-  
-  predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
-    self.end' = o.end'
-    /\ Int64.le self.start o.start
-    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
-    /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: MutBorrow.t t_Range. forall result: t_Option_isize. match result with
-            | None -> completed_Range self
-            | Some v -> produces_Range self.current (Seq.singleton v) self.final
-            end
-        -> match result with
-          | None -> completed_Range self
-          | Some v -> produces_Range self.current (Seq.singleton v) self.final
-          end
 end
 module M_impl_Iterator_for_Range__produces_refl (* <Range as common::Iterator> *)
   use creusot.int.Int64
@@ -1690,32 +1024,6 @@ module M_impl_Iterator_for_Range__produces_refl (* <Range as common::Iterator> *
   goal vc_produces_refl_Range:
     [@stop_split] [@expl:produces_refl ensures] produces_Range self (Seq.empty: Seq.seq Int64.t) self
 end
-module M_impl_Iterator_for_Range__produces_refl__refines (* <Range as common::Iterator> *)
-  use creusot.int.Int64
-  use seq.Seq
-  use int.Int
-  
-  type t_Range = { start: Int64.t; end': Int64.t }
-  
-  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
-  
-  meta "rewrite_def" predicate gt_log_Int
-  
-  predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
-    self.end' = o.end'
-    /\ Int64.le self.start o.start
-    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
-    /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Range. forall result: (). produces_Range self (Seq.empty: Seq.seq Int64.t) self
-        -> produces_Range self (Seq.empty: Seq.seq Int64.t) self
-end
 module M_impl_Iterator_for_Range__produces_trans (* <Range as common::Iterator> *)
   use creusot.int.Int64
   use seq.Seq
@@ -1739,50 +1047,20 @@ module M_impl_Iterator_for_Range__produces_trans (* <Range as common::Iterator> 
   
   meta "select_lsinst" "all"
   
-  constant a : t_Range
+  constant _1 : t_Range
   
-  constant ab : Seq.seq Int64.t
+  constant _2 : Seq.seq Int64.t
   
-  constant b : t_Range
+  constant _3 : t_Range
   
-  constant bc : Seq.seq Int64.t
+  constant _4 : Seq.seq Int64.t
   
-  constant c : t_Range
+  constant _5 : t_Range
   
-  function produces_trans_Range (a: t_Range) (ab: Seq.seq Int64.t) (b: t_Range) (bc: Seq.seq Int64.t) (c: t_Range) : ()
+  function produces_trans_Range (_1: t_Range) (_2: Seq.seq Int64.t) (_3: t_Range) (_4: Seq.seq Int64.t) (_5: t_Range) : ()
   
-  goal vc_produces_trans_Range: produces_Range a ab b
-    -> produces_Range b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Range a (Seq.(++) ab bc) c)
-end
-module M_impl_Iterator_for_Range__produces_trans__refines (* <Range as common::Iterator> *)
-  use creusot.int.Int64
-  use seq.Seq
-  use int.Int
-  
-  type t_Range = { start: Int64.t; end': Int64.t }
-  
-  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
-  
-  meta "rewrite_def" predicate gt_log_Int
-  
-  predicate produces_Range (self: t_Range) (visited: Seq.seq Int64.t) (o: t_Range) =
-    self.end' = o.end'
-    /\ Int64.le self.start o.start
-    /\ (gt_log_Int (Seq.length visited) 0 -> Int64.le o.start o.end')
-    /\ Seq.length visited = Int64.to_int o.start - Int64.to_int self.start
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall a: t_Range, ab: Seq.seq Int64.t, b: t_Range, bc: Seq.seq Int64.t, c: t_Range. produces_Range a ab b
-      -> produces_Range b bc c
-      -> produces_Range a ab b
-      /\ produces_Range b bc c
-      /\ (forall result: (). produces_Range a (Seq.(++) ab bc) c -> produces_Range a (Seq.(++) ab bc) c)
+  goal vc_produces_trans_Range: produces_Range _1 _2 _3
+    -> produces_Range _3 _4 _5 -> ([@stop_split] [@expl:produces_trans ensures] produces_Range _1 (Seq.(++) _2 _4) _5)
 end
 module M_impl_Iterator_for_Range__size_hint (* <Range as common::Iterator> *)
   use creusot.int.Int64BW
@@ -1960,8 +1238,8 @@ module M_impl_Iterator_for_RangeInclusive__next (* <RangeInclusive as common::It
   
   let next_RangeInclusive (self: MutBorrow.t t_RangeInclusive) (return (x: t_Option_i32)) = (! bb0
     [ bb0 = s0
-      [ s0 = is_empty {self.current} (fun (_x: bool) -> [ &_5 <- _x ] s1)
-      | s1 = any [ br0 -> {_5 = false} (! bb3) | br1 -> {_5} (! bb2) ] ]
+      [ s0 = is_empty {self.current} (fun (_x: bool) -> [ &_3 <- _x ] s1)
+      | s1 = any [ br0 -> {_3 = false} (! bb3) | br1 -> {_3} (! bb2) ] ]
     | bb2 = s0 [ s0 = -{resolve_refmut_RangeInclusive self}- s1 | s1 = [ &_ret <- None ] s2 | s2 = return {_ret} ]
     | bb3 = s0
       [ s0 = [ &is_iterating <- Int32.lt self.current.start self.current.end' ] s1
@@ -1971,70 +1249,25 @@ module M_impl_Iterator_for_RangeInclusive__next (* <RangeInclusive as common::It
       | s1 = Int32.add {self.current.start} {(1: Int32.t)}
           (fun (_x: Int32.t) -> [ &self <- { self with current = { self.current with start = _x } } ] s2)
       | s2 = -{resolve_refmut_RangeInclusive self}- s3
-      | s3 = [ &_11 <- r ] s4
+      | s3 = [ &_9 <- r ] s4
       | s4 = bb6 ]
     | bb5 = s0
       [ s0 = [ &self <- { self with current = { self.current with exhausted = true } } ] s1
       | s1 = -{resolve_refmut_RangeInclusive self}- s2
-      | s2 = [ &_11 <- self.current.start ] s3
+      | s2 = [ &_9 <- self.current.start ] s3
       | s3 = bb6 ]
-    | bb6 = s0 [ s0 = [ &_ret <- Some _11 ] s1 | s1 = return {_ret} ] ]
+    | bb6 = s0 [ s0 = [ &_ret <- Some _9 ] s1 | s1 = return {_ret} ] ]
     [ & _ret: t_Option_i32 = Any.any_l ()
     | & self: MutBorrow.t t_RangeInclusive = self
-    | & _5: bool = Any.any_l ()
+    | & _3: bool = Any.any_l ()
     | & is_iterating: bool = Any.any_l ()
-    | & _11: Int32.t = Any.any_l ()
+    | & _9: Int32.t = Any.any_l ()
     | & r: Int32.t = Any.any_l () ])
     [ return (result: t_Option_i32) -> {[@stop_split] [@expl:next ensures] match result with
         | None -> completed_RangeInclusive self
         | Some v -> produces_RangeInclusive self.current (Seq.singleton v) self.final
         end}
       (! return {result}) ]
-end
-module M_impl_Iterator_for_RangeInclusive__next__refines (* <RangeInclusive as common::Iterator> *)
-  use creusot.prelude.MutBorrow
-  use creusot.int.Int32
-  use seq.Seq
-  use int.Int
-  
-  type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
-  
-  type t_Option_i32 = None | Some Int32.t
-  
-  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
-  
-  meta "rewrite_def" predicate gt_log_i32
-  
-  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
-  
-  predicate completed_RangeInclusive (self: MutBorrow.t t_RangeInclusive) =
-    is_empty_log self.current /\ is_empty_log self.final
-  
-  function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
-      0
-    else
-      Int32.to_int self.end' - Int32.to_int self.start + 1
-  
-  
-  predicate produces_RangeInclusive (self: t_RangeInclusive) (visited: Seq.seq Int32.t) (o: t_RangeInclusive) =
-    Seq.length visited = len_log self - len_log o
-    /\ (is_empty_log self -> is_empty_log o)
-    /\ (is_empty_log o \/ self.end' = o.end')
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int32.to_int (Seq.get visited i) = Int32.to_int self.start + i)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: MutBorrow.t t_RangeInclusive. forall result: t_Option_i32. match result with
-            | None -> completed_RangeInclusive self
-            | Some v -> produces_RangeInclusive self.current (Seq.singleton v) self.final
-            end
-        -> match result with
-          | None -> completed_RangeInclusive self
-          | Some v -> produces_RangeInclusive self.current (Seq.singleton v) self.final
-          end
 end
 module M_impl_Iterator_for_RangeInclusive__produces_refl (* <RangeInclusive as common::Iterator> *)
   use creusot.int.Int32
@@ -2072,40 +1305,6 @@ module M_impl_Iterator_for_RangeInclusive__produces_refl (* <RangeInclusive as c
   
   goal vc_produces_refl_RangeInclusive:
     [@stop_split] [@expl:produces_refl ensures] produces_RangeInclusive self (Seq.empty: Seq.seq Int32.t) self
-end
-module M_impl_Iterator_for_RangeInclusive__produces_refl__refines (* <RangeInclusive as common::Iterator> *)
-  use creusot.int.Int32
-  use seq.Seq
-  use int.Int
-  
-  type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
-  
-  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
-  
-  meta "rewrite_def" predicate gt_log_i32
-  
-  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
-  
-  function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
-      0
-    else
-      Int32.to_int self.end' - Int32.to_int self.start + 1
-  
-  
-  predicate produces_RangeInclusive (self: t_RangeInclusive) (visited: Seq.seq Int32.t) (o: t_RangeInclusive) =
-    Seq.length visited = len_log self - len_log o
-    /\ (is_empty_log self -> is_empty_log o)
-    /\ (is_empty_log o \/ self.end' = o.end')
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int32.to_int (Seq.get visited i) = Int32.to_int self.start + i)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall self: t_RangeInclusive. forall result: (). produces_RangeInclusive self (Seq.empty: Seq.seq Int32.t) self
-        -> produces_RangeInclusive self (Seq.empty: Seq.seq Int32.t) self
 end
 module M_impl_Iterator_for_RangeInclusive__produces_trans (* <RangeInclusive as common::Iterator> *)
   use creusot.int.Int32
@@ -2152,44 +1351,6 @@ module M_impl_Iterator_for_RangeInclusive__produces_trans (* <RangeInclusive as 
   goal vc_produces_trans_RangeInclusive: produces_RangeInclusive a ab b
     -> produces_RangeInclusive b bc c
     -> ([@stop_split] [@expl:produces_trans ensures] produces_RangeInclusive a (Seq.(++) ab bc) c)
-end
-module M_impl_Iterator_for_RangeInclusive__produces_trans__refines (* <RangeInclusive as common::Iterator> *)
-  use creusot.int.Int32
-  use seq.Seq
-  use int.Int
-  
-  type t_RangeInclusive = { start: Int32.t; end': Int32.t; exhausted: bool }
-  
-  predicate gt_log_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) = Int32.lt other self
-  
-  meta "rewrite_def" predicate gt_log_i32
-  
-  predicate is_empty_log (self: t_RangeInclusive) = gt_log_i32 self.start self.end' \/ self.exhausted
-  
-  function len_log (self: t_RangeInclusive) : int = if is_empty_log self then
-      0
-    else
-      Int32.to_int self.end' - Int32.to_int self.start + 1
-  
-  
-  predicate produces_RangeInclusive (self: t_RangeInclusive) (visited: Seq.seq Int32.t) (o: t_RangeInclusive) =
-    Seq.length visited = len_log self - len_log o
-    /\ (is_empty_log self -> is_empty_log o)
-    /\ (is_empty_log o \/ self.end' = o.end')
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> Int32.to_int (Seq.get visited i) = Int32.to_int self.start + i)
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall a: t_RangeInclusive, ab: Seq.seq Int32.t, b: t_RangeInclusive, bc: Seq.seq Int32.t, c: t_RangeInclusive. produces_RangeInclusive a ab b
-      -> produces_RangeInclusive b bc c
-      -> produces_RangeInclusive a ab b
-      /\ produces_RangeInclusive b bc c
-      /\ (forall result: (). produces_RangeInclusive a (Seq.(++) ab bc) c
-        -> produces_RangeInclusive a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_RangeInclusive__size_hint (* <RangeInclusive as common::Iterator> *)
   use creusot.int.Int32BW
@@ -2467,12 +1628,12 @@ module M_sum_range
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
       -> Int64.to_int (Seq.get visited i) = Int64.to_int self.start + i)
   
-  function produces_trans_Range (a: t_Range) (ab: Seq.seq Int64.t) (b: t_Range) (bc: Seq.seq Int64.t) (c: t_Range) : ()
+  function produces_trans_Range (_1: t_Range) (_2: Seq.seq Int64.t) (_3: t_Range) (_4: Seq.seq Int64.t) (_5: t_Range) : ()
    = ()
   
   axiom produces_trans_Range_spec:
-    forall a: t_Range, ab: Seq.seq Int64.t, b: t_Range, bc: Seq.seq Int64.t, c: t_Range. produces_Range a ab b
-      -> produces_Range b bc c -> produces_Range a (Seq.(++) ab bc) c
+    forall _1: t_Range, _2: Seq.seq Int64.t, _3: t_Range, _4: Seq.seq Int64.t, _5: t_Range. produces_Range _1 _2 _3
+      -> produces_Range _3 _4 _5 -> produces_Range _1 (Seq.(++) _2 _4) _5
   
   function produces_refl_Range (self: t_Range) : () = ()
   

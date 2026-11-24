@@ -19,7 +19,6 @@ impl<$($t : RA),*> RA for ($($t),*) {
     }
 
     #[logic(open)]
-    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
     fn incl(self, other: Self) -> bool {
         $(self.$n.incl(other.$n))&&*
     }
@@ -31,11 +30,11 @@ impl<$($t : RA),*> RA for ($($t),*) {
     }
 
     #[logic(law)]
-    #[ensures(a.op(b) == b.op(a))]
+    #[allow(unused_variables)]
     fn commutative(a: Self, b: Self) {}
 
     #[logic]
-    #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
+    #[allow(unused_variables)]
     fn associative(a: Self, b: Self, c: Self) {}
 
     #[logic(open)]
@@ -47,12 +46,6 @@ impl<$($t : RA),*> RA for ($($t),*) {
     }
 
     #[logic]
-    #[requires(self.core() != None)]
-    #[ensures({
-        let c = self.core().unwrap_logic();
-        c.op(c) == Some(c)
-    })]
-    #[ensures(self.core().unwrap_logic().op(self) == Some(self))]
     fn core_idemp(self) {
         $(
             self.$n.core_idemp();
@@ -60,12 +53,6 @@ impl<$($t : RA),*> RA for ($($t),*) {
     }
 
     #[logic]
-    #[requires(i.op(i) == Some(i))]
-    #[requires(i.op(self) == Some(self))]
-    #[ensures(match self.core() {
-        Some(c) => i.incl(c),
-        None => false,
-    })]
     fn core_is_maximal_idemp(self, i: Self) {
         $(
             self.$n.core_is_maximal_idemp(i.$n);
@@ -77,20 +64,16 @@ impl<$($t : RA),*> RA for ($($t),*) {
 
 impl<$($t : UnitRA),*> UnitRA for ($($t),*) {
     #[logic]
-    #[ensures(forall<x: Self> #[trigger(x.op(result))] x.op(result) == Some(x))]
     fn unit() -> Self {
         ($($t::unit()),*)
     }
 
     #[logic(open)]
-    #[ensures(self.core() == Some(result))]
     fn core_total(self) -> Self {
         ($(self.$n.core_total()),*)
     }
 
     #[logic]
-    #[ensures(self.core_total().op(self.core_total()) == Some(self.core_total()))]
-    #[ensures(self.core_total().op(self) == Some(self))]
     fn core_total_idemp(self) {
         $(
             self.$n.core_total_idemp();

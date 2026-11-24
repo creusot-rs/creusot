@@ -6,7 +6,7 @@ use creusot_std::{
     logic::{
         FMap, Id,
         ra::{
-            RA, UnitRA,
+            RA,
             agree::Ag,
             view::{View as ViewRA, ViewRel, ViewUpdateInsert},
         },
@@ -36,18 +36,15 @@ impl<K, V> ViewRel for MapRelation<K, V> {
     }
 
     #[logic(law)]
-    #[requires(Self::rel(a, f1))]
-    #[requires(f2.incl(f1))]
-    #[ensures(Self::rel(a, f2))]
+    #[allow(unused_variables)]
     fn rel_mono(a: Option<Self::Auth>, f1: Self::Frag, f2: Self::Frag) {}
 
     #[logic(law)]
-    #[requires(Self::rel(a, f))]
-    #[ensures(Self::rel(None, f))]
+    #[allow(unused_variables)]
     fn rel_none(a: Option<Self::Auth>, f: Self::Frag) {}
 
     #[logic(law)]
-    #[ensures(Self::rel(a, Self::Frag::unit()))]
+    #[allow(unused_variables)]
     fn rel_unit(a: Option<Self::Auth>) {}
 }
 

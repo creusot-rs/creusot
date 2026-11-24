@@ -5,7 +5,7 @@
 //! compiler. This lifetime is represented by a `LifetimeToken` object.
 
 #[cfg(creusot)]
-use crate::{ghost::Objective, resolve::structural_resolve};
+use crate::ghost::Objective;
 use crate::{
     ghost::{FnGhost, NotObjective, Plain, resource::Resource},
     invariant::{Guard, GuardRef, Guarded},
@@ -215,9 +215,6 @@ impl<T> Resolve for FullBorrow<T> {
 
     #[trusted]
     #[logic(prophetic)]
-    #[requires(inv(self))]
-    #[requires(structural_resolve(self))]
-    #[ensures(self.resolve())]
     fn resolve_coherence(self) {}
 }
 

@@ -493,7 +493,6 @@ impl Invariant for NatInner {
 
 impl InhabitedInvariant for NatInner {
     #[logic]
-    #[ensures(result.invariant())]
     fn inhabits() -> Self {
         Self(0)
     }
@@ -592,17 +591,14 @@ impl PartialOrdLogic for Nat {
     }
 
     #[logic]
-    #[ensures(!(self < self))]
     fn irreflexive(self) {}
 
     #[logic]
-    #[requires(x < y)]
-    #[requires(y < z)]
-    #[ensures(x < z)]
+    #[allow(unused_variables)]
     fn transitive(x: Self, y: Self, z: Self) {}
 
     #[logic(law)]
-    #[ensures((self <= other) == (self < other || self == other))]
+    #[allow(unused_variables)]
     fn le_lt_log(self, other: Self) {
         let _ = Nat::ext_eq;
     }
@@ -610,7 +606,7 @@ impl PartialOrdLogic for Nat {
 
 impl OrdLogic for Nat {
     #[logic(law)]
-    #[ensures(self < other || self == other || other < self)]
+    #[allow(unused_variables)]
     fn lt_log_total(self, other: Self) {}
 }
 
@@ -629,7 +625,6 @@ impl Invariant for PositiveInner {
 }
 impl InhabitedInvariant for PositiveInner {
     #[logic]
-    #[ensures(result.invariant())]
     fn inhabits() -> Self {
         Self(1int)
     }
@@ -726,17 +721,14 @@ impl PartialOrdLogic for Positive {
     }
 
     #[logic]
-    #[ensures(!(self < self))]
     fn irreflexive(self) {}
 
     #[logic]
-    #[requires(x < y)]
-    #[requires(y < z)]
-    #[ensures(x < z)]
+    #[allow(unused_variables)]
     fn transitive(x: Self, y: Self, z: Self) {}
 
     #[logic(law)]
-    #[ensures((self <= other) == (self < other || self == other))]
+    #[allow(unused_variables)]
     fn le_lt_log(self, other: Self) {
         let _ = Positive::ext_eq;
     }
@@ -744,7 +736,7 @@ impl PartialOrdLogic for Positive {
 
 impl OrdLogic for Positive {
     #[logic(law)]
-    #[ensures(self < other || self == other || other < self)]
+    #[allow(unused_variables)]
     fn lt_log_total(self, other: Self) {
         let _ = Positive::ext_eq;
     }

@@ -28,7 +28,7 @@ impl Trait for Struct {
     type Assoc = AssocStruct;
 
     #[logic(open)]
-    #[ensures(result ==> assoc.invariant())]
+    #[allow(unused_variables)]
     fn invariant(self, assoc: AssocStruct) -> bool {
         true
     }
