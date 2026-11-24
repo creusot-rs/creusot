@@ -33,43 +33,48 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for TokensNewVisitor<'a, 'tcx> {
     }
 
     fn visit_expr(&mut self, expr: &'a thir::Expr<'tcx>) {
+        if let &TyKind::FnDef(func_did, _) = expr.ty.kind()
+            && Intrinsic::TokensNew.is(self.ctx, func_did)
+        {
+            self.ctx.dcx().span_err(
+                expr.span,
+                format!(
+                    "{} can only be called directly, not used as a value",
+                    self.ctx.def_path_str(func_did)
+                ),
+            );
+            return;
+        }
         match expr.kind {
-            ExprKind::Call { fun, .. } => {
-                if let &TyKind::FnDef(func_did, _) = self.thir[fun].ty.kind()
-                    && Intrinsic::TokensNew.is(self.ctx, func_did)
-                {
-                    if !self.in_main {
-                        self.ctx.dcx().span_err(
+            ExprKind::Call { fun, .. }
+                if let fun = &self.thir[fun]
+                    && is_literal(&self.thir, fun)
+                    && let &TyKind::FnDef(func_did, _) = fun.ty.kind()
+                    && Intrinsic::TokensNew.is(self.ctx, func_did) =>
+            {
+                if !self.in_main {
+                    self.ctx.dcx().span_err(
+                        expr.span,
+                        format!("{} can only be called in `main`", self.ctx.def_path_str(func_did)),
+                    );
+                } else if self.in_loop {
+                    self.ctx.dcx().span_err(
+                        expr.span,
+                        format!("{} cannot be called in a loop", self.ctx.def_path_str(func_did)),
+                    );
+                } else if let Some(span) = self.already_called {
+                    self.ctx
+                        .dcx()
+                        .struct_span_err(
                             expr.span,
-                            format!(
-                                "{} can only be called in `main`",
-                                self.ctx.def_path_str(func_did)
-                            ),
-                        );
-                    } else if self.in_loop {
-                        self.ctx.dcx().span_err(
-                            expr.span,
-                            format!(
-                                "{} cannot be called in a loop",
-                                self.ctx.def_path_str(func_did)
-                            ),
-                        );
-                    } else if let Some(span) = self.already_called {
-                        self.ctx
-                            .dcx()
-                            .struct_span_err(
-                                expr.span,
-                                format!(
-                                    "{} can only be called once",
-                                    self.ctx.def_path_str(func_did)
-                                ),
-                            )
-                            .with_span_note(span, "already called here")
-                            .emit();
-                    } else {
-                        self.already_called = Some(expr.span)
-                    }
+                            format!("{} can only be called once", self.ctx.def_path_str(func_did)),
+                        )
+                        .with_span_note(span, "already called here")
+                        .emit();
+                } else {
+                    self.already_called = Some(expr.span)
                 }
+                return;
             }
             ExprKind::Loop { .. } => {
                 self.in_loop = true;
@@ -80,5 +85,15 @@ impl<'a, 'tcx> Visitor<'a, 'tcx> for TokensNewVisitor<'a, 'tcx> {
             _ => {}
         }
         thir::visit::walk_expr(self, expr)
+    }
+}
+
+fn is_literal<'a, 'tcx: 'a>(thir: &'a Thir<'tcx>, mut expr: &'a thir::Expr<'tcx>) -> bool {
+    loop {
+        match expr.kind {
+            ExprKind::Scope { value, .. } => expr = &thir[value],
+            ExprKind::ZstLiteral { .. } => return true,
+            _ => return false,
+        }
     }
 }
