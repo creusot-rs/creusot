@@ -1,4 +1,7 @@
-use crate::config::{CREUSOT_STD_VERSION, implicit_table, write};
+use crate::config::{
+    CREUSOT_STD_VERSION, dev_creusot_std_path, implicit_table, update_project_config,
+    workspace_root, write,
+};
 use anyhow::Result;
 use clap::Parser;
 use creusot_setup::creusot_paths;
@@ -158,7 +161,20 @@ pub fn create_project(name: String, args: NewInitArgs) -> Result<()> {
     };
     let why3find_json = paths.why3find_json();
     copy(&why3find_json, root.join("why3find.json"));
-    write(root.join(".gitignore"), "target\n_creusot_erasure\n*.coma\n.why3find");
+    let root = match workspace_root() {
+        Ok(root) => root,
+        Err(_) => std::path::absolute(root.join("."))?,
+    };
+    // For dev versions of Creusot, `.cargo/config.toml` contains a local path to creusot-std,
+    // which should not be committed.
+    let is_dev = dev_creusot_std_path(None)?.is_some();
+    let gitignore = if is_dev {
+        "target\n_creusot_erasure\n*.coma\n.why3find\n/.cargo/config.toml\n"
+    } else {
+        "target\n_creusot_erasure\n*.coma\n.why3find\n"
+    };
+    write(root.join(".gitignore"), gitignore);
+    update_project_config(&root)?;
     Ok(())
 }
 
@@ -214,7 +230,7 @@ fn patch_dep(cargo_toml_path: impl AsRef<Path>) -> Result<()> {
         {
             if let Some(_) = crates_io.remove("creusot-std") {
                 eprintln!(
-                    "Removed [patch.crates-io.creusot-std] in {} (you should update $HOME/.cargo/config.toml instead with `cargo creusot config --update`)",
+                    "Removed [patch.crates-io.creusot-std] in {} (it is now set in .cargo/config.toml)",
                     cargo_toml_path.display()
                 );
                 if crates_io.is_empty() {

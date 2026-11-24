@@ -150,14 +150,15 @@ Everything Creusot needs to run.
 
 - Only if you are installing a `X.Y.Z-dev` version, some additional configuration is required:
 
-    - `$HOME/.cargo/config.toml` containing a `[patch.crates-io]` section with a local path to `creusot-std`.
+    - Each of your Creusot projects needs a `.cargo/config.toml` containing a `[patch.crates-io]` section with a local path to `creusot-std`.
 
         ```toml
         [patch.crates-io]
         creusot-std = { path = "/YOUR/PATH/TO/creusot/creusot-std" }
         ```
 
-      As a shortcut, you can run `cargo creusot config --update` to set up this configuration.
+      This is created by `cargo creusot new` and `cargo creusot init`, and can be checked or fixed
+      with `cargo creusot config [--update]`.
 
 ## Why3
 
@@ -196,15 +197,19 @@ The main benefit is to allow you to get fixes quicker if you run into issues.
 The drawback is that your projects must then depend on the dev version of
 the `creusot-std` crate. In particular, you cannot get it from crates.io,
 and you have to apply "patches" in the Cargo config. This is handled
-automatically by the installation instructions above (using `nix` or the `INSTALL` script),
-but if you are installing everything manually, or you want to double-check your installation,
+automatically by `cargo creusot` and by `cargo creusot new` and `cargo creusot init`,
+but if you want to double-check your setup,
 if you have installed a `X.Y.Z-dev` version (`0.12.0-dev` or later),
-make sure to have a file `~/.cargo/config.toml` containing the following:
+make sure that your project has a file `.cargo/config.toml` containing the following
+(you can check it with `cargo creusot config`):
 
 ```toml
 [patch.crates-io]
 creusot-std = { path = "/YOUR/PATH/TO/creusot/creusot-std" }
 ```
+
+Previous versions of these instructions put this patch in `~/.cargo/config.toml`,
+where it affects all of your Rust projects. You can remove it with `cargo creusot config --update --global`.
 
 We make a new release of Creusot every month, providing a clearly defined version
 for your projects to depend on (as opposed to having to remember a specific commit hash).

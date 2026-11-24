@@ -60,7 +60,7 @@ enum Component {
     Provers,
     /// Install config files `why3.conf` and `why3find.json`
     Why3Conf,
-    /// Set up `.cargo/config.toml`
+    /// Remove obsolete patch for `creusot-std` from `~/.cargo/config.toml`
     CargoCreusotConfig,
 }
 
@@ -309,7 +309,7 @@ fn install_config(paths: &CreusotPaths, args: &Args) -> anyhow::Result<()> {
 
 fn cargo_creusot_config(args: &Args) -> anyhow::Result<()> {
     let mut cmd = Command::new("cargo");
-    cmd.args(["creusot", "config", "--update"]);
+    cmd.args(["creusot", "config", "--update", "--global"]);
     args.run(cmd)
 }
 

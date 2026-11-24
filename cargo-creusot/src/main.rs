@@ -57,12 +57,19 @@ fn doc(cargs: CargoCreusotCmds) -> Result<()> {
 
 struct Runner {
     metadata: Metadata,
+    /// `--config` argument for cargo, to patch `creusot-std` with a local path (for dev versions of Creusot)
+    patch: Option<String>,
 }
 
 impl Runner {
     fn new() -> Result<Self> {
-        let metadata = cargo_metadata::MetadataCommand::new().exec()?;
-        Ok(Self { metadata })
+        let patch = dev_patch()?;
+        let mut cmd = cargo_metadata::MetadataCommand::new();
+        if let Some(patch) = &patch {
+            cmd.other_options(vec!["--config".to_string(), patch.clone()]);
+        }
+        let metadata = cmd.exec()?;
+        Ok(Self { metadata, patch })
     }
 
     fn root(&self) -> &Path {
@@ -94,6 +101,7 @@ impl Runner {
             packages,
             args.cargo_flags,
             self.root(),
+            self.patch.as_deref(),
         )
     }
 
@@ -127,6 +135,7 @@ fn invoke_cargo(
     packages: &[&Package],
     cargo_flags: Vec<String>,
     root: &Path,
+    patch: Option<&str>,
 ) -> Result<()> {
     let cargo_cmd = match build {
         Build::Doc => "doc",
@@ -154,6 +163,9 @@ fn invoke_cargo(
         exit(1);
     }
     let mut cmd = Command::new(cargo_path);
+    if let Some(patch) = patch {
+        cmd.args(["--config", patch]);
+    }
     cmd.arg(cargo_cmd)
         .args(cargo_flags)
         .args(["-F", "creusot-std/creusot creusot-std/nightly"])
@@ -189,6 +201,34 @@ fn invoke_cargo(
         bail!("Compilation failed")
     }
     Ok(())
+}
+
+/// For dev versions of Creusot, `creusot-std` is not on crates.io:
+/// return a `--config` argument for cargo to patch it with the local `creusot-std`.
+///
+/// This is done here rather than in `$CARGO_HOME/config.toml`, where it would affect
+/// all Rust projects (with an "unused patch" warning and noise in their `Cargo.lock`).
+/// For plain `cargo` and rust-analyzer, `cargo creusot new/init/config --update`
+/// writes the same patch in the project's `.cargo/config.toml`.
+///
+/// No patch is needed if the workspace already gets `creusot-std` by path
+/// (e.g., the Creusot repository itself); adding one would trigger the same "unused patch" noise.
+fn dev_patch() -> Result<Option<String>> {
+    let Some(creusot_std) = dev_creusot_std_path(None)? else { return Ok(None) };
+    // `--no-deps` does not resolve dependencies, so it works even if `creusot-std` cannot be found.
+    let metadata = cargo_metadata::MetadataCommand::new().no_deps().exec()?;
+    let packages = metadata.workspace_packages();
+    let is_member = packages.iter().any(|p| p.name == "creusot-std");
+    let mut deps = packages
+        .iter()
+        .flat_map(|p| &p.dependencies)
+        .filter(|d| d.name == "creusot-std")
+        .peekable();
+    let all_path_deps = deps.peek().is_some() && deps.all(|d| d.path.is_some());
+    if is_member || all_path_deps {
+        return Ok(None);
+    }
+    Ok(Some(patch_config_arg(&creusot_std)))
 }
 
 /// Get default members to build:
@@ -299,7 +339,7 @@ pub enum CargoCreusotSubCommand {
     Clean(CleanArgs),
     /// Run Why3
     Why3(Why3Args),
-    /// Check or update `~/.cargo/config.toml` with patch for `creusot-std`
+    /// Check or update `.cargo/config.toml` with patch for `creusot-std` (for dev versions of Creusot)
     Config(ConfigArgs),
     /// Show version information of Creusot and its dependencies
     Version,
