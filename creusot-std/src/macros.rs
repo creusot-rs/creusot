@@ -598,4 +598,5 @@ macro_rules! erase {
     ($($_:tt)*) => {};
 }
 
+#[cfg(not(feature = "creusot"))]
 pub use erase;

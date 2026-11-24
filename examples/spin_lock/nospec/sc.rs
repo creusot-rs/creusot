@@ -1,4 +1,4 @@
-// WHY3SKIP
+// COMASKIP
 
 #![feature(sync_unsafe_cell)]
 #![allow(creusot::contractless_external_function)]

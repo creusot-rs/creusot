@@ -1,4 +1,4 @@
-// WHY3SKIP
+// COMASKIP
 
 #![allow(creusot::contractless_external_function)]
 

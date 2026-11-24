@@ -459,13 +459,20 @@ fn run_creusot(file: &Path, paths: &CreusotPaths, args: &Args) -> Option<std::pr
         cmd.arg(format!("-Zmin-recursion-limit={}", rec_limit));
     }
 
+    cmd.arg("--");
+
+    if header_line.contains("COMASKIP") {
+        cmd.arg("--no-output");
+    } else {
+        cmd.arg("--stdout");
+    }
+
     cmd.args([
-        "--",
-        "--stdout",
         "--export-metadata=false",
         // we will write the coma output next to the .rs file
         "--spans-relative-to=.",
     ]);
+
     if !header_args.iter().any(|arg| arg.starts_with("--span-mode")) {
         if args.with_spans {
             cmd.arg("--span-mode=relative");
