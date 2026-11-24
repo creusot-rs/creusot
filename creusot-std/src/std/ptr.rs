@@ -480,12 +480,6 @@ extern_spec! {
             #[ensures(result == metadata_logic(ptr))]
             fn metadata<T: ?Sized>(ptr: *const T) -> <T as Pointee>::Metadata;
 
-            // Postulate `check(ghost)`.
-            // It is used in a `#[trusted]` primitive in `peano`.
-            #[check(ghost)]
-            #[ensures(false)]
-            unsafe fn read_volatile<T>(src: *const T) -> T;
-
             #[ensures(result as *const T == data && result.len_logic() == len)]
             fn slice_from_raw_parts<T>(data: *const T, len: usize) -> *const [T];
 
