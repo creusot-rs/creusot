@@ -1,7 +1,7 @@
 use rustc_abi::FieldIdx;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
-use rustc_middle::ty::{GenericArgKind, GenericArgsRef, List, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{GenericArgKind, GenericArgs, List, Ty, TyCtxt, TyKind};
 use rustc_span::Symbol;
 use rustc_type_ir::{AliasTy, AliasTyKind};
 
@@ -17,26 +17,26 @@ use crate::{
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Hash, TypeVisitable, TypeFoldable)]
 pub(crate) enum Dependency<'tcx> {
     Type(Ty<'tcx>),
-    Item(DefId, GenericArgsRef<'tcx>),
+    Item(DefId, GenericArgs<'tcx>),
     TyInvAxiom(Ty<'tcx>),
     ResolveAxiom(Ty<'tcx>),
-    ClosureAccessor(DefId, GenericArgsRef<'tcx>, u32),
+    ClosureAccessor(DefId, GenericArgs<'tcx>, u32),
     TupleField(&'tcx List<Ty<'tcx>>, FieldIdx),
     PreMod(PreMod),
-    Eliminator(DefId, GenericArgsRef<'tcx>),
+    Eliminator(DefId, GenericArgs<'tcx>),
     DynCast(Ty<'tcx>, Ty<'tcx>),
-    PrivateFields(DefId, GenericArgsRef<'tcx>),
-    PrivateResolve(DefId, GenericArgsRef<'tcx>),
-    PrivateTyInv(DefId, GenericArgsRef<'tcx>),
+    PrivateFields(DefId, GenericArgs<'tcx>),
+    PrivateResolve(DefId, GenericArgs<'tcx>),
+    PrivateTyInv(DefId, GenericArgs<'tcx>),
 }
 
 impl<'tcx> Dependency<'tcx> {
-    pub(crate) fn did(self) -> Option<(DefId, GenericArgsRef<'tcx>)> {
+    pub(crate) fn did(self) -> Option<(DefId, GenericArgs<'tcx>)> {
         match self {
             Dependency::Item(def_id, subst) => Some((def_id, subst)),
             Dependency::Type(t) => match t.kind() {
-                TyKind::Adt(def, substs) => Some((def.did(), substs)),
-                TyKind::Closure(id, substs) => Some((*id, substs)),
+                TyKind::Adt(def, substs) => Some((def.did(), *substs)),
+                TyKind::Closure(id, substs) => Some((*id, *substs)),
                 &TyKind::Alias(
                     _,
                     AliasTy {
@@ -126,7 +126,7 @@ impl<'tcx> Dependency<'tcx> {
     }
 }
 
-fn first_ty_arg(args: GenericArgsRef) -> Option<Ty> {
+fn first_ty_arg(args: GenericArgs) -> Option<Ty> {
     args.iter()
         .filter_map(|arg| if let GenericArgKind::Type(ty) = arg.kind() { Some(ty) } else { None })
         .next()

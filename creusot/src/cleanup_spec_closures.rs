@@ -159,10 +159,10 @@ fn restore_statements<'tcx>(body: &mut Body<'tcx>, mut removed: RemovedMir<'tcx>
 pub(crate) fn make_loop<'tcx>() -> IndexVec<BasicBlock, BasicBlockData<'tcx>> {
     let mut body = IndexVec::new();
     body.push(BasicBlockData::new(
-        Some(Terminator {
+        Terminator {
             source_info: SourceInfo::outermost(rustc_span::DUMMY_SP),
             kind: TerminatorKind::Return,
-        }),
+        },
         false,
     ));
     body

@@ -138,7 +138,7 @@ impl Callbacks for ToWhy {
 
     fn after_expansion<'tcx>(&mut self, c: &Compiler, tcx: TyCtxt<'tcx>) -> Compilation {
         let params_open_inv = crate::translation::before_analysis(tcx);
-        let _ = tcx.analysis(());
+        rustc_interface::passes::full_analysis(tcx);
         let _ = crate::translation::after_analysis(tcx, self.opts.clone(), params_open_inv);
 
         c.sess.dcx().abort_if_errors();
@@ -245,7 +245,7 @@ impl Callbacks for WithoutContracts {
         c.sess.dcx().abort_if_errors();
         // Metadata encoding requires `commit_end_of_determinism` to have been called,
         // which happens during `analysis`.
-        let _ = tcx.analysis(());
+        rustc_interface::passes::full_analysis(tcx);
         let metadata = BinaryMetadata::without_specs(erased_thir);
         crate::metadata::dump_exports(tcx, &Default::default(), metadata);
         Compilation::Continue

@@ -95,7 +95,7 @@ extern_spec! {
         mod vec {
             #[ensures(result@.len() == n@)]
             #[ensures(forall<i> 0 <= i && i < n@ ==> result[i] == elem)]
-            fn from_elem<T: Clone>(elem: T, n: usize) -> Vec<T>;
+            fn from_elem_global<T: Clone>(elem: T, n: usize) -> Vec<T>;
         }
     }
 
@@ -405,7 +405,7 @@ macro_rules! vec {
         ::std::vec::Vec::new()
     );
     ($elem:expr; $n:expr) => (
-        ::std::vec::from_elem($elem, $n)
+        ::std::vec![$elem; $n]
     );
     ($($x:expr),*) => (
         <[_]>::into_vec(::std::boxed::Box::new([$($x),*]))

@@ -12,7 +12,7 @@ use rustc_infer::{
     infer::TyCtxtInferExt,
     traits::{Obligation, ObligationCause, TraitEngine},
 };
-use rustc_middle::ty::{EarlyBinder, GenericArgsRef, ParamEnv, Ty, TypingEnv, TypingMode};
+use rustc_middle::ty::{EarlyBinder, GenericArgs, ParamEnv, Ty, TypingEnv, TypingMode};
 use rustc_span::{ErrorGuaranteed, Span};
 use rustc_trait_selection::{
     error_reporting::InferCtxtErrorExt, solve::FulfillmentCtxt, traits::TraitErrors,
@@ -98,7 +98,7 @@ impl<'tcx> TranslationCtx<'tcx> {
     pub(crate) fn check_additional_predicates(
         &self,
         trait_item: DefId,
-        subst: GenericArgsRef<'tcx>,
+        subst: GenericArgs<'tcx>,
         param_env: ParamEnv<'tcx>,
         sp: Span,
     ) -> Result<(), ErrorGuaranteed> {
@@ -124,7 +124,7 @@ fn logic_refinement_term<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     impl_item_id: DefId,
     trait_item_id: DefId,
-    refn_subst: GenericArgsRef<'tcx>,
+    refn_subst: GenericArgs<'tcx>,
 ) -> Refn<'tcx> {
     let typing_env = TypingEnv::non_body_analysis(ctx.tcx, impl_item_id);
 

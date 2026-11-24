@@ -293,6 +293,12 @@ fn parse_trusted_positive(tokens: &TokenStream) -> Vec<Symbol> {
     params
 }
 
+/// Check whether `attr` is a tool attribute with the given path.
+pub(crate) fn tool_attr_path_matches(attr: &Attribute, path: &[&str]) -> bool {
+    matches!(attr, Attribute::Tool { item, .. }
+        if item.path.segments.iter().map(Symbol::as_str).eq(path.iter().copied()))
+}
+
 fn get_attrs<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, path: &[&str]) -> Vec<&'tcx AttrItem> {
     let path = path.iter().map(|s| Symbol::intern(s)).collect::<Vec<_>>();
     #[expect(deprecated, reason = "not actually deprecated for unparsed tool attributes")]
@@ -300,7 +306,7 @@ fn get_attrs<'tcx>(tcx: TyCtxt<'tcx>, def_id: DefId, path: &[&str]) -> Vec<&'tcx
     attrs
         .into_iter()
         .filter_map(|attr| {
-            if let &Attribute::Unparsed(ref u) = attr
+            if let Attribute::Tool { item: u, .. } = attr
                 && u.path.segments.iter().eq(&path)
             {
                 Some(&**u)

@@ -6,8 +6,8 @@ use rustc_infer::{
     traits::{CodegenObligationError, ObligationCause, specialization_graph::Graph},
 };
 use rustc_middle::ty::{
-    self, Const, ConstKind, EarlyBinder, GenericArgsRef, ParamConst, ParamEnv, ParamEnvAnd,
-    ParamTy, TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv, TypingMode,
+    self, Const, ConstKind, EarlyBinder, GenericArgs, ParamConst, ParamEnv, ParamEnvAnd, ParamTy,
+    TraitRef, Ty, TyCtxt, TyKind, TypeFoldable, TypeFolder, TypingEnv, TypingMode,
 };
 use rustc_span::{DUMMY_SP, ErrorGuaranteed};
 use rustc_trait_selection::traits::{ImplSource, InCrate, orphan_check_trait_ref};
@@ -47,7 +47,7 @@ fn select_method<'tcx>(
     typing_env: TypingEnv<'tcx>,
     trait_ref: TraitRef<'tcx>,
     trait_item_def_id: DefId,
-    substs: GenericArgsRef<'tcx>,
+    substs: GenericArgs<'tcx>,
     source: &'tcx ImplSource<'tcx, ()>,
 ) -> TraitResolved<'tcx> {
     match source {
@@ -163,7 +163,7 @@ fn select_method<'tcx>(
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum ImplSource_<'tcx> {
     /// The id and substitution of the impl block, if any.
-    Impl(DefId, GenericArgsRef<'tcx>),
+    Impl(DefId, GenericArgs<'tcx>),
     /// This is a default implementation for an instance comming from a trait constraint
     Param,
     /// The clone_from default implementation of a builtin Clone impl
@@ -178,7 +178,7 @@ pub(crate) enum TraitResolved<'tcx> {
     /// An instance (like `impl Clone for i32 { ... }`) exists for the given type parameters.
     Instance {
         /// The id and substitution of the specific item found (e.g. the `clone` function in `impl Clone for i32`).
-        def: (DefId, GenericArgsRef<'tcx>),
+        def: (DefId, GenericArgs<'tcx>),
         impl_: ImplSource_<'tcx>,
     },
     /// A known instance exists, but we don't know which one.
@@ -210,7 +210,7 @@ impl<'tcx> TraitResolved<'tcx> {
         tcx: TyCtxt<'tcx>,
         typing_env: TypingEnv<'tcx>,
         trait_item_def_id: DefId,
-        substs: GenericArgsRef<'tcx>,
+        substs: GenericArgs<'tcx>,
     ) -> Self {
         trace!("TraitResolved::resolve {:?} {:?}", trait_item_def_id, substs);
 
@@ -238,8 +238,8 @@ impl<'tcx> TraitResolved<'tcx> {
     pub(crate) fn to_opt(
         self,
         did: DefId,
-        substs: GenericArgsRef<'tcx>,
-    ) -> Option<(DefId, GenericArgsRef<'tcx>)> {
+        substs: GenericArgs<'tcx>,
+    ) -> Option<(DefId, GenericArgs<'tcx>)> {
         match self {
             TraitResolved::Instance { def, impl_: _ } => Some(def),
             TraitResolved::NotATraitItem

@@ -18,8 +18,8 @@ use rustc_index::IndexVec;
 use rustc_middle::{
     mir::Mutability,
     ty::{
-        BorrowKind, CapturedPlace, ClosureKind, EarlyBinder, GenericArg, GenericArgsRef, Ty,
-        TyCtxt, TyKind, UpvarCapture,
+        BorrowKind, CapturedPlace, ClosureKind, EarlyBinder, GenericArg, GenericArgs, Ty, TyCtxt,
+        TyKind, UpvarCapture,
     },
 };
 use std::{assert_matches, iter::once};
@@ -126,7 +126,7 @@ pub(crate) fn closure_pre<'tcx>(
 
         let params = once(self_arg).chain(arg_vars.clone()).collect();
         pre = Term {
-            kind: TermKind::Precondition { item: def_id.into(), subst, params },
+            kind: TermKind::Precondition { item: def_id.into(), subst: *subst, params },
             ty: ctx.types.bool,
             span: ctx.def_span(def_id),
         };
@@ -230,7 +230,7 @@ pub(crate) fn closure_post<'tcx>(
                 let bor_self = self_.clone().shr_ref(ctx.tcx);
                 let params = once(bor_self).chain(arg_vars.clone()).chain([result]).collect();
                 post = Term {
-                    kind: TermKind::Postcondition { item: def_id.into(), subst, params },
+                    kind: TermKind::Postcondition { item: def_id.into(), subst: *subst, params },
                     ty: ctx.types.bool,
                     span: ctx.def_span(def_id),
                 };
@@ -248,7 +248,7 @@ pub(crate) fn closure_post<'tcx>(
                 let params =
                     once(bor_self.clone()).chain(arg_vars.clone()).chain([result]).collect();
                 post = Term {
-                    kind: TermKind::Postcondition { item: def_id.into(), subst, params },
+                    kind: TermKind::Postcondition { item: def_id.into(), subst: *subst, params },
                     ty: ctx.types.bool,
                     span: ctx.def_span(def_id),
                 };
@@ -286,7 +286,7 @@ pub(crate) fn closure_post<'tcx>(
                 let params = once(self_.clone()).chain(arg_vars.clone()).chain([result]).collect();
                 to_resolve = vec![];
                 post = Term {
-                    kind: TermKind::Postcondition { item: def_id.into(), subst, params },
+                    kind: TermKind::Postcondition { item: def_id.into(), subst: *subst, params },
                     ty: ctx.types.bool,
                     span: ctx.def_span(def_id),
                 }
@@ -322,7 +322,7 @@ pub(crate) fn ctor_pre<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     scope: DefId,
     def_id: DefId,
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
     args: Term<'tcx>,
 ) -> Term<'tcx> {
     let typing_env = ctx.typing_env(scope);
@@ -348,7 +348,7 @@ pub(crate) fn ctor_post<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     scope: DefId,
     def_id: DefId,
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
     args: Term<'tcx>,
     res: Term<'tcx>,
 ) -> Term<'tcx> {

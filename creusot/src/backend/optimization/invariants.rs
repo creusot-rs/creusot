@@ -228,14 +228,14 @@ impl ChangedPlacesTree {
                     }
                 }
                 TyKind::Adt(def, subst) => {
-                    let AdtKind::Struct { .. } = classify_adt(ctx, scope, *def, subst) else {
+                    let AdtKind::Struct { .. } = classify_adt(ctx, scope, *def, *subst) else {
                         unreachable!()
                     };
                     for ((idx, fdef), c) in
                         def.non_enum_variant().fields.iter_enumerated().zip_eq(c)
                     {
                         let ty =
-                            ctx.tcx.normalize_erasing_regions(typing_env, fdef.ty(ctx.tcx, subst));
+                            ctx.tcx.normalize_erasing_regions(typing_env, fdef.ty(ctx.tcx, *subst));
                         if let Some(c) = c {
                             c.to_unchanged_term_vec(
                                 ctx,
@@ -447,7 +447,7 @@ impl TyInvPlacesTree {
                         .fields
                         .iter()
                         .map(|f| {
-                            ctx.tcx.normalize_erasing_regions(ctx.typing_env, f.ty(ctx.tcx, subst))
+                            ctx.tcx.normalize_erasing_regions(ctx.typing_env, f.ty(ctx.tcx, *subst))
                         })
                         .collect(),
                     _ => unreachable!(),
@@ -506,7 +506,7 @@ impl TyInvPlacesTree {
                             if v.fields.iter().all(|f| {
                                 is_tyinv_trivial(ctx.tcx.normalize_erasing_regions(
                                     ctx.typing_env,
-                                    f.ty(ctx.tcx, subst),
+                                    f.ty(ctx.tcx, *subst),
                                 ))
                             }) {
                                 Self::Top
@@ -534,7 +534,7 @@ impl TyInvPlacesTree {
                             || v.fields.iter().all(|f| {
                                 is_tyinv_trivial(ctx.tcx.normalize_erasing_regions(
                                     ctx.typing_env,
-                                    f.ty(ctx.tcx, subst),
+                                    f.ty(ctx.tcx, *subst),
                                 ))
                             })
                     })

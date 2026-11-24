@@ -1,6 +1,5 @@
 //! Validate that `ghost!` does not modify program variables
 
-use rustc_ast::attr::AttributeExt;
 use rustc_hir::{
     Expr, ExprKind, HirId,
     intravisit::{Visitor, walk_expr},
@@ -8,11 +7,11 @@ use rustc_hir::{
 use rustc_hir_typeck::expr_use_visitor::{Delegate, ExprUseVisitor, PlaceBase, PlaceWithHirId};
 use rustc_lint::{LateContext, LateLintPass, LintPass, LintVec};
 use rustc_middle::ty::{BorrowKind, TyCtxt, UpvarId, UpvarPath};
-use rustc_span::{Span, Symbol};
+use rustc_span::Span;
 use std::collections::HashSet;
 
 use crate::{
-    contracts_items::is_pearlite,
+    contracts_items::{is_pearlite, tool_attr_path_matches},
     validate::{is_ghost_block, is_ghost_or_snap},
 };
 
@@ -163,10 +162,7 @@ fn base_hir_node(place: &PlaceWithHirId) -> Option<HirId> {
 fn is_ghost_let(tcx: TyCtxt, id: HirId) -> bool {
     for id in tcx.hir_parent_id_iter(id) {
         let attrs = tcx.hir_attrs(id);
-        if attrs
-            .iter()
-            .any(|a| a.path_matches(&[Symbol::intern("creusot"), Symbol::intern("ghost_let")]))
-        {
+        if attrs.iter().any(|a| tool_attr_path_matches(a, &["creusot", "ghost_let"])) {
             return true;
         }
     }

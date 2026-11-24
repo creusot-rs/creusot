@@ -43,7 +43,7 @@ use rustc_abi::{Integer, VariantIdx};
 use rustc_hir::{Safety, def::DefKind, def_id::DefId};
 use rustc_middle::{
     mir::{BasicBlock, BinOp, PlaceTy, ProjectionElem, START_BLOCK, UnOp},
-    ty::{self, AdtDef, GenericArgs, GenericArgsRef, Ty, TyCtxt, TyKind, layout::IntegerExt},
+    ty::{self, AdtDef, GenericArgs, Ty, TyCtxt, TyKind, layout::IntegerExt},
 };
 use rustc_span::{DUMMY_SP, Span};
 use std::{collections::HashMap, fmt::Debug, iter::once};
@@ -305,7 +305,7 @@ pub fn why_body<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     body_id: BodyId,
-    subst: Option<GenericArgsRef<'tcx>>,
+    subst: Option<GenericArgs<'tcx>>,
     params: &[Ident],
     inner_return: Ident,
     recursive_calls: &mut RecursiveCalls,
@@ -1075,7 +1075,7 @@ fn mk_goto(block_idents: &IndexMap<BasicBlock, Ident>, bb: BasicBlock) -> Expr {
 fn mk_adt_switch<'tcx>(
     lower: &LoweringState<'_, 'tcx, impl Namer<'tcx>>,
     adt: AdtDef<'tcx>,
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
     discr: Exp,
     brch: Box<[(VariantIdx, BasicBlock)]>,
     default: Option<BasicBlock>,
@@ -1414,7 +1414,7 @@ impl<'tcx> Statement<'tcx> {
 fn func_call_to_why3<'tcx>(
     lower: &LoweringState<'_, 'tcx, impl Namer<'tcx>>,
     id: DefId,
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
     args: Box<[Operand<'tcx>]>,
     istmts: &mut Vec<IntermediateStmt>,
 ) -> (Name, Box<[Arg]>) {

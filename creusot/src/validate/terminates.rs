@@ -46,7 +46,7 @@ use crate::{
         Ident, Literal, Pattern, Term, TermKind,
         visit::{TermVisitor, super_visit_term},
     },
-    util::erased_identity_for_item,
+    util::{caller_bounds, erased_identity_for_item},
 };
 use indexmap::{IndexMap, IndexSet};
 use petgraph::{algo::tarjan_scc, graph};
@@ -59,8 +59,8 @@ use rustc_infer::{infer::TyCtxtInferExt as _, traits::ImplSource};
 use rustc_middle::{
     thir::{self, visit::Visitor},
     ty::{
-        self, ClauseKind, EarlyBinder, FnDef, GenericArgs, GenericArgsRef, ParamEnv, PredicateKind,
-        TraitRef, TyCtxt, TyKind, TypingEnv, TypingMode,
+        self, ClauseKind, EarlyBinder, FnDef, GenericArgs, ParamEnv, PredicateKind, TraitRef,
+        TyCtxt, TyKind, TypingEnv, TypingMode,
     },
 };
 use rustc_span::Span;
@@ -342,7 +342,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         node: graph::NodeIndex,
         typing_env: TypingEnv<'tcx>,
         mut fun_id: DefId,
-        mut subst: GenericArgsRef<'tcx>,
+        mut subst: GenericArgs<'tcx>,
         span: Span,
         is_call: bool,
     ) {
@@ -354,10 +354,12 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
 
         let called_node: Option<graph::NodeIndex>;
         // FIXME don't compute this if unneeded
-        let mut bounds: Vec<ty::Clause<'tcx>> =
-            EarlyBinder::bind(ctx.tcx, ctx.param_env(fun_id).caller_bounds().collect::<Vec<_>>())
-                .instantiate(ctx.tcx, subst)
-                .skip_normalization();
+        let mut bounds: Vec<ty::Clause<'tcx>> = EarlyBinder::bind(
+            ctx.tcx,
+            caller_bounds(ctx.tcx, ctx.param_env(fun_id)).collect::<Vec<_>>(),
+        )
+        .instantiate(ctx.tcx, subst)
+        .skip_normalization();
         match res {
             TraitResolved::Instance { impl_: ImplSource_::Impl(impl_defid, impl_args), .. }
                 if ctx.impl_of_assoc(fun_id) != Some(impl_defid) && // The method is defined in an ancestor
@@ -469,14 +471,14 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         let func_impl_args = erased_identity_for_item(ctx.tcx, item_id);
         let func_impl_args = func_impl_args.rebase_onto(ctx.tcx, spec_node_def.def_id(), impl_args);
 
-        let item_bounds = ctx.param_env(item_id).caller_bounds();
+        let item_bounds = caller_bounds(ctx.tcx, ctx.param_env(item_id));
         let defimpl_bounds =
-            ctx.param_env(spec_node_def.def_id()).caller_bounds().collect::<HashSet<_>>();
+            caller_bounds(ctx.tcx, ctx.param_env(spec_node_def.def_id())).collect::<HashSet<_>>();
         // Before instantiating the bounds, keep only those that are not inherited from the defining
         // impl. After instantiation, they will be implied by the bounds of the inheriting
         // impl.
         let typing_env_for_bounds = TypingEnv::new(impl_param_env, TypingMode::non_body_analysis());
-        let bounds = impl_param_env.caller_bounds().chain(item_bounds.filter_map(|b| {
+        let bounds = caller_bounds(ctx.tcx, impl_param_env).chain(item_bounds.filter_map(|b| {
             if defimpl_bounds.contains(&b) {
                 return None;
             }
@@ -495,7 +497,7 @@ impl<'tcx> BuildFunctionsGraph<'tcx> {
         let param_env = ParamEnv::new(ctx.tcx, ctx.mk_clauses_from_iter(bounds));
         let typing_env = ctx.typing_env_with(item_id, param_env);
 
-        let bounds = param_env.caller_bounds().collect();
+        let bounds = caller_bounds(ctx.tcx, param_env).collect();
         self.default_functions_bounds.insert(node, bounds);
 
         let mut visitor = TermCalls { results: IndexSet::new() };
@@ -603,7 +605,7 @@ struct FunctionDeps<'a, 'tcx> {
     /// - The generic args for this call.
     /// - The span of the call (for error messages).
     /// - Whether the occurrence is a function call.
-    deps: &'a mut Vec<(DefId, &'tcx GenericArgs<'tcx>, Span, bool)>,
+    deps: &'a mut Vec<(DefId, GenericArgs<'tcx>, Span, bool)>,
 }
 
 impl<'a, 'tcx> Visitor<'a, 'tcx> for FunctionDeps<'a, 'tcx> {
@@ -756,7 +758,7 @@ impl<'thir, 'tcx> Visitor<'thir, 'tcx> for GhostLoops<'thir, 'tcx> {
 }
 
 struct TermCalls<'tcx> {
-    results: IndexSet<(DefId, &'tcx GenericArgs<'tcx>, Span)>,
+    results: IndexSet<(DefId, GenericArgs<'tcx>, Span)>,
 }
 
 impl<'tcx> TermVisitor<'tcx> for TermCalls<'tcx> {
@@ -931,7 +933,8 @@ pub(crate) fn proof_tree_nodes<'tcx>(
         match source {
             ImplSource::UserDefined(source) => {
                 nodes.push(source.impl_def_id);
-                let clauses = tcx.param_env(source.impl_def_id).caller_bounds().collect::<Vec<_>>();
+                let clauses =
+                    caller_bounds(tcx, tcx.param_env(source.impl_def_id)).collect::<Vec<_>>();
                 let bounds = EarlyBinder::bind(tcx, clauses)
                     .instantiate(tcx, source.args)
                     .skip_normalization();
@@ -980,8 +983,7 @@ fn param_env_for_termination(tcx: TyCtxt, trait_item_id: DefId, impl_item_id: De
             .iter()
             .map(|(p, _)| EarlyBinder::bind(tcx, *p).instantiate(tcx, args)),
     );
-    let predicates: Vec<_> = predicates.map(|p| p.skip_normalization()).collect();
-    let unnormalized_env = ty::ParamEnv::new(tcx, predicates);
+    let unnormalized_env: Vec<_> = predicates.map(|p| p.skip_normalization()).collect();
 
     // Code from `param_env` in `rustc_ty_utils/src/ty.rs`
     let local_did = impl_item_id.as_local();

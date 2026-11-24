@@ -475,7 +475,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                             let var = adt_def.variant(vid);
                             for (fi, fd) in var.fields.iter_enumerated() {
                                 let ty = tcx
-                                    .normalize_erasing_regions(self.typing_env, fd.ty(tcx, subst));
+                                    .normalize_erasing_regions(self.typing_env, fd.ty(tcx, *subst));
                                 res_partial.push(All(tcx.mk_place_field(pl, fi, ty)));
                             }
                         } else {
@@ -496,7 +496,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                                 .field_is_transparent_from(fd, self.body().source.def_id())
                             {
                                 let ty = tcx
-                                    .normalize_erasing_regions(self.typing_env, fd.ty(tcx, subst));
+                                    .normalize_erasing_regions(self.typing_env, fd.ty(tcx, *subst));
                                 res_partial.push(All(tcx.mk_place_field(pl, fi, ty)));
                             } else {
                                 has_priv = true;
@@ -545,7 +545,8 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                 | Coroutine(_, _)
                 | CoroutineWitness(_, _)
                 | Never
-                | UnsafeBinder(_) => unreachable!("{}", ty.ty),
+                | UnsafeBinder(_)
+                | View(..) => unreachable!("{}", ty.ty),
             }
         }
 

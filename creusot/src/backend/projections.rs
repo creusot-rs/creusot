@@ -118,7 +118,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
                         .fields
                         .iter()
                         .map(|f| {
-                            let ty = names.normalize(f.ty(names.tcx(), subst));
+                            let ty = names.normalize(f.ty(names.tcx(), *subst));
                             Param::Term(
                                 Ident::fresh_local(format!("r{}", f.name)),
                                 translate_ty(ctx, names, span, ty),
@@ -126,7 +126,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
                         })
                         .collect();
 
-                    let acc_name = names.eliminator(variant.def_id, subst);
+                    let acc_name = names.eliminator(variant.def_id, *subst);
                     let args = Box::new([Arg::Term(focus.call(istmts))]);
                     istmts.push(IntermediateStmt::Call(
                         fields.clone(),
@@ -139,7 +139,7 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
                     focus = Focus::new(|_| foc);
 
                     constructor = Box::new(move |is, t| {
-                        let constr = Exp::var(names.item_ident(variant.def_id, subst));
+                        let constr = Exp::var(names.item_ident(variant.def_id, *subst));
                         let mut fields: Box<[_]> =
                             fields.into_iter().map(|f| Exp::var(f.as_term().0)).collect();
                         fields[ix.as_usize()] = t;
@@ -152,12 +152,12 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
                     let focus1 = focus.clone();
 
                     focus = Focus::new(move |is| {
-                        focus.call(is).field(Name::local(names.field(def.did(), subst, ix)))
+                        focus.call(is).field(Name::local(names.field(def.did(), *subst, ix)))
                     });
 
                     constructor = Box::new(move |is, t| {
                         let updates =
-                            Box::new([(Name::local(names.field(def.did(), subst, ix)), t)]);
+                            Box::new([(Name::local(names.field(def.did(), *subst, ix)), t)]);
                         if def.all_fields().count() == 1 {
                             constructor(is, Exp::Record { fields: updates })
                         } else {
@@ -184,11 +184,11 @@ pub(crate) fn projections_to_expr<'tcx, 'a>(
                     let focus1 = focus.clone();
 
                     focus = Focus::new(move |is| {
-                        focus.call(is).field(Name::local(names.field(*id, subst, ix)))
+                        focus.call(is).field(Name::local(names.field(*id, *subst, ix)))
                     });
 
                     constructor = Box::new(move |is, t| {
-                        let updates = Box::new([(Name::local(names.field(*id, subst, ix)), t)]);
+                        let updates = Box::new([(Name::local(names.field(*id, *subst, ix)), t)]);
                         if subst.as_closure().upvar_tys().len() == 1 {
                             constructor(is, Exp::Record { fields: updates })
                         } else {

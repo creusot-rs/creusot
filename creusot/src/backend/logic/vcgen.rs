@@ -344,7 +344,7 @@ impl<'tcx, N: Namer<'tcx>> VCGenCtx<'_, 'tcx, N> {
             TermKind::Constructor { variant, fields, .. } => {
                 let TyKind::Adt(adt, subst) = t.ty.kind() else { unreachable!() };
                 self.build_wp_slice(fields, &|fields| {
-                    let ctor = constructor(self.names, fields, adt.variant(*variant).def_id, subst);
+                    let ctor = constructor(self.names, fields, adt.variant(*variant).def_id, *subst);
                     k(ctor)
                 })
             }
@@ -394,8 +394,8 @@ impl<'tcx, N: Namer<'tcx>> VCGenCtx<'_, 'tcx, N> {
             // VC(A.f, Q) = VC(A, |a| Q(a.f))
             TermKind::Projection { lhs, idx } => {
                 let field = match lhs.ty.kind() {
-                    TyKind::Closure(did, substs) => self.names.field(*did, substs, *idx),
-                    TyKind::Adt(def, subst) => self.names.field(def.did(), subst, *idx),
+                    TyKind::Closure(did, substs) => self.names.field(*did, *substs, *idx),
+                    TyKind::Adt(def, subst) => self.names.field(def.did(), *subst, *idx),
                     TyKind::Tuple(tys) if tys.len() == 1 => return self.build_wp(lhs, k),
                     TyKind::Tuple(tys) => self.names.tuple_field(tys, *idx),
                     k => unreachable!("Projection from {k:?}"),

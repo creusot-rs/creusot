@@ -247,7 +247,7 @@ fn make_switch<'tcx>(
                 Some(targets.otherwise())
             };
 
-            Branches::Constructor(*def, substs, branches, default)
+            Branches::Constructor(*def, *substs, branches, default)
         }
         TyKind::Bool => {
             let f_branch = targets

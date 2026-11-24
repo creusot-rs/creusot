@@ -10,15 +10,24 @@ use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{BasicBlock, Location},
     thir,
-    ty::{self, GenericArgs, GenericArgsRef, TyCtxt},
+    ty::{self, GenericArgs, TyCtxt},
 };
 use rustc_serialize::{ContextOrd, Decodable, Decoder, Encodable, Encoder};
 use rustc_span::{RemapPathScopeComponents, Span, Symbol};
 
 use creusot_args::options::SpanMode;
 
-pub(crate) fn erased_identity_for_item(tcx: TyCtxt, did: DefId) -> GenericArgsRef {
+pub(crate) fn erased_identity_for_item(tcx: TyCtxt, did: DefId) -> GenericArgs {
     tcx.erase_and_anonymize_regions(GenericArgs::identity_for_item(tcx, did))
+}
+
+/// All the clauses of a `ParamEnv`, with compressed trait clauses expanded.
+pub(crate) fn caller_bounds<'tcx>(
+    tcx: TyCtxt<'tcx>,
+    param_env: ty::ParamEnv<'tcx>,
+) -> impl Iterator<Item = ty::Clause<'tcx>> {
+    use rustc_type_ir::CallerBoundsIterator as _;
+    param_env.caller_bounds().all_clauses_interned(tcx).iter()
 }
 
 pub(crate) fn parent_module(tcx: TyCtxt, mut id: DefId) -> ModId {
@@ -154,18 +163,18 @@ pub fn impl_subject<'tcx>(
 }
 
 pub fn eq_nameless_generic_args<'tcx>(
-    args1: ty::GenericArgsRef<'tcx>,
-    args2: ty::GenericArgsRef<'tcx>,
+    args1: ty::GenericArgs<'tcx>,
+    args2: ty::GenericArgs<'tcx>,
 ) -> bool {
     NamelessGenericArgs(args1) == NamelessGenericArgs(args2)
 }
 
-/// Custom equality on `GenericArgsRef` to ignore the `name` symbol in `Param`.
+/// Custom equality on `GenericArgs` to ignore the `name` symbol in `Param`.
 #[derive(Clone, Copy, Debug, Eq, TypeVisitable, TypeFoldable, TyEncodable, TyDecodable)]
-pub struct NamelessGenericArgs<'tcx>(pub ty::GenericArgsRef<'tcx>);
+pub struct NamelessGenericArgs<'tcx>(pub ty::GenericArgs<'tcx>);
 
-impl<'tcx> From<ty::GenericArgsRef<'tcx>> for NamelessGenericArgs<'tcx> {
-    fn from(args: ty::GenericArgsRef<'tcx>) -> Self {
+impl<'tcx> From<ty::GenericArgs<'tcx>> for NamelessGenericArgs<'tcx> {
+    fn from(args: ty::GenericArgs<'tcx>) -> Self {
         NamelessGenericArgs(args)
     }
 }

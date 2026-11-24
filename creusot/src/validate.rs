@@ -26,23 +26,23 @@ use self::{
 };
 use crate::{
     backend::is_trusted_item,
-    contracts_items::{get_builtin, get_intrinsic, is_extern_spec, is_no_translate, is_spec},
+    contracts_items::{
+        get_builtin, get_intrinsic, is_extern_spec, is_no_translate, is_spec,
+        tool_attr_path_matches,
+    },
     ctx::TranslationCtx,
     validate::{
         erasure::validate_erasures, recursive_types::validate_recursive_types,
         tokens_new::validate_tokens_new,
     },
 };
-use rustc_ast::attr::AttributeExt;
 use rustc_hir::HirId;
 use rustc_middle::ty::{Ty, TyCtxt, TyKind};
 use rustc_span::Symbol;
 
 fn is_ghost_block(tcx: TyCtxt, id: HirId) -> bool {
     let attrs = tcx.hir_attrs(id);
-    attrs
-        .iter()
-        .any(|a| a.path_matches(&[Symbol::intern("creusot"), Symbol::intern("ghost_block")]))
+    attrs.iter().any(|a| tool_attr_path_matches(a, &["creusot", "ghost_block"]))
 }
 
 pub(crate) fn is_ghost_or_snap(tcx: TyCtxt, ty: Ty) -> bool {

@@ -8,109 +8,47 @@ extern_spec! {
 
         fn debug_struct_field1_finish<'b>(
             &'b mut self,
-            name: &str,
-            name1: &str,
+            names: &str,
             value1: &dyn Debug,
         ) -> Result;
 
         fn debug_struct_field2_finish<'b>(
             &'b mut self,
-            name: &str,
-            name1: &str,
+            names: &str,
             value1: &dyn Debug,
-            name2: &str,
             value2: &dyn Debug,
         ) -> Result;
 
         fn debug_struct_field3_finish<'b>(
             &'b mut self,
-            name: &str,
-            name1: &str,
+            names: &str,
             value1: &dyn Debug,
-            name2: &str,
             value2: &dyn Debug,
-            name3: &str,
             value3: &dyn Debug,
         ) -> Result;
 
         fn debug_struct_field4_finish<'b>(
             &'b mut self,
-            name: &str,
-            name1: &str,
+            names: &str,
             value1: &dyn Debug,
-            name2: &str,
             value2: &dyn Debug,
-            name3: &str,
             value3: &dyn Debug,
-            name4: &str,
             value4: &dyn Debug,
         ) -> Result;
 
         fn debug_struct_field5_finish<'b>(
             &'b mut self,
-            name: &str,
-            name1: &str,
+            names: &str,
             value1: &dyn Debug,
-            name2: &str,
             value2: &dyn Debug,
-            name3: &str,
             value3: &dyn Debug,
-            name4: &str,
             value4: &dyn Debug,
-            name5: &str,
             value5: &dyn Debug,
         ) -> Result;
 
         fn debug_struct_fields_finish<'b>(
             &'b mut self,
-            name: &str,
-            names: &[&str],
-            values: &[&dyn Debug],
-        ) -> Result;
-
-        fn debug_tuple_field1_finish<'b>(
-            &'b mut self,
-            name: &str,
-            value1: &dyn Debug,
-        ) -> Result;
-
-        fn debug_tuple_field2_finish<'b>(
-            &'b mut self,
-            name: &str,
-            value1: &dyn Debug,
-            value2: &dyn Debug,
-        ) -> Result;
-
-        fn debug_tuple_field3_finish<'b>(
-            &'b mut self,
-            name: &str,
-            value1: &dyn Debug,
-            value2: &dyn Debug,
-            value3: &dyn Debug,
-        ) -> Result;
-
-        fn debug_tuple_field4_finish<'b>(
-            &'b mut self,
-            name: &str,
-            value1: &dyn Debug,
-            value2: &dyn Debug,
-            value3: &dyn Debug,
-            value4: &dyn Debug,
-        ) -> Result;
-
-        fn debug_tuple_field5_finish<'b>(
-            &'b mut self,
-            name: &str,
-            value1: &dyn Debug,
-            value2: &dyn Debug,
-            value3: &dyn Debug,
-            value4: &dyn Debug,
-            value5: &dyn Debug,
-        ) -> Result;
-
-        fn debug_tuple_fields_finish<'b>(
-            &'b mut self,
-            name: &str,
+            names: &str,
             values: &[&dyn Debug],
         ) -> Result;
     }

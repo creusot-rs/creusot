@@ -31,7 +31,7 @@ use rustc_abi::Size;
 use rustc_ast::Mutability;
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_middle::ty::{
-    self, AliasTyKind, Const, GenericArg, GenericArgsRef, TraitRef, Ty, TyCtxt, TyKind, TypingEnv,
+    self, AliasTyKind, Const, GenericArg, GenericArgs, TraitRef, Ty, TyCtxt, TyKind, TypingEnv,
 };
 use rustc_span::{DUMMY_SP, Span, Symbol};
 use rustc_type_ir::{AliasTy, ClosureKind, ConstKind, EarlyBinder};
@@ -151,7 +151,7 @@ fn builtin_clone_posts<'tcx>(
 }
 
 impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
-    fn expand_program(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Vec<Decl> {
+    fn expand_program(&mut self, def_id: DefId, subst: GenericArgs<'tcx>) -> Vec<Decl> {
         let dep = Dependency::Item(def_id, subst);
         let typing_env = self.typing_env;
         let ctx = self.ctx;
@@ -237,7 +237,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
         vec![program::val(sig.prototype, sig.contract, sig.return_ty)]
     }
 
-    fn expand_closure(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Vec<Decl> {
+    fn expand_closure(&mut self, def_id: DefId, subst: GenericArgs<'tcx>) -> Vec<Decl> {
         let dep = Dependency::Item(def_id, subst);
         let typing_env = self.typing_env;
         let ctx = self.ctx;
@@ -273,7 +273,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     // We duplicate the constructor application because it's usually shorter
     // than writing out the let binding (most constructors used this way have
     // few fields, and the assertion even goes away if it's trivial).
-    fn expand_ctor(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Vec<Decl> {
+    fn expand_ctor(&mut self, def_id: DefId, subst: GenericArgs<'tcx>) -> Vec<Decl> {
         let dep = Dependency::Item(def_id, subst);
         let typing_env = self.typing_env;
         let ctx = self.ctx;
@@ -308,7 +308,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     }
 
     /// Expand a logical item
-    fn expand_logic(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Vec<Decl> {
+    fn expand_logic(&mut self, def_id: DefId, subst: GenericArgs<'tcx>) -> Vec<Decl> {
         let dep = Dependency::Item(def_id, subst);
         let ctx = self.ctx;
 
@@ -483,7 +483,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
     /// The constant setter contains the Coma translation of the constant definition. It constructs the value of the constant,
     /// and performs an *assume* statement that the constructed value is equal to the previously declared constant.
     /// In the final declaration of each module, we wrap the body with calls to all constant setters.
-    fn expand_constant(&mut self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Vec<Decl> {
+    fn expand_constant(&mut self, def_id: DefId, subst: GenericArgs<'tcx>) -> Vec<Decl> {
         let dep = Dependency::Item(def_id, subst);
 
         let typing_env = self.typing_env;
@@ -615,7 +615,7 @@ impl<'a, 'ctx, 'tcx> Expander<'a, 'ctx, 'tcx> {
                 };
                 vec![Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: Box::new([]) })]
             }
-            TyKind::Closure(did, subst) => translate_closure_ty(ctx, &names, *did, subst),
+            TyKind::Closure(did, subst) => translate_closure_ty(ctx, &names, *did, *subst),
             TyKind::Adt(_, _) => translate_adtdecl(ctx, &names, ty),
             TyKind::Tuple(_) => translate_tuple_ty(ctx, &names, ty),
             TyKind::Dynamic(traits, _) => {
@@ -781,7 +781,7 @@ fn traitref_of_item<'tcx>(
     tcx: TyCtxt<'tcx>,
     typing_env: TypingEnv<'tcx>,
     did: DefId,
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
 ) -> Option<TraitRef<'tcx>> {
     let ai = tcx.opt_associated_item(did)?;
     let cont = ai.container_id(tcx);
@@ -862,7 +862,7 @@ fn val(mut sig: LogicSignature, kind: DeclKind) -> Vec<Decl> {
 fn postcondition_once_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
     inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
     let typing_env = names.typing_env();
@@ -881,9 +881,9 @@ fn postcondition_once_term<'tcx>(
         }
         // Handle `FnGhostWrapper`
         TyKind::Adt(def, subst_inner) if Intrinsic::FnGhostWrapper.is(ctx, def.did()) => {
-            let mut subst_postcond = subst.to_vec();
+            let mut subst_postcond = subst.as_slice().to_vec();
             let closure_ty =
-                names.normalize(def.all_fields().next().unwrap().ty(ctx.tcx, subst_inner));
+                names.normalize(def.all_fields().next().unwrap().ty(ctx.tcx, *subst_inner));
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::PostconditionOnce.get(ctx);
@@ -891,7 +891,7 @@ fn postcondition_once_term<'tcx>(
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         TyKind::Ref(_, cl, Mutability::Mut) => {
-            let mut subst_postcond = subst.to_vec();
+            let mut subst_postcond = subst.as_slice().to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::PostconditionMut.get(ctx);
@@ -899,7 +899,7 @@ fn postcondition_once_term<'tcx>(
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         TyKind::Ref(_, cl, Mutability::Not) => {
-            let mut subst_postcond = subst.to_vec();
+            let mut subst_postcond = subst.as_slice().to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::Postcondition.get(ctx);
@@ -907,7 +907,7 @@ fn postcondition_once_term<'tcx>(
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         TyKind::Adt(def, bsubst) if def.is_box() => {
-            let mut subst_postcond = subst.to_vec();
+            let mut subst_postcond = subst.as_slice().to_vec();
             subst_postcond[1] = bsubst[0];
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::PostconditionOnce.get(ctx);
@@ -927,7 +927,7 @@ fn postcondition_once_term<'tcx>(
 fn postcondition_mut_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
     inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
     let typing_env = names.typing_env();
@@ -952,9 +952,9 @@ fn postcondition_mut_term<'tcx>(
         )),
         // Handle `FnGhostWrapper`
         TyKind::Adt(def, subst_inner) if Intrinsic::FnGhostWrapper.is(ctx, def.did()) => {
-            let mut subst_postcond = subst.to_vec();
+            let mut subst_postcond = subst.as_slice().to_vec();
             let closure_ty =
-                names.normalize(def.all_fields().next().unwrap().ty(ctx.tcx, subst_inner));
+                names.normalize(def.all_fields().next().unwrap().ty(ctx.tcx, *subst_inner));
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::PostconditionMut.get(ctx);
@@ -967,7 +967,7 @@ fn postcondition_mut_term<'tcx>(
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         TyKind::Ref(_, cl, Mutability::Mut) => {
-            let mut subst_postcond = subst.to_vec();
+            let mut subst_postcond = subst.as_slice().to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::PostconditionMut.get(ctx);
@@ -978,7 +978,7 @@ fn postcondition_mut_term<'tcx>(
             )
         }
         TyKind::Ref(_, cl, Mutability::Not) => {
-            let mut subst_postcond = subst.to_vec();
+            let mut subst_postcond = subst.as_slice().to_vec();
             subst_postcond[1] = GenericArg::from(*cl);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_args = [self_.clone().coerce(*cl), args, res];
@@ -989,7 +989,7 @@ fn postcondition_mut_term<'tcx>(
             )
         }
         TyKind::Adt(def, bsubst) if def.is_box() => {
-            let mut subst_postcond = subst.to_vec();
+            let mut subst_postcond = subst.as_slice().to_vec();
             subst_postcond[1] = bsubst[0];
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::PostconditionMut.get(ctx);
@@ -1010,7 +1010,7 @@ fn postcondition_mut_term<'tcx>(
 fn postcondition_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
     inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
     let typing_env = names.typing_env();
@@ -1030,8 +1030,8 @@ fn postcondition_term<'tcx>(
         // Handle `FnGhostWrapper`
         TyKind::Adt(def, subst_inner) if Intrinsic::FnGhostWrapper.is(ctx, def.did()) => {
             let closure_ty =
-                names.normalize(def.all_fields().next().unwrap().ty(ctx.tcx, subst_inner));
-            let mut subst_postcond = subst.to_vec();
+                names.normalize(def.all_fields().next().unwrap().ty(ctx.tcx, *subst_inner));
+            let mut subst_postcond = subst.as_slice().to_vec();
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::Postcondition.get(ctx);
@@ -1039,7 +1039,7 @@ fn postcondition_term<'tcx>(
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         &TyKind::Ref(_, cl, Mutability::Not) => {
-            let mut subst_postcond = subst.to_vec();
+            let mut subst_postcond = subst.as_slice().to_vec();
             subst_postcond[1] = GenericArg::from(cl);
             let subst_postcond = ctx.tcx.mk_args(&subst_postcond);
             let post_fn = Intrinsic::Postcondition.get(ctx);
@@ -1047,7 +1047,7 @@ fn postcondition_term<'tcx>(
             Some(Term::call(ctx.tcx, typing_env, post_fn, subst_postcond, post_args))
         }
         TyKind::Adt(def, bsubst) if def.is_box() => {
-            let mut subst_postcond = subst.to_vec();
+            let mut subst_postcond = subst.as_slice().to_vec();
             subst_postcond[1] = bsubst[0];
             let subst_postcond = ctx.tcx.mk_args(&subst_postcond);
             let post_args = [self_.coerce(bsubst.type_at(0)), args, res];
@@ -1068,7 +1068,7 @@ fn post_fndef<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     mut did: DefId,
-    mut subst: GenericArgsRef<'tcx>,
+    mut subst: GenericArgs<'tcx>,
     args: Term<'tcx>,
     res: Term<'tcx>,
     exact: bool,
@@ -1108,7 +1108,7 @@ fn post_fndef<'tcx>(
 fn precondition_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
     inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
     let typing_env = names.typing_env();
@@ -1124,7 +1124,7 @@ fn precondition_term<'tcx>(
             Some(closure_pre(ctx, names.source_id(), did.expect_local(), self_, args))
         }
         &TyKind::Ref(_, cl, m) => {
-            let mut subst_pre = subst.to_vec();
+            let mut subst_pre = subst.as_slice().to_vec();
             subst_pre[1] = GenericArg::from(cl);
             let subst_pre = ctx.mk_args(&subst_pre);
             let self_ = if m == Mutability::Mut { self_.clone().cur() } else { self_.coerce(cl) };
@@ -1133,7 +1133,7 @@ fn precondition_term<'tcx>(
             Some(Term::call(ctx.tcx, typing_env, pre_fn, subst_pre, pre_args))
         }
         TyKind::Adt(def, bsubst) if def.is_box() => {
-            let mut subst_pre = subst.to_vec();
+            let mut subst_pre = subst.as_slice().to_vec();
             subst_pre[1] = bsubst[0];
             let subst_pre = ctx.mk_args(&subst_pre);
             let pre_fn = Intrinsic::Precondition.get(ctx);
@@ -1142,9 +1142,9 @@ fn precondition_term<'tcx>(
         }
         // Handle `FnGhostWrapper`
         TyKind::Adt(def, subst_inner) if Intrinsic::FnGhostWrapper.is(ctx, def.did()) => {
-            let mut subst_postcond = subst.to_vec();
+            let mut subst_postcond = subst.as_slice().to_vec();
             let closure_ty =
-                names.normalize(def.all_fields().next().unwrap().ty(ctx.tcx, subst_inner));
+                names.normalize(def.all_fields().next().unwrap().ty(ctx.tcx, *subst_inner));
             subst_postcond[1] = GenericArg::from(closure_ty);
             let subst_postcond = ctx.mk_args(&subst_postcond);
             let pre_fn = Intrinsic::Precondition.get(ctx);
@@ -1163,7 +1163,7 @@ fn pre_fndef<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     mut did: DefId,
-    mut subst: GenericArgsRef<'tcx>,
+    mut subst: GenericArgs<'tcx>,
     args: Term<'tcx>,
     exact: bool,
 ) -> Option<Term<'tcx>> {
@@ -1199,7 +1199,7 @@ fn pre_fndef<'tcx>(
 fn fn_mut_hist_inv_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     typing_env: TypingEnv<'tcx>,
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
     inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
     let &[self_, future] = inputs else {
@@ -1212,7 +1212,7 @@ fn fn_mut_hist_inv_term<'tcx>(
         TyKind::Ref(_, _, Mutability::Not) => Some(self_.eq(ctx.tcx, future)),
         TyKind::Ref(_, cl, Mutability::Mut) => {
             let hist_inv = Intrinsic::HistInv.get(ctx);
-            let mut subst_hist_inv = subst.to_vec();
+            let mut subst_hist_inv = subst.as_slice().to_vec();
             subst_hist_inv[1] = GenericArg::from(*cl);
             let subst_hist_inv = ctx.mk_args(&subst_hist_inv);
             let hist_inv_args = [self_.clone().cur(), future.clone().cur()];
@@ -1223,7 +1223,7 @@ fn fn_mut_hist_inv_term<'tcx>(
         }
         TyKind::Adt(def, bsubst) if def.is_box() => {
             let hist_inv = Intrinsic::HistInv.get(ctx);
-            let mut subst_hist_inv = subst.to_vec();
+            let mut subst_hist_inv = subst.as_slice().to_vec();
             subst_hist_inv[1] = bsubst[0];
             let subst_hist_inv = ctx.mk_args(&subst_hist_inv);
             let closure_ty = bsubst.type_at(0);
@@ -1351,7 +1351,7 @@ fn size_of_array<'tcx>(
 fn size_of_val_logic_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
     inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
     let param = subst.type_at(0);
@@ -1426,7 +1426,7 @@ fn metadata_matches_term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     //// The type arguments of `metadata_matches`
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
     inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
     let param = subst.type_at(0);
@@ -1463,7 +1463,7 @@ fn term<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     def_id: DefId,
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
     inputs: &[(PIdent, Span, Ty<'tcx>)],
 ) -> Option<Term<'tcx>> {
     let typing_env = names.typing_env();

@@ -59,7 +59,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
         // Handle structural invariant
         match ty.kind() {
             TyKind::Tuple(tys) => stack.extend(*tys),
-            TyKind::Adt(def, subst) => match classify_adt(ctx, scope, *def, subst) {
+            TyKind::Adt(def, subst) => match classify_adt(ctx, scope, *def, *subst) {
                 AdtKind::Namespace
                 | AdtKind::Snapshot(_)
                 | AdtKind::Opaque { always: true }
@@ -71,7 +71,7 @@ pub(crate) fn is_tyinv_trivial<'tcx>(
                 | AdtKind::Empty => return false,
                 AdtKind::Enum | AdtKind::Struct { partially_opaque: false } => stack.extend(
                     def.all_fields()
-                        .map(|f| ctx.normalize_erasing_regions(typing_env, f.ty(ctx.tcx, subst))),
+                        .map(|f| ctx.normalize_erasing_regions(typing_env, f.ty(ctx.tcx, *subst))),
                 ),
                 AdtKind::Box(_) => unreachable!(),
             },
@@ -147,7 +147,7 @@ pub(crate) fn elaborate_tyinv_def<'tcx>(
     let mut use_axiom = use_impl;
     if let TyKind::Adt(def, subst) = ty.kind()
         && matches!(
-            classify_adt(ctx, names.source_id(), *def, subst),
+            classify_adt(ctx, names.source_id(), *def, *subst),
             AdtKind::Opaque { .. } | AdtKind::Struct { .. } | AdtKind::Enum
         )
     {
@@ -181,7 +181,7 @@ fn structural_invariant<'tcx>(
 ) -> Option<Term<'tcx>> {
     let ty = subject.ty;
     match ty.kind() {
-        TyKind::Adt(def, subst) => match classify_adt(ctx, names.source_id(), *def, subst) {
+        TyKind::Adt(def, subst) => match classify_adt(ctx, names.source_id(), *def, *subst) {
             AdtKind::Empty => Some(Term::false_(ctx.tcx)),
             AdtKind::Opaque { always: true }
             | AdtKind::Unit
@@ -197,7 +197,7 @@ fn structural_invariant<'tcx>(
                     let mut exp = Term::true_(ctx.tcx);
                     let fields = var_def.fields.iter_enumerated().map(|(field_idx, field_def)| {
                         let field_name = Ident::fresh_local(field_name(field_def.name.as_str()));
-                        let field_ty = names.normalize(field_def.ty(ctx.tcx, subst));
+                        let field_ty = names.normalize(field_def.ty(ctx.tcx, *subst));
                         conj_inv_call(ctx, names, &mut exp, Term::var(field_name, field_ty));
                         (field_idx, Pattern::binder(field_name, field_ty))
                     });
@@ -212,7 +212,7 @@ fn structural_invariant<'tcx>(
                 let mut exp = Term::true_(ctx.tcx);
                 for (field_idx, field_def) in def.non_enum_variant().fields.iter_enumerated() {
                     if ctx.field_is_transparent_from(field_def, names.source_id()) {
-                        let ty = names.normalize(field_def.ty(ctx.tcx, subst));
+                        let ty = names.normalize(field_def.ty(ctx.tcx, *subst));
                         conj_inv_call(ctx, names, &mut exp, subject.clone().proj(field_idx, ty))
                     }
                 }

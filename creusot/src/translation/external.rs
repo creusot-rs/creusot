@@ -20,8 +20,7 @@ use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::{
     thir::{self, Expr, ExprKind, Thir, visit::Visitor},
     ty::{
-        self, EarlyBinder, GenericArgKind, GenericArgs, GenericArgsRef, Predicate, Ty, TyCtxt,
-        TyKind, TypingEnv,
+        self, EarlyBinder, GenericArgKind, GenericArgs, Predicate, Ty, TyCtxt, TyKind, TypingEnv,
     },
 };
 use rustc_span::{Span, Symbol};
@@ -42,7 +41,7 @@ impl<'tcx> ExternSpec<'tcx> {
     pub(crate) fn predicates_for(
         &self,
         tcx: TyCtxt<'tcx>,
-        sub: GenericArgsRef<'tcx>,
+        sub: GenericArgs<'tcx>,
     ) -> impl Iterator<Item = Predicate<'tcx>> {
         use rustc_type_ir::{ClauseKind, PredicateKind, ProjectionClause};
         self.additional_predicates.iter().cloned().filter_map(move |p| {
@@ -145,7 +144,7 @@ pub(crate) fn extract_extern_specs_from_item<'tcx>(
     // Generics of our stub.
     let outer_subst = erased_identity_for_item(ctx.tcx, def_id);
     // Generics of the actual item.
-    let inner_generics = erased_identity_for_item(ctx.tcx, id).to_vec();
+    let inner_generics = erased_identity_for_item(ctx.tcx, id).as_slice().to_vec();
     let mut subst = vec![None; outer_subst.len()];
     let crash = || -> ! {
         ctx.crash_and_error(
@@ -229,7 +228,7 @@ fn extract_extern_item<'tcx>(
     visitor.item.unwrap()
 }
 
-type ExternItem<'tcx> = (DefId, GenericArgsRef<'tcx>, ItemKind);
+type ExternItem<'tcx> = (DefId, GenericArgs<'tcx>, ItemKind);
 
 struct ExtractExternItem<'a, 'tcx> {
     tcx: TyCtxt<'tcx>,
@@ -407,7 +406,7 @@ fn build_erased<'tcx>(
     typing_env: TypingEnv<'tcx>,
     def_id1: DefId,
     def_id2: DefId,
-    subst2: GenericArgsRef<'tcx>,
+    subst2: GenericArgs<'tcx>,
 ) -> Erasure<'tcx> {
     let sig1 = tcx.instantiate_bound_regions_with_erased(
         tcx.normalize_erasing_regions(typing_env, tcx.fn_sig(def_id1).instantiate_identity()),
@@ -491,7 +490,7 @@ pub(crate) fn extract_extern_trusted_positivity(
         bad_extern_spec()
     };
     let ty::TyKind::Adt(adt, args) = ty.kind() else { bad_extern_spec() };
-    (adt.did(), mk_trusted_positivity(positive_params, args))
+    (adt.did(), mk_trusted_positivity(positive_params, *args))
 }
 
 pub(crate) fn extract_trusted_positivity(tcx: TyCtxt, def_id: DefId) -> Option<TrustedPositivity> {
@@ -502,7 +501,7 @@ pub(crate) fn extract_trusted_positivity(tcx: TyCtxt, def_id: DefId) -> Option<T
 
 fn mk_trusted_positivity<'tcx>(
     positive_params: Vec<Symbol>,
-    args: GenericArgsRef<'tcx>,
+    args: GenericArgs<'tcx>,
 ) -> TrustedPositivity {
     let arity = args.len();
     let mut positivity = DenseBitSet::new_empty(arity);

@@ -9,7 +9,7 @@ use crate::{
     },
 };
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{EarlyBinder, GenericArgsRef, TypingEnv};
+use rustc_middle::ty::{EarlyBinder, GenericArgs, TypingEnv};
 
 pub(crate) fn normalize<'tcx>(
     ctx: &TranslationCtx<'tcx>,
@@ -34,8 +34,8 @@ impl<'a, 'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'a, 'tcx> {
         super_visit_mut_term(term, self);
         if let TermKind::Call { id, subst, args } = &mut term.kind {
             let Some(resolved) =
-                TraitResolved::resolve_item(self.ctx.tcx, self.typing_env, *id, subst)
-                    .to_opt(*id, subst)
+                TraitResolved::resolve_item(self.ctx.tcx, self.typing_env, *id, *subst)
+                    .to_opt(*id, *subst)
             else {
                 self.ctx.crash_and_error(
                     term.span,
@@ -50,13 +50,13 @@ impl<'a, 'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'a, 'tcx> {
             (*id, *subst) = resolved;
 
             if let Some(mut new_term) =
-                subst_alias(self.ctx, self.typing_env, *id, subst, args.clone())
+                subst_alias(self.ctx, self.typing_env, *id, *subst, args.clone())
             {
                 self.visit_mut_term(&mut new_term);
                 *term = new_term;
             } else {
                 term.kind =
-                    optimize_builtin(self.ctx, *id, subst, std::mem::replace(args, Box::new([])));
+                    optimize_builtin(self.ctx, *id, *subst, std::mem::replace(args, Box::new([])));
             }
         }
     }
@@ -65,7 +65,7 @@ impl<'a, 'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'a, 'tcx> {
 fn optimize_builtin<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     id: DefId,
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
     args: Box<[Term<'tcx>]>,
 ) -> TermKind<'tcx> {
     use BinOp::*;

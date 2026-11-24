@@ -7,7 +7,7 @@ use crate::{
     naming::{field_name, name},
 };
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{AdtDef, AliasTyKind, GenericArgsRef, Ty, TyCtxt, TyKind};
+use rustc_middle::ty::{AdtDef, AliasTyKind, GenericArgs, Ty, TyCtxt, TyKind};
 use rustc_span::{DUMMY_SP, Span, sym};
 use rustc_type_ir::{FloatTy, IntTy, TyKind::*, UintTy};
 use why3::{
@@ -48,7 +48,7 @@ pub(crate) fn classify_adt<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     scope: DefId,
     def: AdtDef<'tcx>,
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
 ) -> AdtKind<'tcx> {
     match ctx.intrinsic(def.did()) {
         Intrinsic::Snapshot => return AdtKind::Snapshot(subst[0].expect_ty()),
@@ -108,7 +108,7 @@ pub(crate) fn translate_ty<'tcx>(
         Int(ity) => MlT::qconstructor(names.in_pre(ity_to_prelude(ctx.tcx, *ity), "t")),
         Uint(uty) => MlT::qconstructor(names.in_pre(uty_to_prelude(ctx.tcx, *uty), "t")),
         Float(flty) => MlT::qconstructor(names.in_pre(floatty_to_prelude(*flty), "t")),
-        Adt(def, s) => match classify_adt(ctx, names.source_id(), *def, s) {
+        Adt(def, s) => match classify_adt(ctx, names.source_id(), *def, *s) {
             AdtKind::Opaque { .. }
             | AdtKind::Enum
             | AdtKind::Struct { .. }
@@ -164,7 +164,7 @@ pub(crate) fn translate_closure_ty<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     did: DefId,
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
 ) -> Vec<Decl> {
     let ty_name = names.ty_closure(did, subst).to_ident();
     let closure_subst = subst.as_closure();
@@ -227,7 +227,7 @@ pub(crate) fn translate_adtdecl<'tcx>(
     ty: Ty<'tcx>,
 ) -> Vec<Decl> {
     let TyKind::Adt(def, subst) = ty.kind() else { unreachable!() };
-    match classify_adt(ctx, names.source_id(), *def, subst) {
+    match classify_adt(ctx, names.source_id(), *def, *subst) {
         AdtKind::Namespace => {
             // Special treatment for the `Namespace` type: we must generate it after collecting all the possible variants.
             vec![]
@@ -250,21 +250,21 @@ pub(crate) fn translate_adtdecl<'tcx>(
             vec![]
         }
         AdtKind::Opaque { .. } => {
-            let ty_name = names.ty_adt(def.did(), subst).to_ident();
+            let ty_name = names.ty_adt(def.did(), *subst).to_ident();
             vec![Decl::TyDecl(TyDecl::Opaque { ty_name, ty_params: Box::new([]) })]
         }
         AdtKind::Enum => {
-            let ty_name = names.ty_adt(def.did(), subst).to_ident();
+            let ty_name = names.ty_adt(def.did(), *subst).to_ident();
             let sumrecord = SumRecord::Sum(
                 def.variants()
                     .iter()
                     .map(|var_def| ConstructorDecl {
-                        name: names.item_ident(var_def.def_id, subst),
+                        name: names.item_ident(var_def.def_id, *subst),
                         fields: var_def
                             .fields
                             .iter()
                             .map(|f| {
-                                let ty = names.normalize(f.ty(ctx.tcx, subst));
+                                let ty = names.normalize(f.ty(ctx.tcx, *subst));
                                 translate_ty(ctx, names, ctx.def_span(f.did), ty)
                             })
                             .collect(),
@@ -276,7 +276,7 @@ pub(crate) fn translate_adtdecl<'tcx>(
             })]
         }
         AdtKind::Struct { partially_opaque } => {
-            let ty_name = names.ty_adt(def.did(), subst).to_ident();
+            let ty_name = names.ty_adt(def.did(), *subst).to_ident();
 
             let fields: Box<[_]> = def
                 .non_enum_variant()
@@ -284,14 +284,14 @@ pub(crate) fn translate_adtdecl<'tcx>(
                 .iter_enumerated()
                 .filter(|(_, f)| ctx.field_is_transparent_from(f, names.source_id()))
                 .map(|(ix, f)| {
-                    let ty = names.normalize(f.ty(ctx.tcx, subst));
+                    let ty = names.normalize(f.ty(ctx.tcx, *subst));
                     FieldDecl {
-                        name: names.field(def.did(), subst, ix),
+                        name: names.field(def.did(), *subst, ix),
                         ty: translate_ty(ctx, names, ctx.def_span(f.did), ty),
                     }
                 })
                 .chain(partially_opaque.then(|| {
-                    let name = names.private_fields(def.did(), subst);
+                    let name = names.private_fields(def.did(), *subst);
                     FieldDecl { name, ty: MlT::TConstructor(Name::local(name)) }
                 }))
                 .collect();
@@ -314,7 +314,7 @@ pub(crate) fn eliminator<'tcx>(
     ctx: &Why3Generator<'tcx>,
     names: &impl Namer<'tcx>,
     variant_id: DefId,
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
 ) -> Decl {
     let adt = ctx.adt_def(ctx.parent(variant_id));
     let variant = adt.variant_with_id(variant_id);
@@ -382,7 +382,7 @@ pub(crate) fn constructor<'tcx>(
     names: &impl Namer<'tcx>,
     fields: Box<[Exp]>,
     did: DefId,
-    subst: GenericArgsRef<'tcx>,
+    subst: GenericArgs<'tcx>,
 ) -> Exp {
     match names.tcx().def_kind(did) {
         DefKind::Variant => {

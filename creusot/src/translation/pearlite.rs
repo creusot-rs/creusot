@@ -6,7 +6,7 @@ use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::{
     mir::{Mutability::*, ProjectionElem},
     ty::{
-        Const, EarlyBinder, GenericArgsRef, ParamConst, Ty, TyCtxt, TyKind, TypeFoldable,
+        Const, EarlyBinder, GenericArgs, ParamConst, Ty, TyCtxt, TyKind, TypeFoldable,
         TypeVisitable, TypingEnv,
     },
 };
@@ -174,11 +174,11 @@ pub enum TermKind<'tcx> {
     },
     ConstItem {
         id: DefId,
-        subst: GenericArgsRef<'tcx>,
+        subst: GenericArgs<'tcx>,
     },
     Call {
         id: DefId,
-        subst: GenericArgsRef<'tcx>,
+        subst: GenericArgs<'tcx>,
         args: Box<[Term<'tcx>]>,
     },
     PrivateInv {
@@ -237,13 +237,13 @@ pub enum TermKind<'tcx> {
     /// Inferred preconditions for `(item, args)`
     Precondition {
         item: DefId,
-        subst: GenericArgsRef<'tcx>,
+        subst: GenericArgs<'tcx>,
         params: Box<[Term<'tcx>]>,
     },
     /// Inferred postconditions for `(item, args)`
     Postcondition {
         item: DefId,
-        subst: GenericArgsRef<'tcx>,
+        subst: GenericArgs<'tcx>,
         params: Box<[Term<'tcx>]>,
     },
     /// Instruction to annotate a term with its span
@@ -535,7 +535,7 @@ impl<'tcx> Term<'tcx> {
     pub(crate) fn call_no_normalize(
         tcx: TyCtxt<'tcx>,
         def_id: DefId,
-        subst: GenericArgsRef<'tcx>,
+        subst: GenericArgs<'tcx>,
         args: impl IntoIterator<Item = Term<'tcx>>,
     ) -> Self {
         let ty = tcx.type_of(def_id).instantiate(tcx, subst).skip_normalization();
@@ -548,7 +548,7 @@ impl<'tcx> Term<'tcx> {
         tcx: TyCtxt<'tcx>,
         typing_env: TypingEnv<'tcx>,
         def_id: DefId,
-        subst: GenericArgsRef<'tcx>,
+        subst: GenericArgs<'tcx>,
         args: impl IntoIterator<Item = Term<'tcx>>,
     ) -> Self {
         let mut res = Self::call_no_normalize(tcx, def_id, subst, args);
@@ -695,7 +695,7 @@ impl<'tcx> Term<'tcx> {
         }
     }
 
-    pub(crate) fn const_item(id: DefId, subst: GenericArgsRef<'tcx>, ty: Ty<'tcx>) -> Self {
+    pub(crate) fn const_item(id: DefId, subst: GenericArgs<'tcx>, ty: Ty<'tcx>) -> Self {
         Term { ty, kind: TermKind::ConstItem { id, subst }, span: DUMMY_SP }
     }
 

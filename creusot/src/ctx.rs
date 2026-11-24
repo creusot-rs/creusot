@@ -22,7 +22,7 @@ use crate::{
         },
         traits::Refinement,
     },
-    util::{erased_identity_for_item, parent_module},
+    util::{caller_bounds, erased_identity_for_item, parent_module},
     validate::AnfBlock,
 };
 use creusot_args::options::Options;
@@ -46,7 +46,7 @@ use rustc_middle::{
     mir::Promoted,
     thir,
     ty::{
-        self, Clause, FieldDef, GenericArg, GenericArgsRef, ParamEnv, Predicate, Ty, TyCtxt,
+        self, Clause, FieldDef, GenericArg, GenericArgs, ParamEnv, Predicate, Ty, TyCtxt,
         TypingEnv, TypingMode, Visibility,
     },
 };
@@ -572,12 +572,11 @@ impl<'tcx> TranslationCtx<'tcx> {
             .or_else(|| inherited_extern_spec(self, def_id))
         {
             let base_predicates =
-                self.tcx.param_env(def_id).caller_bounds().into_iter().map(Clause::as_predicate);
+                caller_bounds(self.tcx, self.tcx.param_env(def_id)).map(Clause::as_predicate);
             let additional_predicates = es.predicates_for(self.tcx, subst);
             let clauses =
                 base_predicates.chain(additional_predicates).map(Predicate::expect_clause);
-            let res = ParamEnv::new(self.tcx, self.mk_clauses_from_iter(clauses));
-            normalize_param_env_or_error(self.tcx, res, ObligationCause::dummy())
+            normalize_param_env_or_error(self.tcx, clauses.collect(), ObligationCause::dummy())
         } else {
             self.tcx.param_env(def_id)
         }
@@ -848,7 +847,7 @@ pub fn crate_name(tcx: TyCtxt) -> why3::Symbol {
 pub struct Erasure<'tcx> {
     /// `DefId` of the trait method or standalone `fn` item
     /// For `#[erasure]` checking of calling functions.
-    pub def: (DefId, GenericArgsRef<'tcx>),
+    pub def: (DefId, GenericArgs<'tcx>),
     /// `true` for ghost arguments to erase
     pub erase_args: Vec<bool>,
 }
@@ -875,7 +874,7 @@ fn is_nonzero_sized<'tcx>(
                     nonzero_sized_cache,
                     inhabited_cache,
                     def,
-                    args,
+                    *args,
                 )
         }
         Tuple(tys) => {
@@ -921,7 +920,7 @@ fn is_nonzero_sized_adt<'tcx>(
     nonzero_sized_cache: &mut HashMap<Ty<'tcx>, bool>,
     inhabited_cache: &mut HashMap<Ty<'tcx>, bool>,
     def: &ty::AdtDef<'tcx>,
-    args: GenericArgsRef<'tcx>,
+    args: GenericArgs<'tcx>,
 ) -> bool {
     use rustc_type_ir::inherent::AdtDef;
     if def.is_enum() {
@@ -1003,7 +1002,7 @@ fn is_inhabited_<'tcx>(
         Adt(def, args) if def.is_box() => {
             is_inhabited_(tcx, typing_env, inhabited_cache, visited, args.type_at(0))
         }
-        Adt(def, args) => is_inhabited_adt(tcx, typing_env, inhabited_cache, visited, *def, args),
+        Adt(def, args) => is_inhabited_adt(tcx, typing_env, inhabited_cache, visited, *def, *args),
         Tuple(tys) => {
             tys.iter().all(|ty| is_inhabited_(tcx, typing_env, inhabited_cache, visited, ty))
         }
@@ -1021,7 +1020,7 @@ fn is_inhabited_adt<'tcx>(
     inhabited_cache: &HashMap<Ty<'tcx>, bool>,
     visited: &mut Vec<ty::AdtDef<'tcx>>,
     def: ty::AdtDef<'tcx>,
-    args: GenericArgsRef<'tcx>,
+    args: GenericArgs<'tcx>,
 ) -> bool {
     if visited.contains(&def) {
         return false;

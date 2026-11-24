@@ -48,7 +48,7 @@ pub fn is_resolve_trivial<'tcx>(
 
         match ty.kind() {
             TyKind::Tuple(tys) => stack.extend(*tys),
-            TyKind::Adt(def, subst) => match classify_adt(ctx, scope, *def, subst) {
+            TyKind::Adt(def, subst) => match classify_adt(ctx, scope, *def, *subst) {
                 AdtKind::Namespace
                 | AdtKind::Snapshot(_)
                 | AdtKind::Unit
@@ -62,7 +62,7 @@ pub fn is_resolve_trivial<'tcx>(
                 AdtKind::Box(ty) => stack.push(ty),
                 AdtKind::Enum | AdtKind::Struct { partially_opaque: false } => stack.extend(
                     def.all_fields()
-                        .map(|f| ctx.normalize_erasing_regions(typing_env, f.ty(ctx.tcx, subst))),
+                        .map(|f| ctx.normalize_erasing_regions(typing_env, f.ty(ctx.tcx, *subst))),
                 ),
             },
             TyKind::Closure(_, subst) => stack.extend(subst.as_closure().upvar_tys()),
@@ -106,7 +106,7 @@ pub(crate) fn structural_resolve<'tcx>(
     }
 
     match ty.kind() {
-        TyKind::Adt(adt, subst) => match classify_adt(ctx, names.source_id(), *adt, subst) {
+        TyKind::Adt(adt, subst) => match classify_adt(ctx, names.source_id(), *adt, *subst) {
             AdtKind::Box(ty) => {
                 Ok(ctx.resolve(names.source_id(), names.typing_env(), subject.coerce(ty)))
             }
@@ -119,7 +119,7 @@ pub(crate) fn structural_resolve<'tcx>(
                     let mut exp = Some(Term::true_(ctx.tcx));
                     let fields = var.fields.iter_enumerated().map(|(ix, f)| {
                         let sym = Ident::fresh_local(&format!("x{}", ix.as_usize()));
-                        let fty = names.normalize(f.ty(ctx.tcx, subst));
+                        let fty = names.normalize(f.ty(ctx.tcx, *subst));
                         exp = Some(exp.take().unwrap().conj(ctx.resolve(
                             names.source_id(),
                             names.typing_env(),
@@ -135,7 +135,7 @@ pub(crate) fn structural_resolve<'tcx>(
                 let mut exp = Term::true_(ctx.tcx);
                 for (ix, f) in adt.non_enum_variant().fields.iter_enumerated() {
                     if ctx.field_is_transparent_from(f, names.source_id()) {
-                        let fty = names.normalize(f.ty(ctx.tcx, subst));
+                        let fty = names.normalize(f.ty(ctx.tcx, *subst));
                         exp = exp.conj(ctx.resolve(
                             names.source_id(),
                             names.typing_env(),
@@ -252,7 +252,7 @@ pub(crate) fn elaborate_resolve_def<'tcx>(
     let mut use_axiom = use_impl;
     if let TyKind::Adt(def, subst) = ty.kind()
         && matches!(
-            classify_adt(ctx, names.source_id(), *def, subst),
+            classify_adt(ctx, names.source_id(), *def, *subst),
             AdtKind::Opaque { .. } | AdtKind::Struct { .. } | AdtKind::Enum
         )
     {

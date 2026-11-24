@@ -113,7 +113,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                     Tuple => RValue::Tuple(fields),
                     Adt(adt, varix, subst, _, _) => {
                         let variant = self.ctx.adt_def(*adt).variant(*varix).def_id;
-                        RValue::Constructor(variant, subst, fields)
+                        RValue::Constructor(variant, *subst, fields)
                     }
                     Closure(def_id, subst) => {
                         if is_variant(self.tcx(), *def_id) || is_before_loop(self.tcx(), *def_id) {
@@ -152,7 +152,7 @@ impl<'tcx> BodyTranslator<'_, 'tcx> {
                         } else if is_spec(self.tcx(), *def_id) || is_erasure(self.tcx(), *def_id) {
                             return;
                         } else {
-                            RValue::Constructor(*def_id, subst, fields)
+                            RValue::Constructor(*def_id, *subst, fields)
                         }
                     }
                     Array(_) => RValue::Array(fields),

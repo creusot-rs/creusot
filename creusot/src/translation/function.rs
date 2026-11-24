@@ -295,7 +295,7 @@ impl<'body, 'tcx> BodyTranslator<'body, 'tcx> {
             && let Some(vi) = place_ty.variant_index
             && adt_def.variant(vi).fields.iter().all(|f| {
                 self.skip_resolve_type(
-                    self.tcx().normalize_erasing_regions(self.typing_env, f.ty(self.tcx(), subst)),
+                    self.tcx().normalize_erasing_regions(self.typing_env, f.ty(self.tcx(), *subst)),
                 )
             })
         {

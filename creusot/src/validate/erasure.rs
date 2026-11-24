@@ -383,7 +383,7 @@ impl<'tcx> AnfOp<'tcx> {
         Self::by_value(OpTag::Call(fun_id, subst), args)
     }
 
-    fn const_(const_id: DefId, subst: ty::GenericArgsRef<'tcx>) -> Self {
+    fn const_(const_id: DefId, subst: ty::GenericArgs<'tcx>) -> Self {
         Self::by_value(OpTag::Const(const_id, subst.into()), vec![])
     }
 
@@ -1009,7 +1009,7 @@ impl<'a, 'tcx> AnfBuilder<'a, 'tcx> {
                 }
                 AnfValue::Ctor(Ctor::Adt(adt_def.did(), *variant_index), args)
             }
-            NamedConst { def_id, args, .. } => bind_var(stmts, AnfOp::const_(*def_id, args)),
+            NamedConst { def_id, args, .. } => bind_var(stmts, AnfOp::const_(*def_id, *args)),
             PointerCoercion { cast: MutToConstPointer, source, .. } => {
                 self.a_normal_form_expr(*source, stmts)?.0
             }

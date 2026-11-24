@@ -10,7 +10,7 @@ extern crate log;
 use creusot::callbacks::*;
 use creusot_args::{CREUSOT_RUSTC_ARGS, options::CreusotArgs};
 use rustc_driver::compiler_entrypoint;
-use rustc_session::{EarlyDiagCtxt, config::ErrorOutputType};
+use rustc_session::{EarlyDiagCtxt, output::ErrorOutputType};
 use std::env;
 
 const BUG_REPORT_URL: &str = "https://github.com/creusot-rs/creusot/issues/new";

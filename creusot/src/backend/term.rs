@@ -268,7 +268,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 }
             }
             TermKind::Call { id, subst, args, .. } => {
-                let e = Exp::Var(self.names.item(*id, subst))
+                let e = Exp::Var(self.names.item(*id, *subst))
                     .app(args.into_iter().map(|arg| self.lower_term(arg)));
                 if is_builtin_ascription(self.ctx.tcx, *id) {
                     e.ascribe(self.lower_ty(term.ty))
@@ -289,7 +289,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let TyKind::Adt(adt, subst) = term.ty.kind() else { unreachable!() };
                 use crate::backend::ty::AdtKind::*;
                 if let Opaque { .. } | Struct { partially_opaque: true } =
-                    classify_adt(self.ctx, self.names.source_id(), *adt, subst)
+                    classify_adt(self.ctx, self.names.source_id(), *adt, *subst)
                 {
                     // This can happen (bypassing the opacity check) due to translating
                     // an external constant, or evaluating a constant with private fields
@@ -313,7 +313,7 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                         .emit();
                 }
                 let fields = fields.into_iter().map(|f| self.lower_term(f)).collect();
-                constructor(self.names, fields, adt.variant(*variant).def_id, subst)
+                constructor(self.names, fields, adt.variant(*variant).def_id, *subst)
             }
             TermKind::Cur { term } => {
                 assert!(term.ty.is_mutable_ptr() && term.ty.is_ref());
@@ -377,10 +377,10 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
 
                 match lhs.ty.kind() {
                     TyKind::Closure(did, substs) => {
-                        lhs_low.field(Name::local(self.names.field(*did, substs, *idx)))
+                        lhs_low.field(Name::local(self.names.field(*did, *substs, *idx)))
                     }
                     TyKind::Adt(def, subst) => {
-                        lhs_low.field(Name::local(self.names.field(def.did(), subst, *idx)))
+                        lhs_low.field(Name::local(self.names.field(def.did(), *subst, *idx)))
                     }
                     TyKind::Tuple(tys) if tys.len() == 1 => lhs_low,
                     TyKind::Tuple(tys) => {
@@ -425,13 +425,13 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
             TermKind::Assert { .. } => Exp::unit(),
             TermKind::Precondition { item, subst, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
-                let ident: Ident = self.names.item(*item, subst).to_ident();
+                let ident: Ident = self.names.item(*item, *subst).to_ident();
                 let name = Name::Local(ident, Some(why3::Symbol::intern("'pre")));
                 Exp::Var(name).app(params)
             }
             TermKind::Postcondition { item, subst, params } => {
                 let params: Vec<_> = params.iter().map(|p| self.lower_term(p)).collect();
-                let ident: Ident = self.names.item(*item, subst).to_ident();
+                let ident: Ident = self.names.item(*item, *subst).to_ident();
                 let name = Name::Local(ident, Some(why3::Symbol::intern("'post'return")));
                 Exp::Var(name).app(params)
             }
@@ -440,11 +440,11 @@ impl<'tcx, N: Namer<'tcx>> Lower<'_, 'tcx, N> {
                 let TyKind::Adt(adt, subst) = term.ty.kind() else { unreachable!() };
                 let arg = self
                     .lower_term(term)
-                    .field(Name::local(self.names.private_fields(adt.did(), subst)));
+                    .field(Name::local(self.names.private_fields(adt.did(), *subst)));
                 let f = if let TermKind::PrivateInv { .. } = tk {
-                    self.names.private_ty_inv(adt.did(), subst)
+                    self.names.private_ty_inv(adt.did(), *subst)
                 } else {
-                    self.names.private_resolve(adt.did(), subst)
+                    self.names.private_resolve(adt.did(), *subst)
                 };
                 Exp::var(f).app([arg])
             }

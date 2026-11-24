@@ -20,7 +20,7 @@ use rustc_attr_ir::AttrArgs;
 use rustc_hir::{HirId, Safety, def::DefKind, def_id::DefId};
 use rustc_macros::{TyDecodable, TyEncodable, TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
-    EarlyBinder, GenericArg, GenericArgsRef, Ty, TyCtxt, TyKind, TypingEnv, Unnormalized,
+    EarlyBinder, GenericArg, GenericArgs, Ty, TyCtxt, TyKind, TypingEnv, Unnormalized,
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::ClosureKind;
@@ -372,7 +372,7 @@ pub(crate) fn contract_clauses_of(
 pub(crate) fn inherited_extern_spec<'tcx, 'a>(
     ctx: &'a TranslationCtx<'tcx>,
     def_id: DefId,
-) -> Option<(&'a ExternSpec<'tcx>, GenericArgsRef<'tcx>)> {
+) -> Option<(&'a ExternSpec<'tcx>, GenericArgs<'tcx>)> {
     if !ctx.non_creusot_crate(def_id.krate) {
         return None;
     }
@@ -476,7 +476,7 @@ impl<'tcx> PreSignature<'tcx> {
     pub(crate) fn instantiate_and_normalize(
         self,
         ctx: &TranslationCtx<'tcx>,
-        subst: GenericArgsRef<'tcx>,
+        subst: GenericArgs<'tcx>,
         typing_env: TypingEnv<'tcx>,
     ) -> Self {
         let mut sig =

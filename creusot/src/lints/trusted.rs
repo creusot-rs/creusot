@@ -11,14 +11,14 @@ declare_tool_lint! {
     pub creusot::TRUSTED_CODE,
     Allow,
     "`#[trusted]` adds additionnal unproved axioms",
-    report_in_external_macro: true
+    @report_in_external_macro = true
 }
 
 declare_lint_pass!(TrustedCode => [TRUSTED_CODE]);
 impl<'tcx> LateLintPass<'tcx> for TrustedCode {
     fn check_attribute(&mut self, cx: &rustc_lint::LateContext<'tcx>, attr: &'tcx Attribute) {
         let expected = ["creusot", "decl", "trusted"];
-        let Attribute::Unparsed(attr) = attr else { return };
+        let Attribute::Tool { item: attr, .. } = attr else { return };
         let s = &attr.path.segments;
         let is_trusted =
             s.len() == expected.len() && s.iter().zip(expected).all(|(a, b)| a.as_str() == b);

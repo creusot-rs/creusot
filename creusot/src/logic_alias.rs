@@ -30,7 +30,7 @@ use crate::{
     translation::pearlite::{Substable, Term, TermKind},
 };
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{EarlyBinder, GenericArgsRef, TypingEnv};
+use rustc_middle::ty::{EarlyBinder, GenericArgs, TypingEnv};
 use std::collections::HashMap;
 
 pub(crate) fn get_logic_id(ctx: &TranslationCtx, def_id: DefId) -> Option<DefId> {
@@ -45,7 +45,7 @@ pub(crate) fn subst_call<'tcx, Args>(
     ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
     prog_id: DefId,
-    prog_subst: GenericArgsRef<'tcx>,
+    prog_subst: GenericArgs<'tcx>,
     prog_args: Args,
 ) -> Option<Term<'tcx>>
 where

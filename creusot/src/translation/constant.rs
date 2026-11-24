@@ -164,7 +164,7 @@ fn try_scalar_to_literal<'tcx>(
 /// ```
 pub fn try_const_to_term<'tcx>(
     def_id: DefId,
-    subst: ty::GenericArgsRef<'tcx>,
+    subst: ty::GenericArgs<'tcx>,
     ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
     source_id: DefId,

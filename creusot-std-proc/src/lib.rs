@@ -12,6 +12,11 @@
 
 use proc_macro::TokenStream as TS1;
 
+// The `creusot-deps` feature enables these dependencies even when they are unused,
+// so that Rust builds and Creusot builds share the same dependency graph.
+#[cfg(all(feature = "creusot-deps", not(feature = "creusot")))]
+use {pearlite_syn as _, uuid as _};
+
 mod common;
 
 /// Macro implementations used by `cargo creusot`.

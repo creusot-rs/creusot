@@ -6,7 +6,7 @@ use crate::{
 };
 use creusot_args::options::SpanMode;
 use rustc_hir::{def::DefKind, def_id::DefId};
-use rustc_middle::ty::{GenericArgs, GenericArgsRef, Ty, TyCtxt, TypingEnv};
+use rustc_middle::ty::{GenericArgs, Ty, TyCtxt, TypingEnv};
 use rustc_span::Span;
 use std::{
     ops::{Deref, DerefMut},
@@ -147,7 +147,7 @@ impl<'tcx> Why3Generator<'tcx> {
         &self,
         typing_env: TypingEnv<'tcx>,
         ty: Ty<'tcx>,
-    ) -> (DefId, GenericArgsRef<'tcx>) {
+    ) -> (DefId, GenericArgs<'tcx>) {
         let wf_relation = Intrinsic::WellFoundedRelation.get(self);
         assert_eq!(GenericArgs::identity_for_item(self.tcx, wf_relation).len(), 1); // sanity check
         let subst = self.mk_args(&[ty.into()]);

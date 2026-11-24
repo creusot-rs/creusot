@@ -21,8 +21,7 @@ use rustc_abi::{FieldIdx, VariantIdx};
 use rustc_hir::{def::DefKind, def_id::DefId};
 use rustc_macros::{TypeFoldable, TypeVisitable};
 use rustc_middle::ty::{
-    GenericArgsRef, List, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitableExt, TypingEnv,
-    Unnormalized,
+    GenericArgs, List, Ty, TyCtxt, TyKind, TypeFoldable, TypeVisitableExt, TypingEnv, Unnormalized,
 };
 use rustc_span::Span;
 use rustc_type_ir::IsRigid;
@@ -69,27 +68,27 @@ pub enum PreMod {
 ///     - module_context::dependencies adds nodes in the dependency graph,
 ///     - module_context::elaborator::adds nodes in the dependency graph, and edges to the current item
 pub(crate) trait Namer<'tcx> {
-    fn item(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
+    fn item(&self, def_id: DefId, subst: GenericArgs<'tcx>) -> Name {
         self.dependency(Dependency::Item(def_id, subst)).name()
     }
 
-    fn item_ident(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
+    fn item_ident(&self, def_id: DefId, subst: GenericArgs<'tcx>) -> Ident {
         self.dependency(Dependency::Item(def_id, subst)).ident()
     }
 
-    fn ty_adt(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
+    fn ty_adt(&self, def_id: DefId, subst: GenericArgs<'tcx>) -> Name {
         self.ty(Ty::new_adt(self.tcx(), self.tcx().adt_def(def_id), subst))
     }
 
-    fn ty_projection(&self, rigid: IsRigid, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
+    fn ty_projection(&self, rigid: IsRigid, def_id: DefId, subst: GenericArgs<'tcx>) -> Name {
         self.ty(Ty::new_projection(self.tcx(), rigid, def_id, subst))
     }
 
-    fn ty_closure(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
+    fn ty_closure(&self, def_id: DefId, subst: GenericArgs<'tcx>) -> Name {
         self.ty(Ty::new_closure(self.tcx(), def_id, subst))
     }
 
-    fn ty_opaque(&self, rigid: IsRigid, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Name {
+    fn ty_opaque(&self, rigid: IsRigid, def_id: DefId, subst: GenericArgs<'tcx>) -> Name {
         self.ty(Ty::new_opaque(self.tcx(), rigid, def_id, subst))
     }
 
@@ -103,7 +102,7 @@ pub(crate) trait Namer<'tcx> {
     /// * `def_id` - The id of the type or closure being projected
     /// * `subst` - Substitution that type is being accessed at
     /// * `ix` - The field in that constructor being accessed.
-    fn field(&self, def_id: DefId, subst: GenericArgsRef<'tcx>, ix: FieldIdx) -> Ident {
+    fn field(&self, def_id: DefId, subst: GenericArgs<'tcx>, ix: FieldIdx) -> Ident {
         let node = match self.tcx().def_kind(def_id) {
             DefKind::Closure => {
                 self.ty_closure(def_id, subst);
@@ -126,7 +125,7 @@ pub(crate) trait Namer<'tcx> {
         self.dependency(Dependency::TupleField(args, idx)).ident()
     }
 
-    fn eliminator(&self, def_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
+    fn eliminator(&self, def_id: DefId, subst: GenericArgs<'tcx>) -> Ident {
         self.dependency(Dependency::Eliminator(def_id, subst)).ident()
     }
 
@@ -134,15 +133,15 @@ pub(crate) trait Namer<'tcx> {
         self.dependency(Dependency::DynCast(source, target)).ident()
     }
 
-    fn private_fields(&self, struct_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
+    fn private_fields(&self, struct_id: DefId, subst: GenericArgs<'tcx>) -> Ident {
         self.dependency(Dependency::PrivateFields(struct_id, subst)).ident()
     }
 
-    fn private_ty_inv(&self, struct_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
+    fn private_ty_inv(&self, struct_id: DefId, subst: GenericArgs<'tcx>) -> Ident {
         self.dependency(Dependency::PrivateTyInv(struct_id, subst)).ident()
     }
 
-    fn private_resolve(&self, struct_id: DefId, subst: GenericArgsRef<'tcx>) -> Ident {
+    fn private_resolve(&self, struct_id: DefId, subst: GenericArgs<'tcx>) -> Ident {
         self.dependency(Dependency::PrivateResolve(struct_id, subst)).ident()
     }
 
@@ -220,7 +219,7 @@ pub(crate) trait Namer<'tcx> {
     /// The main item being translated
     fn source_id(&self) -> DefId;
 
-    fn source_subst(&self) -> GenericArgsRef<'tcx> {
+    fn source_subst(&self) -> GenericArgs<'tcx> {
         erased_identity_for_item(self.tcx(), self.source_id())
     }
 

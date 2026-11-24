@@ -14,7 +14,7 @@ use rustc_hir::def_id::{CrateNum, DefId, DefPathHash, LOCAL_CRATE, LocalDefId};
 use rustc_index::bit_set::DenseBitSet;
 use rustc_macros::{TyDecodable, TyEncodable};
 use rustc_middle::ty::TyCtxt;
-use rustc_session::config::OutputType;
+use rustc_session::output::OutputType;
 use rustc_span::Symbol;
 use std::{
     collections::{HashMap, HashSet},

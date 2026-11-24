@@ -13,7 +13,7 @@ use rustc_middle::{
         self, BasicBlock, BinOp, Local, OUTERMOST_SOURCE_SCOPE, PlaceTy, Promoted, SourceScope,
         UnOp, VarDebugInfoContents,
     },
-    ty::{AdtDef, GenericArgsRef, Ty, TyCtxt, TypeFoldable, TypeVisitable},
+    ty::{AdtDef, GenericArgs, Ty, TyCtxt, TypeFoldable, TypeVisitable},
 };
 use rustc_span::Span;
 use std::collections::HashMap;
@@ -98,7 +98,7 @@ pub enum StatementKind<'tcx> {
         check: bool,  // Whether we generate a VC for this assertion
         assume: bool, // Whether this assertion stays in context
     },
-    Call(Place<'tcx>, DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>, Span),
+    Call(Place<'tcx>, DefId, GenericArgs<'tcx>, Box<[Operand<'tcx>]>, Span),
 }
 
 #[derive(Clone, Debug, TypeFoldable, TypeVisitable)]
@@ -112,7 +112,7 @@ pub enum RValue<'tcx> {
     Operand(Operand<'tcx>),
     BinOp(BinOp, Operand<'tcx>, Operand<'tcx>),
     UnaryOp(UnOp, Operand<'tcx>),
-    Constructor(DefId, GenericArgsRef<'tcx>, Box<[Operand<'tcx>]>),
+    Constructor(DefId, GenericArgs<'tcx>, Box<[Operand<'tcx>]>),
     Cast(Operand<'tcx>, Ty<'tcx>, Ty<'tcx>),
     Tuple(Box<[Operand<'tcx>]>),
     Array(Box<[Operand<'tcx>]>),
@@ -129,9 +129,9 @@ pub enum Operand<'tcx> {
     /// The Boolean is true if we want to generate a VC for this term (for `snapshot!`).
     Term(Term<'tcx>, bool),
     /// Either:
-    /// - Inline `const { ... }` expressions (`Option<Promoted>` is `None` and `Option<GenericArgsRef>` is `Some`)
-    /// - Promoted constants (`Option<Promoted>` is `Some` and `Option<GenericArgsRef>` is `None`)
-    InlineConst(DefId, Option<Promoted>, Option<GenericArgsRef<'tcx>>, Ty<'tcx>),
+    /// - Inline `const { ... }` expressions (`Option<Promoted>` is `None` and `Option<GenericArgs>` is `Some`)
+    /// - Promoted constants (`Option<Promoted>` is `Some` and `Option<GenericArgs>` is `None`)
+    InlineConst(DefId, Option<Promoted>, Option<GenericArgs<'tcx>>, Ty<'tcx>),
 }
 
 impl<'tcx> Operand<'tcx> {
@@ -139,7 +139,7 @@ impl<'tcx> Operand<'tcx> {
         Operand::Term(t, false)
     }
 
-    pub fn inline_const(def_id: DefId, subst: GenericArgsRef<'tcx>, ty: Ty<'tcx>) -> Self {
+    pub fn inline_const(def_id: DefId, subst: GenericArgs<'tcx>, ty: Ty<'tcx>) -> Self {
         Operand::InlineConst(def_id, None, Some(subst), ty)
     }
 
@@ -185,7 +185,7 @@ pub enum Branches<'tcx> {
         #[type_visitable(ignore)]
         #[type_foldable(identity)]
         AdtDef<'tcx>,
-        GenericArgsRef<'tcx>,
+        GenericArgs<'tcx>,
         #[type_visitable(ignore)]
         #[type_foldable(identity)]
         Box<[(VariantIdx, BasicBlock)]>,
