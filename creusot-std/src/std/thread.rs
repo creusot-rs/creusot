@@ -119,6 +119,8 @@ impl<'scope, 'env, 'a, F: for<'scope2> FnOnce(&Scope<'scope2, 'env>) -> T, T>
 
     #[trusted]
     #[trusted(ghost)]
+    #[requires(self.precondition(_args))]
+    #[ensures(self.postcondition_once(_args, result))]
     extern "rust-call" fn call_once(self, _args: (&'scope ::std::thread::Scope,)) -> T {
         todo!() // self.0(args.0)
     }
@@ -130,6 +132,8 @@ impl<'scope, F: FnOnce(Ghost<Tokens>) -> T + 'scope, T> FnOnce<()> for ErasedSco
 
     #[trusted]
     #[trusted(ghost)]
+    #[requires(self.precondition(()))]
+    #[ensures(self.postcondition_once((), result))]
     extern "rust-call" fn call_once(self, _args: ()) -> T {
         todo!() // self.0(args.0)
     }

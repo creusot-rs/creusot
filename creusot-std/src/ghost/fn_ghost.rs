@@ -97,6 +97,8 @@ impl<'a, T: 'a, A: ErasedGhostFnArg, R> FnOnce<(&mut A::Ty<'a, T>,)> for ErasedG
 
     #[trusted]
     #[trusted(ghost)]
+    #[requires(self.precondition(_args))]
+    #[ensures(self.postcondition_once(_args, result))]
     extern "rust-call" fn call_once(self, _args: (&mut A::Ty<'a, T>,)) -> R {
         unimplemented!()
     }

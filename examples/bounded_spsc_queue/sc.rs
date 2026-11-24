@@ -1,3 +1,5 @@
+// TIME 2 DEPTH 7
+
 // Single-producer single-consumer bounded queue, in the sequentially consistent memory model.
 //
 // Translated from the Verus version:
