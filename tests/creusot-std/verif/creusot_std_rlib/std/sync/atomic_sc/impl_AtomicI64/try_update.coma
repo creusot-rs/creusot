@@ -4,6 +4,8 @@ use creusot.prelude.Any
 use creusot.int.Int64
 use creusot.prelude.MutBorrow
 
+type t_Ordering = Relaxed | Release | Acquire | AcqRel | SeqCst
+
 type t_Committer_AtomicI64_i64_SeqCst_unit
 
 let closure3 [@coma:extspec] (self: ()) (_0: t_Committer_AtomicI64_i64_SeqCst_unit) (return (x: ())) = bb0
@@ -66,9 +68,11 @@ predicate postcondition_once_FnGhostWrapper_closure3 (self: t_FnGhostWrapper_clo
 
 meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure3
 
-let load_FnGhostWrapper_closure3 (self: t_AtomicI64) (f: t_FnGhostWrapper_closure3) (return (x: Int64.t)) =
+let load_FnGhostWrapper_closure3 (self: t_AtomicI64) (order: t_Ordering) (f: t_FnGhostWrapper_closure3)
+  (return (x: Int64.t)) =
 {[@stop_split] [@expl:load_FnGhostWrapper_closure3 requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicI64 self)
-  /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicI64_i64_SeqCst_unit. not shot_store_AtomicI64 c
+  /\ ([@stop_split] [@expl:load requires #0] order = SeqCst)
+  /\ ([@stop_split] [@expl:load requires #1] forall c: t_Committer_AtomicI64_i64_SeqCst_unit. not shot_store_AtomicI64 c
     -> ward_AtomicI64 c = self -> precondition_FnGhostWrapper_closure3 f c)}
   any
   [ return (result: Int64.t) ->
@@ -428,28 +432,28 @@ predicate postcondition_once_FnGhostWrapper_closure9 (self: t_FnGhostWrapper_clo
 meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure9
 
 let compare_exchange_weak_FnGhostWrapper_closure9 (self: t_AtomicI64) (current': Int64.t) (new: Int64.t)
-  (f: t_FnGhostWrapper_closure9) (return (x: t_Result_i64_i64)) =
+  (success: t_Ordering) (failure: t_Ordering) (f: t_FnGhostWrapper_closure9) (return (x: t_Result_i64_i64)) =
 {[@stop_split] [@expl:compare_exchange_weak_FnGhostWrapper_closure9 requires] ([@stop_split] [@expl:compare_exchange_weak 'self' type invariant] inv_ref_AtomicI64 self)
   /\ ([@stop_split] [@expl:compare_exchange_weak 'f' type invariant] inv_Ghost_FnGhostWrapper_closure9 f)
-  /\ ([@stop_split] [@expl:compare_exchange_weak requires #0] forall c: MutBorrow.t t_Committer_AtomicI64_i64_SeqCst_SeqCst. not shot_store_AtomicI64'0 c.current
+  /\ ([@stop_split] [@expl:compare_exchange_weak requires #0] success = SeqCst /\ failure = SeqCst)
+  /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: MutBorrow.t t_Committer_AtomicI64_i64_SeqCst_SeqCst. not shot_store_AtomicI64'0 c.current
       -> ward_AtomicI64'0 c.current = self
       -> deep_model_i64 (val_load_AtomicI64'0 c.current) = deep_model_i64 current'
       -> val_store_AtomicI64 c.current = new
       -> precondition_FnGhostWrapper_closure9 f (Ok c)
       /\ (postcondition_once_FnGhostWrapper_closure9 f (Ok c) () -> shot_store_AtomicI64'0 c.final))
-  /\ ([@stop_split] [@expl:compare_exchange_weak requires #1] forall c: t_Committer_AtomicI64_i64_SeqCst_unit. not shot_store_AtomicI64 c
+  /\ ([@stop_split] [@expl:compare_exchange_weak requires #2] forall c: t_Committer_AtomicI64_i64_SeqCst_unit. not shot_store_AtomicI64 c
     -> ward_AtomicI64 c = self -> precondition_FnGhostWrapper_closure9 f (Err c))}
   any
-  [ return (result: t_Result_i64_i64) -> {[@stop_split] [@expl:compare_exchange_weak ensures] match result with
-      | Ok'0 result'0 -> exists c: MutBorrow.t t_Committer_AtomicI64_i64_SeqCst_SeqCst. not shot_store_AtomicI64'0 c.current
+  [ return (result: t_Result_i64_i64) ->
+  {[@stop_split] [@expl:compare_exchange_weak ensures] (exists c: MutBorrow.t t_Committer_AtomicI64_i64_SeqCst_SeqCst. not shot_store_AtomicI64'0 c.current
         /\ ward_AtomicI64'0 c.current = self
         /\ deep_model_i64 (val_load_AtomicI64'0 c.current) = deep_model_i64 current'
         /\ val_store_AtomicI64 c.current = new
-        /\ result'0 = val_load_AtomicI64'0 c.current /\ postcondition_once_FnGhostWrapper_closure9 f (Ok c) ()
-      | Err'0 result'0 -> exists c: t_Committer_AtomicI64_i64_SeqCst_unit. not shot_store_AtomicI64 c
-        /\ ward_AtomicI64 c = self
-        /\ result'0 = val_load_AtomicI64 c /\ postcondition_once_FnGhostWrapper_closure9 f (Err c) ()
-      end}
+        /\ result = Ok'0 (val_load_AtomicI64'0 c.current) /\ postcondition_once_FnGhostWrapper_closure9 f (Ok c) ())
+    \/ (exists c: t_Committer_AtomicI64_i64_SeqCst_unit. not shot_store_AtomicI64 c
+      /\ ward_AtomicI64 c = self
+      /\ result = Err'0 (val_load_AtomicI64 c) /\ postcondition_once_FnGhostWrapper_closure9 f (Err c) ())}
     (! return {result}) ]
 
 let elim_Err (_x: t_Result_i64_i64) (return (f0'2: Int64.t)) = any
@@ -504,16 +508,17 @@ let try_update_F (self: t_AtomicI64) (f: t_F) (g: t_G) (return (x: t_Result_i64_
     -> precondition_G g c /\ (postcondition_once_G g c () -> shot_store_AtomicI64'0 c.final))}
   (! bb0
   [ bb0 = s0
-    [ s0 = [ &_18 <- () ] s1
-    | s1 = __new_closure3 {_18} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_17 <- _x ] s2)
-    | s2 = new_FnGhostWrapper_closure3 {_17} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_16 <- _x ] s3)
-    | s3 = load_FnGhostWrapper_closure3 {self} {_16} (fun (_x: Int64.t) -> [ &prev <- _x ] s4)
-    | s4 = [ &f_snap <- f ] s5
-    | s5 = [ &g_snap <- g ] s6
-    | s6 = into_inner_G {g} (fun (_x: t_G) -> [ &_27 <- _x ] s7)
-    | s7 = [ &_26 <- Some _27 ] s8
-    | s8 = new_Option_G {_26} (fun (_x: t_Option_G) -> [ &g'0 <- _x ] s9)
-    | s9 = bb9 ]
+    [ s0 = [ &_16 <- SeqCst ] s1
+    | s1 = [ &_19 <- () ] s2
+    | s2 = __new_closure3 {_19} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_18 <- _x ] s3)
+    | s3 = new_FnGhostWrapper_closure3 {_18} (fun (_x: t_FnGhostWrapper_closure3) -> [ &_17 <- _x ] s4)
+    | s4 = load_FnGhostWrapper_closure3 {self} {_16} {_17} (fun (_x: Int64.t) -> [ &prev <- _x ] s5)
+    | s5 = [ &f_snap <- f ] s6
+    | s6 = [ &g_snap <- g ] s7
+    | s7 = into_inner_G {g} (fun (_x: t_G) -> [ &_28 <- _x ] s8)
+    | s8 = [ &_27 <- Some _28 ] s9
+    | s9 = new_Option_G {_27} (fun (_x: t_Option_G) -> [ &g'0 <- _x ] s10)
+    | s10 = bb9 ]
   | bb9 = bb9
     [ bb9 = {[@expl:inferred invariant: type invariant] inv_Ghost_Option_G g'0}
       {[@expl:inferred invariant: type invariant] inv_F f}
@@ -521,25 +526,27 @@ let try_update_F (self: t_AtomicI64) (f: t_F) (g: t_G) (return (x: t_Result_i64_
       {[@expl:loop invariant #1] hist_inv_F f_snap f}
       (! s0)
       [ s0 = MutBorrow.borrow_mut <t_F> {f}
-          (fun (_bor: MutBorrow.t t_F) -> [ &_39 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
+          (fun (_bor: MutBorrow.t t_F) -> [ &_40 <- _bor ] -{inv_F _bor.final}- [ &f <- _bor.final ] s1)
         [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
-      | s1 = [ &_40 <- prev ] s2
-      | s2 = call_mut_F {_39} {_40} (fun (_x: t_Option_i64) -> [ &_38 <- _x ] s3)
-      | s3 = any [ br0 -> {_38 = None'0} (! bb21) | br1 (x0: Int64.t) -> {_38 = Some'0 x0} (! bb13) ] ]
+      | s1 = [ &_41 <- prev ] s2
+      | s2 = call_mut_F {_40} {_41} (fun (_x: t_Option_i64) -> [ &_39 <- _x ] s3)
+      | s3 = any [ br0 -> {_39 = None'0} (! bb21) | br1 (x0: Int64.t) -> {_39 = Some'0 x0} (! bb13) ] ]
       [ bb13 = s0
-        [ s0 = elim_Some {_38} (fun (r0: Int64.t) -> [ &next <- r0 ] s1)
-        | s1 = MutBorrow.borrow_mut <t_Option_G> {g'0}
+        [ s0 = elim_Some {_39} (fun (r0: Int64.t) -> [ &next <- r0 ] s1)
+        | s1 = [ &_49 <- SeqCst ] s2
+        | s2 = [ &_50 <- SeqCst ] s3
+        | s3 = MutBorrow.borrow_mut <t_Option_G> {g'0}
             (fun (_bor: MutBorrow.t t_Option_G) ->
-              [ &_51 <- _bor ] -{inv_Ghost_Option_G _bor.final}-
-              [ &g'0 <- _bor.final ] s2) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_G g'0} any) ]
-        | s2 = [ &_50 <- { c0 = _51 } ] s3
-        | s3 = __new_closure9 {_50} (fun (_x: t_FnGhostWrapper_closure9) -> [ &_49 <- _x ] s4)
-        | s4 = new_FnGhostWrapper_closure9 {_49} (fun (_x: t_FnGhostWrapper_closure9) -> [ &_48 <- _x ] s5)
-        | s5 = compare_exchange_weak_FnGhostWrapper_closure9 {self} {prev} {next} {_48}
-            (fun (_x: t_Result_i64_i64) -> [ &_44 <- _x ] s6)
-        | s6 = any [ br0 (x0: Int64.t) -> {_44 = Ok'0 x0} (! bb18) | br1 (x0: Int64.t) -> {_44 = Err'0 x0} (! bb19) ] ]
+              [ &_54 <- _bor ] -{inv_Ghost_Option_G _bor.final}-
+              [ &g'0 <- _bor.final ] s4) [ _ck -> (! {[@expl:type invariant] inv_Ghost_Option_G g'0} any) ]
+        | s4 = [ &_53 <- { c0 = _54 } ] s5
+        | s5 = __new_closure9 {_53} (fun (_x: t_FnGhostWrapper_closure9) -> [ &_52 <- _x ] s6)
+        | s6 = new_FnGhostWrapper_closure9 {_52} (fun (_x: t_FnGhostWrapper_closure9) -> [ &_51 <- _x ] s7)
+        | s7 = compare_exchange_weak_FnGhostWrapper_closure9 {self} {prev} {next} {_49} {_50} {_51}
+            (fun (_x: t_Result_i64_i64) -> [ &_45 <- _x ] s8)
+        | s8 = any [ br0 (x0: Int64.t) -> {_45 = Ok'0 x0} (! bb18) | br1 (x0: Int64.t) -> {_45 = Err'0 x0} (! bb19) ] ]
       | bb19 = s0
-        [ s0 = elim_Err {_44} (fun (r0: Int64.t) -> [ &next_prev <- r0 ] s1)
+        [ s0 = elim_Err {_45} (fun (r0: Int64.t) -> [ &next_prev <- r0 ] s1)
         | s1 = [ &prev <- next_prev ] s2
         | s2 = bb9 ] ] ]
   | bb21 = s0
@@ -554,7 +561,7 @@ let try_update_F (self: t_AtomicI64) (f: t_F) (g: t_G) (return (x: t_Result_i64_
     | s1 = -{resolve_Ghost_Option_G'0 g'0}- s2
     | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_F f} any) ]
     | s3 = -{resolve_F f}- s4
-    | s4 = [ &x <- _44 ] s5
+    | s4 = [ &x <- _45 ] s5
     | s5 = [ &_ret <- x ] s6
     | s6 = return {_ret} ] ]
   [ & _ret: t_Result_i64_i64 = Any.any_l ()
@@ -562,23 +569,26 @@ let try_update_F (self: t_AtomicI64) (f: t_F) (g: t_G) (return (x: t_Result_i64_
   | & f: t_F = f
   | & g: t_G = g
   | & prev: Int64.t = Any.any_l ()
-  | & _16: t_FnGhostWrapper_closure3 = Any.any_l ()
+  | & _16: t_Ordering = Any.any_l ()
   | & _17: t_FnGhostWrapper_closure3 = Any.any_l ()
-  | & _18: () = Any.any_l ()
+  | & _18: t_FnGhostWrapper_closure3 = Any.any_l ()
+  | & _19: () = Any.any_l ()
   | & f_snap: t_F = Any.any_l ()
   | & g_snap: t_G = Any.any_l ()
   | & g'0: t_Option_G = Any.any_l ()
-  | & _26: t_Option_G = Any.any_l ()
-  | & _27: t_G = Any.any_l ()
-  | & _38: t_Option_i64 = Any.any_l ()
-  | & _39: MutBorrow.t t_F = Any.any_l ()
-  | & _40: Int64.t = Any.any_l ()
+  | & _27: t_Option_G = Any.any_l ()
+  | & _28: t_G = Any.any_l ()
+  | & _39: t_Option_i64 = Any.any_l ()
+  | & _40: MutBorrow.t t_F = Any.any_l ()
+  | & _41: Int64.t = Any.any_l ()
   | & next: Int64.t = Any.any_l ()
-  | & _44: t_Result_i64_i64 = Any.any_l ()
-  | & _48: t_FnGhostWrapper_closure9 = Any.any_l ()
-  | & _49: t_FnGhostWrapper_closure9 = Any.any_l ()
-  | & _50: closure9 = Any.any_l ()
-  | & _51: MutBorrow.t t_Option_G = Any.any_l ()
+  | & _45: t_Result_i64_i64 = Any.any_l ()
+  | & _49: t_Ordering = Any.any_l ()
+  | & _50: t_Ordering = Any.any_l ()
+  | & _51: t_FnGhostWrapper_closure9 = Any.any_l ()
+  | & _52: t_FnGhostWrapper_closure9 = Any.any_l ()
+  | & _53: closure9 = Any.any_l ()
+  | & _54: MutBorrow.t t_Option_G = Any.any_l ()
   | & x: t_Result_i64_i64 = Any.any_l ()
   | & next_prev: Int64.t = Any.any_l () ])
   [ return (result: t_Result_i64_i64) -> {[@stop_split] [@expl:try_update ensures] match result with

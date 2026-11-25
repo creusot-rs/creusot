@@ -82,3 +82,29 @@ impl<F> FnGhostWrapper<F> {
 impl<F> private::_Sealed for FnGhostWrapper<F> {}
 #[cfg(creusot)]
 impl<F> FnGhost for FnGhostWrapper<F> {}
+
+#[cfg(creusot)]
+pub struct ErasedGhostFn<T, A, R>(core::marker::PhantomData<(T, A, R)>);
+
+#[cfg(creusot)]
+impl<T, A, R> FnGhost for ErasedGhostFn<T, A, R> {}
+#[cfg(creusot)]
+impl<T, A, R> private::_Sealed for ErasedGhostFn<T, A, R> {}
+
+#[cfg(creusot)]
+impl<'a, T: 'a, A: ErasedGhostFnArg, R> FnOnce<(&mut A::Ty<'a, T>,)> for ErasedGhostFn<T, A, R> {
+    type Output = R;
+
+    #[trusted]
+    #[trusted(ghost)]
+    #[requires(self.precondition(_args))]
+    #[ensures(self.postcondition_once(_args, result))]
+    extern "rust-call" fn call_once(self, _args: (&mut A::Ty<'a, T>,)) -> R {
+        unimplemented!()
+    }
+}
+
+#[cfg(creusot)]
+pub trait ErasedGhostFnArg {
+    type Ty<'a, T: 'a>;
+}

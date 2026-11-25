@@ -11,6 +11,8 @@ module M_f
   
   predicate resolve_AtomicPtr_T (_1: t_AtomicPtr_T)
   
+  type t_Ordering = Relaxed | Release | Acquire | AcqRel | SeqCst
+  
   type t_Perm_AtomicPtr_T
   
   type t_FMap_Int_tup2_ptr_T_SyncView
@@ -186,6 +188,12 @@ module M_f
   
   meta "rewrite_def" predicate inv_ref_AtomicPtr_T
   
+  constant const_ORDERING : t_Ordering
+  
+  let set_ORDERING (return) = bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- Acquire ] s1 | s1 = return {_ret} ] ] [ & _ret: t_Ordering = Any.any_l () ]
+    [ return (_const: t_Ordering) -> -{const_ORDERING = _const}- return ]
+  
   predicate precondition_closure1 (self: closure1) (args: t_Committer_AtomicPtr_T_ptr_T_Acquire_unit) =
     let c = args in closure1'pre self c
   
@@ -206,9 +214,10 @@ module M_f
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure1
   
-  let load_T (self: t_AtomicPtr_T) (f: t_FnGhostWrapper_closure1) (return (x: Opaque.ptr)) =
+  let load_T (self: t_AtomicPtr_T) (order: t_Ordering) (f: t_FnGhostWrapper_closure1) (return (x: Opaque.ptr)) =
   {[@stop_split] [@expl:load_T requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicPtr_T self)
-    /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicPtr_T_ptr_T_Acquire_unit. not shot_store_AtomicPtr_T c
+    /\ ([@stop_split] [@expl:load requires #0] order = const_ORDERING)
+    /\ ([@stop_split] [@expl:load requires #1] forall c: t_Committer_AtomicPtr_T_ptr_T_Acquire_unit. not shot_store_AtomicPtr_T c
       -> ward_AtomicPtr_T c = self -> precondition_FnGhostWrapper_closure1 f c)}
     any
     [ return (result: Opaque.ptr) ->
@@ -224,23 +233,26 @@ module M_f
   let f_T (x: t_AtomicPtr_T) (p: t_Perm_AtomicPtr_T) (return (x'0: ())) =
   {[@stop_split] [@expl:f_T requires] ([@stop_split] [@expl:f 'x' type invariant] inv_AtomicPtr_T x)
     /\ ([@stop_split] [@expl:f requires] ward_AtomicPtr_T'0 p = x)}
-    (! bb0
-    [ bb0 = s0
-      [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_AtomicPtr_T x} any) ]
-      | s1 = -{resolve_AtomicPtr_T x}- s2
-      | s2 = -{resolve_Ghost_Perm_AtomicPtr_T'0 p}- s3
-      | s3 = [ &_10 <- { c0 = p } ] s4
-      | s4 = __new_closure1 {_10} (fun (_x: t_FnGhostWrapper_closure1) -> [ &_9 <- _x ] s5)
-      | s5 = new_FnGhostWrapper_closure1 {_9} (fun (_x: t_FnGhostWrapper_closure1) -> [ &_8 <- _x ] s6)
-      | s6 = load_T {x} {_8} (fun (_x: Opaque.ptr) -> [ &_6 <- _x ] s7)
-      | s7 = return {_ret} ] ]
-    [ & _ret: () = Any.any_l ()
-    | & x: t_AtomicPtr_T = x
-    | & p: t_Perm_AtomicPtr_T = p
-    | & _6: Opaque.ptr = Any.any_l ()
-    | & _8: t_FnGhostWrapper_closure1 = Any.any_l ()
-    | & _9: t_FnGhostWrapper_closure1 = Any.any_l ()
-    | & _10: closure1 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    (! set_ORDERING
+      (bb0
+      [ bb0 = s0
+        [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_AtomicPtr_T x} any) ]
+        | s1 = -{resolve_AtomicPtr_T x}- s2
+        | s2 = [ &_8 <- Acquire ] s3
+        | s3 = -{resolve_Ghost_Perm_AtomicPtr_T'0 p}- s4
+        | s4 = [ &_11 <- { c0 = p } ] s5
+        | s5 = __new_closure1 {_11} (fun (_x: t_FnGhostWrapper_closure1) -> [ &_10 <- _x ] s6)
+        | s6 = new_FnGhostWrapper_closure1 {_10} (fun (_x: t_FnGhostWrapper_closure1) -> [ &_9 <- _x ] s7)
+        | s7 = load_T {x} {_8} {_9} (fun (_x: Opaque.ptr) -> [ &_6 <- _x ] s8)
+        | s8 = return {_ret} ] ]
+      [ & _ret: () = Any.any_l ()
+      | & x: t_AtomicPtr_T = x
+      | & p: t_Perm_AtomicPtr_T = p
+      | & _6: Opaque.ptr = Any.any_l ()
+      | & _8: t_Ordering = Any.any_l ()
+      | & _9: t_FnGhostWrapper_closure1 = Any.any_l ()
+      | & _10: t_FnGhostWrapper_closure1 = Any.any_l ()
+      | & _11: closure1 = Any.any_l () ])) [ return (result: ()) -> (! return {result}) ]
 end
 module M_g
   use creusot.prelude.Opaque
@@ -251,6 +263,8 @@ module M_g
   predicate inv_AtomicPtr_T (_1: t_AtomicPtr_T)
   
   predicate resolve_AtomicPtr_T (_1: t_AtomicPtr_T)
+  
+  type t_Ordering = Relaxed | Release | Acquire | AcqRel | SeqCst
   
   type t_Perm_AtomicPtr_T
   
@@ -362,9 +376,10 @@ module M_g
   
   meta "rewrite_def" predicate postcondition_once_FnGhostWrapper_closure1
   
-  let load_T (self: t_AtomicPtr_T) (f: t_FnGhostWrapper_closure1) (return (x: Opaque.ptr)) =
+  let load_T (self: t_AtomicPtr_T) (order: t_Ordering) (f: t_FnGhostWrapper_closure1) (return (x: Opaque.ptr)) =
   {[@stop_split] [@expl:load_T requires] ([@stop_split] [@expl:load 'self' type invariant] inv_ref_AtomicPtr_T self)
-    /\ ([@stop_split] [@expl:load requires] forall c: t_Committer_AtomicPtr_T_ptr_T_SeqCst_unit. not shot_store_AtomicPtr_T c
+    /\ ([@stop_split] [@expl:load requires #0] order = SeqCst)
+    /\ ([@stop_split] [@expl:load requires #1] forall c: t_Committer_AtomicPtr_T_ptr_T_SeqCst_unit. not shot_store_AtomicPtr_T c
       -> ward_AtomicPtr_T c = self -> precondition_FnGhostWrapper_closure1 f c)}
     any
     [ return (result: Opaque.ptr) ->
@@ -384,17 +399,19 @@ module M_g
     [ bb0 = s0
       [ s0 = s1 [ _ck -> (! {[@expl:type invariant] inv_AtomicPtr_T x} any) ]
       | s1 = -{resolve_AtomicPtr_T x}- s2
-      | s2 = -{resolve_Ghost_Perm_AtomicPtr_T'0 p}- s3
-      | s3 = [ &_10 <- { c0 = p } ] s4
-      | s4 = __new_closure1 {_10} (fun (_x: t_FnGhostWrapper_closure1) -> [ &_9 <- _x ] s5)
-      | s5 = new_FnGhostWrapper_closure1 {_9} (fun (_x: t_FnGhostWrapper_closure1) -> [ &_8 <- _x ] s6)
-      | s6 = load_T {x} {_8} (fun (_x: Opaque.ptr) -> [ &_6 <- _x ] s7)
-      | s7 = return {_ret} ] ]
+      | s2 = [ &_8 <- SeqCst ] s3
+      | s3 = -{resolve_Ghost_Perm_AtomicPtr_T'0 p}- s4
+      | s4 = [ &_11 <- { c0 = p } ] s5
+      | s5 = __new_closure1 {_11} (fun (_x: t_FnGhostWrapper_closure1) -> [ &_10 <- _x ] s6)
+      | s6 = new_FnGhostWrapper_closure1 {_10} (fun (_x: t_FnGhostWrapper_closure1) -> [ &_9 <- _x ] s7)
+      | s7 = load_T {x} {_8} {_9} (fun (_x: Opaque.ptr) -> [ &_6 <- _x ] s8)
+      | s8 = return {_ret} ] ]
     [ & _ret: () = Any.any_l ()
     | & x: t_AtomicPtr_T = x
     | & p: t_Perm_AtomicPtr_T = p
     | & _6: Opaque.ptr = Any.any_l ()
-    | & _8: t_FnGhostWrapper_closure1 = Any.any_l ()
+    | & _8: t_Ordering = Any.any_l ()
     | & _9: t_FnGhostWrapper_closure1 = Any.any_l ()
-    | & _10: closure1 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+    | & _10: t_FnGhostWrapper_closure1 = Any.any_l ()
+    | & _11: closure1 = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end

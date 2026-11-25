@@ -1,5 +1,6 @@
 use clap::Parser;
 use libc::{STDOUT_FILENO, TIOCGWINSZ, c_ushort, ioctl};
+use regex::Regex;
 use serde_json;
 use std::{
     env,
@@ -451,13 +452,27 @@ fn run_creusot(file: &Path, paths: &CreusotPaths, args: &Args) -> Option<std::pr
     if header_line.contains("SHORT_ERROR") {
         cmd.arg("--error-format=short");
     }
+
+    let rec_limit_re = Regex::new(r"RECURSION_LIMIT ((\d|\.)+)").unwrap();
+    let rec_limit = rec_limit_re.captures_iter(&header_line).next().map(|c| c[1].to_owned());
+    if let Some(rec_limit) = rec_limit {
+        cmd.arg(format!("-Zmin-recursion-limit={}", rec_limit));
+    }
+
+    cmd.arg("--");
+
+    if header_line.contains("COMASKIP") {
+        cmd.arg("--no-output");
+    } else {
+        cmd.arg("--stdout");
+    }
+
     cmd.args([
-        "--",
-        "--stdout",
         "--export-metadata=false",
         // we will write the coma output next to the .rs file
         "--spans-relative-to=.",
     ]);
+
     if !header_args.iter().any(|arg| arg.starts_with("--span-mode")) {
         if args.with_spans {
             cmd.arg("--span-mode=relative");

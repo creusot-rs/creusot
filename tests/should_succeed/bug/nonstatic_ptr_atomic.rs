@@ -1,4 +1,5 @@
 extern crate creusot_std;
+use core::sync::atomic::Ordering;
 use creusot_std::{
     ghost::perm::Perm,
     prelude::*,
@@ -12,14 +13,20 @@ use creusot_std::{
 
 #[requires(*p.ward() == x)]
 pub fn f<T>(x: AtomicPtr<T>, p: Ghost<Perm<AtomicPtr<T>>>) {
-    x.load(ghost! {|c: &Committer<_, *mut T, Acquire, _>| {
-        c.shoot_load(&p, &mut SyncView::new());
-    }});
+    x.load(
+        Ordering::Acquire,
+        ghost! {|c: &Committer<_, *mut T, Acquire, _>| {
+            c.shoot_load(&p, &mut SyncView::new());
+        }},
+    );
 }
 
 #[requires(*p.ward() == x)]
 pub fn g<T>(x: SCAtomicPtr<T>, p: Ghost<Perm<SCAtomicPtr<T>>>) {
-    x.load(ghost! {|c: &Committer<_, *mut T, SeqCst, _>| {
-        c.shoot_load(&p);
-    }});
+    x.load(
+        Ordering::SeqCst,
+        ghost! {|c: &Committer<_, *mut T, SeqCst, _>| {
+            c.shoot_load(&p);
+        }},
+    );
 }
