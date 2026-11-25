@@ -1,7 +1,9 @@
-#[cfg(creusot)]
-use crate::resolve::structural_resolve;
 use crate::{invariant::*, logic::ops::IndexLogic, prelude::*, std::iter::ExactSizeIteratorSpec};
+#[cfg(creusot)]
+use crate::{resolve::structural_resolve, std::slice::SliceIndexSpec};
 use core::array::*;
+#[cfg(creusot)]
+use core::ops::{Index, IndexMut};
 
 impl<T, const N: usize> Invariant for [T; N] {
     #[logic(open, prophetic)]
@@ -211,5 +213,25 @@ extern_spec! {
             Err(_) => slice@.len() != N@
         })]
         fn try_from(slice: &[T]) -> Result<Self, TryFromSliceError>;
+    }
+
+    impl<T, I: SliceIndexSpec<[T]>, const N: usize> Index<I> for [T; N] {
+        #[check(ghost)]
+        #[requires(ix.in_bounds(self@))]
+        #[ensures(ix.has_value(self@, *result))]
+        fn index(&self, ix: I) -> &<[T; N] as Index<I>>::Output {
+            Index::index(self as &[T], ix)
+        }
+    }
+
+    impl<T, I: SliceIndexSpec<[T]>, const N: usize> IndexMut<I> for [T; N] {
+        #[check(ghost)]
+        #[requires(ix.in_bounds(self@))]
+        #[ensures(ix.has_value(self@, *result))]
+        #[ensures(ix.has_value((&^self)@, ^result))]
+        #[ensures(ix.resolve_elswhere(self@, (&^self)@))]
+        fn index_mut(&mut self, ix: I) -> &mut <[T] as Index<I>>::Output {
+            IndexMut::index_mut(self as &mut [T], ix)
+        }
     }
 }

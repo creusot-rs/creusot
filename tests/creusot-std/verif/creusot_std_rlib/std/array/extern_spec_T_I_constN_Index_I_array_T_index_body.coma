@@ -1,0 +1,111 @@
+use creusot.slice.Slice64
+use seq.Seq
+use creusot.prelude.Any
+use creusot.int.UInt64
+use int.Int
+
+type t_T
+
+type t_I
+
+type t_Output
+
+predicate inv_T (_1: t_T)
+
+predicate invariant_ref_T [@inline:trivial] (self: t_T) = inv_T self
+
+meta "rewrite_def" predicate invariant_ref_T
+
+predicate inv_ref_T [@inline:trivial] (_1: t_T) = invariant_ref_T _1
+
+meta "rewrite_def" predicate inv_ref_T
+
+predicate invariant_Seq_T [@inline:trivial] (self: Seq.seq t_T) =
+  forall i: int. 0 <= i /\ i < Seq.length self -> inv_ref_T (Seq.get self i)
+
+meta "rewrite_def" predicate invariant_Seq_T
+
+predicate inv_Seq_T [@inline:trivial] (_1: Seq.seq t_T) = invariant_Seq_T _1
+
+meta "rewrite_def" predicate inv_Seq_T
+
+predicate invariant_slice_T (self: Slice64.slice t_T) = inv_Seq_T (Slice64.view self)
+
+predicate inv_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_slice_T _1
+
+meta "rewrite_def" predicate inv_slice_T
+
+predicate invariant_ref_slice_T [@inline:trivial] (self: Slice64.slice t_T) = inv_slice_T self
+
+meta "rewrite_def" predicate invariant_ref_slice_T
+
+predicate inv_ref_slice_T [@inline:trivial] (_1: Slice64.slice t_T) = invariant_ref_slice_T _1
+
+meta "rewrite_def" predicate inv_ref_slice_T
+
+predicate inv_I (_1: t_I)
+
+predicate in_bounds_I (self: t_I) (seq: Seq.seq t_T)
+
+predicate inv_Output (_1: t_Output)
+
+predicate invariant_ref_Output [@inline:trivial] (self: t_Output) = inv_Output self
+
+meta "rewrite_def" predicate invariant_ref_Output
+
+predicate inv_ref_Output [@inline:trivial] (_1: t_Output) = invariant_ref_Output _1
+
+meta "rewrite_def" predicate inv_ref_Output
+
+predicate has_value_I (self: t_I) (seq: Seq.seq t_T) (out: t_Output)
+
+let index_slice_T (self: Slice64.slice t_T) (index: t_I) (return (x: t_Output)) =
+{[@stop_split] [@expl:index_slice_T requires] ([@stop_split] [@expl:index 'self' type invariant] inv_ref_slice_T self)
+  /\ ([@stop_split] [@expl:index 'index' type invariant] inv_I index)
+  /\ ([@stop_split] [@expl:index requires] in_bounds_I index (Slice64.view self))}
+  any
+  [ return (result: t_Output) ->
+  {[@stop_split] [@expl:index_slice_T ensures] ([@stop_split] [@expl:index result type invariant] inv_ref_Output result)
+    /\ ([@stop_split] [@expl:index ensures] has_value_I index (Slice64.view self) result)}
+    (! return {result}) ]
+
+constant const_N : UInt64.t
+
+predicate invariant_array_T_n (self: Slice64.array t_T) =
+  inv_Seq_T (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int const_N
+
+predicate inv_array_T_n [@inline:trivial] (_1: Slice64.array t_T) = invariant_array_T_n _1
+
+meta "rewrite_def" predicate inv_array_T_n
+
+predicate invariant_ref_array_T_n [@inline:trivial] (self: Slice64.array t_T) = inv_array_T_n self
+
+meta "rewrite_def" predicate invariant_ref_array_T_n
+
+predicate inv_ref_array_T_n [@inline:trivial] (_1: Slice64.array t_T) = invariant_ref_array_T_n _1
+
+meta "rewrite_def" predicate inv_ref_array_T_n
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+let extern_spec_T_I__constN_Index_I__array_T_index_body_T (self_: Slice64.array t_T) (ix: t_I) (return (x: t_Output)) =
+{[@stop_split] [@expl:extern_spec_T_I__constN_Index_I__array_T_index_body_T requires] ([@stop_split] [@expl:extern_spec_T_I__constN_Index_I__array_T_index_body 'self_' type invariant] inv_ref_array_T_n self_)
+  /\ ([@stop_split] [@expl:extern_spec_T_I__constN_Index_I__array_T_index_body 'ix' type invariant] inv_I ix)
+  /\ ([@stop_split] [@expl:extern_spec_T_I__constN_Index_I__array_T_index_body requires] in_bounds_I ix (Slice64.view self_))}
+  (! bb0
+  [ bb0 = s0
+    [ s0 = [ &_11 <- self_ ] s1
+    | s1 = index_slice_T {_11} {ix} (fun (_x: t_Output) -> [ &_9 <- _x ] s2)
+    | s2 = [ &_ret <- _9 ] s3
+    | s3 = return {_ret} ] ]
+  [ & _ret: t_Output = Any.any_l ()
+  | & self_: Slice64.array t_T = self_
+  | & ix: t_I = ix
+  | & _9: t_Output = Any.any_l ()
+  | & _11: Slice64.slice t_T = Any.any_l () ])
+  [ return (result: t_Output) ->
+  {[@stop_split] [@expl:extern_spec_T_I__constN_Index_I__array_T_index_body_T ensures] ([@stop_split] [@expl:extern_spec_T_I__constN_Index_I__array_T_index_body result type invariant] inv_ref_Output result)
+    /\ ([@stop_split] [@expl:extern_spec_T_I__constN_Index_I__array_T_index_body ensures] has_value_I ix (Slice64.view self_) result)}
+    (! return {result}) ]
