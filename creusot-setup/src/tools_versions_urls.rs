@@ -10,7 +10,7 @@ pub const WHY3_VERSION: &'static str = "1.8.2"; // For the real version, see cre
 pub const WHY3_CONFIG_MAGIC_NUMBER: &'static str = "14";
 pub const WHY3FIND_VERSION: &'static str = "1.3.0"; // For the real version, see creusot-deps.opam
 // tools with binary releases
-pub const ALTERGO_VERSION: &'static str = "2.6.4";
+pub const ALTERGO_VERSION: &'static str = "2.6.5";
 pub const Z3_VERSION: &'static str = "5.4.1";
 pub const CVC4_VERSION: &'static str = "1.8";
 pub const CVC5_VERSION: &'static str = "1.4.2";
@@ -18,8 +18,8 @@ pub const CVC5_VERSION: &'static str = "1.4.2";
 #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
 pub const URLS: Urls = Urls {
     altergo: Some(Url {
-        url: "https://github.com/OCamlPro/alt-ergo/releases/download/v2.6.4/alt-ergo-v2.6.4-x86_64-linux-musl",
-        sha256: "80d41dd9cf4b024be7412e499f81960ddc63978f5d78a29311a05aaab125681a",
+        url: "https://github.com/OCamlPro/alt-ergo/releases/download/v2.6.5/alt-ergo-v2.6.5-x86_64-linux-musl",
+        sha256: "3bc59972fedd570da07c0a3b9a9e778f7c20050edecb1a1ce3290d63f64a20d3",
     }),
     z3: Some(Url {
         url: "https://github.com/Z3Prover/z3/releases/download/z3-5.4.1/z3-5.4.1-x64-glibc-2.39.zip",
@@ -55,10 +55,9 @@ pub const URLS: Urls = Urls {
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 pub const URLS: Urls = Urls {
-    altergo: Some(Url {
-        url: "https://github.com/OCamlPro/alt-ergo/releases/download/v2.6.4/alt-ergo-v2.6.4-aarch64-macos",
-        sha256: "083d2d432d4954a2c234b1ca88a97b8c7e98bcbd3dcbae1753be401eb1633196",
-    }),
+    // Alt-Ergo stoped publishing aarch64-macos binaries in version 2.6.5; use the same trick as for
+    // aarch64-linux version
+    altergo: None,
     z3: Some(Url {
         url: "https://github.com/Z3Prover/z3/releases/download/z3-5.4.1/z3-5.4.1-arm64-osx-13.3.zip",
         sha256: "a4a878121e81dfc297d027dd0b51dc4f08feb4296d6ecace42bfbc87a29d6d58",
