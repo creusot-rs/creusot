@@ -1,0 +1,19 @@
+(* <i16 as std::iter::StepSpec> *)
+
+use creusot.int.Int16
+use int.Int
+
+function deep_model_i16 [@inline:trivial] (self: Int16.t) : int = Int16.to_int self
+
+meta "rewrite_def" function deep_model_i16
+
+function steps_to_i16 [@inline:trivial] (self: Int16.t) (other: Int16.t) : int = Int16.to_int other - Int16.to_int self
+
+meta "rewrite_def" function steps_to_i16
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: Int16.t, other: Int16.t. forall result: (). (deep_model_i16 self < deep_model_i16 other)
+      = (0 < steps_to_i16 self other)

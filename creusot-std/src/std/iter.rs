@@ -312,60 +312,47 @@ impl<I: ExactSizeIteratorSpec + ?Sized> ExactSizeIteratorSpec for &mut I {
 }
 
 pub trait StepSpec: Step + DeepModel<DeepModelTy: OrdLogic> {
-    /// This is a relation rather than a function
-    /// to support infinite iterators.
     #[logic]
-    fn steps(self, count: Int, other: Self) -> bool;
+    fn steps_to(self, other: Self) -> Int;
 
     #[logic(law)]
-    #[requires(self.steps(count1, other))]
-    #[requires(self.steps(count2, other))]
-    #[ensures(count1 == count2)]
-    fn steps_unique(self, count1: Int, count2: Int, other: Self);
-
-    #[logic(law)]
-    #[ensures(self.steps(0, self))]
+    #[ensures(self.steps_to(self) == 0)]
     fn steps_refl(self);
 
     #[logic(law)]
-    #[requires(a.steps(ab, b))]
-    #[ensures(b.steps(-ab, a))]
-    fn steps_sym(a: Self, ab: Int, b: Self);
+    #[ensures(a.steps_to(b) == -b.steps_to(a))]
+    fn steps_sym(a: Self, b: Self);
 
     #[logic(law)]
-    #[requires(a.steps(ab, b))]
-    #[requires(b.steps(bc, c))]
-    #[ensures(a.steps(ab + bc, c))]
-    fn steps_trans(a: Self, ab: Int, b: Self, bc: Int, c: Self);
+    #[ensures(a.steps_to(b) + b.steps_to(c) == a.steps_to(c))]
+    fn steps_trans(a: Self, b: Self, c: Self);
 
     #[logic(law)]
-    #[requires(self.steps(count, other))]
-    #[ensures((self.deep_model() < other.deep_model()) == (0 < count))]
-    fn steps_up(self, count: Int, other: Self);
+    #[ensures(
+        (self.deep_model() < other.deep_model())
+        == (0 < self.steps_to(other)))]
+    fn steps_up(self, other: Self);
 }
 
 macro_rules! step_spec_integer {
     ($($t:ty)*) => {
         $(impl StepSpec for $t {
             #[logic(open, inline)]
-            fn steps(self, count: Int, other: Self) -> bool {
-                pearlite! { self@ + count == other@ }
+            fn steps_to(self, other: Self) -> Int {
+                pearlite! { other@ - self@ }
             }
-
-            #[logic]
-            fn steps_unique(self, _count1: Int, _count2: Int, _other: Self) {}
 
             #[logic]
             fn steps_refl(self) {}
 
             #[logic]
-            fn steps_sym(_a: Self, _ab: Int, _b: Self) {}
+            fn steps_sym(_a: Self, _b: Self) {}
 
             #[logic]
-            fn steps_trans(_a: Self, _ab: Int, _b: Self, _bc: Int, _c: Self) {}
+            fn steps_trans(_a: Self, _b: Self, _c: Self) {}
 
             #[logic]
-            fn steps_up(self, _count: Int, _other: Self) {}
+            fn steps_up(self, _other: Self) {}
         })*
     };
 }
@@ -395,27 +382,32 @@ extern_spec! {
     mod core {
         mod iter {
             trait Step: StepSpec {
-                #[ensures(forall<count: usize> start.steps(count@, *end) == (result.1 == Some(count)))]
+                #[ensures({
+                    let count = start.steps_to(*end);
+                    (0 <= count && count <= usize::MAX@) == (result.1 == Some(count.into()))
+                })]
                 #[ensures(result.1 != None ==> result.1 == Some(result.0))]
                 #[ensures(start.deep_model() > end.deep_model() ==> result == (0usize, None))]
                 fn steps_between(start: &Self, end: &Self) -> (usize, Option<usize>);
 
                 #[ensures(match result {
-                    None => forall<end> !start.steps(count@, end),
-                    Some(end) => start.steps(count@, end),
+                    None => forall<end> count@ != start.steps_to(end),
+                    Some(end) => count@ == start.steps_to(end),
                 })]
                 fn forward_checked(start: Self, count: usize) -> Option<Self>;
 
-                #[ensures(result.1 == start.steps(count@, result.0))]
+                #[ensures(forall<r>
+                    (count@ == start.steps_to(r)) == (result == (r, false)))]
                 fn forward_overflowing(start: Self, count: usize) -> (Self, bool);
 
                 #[ensures(match result {
-                    None => forall<end> !start.steps(-count@, end),
-                    Some(end) => start.steps(-count@, end),
+                    None => forall<end> -count@ != start.steps_to(end),
+                    Some(end) => -count@ == start.steps_to(end),
                 })]
                 fn backward_checked(start: Self, count: usize) -> Option<Self>;
 
-                #[ensures(result.1 == start.steps(-count@, result.0))]
+                #[ensures(forall<r>
+                    (-count@ == start.steps_to(r)) == (result == (r, false)))]
                 fn backward_overflowing(start: Self, count: usize) -> (Self, bool);
             }
         }

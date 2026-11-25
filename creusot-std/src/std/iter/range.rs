@@ -18,8 +18,8 @@ impl<Idx: StepSpec> IteratorSpec for Range<Idx> {
         pearlite! {
             self.end == o.end && self.start.deep_model() <= o.start.deep_model()
             && (visited.len() > 0 ==> o.start.deep_model() <= o.end.deep_model())
-            && self.start.steps(visited.len(), o.start)
-            && forall<i> 0 <= i && i < visited.len() ==> self.start.steps(i, visited[i])
+            && visited.len() == self.start.steps_to(o.start)
+            && forall<i> 0 <= i && i < visited.len() ==> i == self.start.steps_to(visited[i])
         }
     }
 
@@ -38,14 +38,14 @@ extern_spec! {
     impl<Idx: StepSpec> Iterator for Range<Idx> {
         #[ensures(self.start.deep_model() >= self.end.deep_model() ==>
             result == (0usize, Some(0usize)))]
-        #[ensures(forall<count: Int>
-            self.start.steps(count, self.end)
-            ==> result == if count <= usize::MAX@ {
+        #[ensures({
+            let count = self.start.steps_to(self.end);
+            result == if count <= usize::MAX@ {
                 (count.into(), Some(count.into()))
             } else {
                 (usize::MAX, None)
             }
-        )]
+        })]
         fn size_hint(&self) -> (usize, Option<usize>);
     }
 }
@@ -76,8 +76,8 @@ impl<Idx: StepSpec> DoubleEndedIteratorSpec for Range<Idx> {
         pearlite! {
             self.start == o.start && self.end.deep_model() >= o.end.deep_model()
             && (visited.len() > 0 ==> o.end.deep_model() >= o.start.deep_model())
-            && self.end.steps(-visited.len(), o.end)
-            && forall<i> 0 <= i && i < visited.len() ==> self.end.steps(-i-1, visited[i])
+            && visited.len() == o.end.steps_to(self.end)
+            && forall<i> 0 <= i && i < visited.len() ==> i+1 == visited[i].steps_to(self.end)
         }
     }
 
@@ -126,17 +126,13 @@ impl<Idx: StepSpec> IteratorSpec for RangeInclusive<Idx> {
             } else {
                 if o.is_empty_log() {
                     visited.len() > 0 &&
-                    self.start_log().steps(
-                        visited.len() - 1,
-                        self.end_log())
+                    visited.len() - 1 == self.start_log().steps_to(self.end_log())
                 } else {
-                    self.start_log().steps(
-                        visited.len(),
-                        o.start_log()) &&
+                    visited.len() == self.start_log().steps_to(o.start_log()) &&
                     self.end_log() == o.end_log()
                 }
             }) &&
-            forall<i> 0 <= i && i < visited.len() ==> self.start_log().steps(i, visited[i])
+            forall<i> 0 <= i && i < visited.len() ==> i == self.start_log().steps_to(visited[i])
         }
     }
 
@@ -154,15 +150,14 @@ impl<Idx: StepSpec> IteratorSpec for RangeInclusive<Idx> {
 extern_spec! {
     impl<Idx: StepSpec> Iterator for RangeInclusive<Idx> {
         #[ensures(self.is_empty_log() ==> result == (0usize, Some(0usize)))]
-        #[ensures(forall<count: Int>
-            !self.is_empty_log()
-            && self.start_log().steps(count, self.end_log())
-            ==> result == if count < usize::MAX@ {
-                    ((count + 1).into(), Some((count + 1).into()))
-                } else {
-                    (usize::MAX, None)
-                }
-        )]
+        #[ensures(!self.is_empty_log() ==> {
+            let count = self.start_log().steps_to(self.end_log());
+            result == if count < usize::MAX@ {
+                ((count + 1).into(), Some((count + 1).into()))
+            } else {
+                (usize::MAX, None)
+            }
+        })]
         fn size_hint(&self) -> (usize, Option<usize>);
     }
 }
@@ -194,17 +189,13 @@ impl<Idx: StepSpec> DoubleEndedIteratorSpec for RangeInclusive<Idx> {
             } else {
                 if o.is_empty_log() {
                     visited.len() > 0 &&
-                    self.end_log().steps(
-                        -visited.len() + 1,
-                        self.start_log())
+                    visited.len() - 1 == self.start_log().steps_to(self.end_log())
                 } else {
-                    self.end_log().steps(
-                        -visited.len(),
-                        o.end_log()) &&
+                    visited.len() == o.end_log().steps_to(self.end_log()) &&
                     self.start_log() == o.start_log()
                 }
             }) &&
-            forall<i> 0 <= i && i < visited.len() ==> self.end_log().steps(-i, visited[i])
+            forall<i> 0 <= i && i < visited.len() ==> i == visited[i].steps_to(self.end_log())
         }
     }
 

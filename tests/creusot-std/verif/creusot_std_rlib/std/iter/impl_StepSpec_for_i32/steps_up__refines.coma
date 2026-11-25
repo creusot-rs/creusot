@@ -1,0 +1,19 @@
+(* <i32 as std::iter::StepSpec> *)
+
+use creusot.int.Int32
+use int.Int
+
+function deep_model_i32 [@inline:trivial] (self: Int32.t) : int = Int32.to_int self
+
+meta "rewrite_def" function deep_model_i32
+
+function steps_to_i32 [@inline:trivial] (self: Int32.t) (other: Int32.t) : int = Int32.to_int other - Int32.to_int self
+
+meta "rewrite_def" function steps_to_i32
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: Int32.t, other: Int32.t. forall result: (). (deep_model_i32 self < deep_model_i32 other)
+      = (0 < steps_to_i32 self other)

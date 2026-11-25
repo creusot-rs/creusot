@@ -1,0 +1,29 @@
+(* <std::num::NonZero<u32> as std::iter::StepSpec> *)
+
+use creusot.int.UInt32
+use int.Int
+
+function deep_model_u32 [@inline:trivial] (self: UInt32.t) : int = UInt32.t'int self
+
+meta "rewrite_def" function deep_model_u32
+
+function deep_model_NonZero_u32 [@inline:trivial] (self: UInt32.t) : int = deep_model_u32 self
+
+meta "rewrite_def" function deep_model_NonZero_u32
+
+function view_NonZero_u32 [@inline:trivial] (self: UInt32.t) : int = UInt32.t'int self
+
+meta "rewrite_def" function view_NonZero_u32
+
+function steps_to_NonZero_u32 [@inline:trivial] (self: UInt32.t) (other: UInt32.t) : int = view_NonZero_u32 other
+  - view_NonZero_u32 self
+
+meta "rewrite_def" function steps_to_NonZero_u32
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: UInt32.t, other: UInt32.t. forall result: (). (deep_model_NonZero_u32 self
+        < deep_model_NonZero_u32 other)
+      = (0 < steps_to_NonZero_u32 self other)

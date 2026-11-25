@@ -24,24 +24,22 @@ axiom is_empty_log_RangeInclusive_u8_spec:
   forall self: t_RangeInclusive_u8 [is_empty_log_RangeInclusive_u8 self]. not is_empty_log_RangeInclusive_u8 self
     -> deep_model_u8 (start_log_RangeInclusive_u8 self) <= deep_model_u8 (end_log_RangeInclusive_u8 self)
 
-predicate steps_u8 [@inline:trivial] (self: UInt8.t) (count: int) (other: UInt8.t) =
-  UInt8.t'int self + count = UInt8.t'int other
+function steps_to_u8 [@inline:trivial] (self: UInt8.t) (other: UInt8.t) : int = UInt8.t'int other - UInt8.t'int self
 
-meta "rewrite_def" predicate steps_u8
+meta "rewrite_def" function steps_to_u8
 
 constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
 
 predicate postcondition_size_hint (self: ()) (args: t_RangeInclusive_u8) (result: tup2_usize_Option_usize) =
   let self'0 = args in (is_empty_log_RangeInclusive_u8 self'0
     -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-  /\ (forall count: int. not is_empty_log_RangeInclusive_u8 self'0
-      /\ steps_u8 (start_log_RangeInclusive_u8 self'0) count (end_log_RangeInclusive_u8 self'0)
-    -> result
-    = (if count < UInt64.t'int const_MAX then
-      { f0 = UInt64.of_int (count + 1); f1 = Some (UInt64.of_int (count + 1)) }
-    else
-      { f0 = const_MAX; f1 = None }
-    ))
+  /\ (not is_empty_log_RangeInclusive_u8 self'0
+  -> (let count = steps_to_u8 (start_log_RangeInclusive_u8 self'0) (end_log_RangeInclusive_u8 self'0) in result
+  = (if count < UInt64.t'int const_MAX then
+    { f0 = UInt64.of_int (count + 1); f1 = Some (UInt64.of_int (count + 1)) }
+  else
+    { f0 = const_MAX; f1 = None }
+  )))
 
 meta "rewrite_def" predicate postcondition_size_hint
 
@@ -61,14 +59,13 @@ let size_hint_RangeInclusive_u8 (self: t_RangeInclusive_u8) (return (x: tup2_usi
   [ return (result: tup2_usize_Option_usize) ->
   {[@stop_split] [@expl:size_hint_RangeInclusive_u8 ensures] ([@stop_split] [@expl:size_hint ensures #0] is_empty_log_RangeInclusive_u8 self
       -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-    /\ ([@stop_split] [@expl:size_hint ensures #1] forall count: int. not is_empty_log_RangeInclusive_u8 self
-        /\ steps_u8 (start_log_RangeInclusive_u8 self) count (end_log_RangeInclusive_u8 self)
-      -> result
-      = (if count < UInt64.t'int const_MAX then
-        { f0 = UInt64.of_int (count + 1); f1 = Some (UInt64.of_int (count + 1)) }
-      else
-        { f0 = const_MAX; f1 = None }
-      ))}
+    /\ ([@stop_split] [@expl:size_hint ensures #1] not is_empty_log_RangeInclusive_u8 self
+    -> (let count = steps_to_u8 (start_log_RangeInclusive_u8 self) (end_log_RangeInclusive_u8 self) in result
+    = (if count < UInt64.t'int const_MAX then
+      { f0 = UInt64.of_int (count + 1); f1 = Some (UInt64.of_int (count + 1)) }
+    else
+      { f0 = const_MAX; f1 = None }
+    )))}
     (! return {result}) ]
 
 meta "compute_max_steps" 1000000

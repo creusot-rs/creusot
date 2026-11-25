@@ -1,0 +1,20 @@
+(* <u64 as std::iter::StepSpec> *)
+
+use creusot.int.UInt64
+use int.Int
+
+function deep_model_u64 [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
+
+meta "rewrite_def" function deep_model_u64
+
+function steps_to_u64 [@inline:trivial] (self: UInt64.t) (other: UInt64.t) : int = UInt64.t'int other
+  - UInt64.t'int self
+
+meta "rewrite_def" function steps_to_u64
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines: forall self: UInt64.t, other: UInt64.t. forall result: (). (deep_model_u64 self < deep_model_u64 other)
+      = (0 < steps_to_u64 self other)

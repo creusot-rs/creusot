@@ -45,44 +45,38 @@ axiom is_empty_log_RangeInclusive_Idx_spec:
   forall self: t_RangeInclusive_Idx [is_empty_log_RangeInclusive_Idx self]. not is_empty_log_RangeInclusive_Idx self
     -> le_log_DeepModelTy (deep_model_Idx (start_log_RangeInclusive_Idx self)) (deep_model_Idx (end_log_RangeInclusive_Idx self))
 
-predicate steps_Idx (self: t_Idx) (count: int) (other: t_Idx)
+function steps_to_Idx (self: t_Idx) (other: t_Idx) : int
 
-function steps_up_Idx (self: t_Idx) (count: int) (other: t_Idx) : ()
+function steps_up_Idx (self: t_Idx) (other: t_Idx) : ()
 
-axiom steps_up_Idx_spec: forall self: t_Idx, count: int, other: t_Idx. steps_Idx self count other
-    -> lt_log_DeepModelTy (deep_model_Idx self) (deep_model_Idx other) = (0 < count)
+axiom steps_up_Idx_spec:
+  forall self: t_Idx, other: t_Idx. lt_log_DeepModelTy (deep_model_Idx self) (deep_model_Idx other)
+    = (0 < steps_to_Idx self other)
 
-function steps_trans_Idx (a: t_Idx) (ab: int) (b: t_Idx) (bc: int) (c: t_Idx) : ()
+function steps_trans_Idx (a: t_Idx) (b: t_Idx) (c: t_Idx) : ()
 
-axiom steps_trans_Idx_spec: forall a: t_Idx, ab: int, b: t_Idx, bc: int, c: t_Idx. steps_Idx a ab b
-    -> steps_Idx b bc c -> steps_Idx a (ab + bc) c
+axiom steps_trans_Idx_spec: forall a: t_Idx, b: t_Idx, c: t_Idx. steps_to_Idx a b + steps_to_Idx b c = steps_to_Idx a c
 
-function steps_sym_Idx (a: t_Idx) (ab: int) (b: t_Idx) : ()
+function steps_sym_Idx (a: t_Idx) (b: t_Idx) : ()
 
-axiom steps_sym_Idx_spec: forall a: t_Idx, ab: int, b: t_Idx. steps_Idx a ab b -> steps_Idx b (- ab) a
+axiom steps_sym_Idx_spec: forall a: t_Idx, b: t_Idx. steps_to_Idx a b = - steps_to_Idx b a
 
 function steps_refl_Idx (self: t_Idx) : ()
 
-axiom steps_refl_Idx_spec: forall self: t_Idx. steps_Idx self 0 self
-
-function steps_unique_Idx (self: t_Idx) (count1: int) (count2: int) (other: t_Idx) : ()
-
-axiom steps_unique_Idx_spec: forall self: t_Idx, count1: int, count2: int, other: t_Idx. steps_Idx self count1 other
-    -> steps_Idx self count2 other -> count1 = count2
+axiom steps_refl_Idx_spec: forall self: t_Idx. steps_to_Idx self self = 0
 
 constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
 
 predicate postcondition_size_hint (self: ()) (args: t_RangeInclusive_Idx) (result: tup2_usize_Option_usize) =
   let self'0 = args in (is_empty_log_RangeInclusive_Idx self'0
     -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-  /\ (forall count: int. not is_empty_log_RangeInclusive_Idx self'0
-      /\ steps_Idx (start_log_RangeInclusive_Idx self'0) count (end_log_RangeInclusive_Idx self'0)
-    -> result
-    = (if count < UInt64.t'int const_MAX then
-      { f0 = UInt64.of_int (count + 1); f1 = Some (UInt64.of_int (count + 1)) }
-    else
-      { f0 = const_MAX; f1 = None }
-    ))
+  /\ (not is_empty_log_RangeInclusive_Idx self'0
+  -> (let count = steps_to_Idx (start_log_RangeInclusive_Idx self'0) (end_log_RangeInclusive_Idx self'0) in result
+  = (if count < UInt64.t'int const_MAX then
+    { f0 = UInt64.of_int (count + 1); f1 = Some (UInt64.of_int (count + 1)) }
+  else
+    { f0 = const_MAX; f1 = None }
+  )))
 
 meta "rewrite_def" predicate postcondition_size_hint
 
@@ -102,14 +96,13 @@ let size_hint_RangeInclusive_Idx (self: t_RangeInclusive_Idx) (return (x: tup2_u
   [ return (result: tup2_usize_Option_usize) ->
   {[@stop_split] [@expl:size_hint_RangeInclusive_Idx ensures] ([@stop_split] [@expl:size_hint ensures #0] is_empty_log_RangeInclusive_Idx self
       -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-    /\ ([@stop_split] [@expl:size_hint ensures #1] forall count: int. not is_empty_log_RangeInclusive_Idx self
-        /\ steps_Idx (start_log_RangeInclusive_Idx self) count (end_log_RangeInclusive_Idx self)
-      -> result
-      = (if count < UInt64.t'int const_MAX then
-        { f0 = UInt64.of_int (count + 1); f1 = Some (UInt64.of_int (count + 1)) }
-      else
-        { f0 = const_MAX; f1 = None }
-      ))}
+    /\ ([@stop_split] [@expl:size_hint ensures #1] not is_empty_log_RangeInclusive_Idx self
+    -> (let count = steps_to_Idx (start_log_RangeInclusive_Idx self) (end_log_RangeInclusive_Idx self) in result
+    = (if count < UInt64.t'int const_MAX then
+      { f0 = UInt64.of_int (count + 1); f1 = Some (UInt64.of_int (count + 1)) }
+    else
+      { f0 = const_MAX; f1 = None }
+    )))}
     (! return {result}) ]
 
 predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
@@ -122,14 +115,14 @@ predicate produces_back_RangeInclusive_Idx (self: t_RangeInclusive_Idx) (visited
     else
       if is_empty_log_RangeInclusive_Idx o then
         gt_log_Int (Seq.length visited) 0
-        /\ steps_Idx (end_log_RangeInclusive_Idx self) (- Seq.length visited + 1) (start_log_RangeInclusive_Idx self)
+        /\ Seq.length visited - 1 = steps_to_Idx (start_log_RangeInclusive_Idx self) (end_log_RangeInclusive_Idx self)
       else
-        steps_Idx (end_log_RangeInclusive_Idx self) (- Seq.length visited) (end_log_RangeInclusive_Idx o)
+        Seq.length visited = steps_to_Idx (end_log_RangeInclusive_Idx o) (end_log_RangeInclusive_Idx self)
         /\ start_log_RangeInclusive_Idx self = start_log_RangeInclusive_Idx o
     
     )
   /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-    -> steps_Idx (end_log_RangeInclusive_Idx self) (- i) (Seq.get visited i))
+    -> i = steps_to_Idx (Seq.get visited i) (end_log_RangeInclusive_Idx self))
 
 predicate produces_RangeInclusive_Idx (self: t_RangeInclusive_Idx) (visited: Seq.seq t_Idx) (o: t_RangeInclusive_Idx) =
   (if is_empty_log_RangeInclusive_Idx self then
@@ -137,14 +130,14 @@ predicate produces_RangeInclusive_Idx (self: t_RangeInclusive_Idx) (visited: Seq
     else
       if is_empty_log_RangeInclusive_Idx o then
         gt_log_Int (Seq.length visited) 0
-        /\ steps_Idx (start_log_RangeInclusive_Idx self) (Seq.length visited - 1) (end_log_RangeInclusive_Idx self)
+        /\ Seq.length visited - 1 = steps_to_Idx (start_log_RangeInclusive_Idx self) (end_log_RangeInclusive_Idx self)
       else
-        steps_Idx (start_log_RangeInclusive_Idx self) (Seq.length visited) (start_log_RangeInclusive_Idx o)
+        Seq.length visited = steps_to_Idx (start_log_RangeInclusive_Idx self) (start_log_RangeInclusive_Idx o)
         /\ end_log_RangeInclusive_Idx self = end_log_RangeInclusive_Idx o
     
     )
   /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-    -> steps_Idx (start_log_RangeInclusive_Idx self) i (Seq.get visited i))
+    -> i = steps_to_Idx (start_log_RangeInclusive_Idx self) (Seq.get visited i))
 
 function produces_trans_RangeInclusive_Idx (a: t_RangeInclusive_Idx) (ab: Seq.seq t_Idx) (b: t_RangeInclusive_Idx) (bc: Seq.seq t_Idx) (c: t_RangeInclusive_Idx) : ()
  = ()

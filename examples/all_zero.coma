@@ -36,17 +36,17 @@ module M_all_zero
   
   meta "rewrite_def" predicate gt_log_Int
   
-  predicate steps_usize [@inline:trivial] (self: UInt64.t) (count: int) (other: UInt64.t) =
-    UInt64.t'int self + count = UInt64.t'int other
+  function steps_to_usize [@inline:trivial] (self: UInt64.t) (other: UInt64.t) : int = UInt64.t'int other
+    - UInt64.t'int self
   
-  meta "rewrite_def" predicate steps_usize
+  meta "rewrite_def" function steps_to_usize
   
   predicate produces_Range_usize (self: t_Range_usize) (visited: Seq.seq UInt64.t) (o: t_Range_usize) =
     self.end' = o.end'
     /\ deep_model_usize self.start <= deep_model_usize o.start
     /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_usize o.start <= deep_model_usize o.end')
-    /\ steps_usize self.start (Seq.length visited) o.start
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> steps_usize self.start i (Seq.get visited i))
+    /\ Seq.length visited = steps_to_usize self.start o.start
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> i = steps_to_usize self.start (Seq.get visited i))
   
   function produces_trans_Range_usize (a: t_Range_usize) (ab: Seq.seq UInt64.t) (b: t_Range_usize) (bc: Seq.seq UInt64.t) (c: t_Range_usize) : ()
   

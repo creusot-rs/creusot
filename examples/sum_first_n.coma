@@ -57,10 +57,10 @@ module M_sum_first_n
   
   meta "rewrite_def" predicate gt_log_Int
   
-  predicate steps_u32 [@inline:trivial] (self: UInt32.t) (count: int) (other: UInt32.t) =
-    UInt32.t'int self + count = UInt32.t'int other
+  function steps_to_u32 [@inline:trivial] (self: UInt32.t) (other: UInt32.t) : int = UInt32.t'int other
+    - UInt32.t'int self
   
-  meta "rewrite_def" predicate steps_u32
+  meta "rewrite_def" function steps_to_u32
   
   predicate produces_RangeInclusive_u32 (self: t_RangeInclusive_u32) (visited: Seq.seq UInt32.t) (o: t_RangeInclusive_u32) =
     (if is_empty_log_RangeInclusive_u32 self then
@@ -68,14 +68,14 @@ module M_sum_first_n
       else
         if is_empty_log_RangeInclusive_u32 o then
           gt_log_Int (Seq.length visited) 0
-          /\ steps_u32 (start_log_RangeInclusive_u32 self) (Seq.length visited - 1) (end_log_RangeInclusive_u32 self)
+          /\ Seq.length visited - 1 = steps_to_u32 (start_log_RangeInclusive_u32 self) (end_log_RangeInclusive_u32 self)
         else
-          steps_u32 (start_log_RangeInclusive_u32 self) (Seq.length visited) (start_log_RangeInclusive_u32 o)
+          Seq.length visited = steps_to_u32 (start_log_RangeInclusive_u32 self) (start_log_RangeInclusive_u32 o)
           /\ end_log_RangeInclusive_u32 self = end_log_RangeInclusive_u32 o
       
       )
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> steps_u32 (start_log_RangeInclusive_u32 self) i (Seq.get visited i))
+      -> i = steps_to_u32 (start_log_RangeInclusive_u32 self) (Seq.get visited i))
   
   function produces_trans_RangeInclusive_u32 (a: t_RangeInclusive_u32) (ab: Seq.seq UInt32.t) (b: t_RangeInclusive_u32) (bc: Seq.seq UInt32.t) (c: t_RangeInclusive_u32) : ()
   

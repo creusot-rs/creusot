@@ -68,10 +68,10 @@ module M_sum_first_n_iter
   
   meta "rewrite_def" predicate gt_log_Int
   
-  predicate steps_usize [@inline:trivial] (self: UInt64.t) (count: int) (other: UInt64.t) =
-    UInt64.t'int self + count = UInt64.t'int other
+  function steps_to_usize [@inline:trivial] (self: UInt64.t) (other: UInt64.t) : int = UInt64.t'int other
+    - UInt64.t'int self
   
-  meta "rewrite_def" predicate steps_usize
+  meta "rewrite_def" function steps_to_usize
   
   predicate produces_RangeInclusive_usize (self: t_RangeInclusive_usize) (visited: Seq.seq UInt64.t) (o: t_RangeInclusive_usize) =
     (if is_empty_log_RangeInclusive_usize self then
@@ -79,15 +79,15 @@ module M_sum_first_n_iter
       else
         if is_empty_log_RangeInclusive_usize o then
           gt_log_Int (Seq.length visited) 0
-          /\ steps_usize (start_log_RangeInclusive_usize self) (Seq.length visited
-          - 1) (end_log_RangeInclusive_usize self)
+          /\ Seq.length visited - 1
+          = steps_to_usize (start_log_RangeInclusive_usize self) (end_log_RangeInclusive_usize self)
         else
-          steps_usize (start_log_RangeInclusive_usize self) (Seq.length visited) (start_log_RangeInclusive_usize o)
+          Seq.length visited = steps_to_usize (start_log_RangeInclusive_usize self) (start_log_RangeInclusive_usize o)
           /\ end_log_RangeInclusive_usize self = end_log_RangeInclusive_usize o
       
       )
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> steps_usize (start_log_RangeInclusive_usize self) i (Seq.get visited i))
+      -> i = steps_to_usize (start_log_RangeInclusive_usize self) (Seq.get visited i))
   
   function produces_trans_RangeInclusive_usize (a: t_RangeInclusive_usize) (ab: Seq.seq UInt64.t) (b: t_RangeInclusive_usize) (bc: Seq.seq UInt64.t) (c: t_RangeInclusive_usize) : ()
   
