@@ -21,12 +21,19 @@ module M_knapsack01_dyn
   
   meta "rewrite_def" function index_Vec_usize_Global
   
+  predicate postcondition_clone (self: ()) (args: UInt64.t) (result: UInt64.t) = let self'0 = args in result = self'0
+  
+  meta "rewrite_def" predicate postcondition_clone
+  
+  let clone_usize (self: UInt64.t) (return (x: UInt64.t)) = any
+    [ return (result: UInt64.t) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
+  
   let from_elem_usize (elem: UInt64.t) (n: UInt64.t) (return (x: t_Vec_usize_Global)) = any
     [ return (result: t_Vec_usize_Global) ->
     {[@stop_split] [@expl:from_elem_usize ensures] ([@stop_split] [@expl:from_elem ensures #0] Seq.length (view_Vec_usize_Global result)
         = UInt64.t'int n)
       /\ ([@stop_split] [@expl:from_elem ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int n
-        -> index_Vec_usize_Global result i = elem)}
+        -> index_Vec_usize_Global result i = elem \/ postcondition_clone () elem (index_Vec_usize_Global result i))}
       (! return {result}) ]
   
   type t_Vec_Item_Name_Global
@@ -102,13 +109,29 @@ module M_knapsack01_dyn
   
   meta "rewrite_def" function index_Vec_Vec_usize_Global_Global
   
+  predicate postcondition_clone'0 (self: ()) (args: t_Vec_usize_Global) (result: t_Vec_usize_Global) =
+    let self'0 = args in Seq.length (view_Vec_usize_Global self'0) = Seq.length (view_Vec_usize_Global result)
+    /\ (forall i: int. 0 <= i /\ i < Seq.length (view_Vec_usize_Global self'0)
+      -> postcondition_clone () (Seq.get (view_Vec_usize_Global self'0) i) (Seq.get (view_Vec_usize_Global result) i))
+  
+  meta "rewrite_def" predicate postcondition_clone'0
+  
+  let clone_Vec_usize_Global (self: t_Vec_usize_Global) (return (x: t_Vec_usize_Global)) = any
+    [ return (result: t_Vec_usize_Global) ->
+    {[@stop_split] [@expl:clone_Vec_usize_Global ensures] ([@stop_split] [@expl:clone ensures #0] Seq.length (view_Vec_usize_Global self)
+        = Seq.length (view_Vec_usize_Global result))
+      /\ ([@stop_split] [@expl:clone ensures #1] forall i: int. 0 <= i /\ i < Seq.length (view_Vec_usize_Global self)
+        -> postcondition_clone () (Seq.get (view_Vec_usize_Global self) i) (Seq.get (view_Vec_usize_Global result) i))}
+      (! return {result}) ]
+  
   let from_elem_Vec_usize_Global (elem: t_Vec_usize_Global) (n: UInt64.t) (return (x: t_Vec_Vec_usize_Global_Global)) =
   any
     [ return (result: t_Vec_Vec_usize_Global_Global) ->
     {[@stop_split] [@expl:from_elem_Vec_usize_Global ensures] ([@stop_split] [@expl:from_elem ensures #0] Seq.length (view_Vec_Vec_usize_Global_Global result)
         = UInt64.t'int n)
       /\ ([@stop_split] [@expl:from_elem ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int n
-        -> index_Vec_Vec_usize_Global_Global result i = elem)}
+        -> index_Vec_Vec_usize_Global_Global result i = elem
+        \/ postcondition_clone'0 () elem (index_Vec_Vec_usize_Global_Global result i))}
       (! return {result}) ]
   
   predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self

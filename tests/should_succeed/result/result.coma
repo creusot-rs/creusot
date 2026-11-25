@@ -160,17 +160,30 @@ module M_test_result
     [ return (result: MutBorrow.t Int32.t) -> {[@stop_split] [@expl:unwrap_err ensures] Err'3 result = self}
       (! return {result}) ]
   
+  predicate postcondition_clone (self: ()) (args: Int32.t) (result: Int32.t) = let self'0 = args in result = self'0
+  
+  meta "rewrite_def" predicate postcondition_clone
+  
+  let clone_i32 (self: Int32.t) (return (x: Int32.t)) = any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
+  
+  predicate resolve_ref_i32 [@inline:trivial] (_1: Int32.t) = true
+  
+  meta "rewrite_def" predicate resolve_ref_i32
+  
   let cloned_i32 (self: t_Result_ref_i32_ref_i32) (return (x: t_Result_i32_ref_i32)) = any
-    [ return (result: t_Result_i32_ref_i32) ->
-    {[@stop_split] [@expl:cloned_i32 ensures] ([@stop_split] [@expl:cloned ensures #0] forall t: Int32.t. self = Ok'0 t
-          -> result = Ok'2 t)
-      /\ ([@stop_split] [@expl:cloned ensures #1] forall e: Int32.t. self = Err'0 e -> result = Err'2 e)}
+    [ return (result: t_Result_i32_ref_i32) -> {[@stop_split] [@expl:cloned ensures] match self with
+        | Ok'0 t -> exists r: Int32.t. result = Ok'2 r /\ postcondition_clone () t r /\ resolve_ref_i32 t
+        | Err'0 e -> result = Err'2 e
+        end}
       (! return {result}) ]
   
   let cloned_i32'0 (self: t_Result_refmut_i32_refmut_i32) (return (x: t_Result_i32_refmut_i32)) = any
     [ return (result: t_Result_i32_refmut_i32) ->
-    {[@stop_split] [@expl:cloned_i32 ensures] ([@stop_split] [@expl:cloned ensures #0] forall t: MutBorrow.t Int32.t. self
-            = Ok'1 t -> result = Ok'3 (t.current) /\ resolve_refmut_i32 t)
+    {[@stop_split] [@expl:cloned_i32 ensures] ([@stop_split] [@expl:cloned ensures #0] match self with
+          | Ok'1 t -> exists r: Int32.t. result = Ok'3 r /\ postcondition_clone () t.current r /\ resolve_refmut_i32 t
+          | Err'1 e -> result = Err'3 e
+          end)
       /\ ([@stop_split] [@expl:cloned ensures #1] forall e: MutBorrow.t Int32.t. self = Err'1 e -> result = Err'3 e)}
       (! return {result}) ]
   

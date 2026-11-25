@@ -93,8 +93,9 @@ impl<T, A: Allocator> Invariant for Vec<T, A> {
 extern_spec! {
     mod std {
         mod vec {
+            // One of the elements may be `elem` (rather than the result of `clone`) but we don't specify which.
             #[ensures(result@.len() == n@)]
-            #[ensures(forall<i> 0 <= i && i < n@ ==> result[i] == elem)]
+            #[ensures(forall<i> 0 <= i && i < n@ ==> result[i] == elem || T::clone.postcondition((&elem,), result[i]))]
             fn from_elem<T: Clone>(elem: T, n: usize) -> Vec<T>;
         }
     }
