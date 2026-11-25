@@ -116,7 +116,7 @@
                 });
             in
             {
-              inherit (pkgs.creusot) prelude creusot;
+              inherit (pkgs.creusot) prelude creusot z3;
 
               default = mkCreusot { isFree = false; };
               free = mkCreusot { isFree = true; };
