@@ -10,3 +10,8 @@ pub fn test_array() {
     assert_eq!(b.next(), Some(1));
     assert_eq!(b.next(), None);
 }
+
+pub fn test_index() {
+    assert_eq!([1, 42][..1], [1]);
+    assert_eq!([1, 42][..=1], [1, 42]);
+}

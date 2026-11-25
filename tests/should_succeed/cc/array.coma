@@ -383,3 +383,258 @@ module M_test_array
     | & _120: t_Option_ref_i32 = Any.any_l ()
     | & _121: Slice64.array Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
 end
+module M_test_index
+  use creusot.slice.Slice64
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  use creusot.int.UInt64
+  use seq.Seq
+  use int.Int
+  
+  type t_RangeTo_usize = { end': UInt64.t }
+  
+  predicate inv_Seq_i32 [@inline:trivial] (_1: Seq.seq Int32.t) = true
+  
+  meta "rewrite_def" predicate inv_Seq_i32
+  
+  predicate invariant_array_i32_2 (self: Slice64.array Int32.t) =
+    inv_Seq_i32 (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (2: UInt64.t)
+  
+  predicate inv_array_i32_2 [@inline:trivial] (_1: Slice64.array Int32.t) = invariant_array_i32_2 _1
+  
+  meta "rewrite_def" predicate inv_array_i32_2
+  
+  predicate invariant_ref_array_i32_2 [@inline:trivial] (self: Slice64.array Int32.t) = inv_array_i32_2 self
+  
+  meta "rewrite_def" predicate invariant_ref_array_i32_2
+  
+  predicate inv_ref_array_i32_2 [@inline:trivial] (_1: Slice64.array Int32.t) = invariant_ref_array_i32_2 _1
+  
+  meta "rewrite_def" predicate inv_ref_array_i32_2
+  
+  predicate in_bounds_RangeTo_usize (self: t_RangeTo_usize) (seq: Seq.seq Int32.t) =
+    UInt64.t'int self.end' <= Seq.length seq
+  
+  predicate has_value_RangeTo_usize (self: t_RangeTo_usize) (seq: Seq.seq Int32.t) (out: Slice64.slice Int32.t) =
+    Seq.([..]) seq 0 (UInt64.t'int self.end') = Slice64.view out
+  
+  let index_array_i32_2 (self: Slice64.array Int32.t) (index: t_RangeTo_usize) (return (x: Slice64.slice Int32.t)) =
+  {[@stop_split] [@expl:index_array_i32_2 requires] ([@stop_split] [@expl:index 'self' type invariant] inv_ref_array_i32_2 self)
+    /\ ([@stop_split] [@expl:index requires] in_bounds_RangeTo_usize index (Slice64.view self))}
+    any
+    [ return (result: Slice64.slice Int32.t) ->
+    {[@stop_split] [@expl:index ensures] has_value_RangeTo_usize index (Slice64.view self) result}
+      (! return {result}) ]
+  
+  type tup2_ref_slice_i32_ref_array_i32_1 = { f0: Slice64.slice Int32.t; f1: Slice64.array Int32.t }
+  
+  predicate invariant_array_i32_1 (self: Slice64.array Int32.t) =
+    inv_Seq_i32 (Slice64.view self) /\ Seq.length (Slice64.view self) = UInt64.t'int (1: UInt64.t)
+  
+  predicate inv_array_i32_1 [@inline:trivial] (_1: Slice64.array Int32.t) = invariant_array_i32_1 _1
+  
+  meta "rewrite_def" predicate inv_array_i32_1
+  
+  predicate invariant_ref_array_i32_1 [@inline:trivial] (self: Slice64.array Int32.t) = inv_array_i32_1 self
+  
+  meta "rewrite_def" predicate invariant_ref_array_i32_1
+  
+  predicate inv_ref_array_i32_1 [@inline:trivial] (_1: Slice64.array Int32.t) = invariant_ref_array_i32_1 _1
+  
+  meta "rewrite_def" predicate inv_ref_array_i32_1
+  
+  function deep_model_i32 [@inline:trivial] (self: Int32.t) : int = Int32.to_int self
+  
+  meta "rewrite_def" function deep_model_i32
+  
+  function index_slice_i32 [@inline:trivial] (self: Slice64.slice Int32.t) (ix: int) : Int32.t =
+    Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_slice_i32
+  
+  function deep_model_slice_i32 (self: Slice64.slice Int32.t) : Seq.seq int
+  
+  axiom deep_model_slice_i32_spec:
+    forall self: Slice64.slice Int32.t [deep_model_slice_i32 self]. Seq.length (Slice64.view self)
+      = Seq.length (deep_model_slice_i32 self)
+  
+  axiom deep_model_slice_i32_spec'0: forall self: Slice64.slice Int32.t [deep_model_slice_i32 self]. forall i: int. 0
+            <= i
+          /\ i < Seq.length (deep_model_slice_i32 self)
+        -> Seq.get (deep_model_slice_i32 self) i = deep_model_i32 (index_slice_i32 self i)
+  
+  function deep_model_ref_slice_i32 [@inline:trivial] (self: Slice64.slice Int32.t) : Seq.seq int =
+    deep_model_slice_i32 self
+  
+  meta "rewrite_def" function deep_model_ref_slice_i32
+  
+  function index_array_i32_1 [@inline:trivial] (self: Slice64.array Int32.t) (ix: int) : Int32.t =
+    Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_array_i32_1
+  
+  function deep_model_array_i32_1 (self: Slice64.array Int32.t) : Seq.seq int
+  
+  axiom deep_model_array_i32_1_spec:
+    forall self: Slice64.array Int32.t [deep_model_array_i32_1 self]. Seq.length (Slice64.view self)
+      = Seq.length (deep_model_array_i32_1 self)
+  
+  axiom deep_model_array_i32_1_spec'0:
+    forall self: Slice64.array Int32.t [deep_model_array_i32_1 self]. forall i: int. 0 <= i
+          /\ i < Seq.length (deep_model_array_i32_1 self)
+        -> Seq.get (deep_model_array_i32_1 self) i = deep_model_i32 (index_array_i32_1 self i)
+  
+  function deep_model_ref_array_i32_1 [@inline:trivial] (self: Slice64.array Int32.t) : Seq.seq int =
+    deep_model_array_i32_1 self
+  
+  meta "rewrite_def" function deep_model_ref_array_i32_1
+  
+  let eq_slice_i32 (self: Slice64.slice Int32.t) (other: Slice64.array Int32.t) (return (x: bool)) =
+  {[@stop_split] [@expl:eq 'other' type invariant] inv_ref_array_i32_1 other}
+    any
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
+      = (deep_model_ref_slice_i32 self = deep_model_ref_array_i32_1 other)}
+      (! return {result}) ]
+  
+  type t_RangeToInclusive_usize = { end''0: UInt64.t }
+  
+  predicate in_bounds_RangeToInclusive_usize (self: t_RangeToInclusive_usize) (seq: Seq.seq Int32.t) =
+    UInt64.t'int self.end''0 < Seq.length seq
+  
+  predicate has_value_RangeToInclusive_usize (self: t_RangeToInclusive_usize) (seq: Seq.seq Int32.t) (out: Slice64.slice Int32.t) =
+    Seq.([..]) seq 0 (UInt64.t'int self.end''0 + 1) = Slice64.view out
+  
+  let index_array_i32_2'0 (self: Slice64.array Int32.t) (index: t_RangeToInclusive_usize)
+    (return (x: Slice64.slice Int32.t)) =
+  {[@stop_split] [@expl:index_array_i32_2 requires] ([@stop_split] [@expl:index 'self' type invariant] inv_ref_array_i32_2 self)
+    /\ ([@stop_split] [@expl:index requires] in_bounds_RangeToInclusive_usize index (Slice64.view self))}
+    any
+    [ return (result: Slice64.slice Int32.t) ->
+    {[@stop_split] [@expl:index ensures] has_value_RangeToInclusive_usize index (Slice64.view self) result}
+      (! return {result}) ]
+  
+  type tup2_ref_slice_i32_ref_array_i32_2 = { f0'0: Slice64.slice Int32.t; f1'0: Slice64.array Int32.t }
+  
+  function index_array_i32_2'1 [@inline:trivial] (self: Slice64.array Int32.t) (ix: int) : Int32.t =
+    Seq.get (Slice64.view self) ix
+  
+  meta "rewrite_def" function index_array_i32_2'1
+  
+  function deep_model_array_i32_2 (self: Slice64.array Int32.t) : Seq.seq int
+  
+  axiom deep_model_array_i32_2_spec:
+    forall self: Slice64.array Int32.t [deep_model_array_i32_2 self]. Seq.length (Slice64.view self)
+      = Seq.length (deep_model_array_i32_2 self)
+  
+  axiom deep_model_array_i32_2_spec'0:
+    forall self: Slice64.array Int32.t [deep_model_array_i32_2 self]. forall i: int. 0 <= i
+          /\ i < Seq.length (deep_model_array_i32_2 self)
+        -> Seq.get (deep_model_array_i32_2 self) i = deep_model_i32 (index_array_i32_2'1 self i)
+  
+  function deep_model_ref_array_i32_2 [@inline:trivial] (self: Slice64.array Int32.t) : Seq.seq int =
+    deep_model_array_i32_2 self
+  
+  meta "rewrite_def" function deep_model_ref_array_i32_2
+  
+  let eq_slice_i32'0 (self: Slice64.slice Int32.t) (other: Slice64.array Int32.t) (return (x: bool)) =
+  {[@stop_split] [@expl:eq 'other' type invariant] inv_ref_array_i32_2 other}
+    any
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
+      = (deep_model_ref_slice_i32 self = deep_model_ref_array_i32_2 other)}
+      (! return {result}) ]
+  
+  type t_AssertKind = Eq | Ne | Match
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let test_index (return (x: ())) = (! bb0
+    [ bb0 = s0
+      [ s0 = bb0'0
+        [ bb0'0 = s0'0
+          [ s0'0 = any
+            [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
+              /\ Seq.get __arr_temp.Slice64.elts 1 = (42: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 2}-
+              [ &_1 <- __arr_temp ] s1'0) ]
+          | s1'0 = [ &_ret'0 <- _1 ] s2'0
+          | s2'0 = _const_ret {_ret'0} ] ]
+        [ & _ret'0: Slice64.array Int32.t = Any.any_l () | & _1: Slice64.array Int32.t = Any.any_l () ]
+        [ _const_ret (_const: Slice64.array Int32.t) -> [ &_50 <- _const ] s1 ]
+      | s1 = [ &_7 <- { end' = (1: UInt64.t) } ] s2
+      | s2 = index_array_i32_2 {_50} {_7} (fun (_x: Slice64.slice Int32.t) -> [ &_4 <- _x ] s3)
+      | s3 = bb0'0
+        [ bb0'0 = s0'0
+          [ s0'0 = any
+            [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
+              /\ Seq.length __arr_temp.Slice64.elts = 1}-
+              [ &_1 <- __arr_temp ] s1'0) ]
+          | s1'0 = [ &_ret'0 <- _1 ] s2'0
+          | s2'0 = _const_ret {_ret'0} ] ]
+        [ & _ret'0: Slice64.array Int32.t = Any.any_l () | & _1: Slice64.array Int32.t = Any.any_l () ]
+        [ _const_ret (_const: Slice64.array Int32.t) -> [ &_49 <- _const ] s4 ]
+      | s4 = [ &_2 <- { f0 = _4; f1 = _49 } ] s5
+      | s5 = [ &left_val <- _2.f0 ] s6
+      | s6 = [ &right_val <- _2.f1 ] s7
+      | s7 = eq_slice_i32 {left_val} {right_val} (fun (_x: bool) -> [ &_12 <- _x ] s8)
+      | s8 = any [ br0 -> {_12 = false} (! bb4) | br1 -> {_12} (! bb3) ] ]
+    | bb3 = s0
+      [ s0 = bb0'0
+        [ bb0'0 = s0'0
+          [ s0'0 = any
+            [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
+              /\ Seq.get __arr_temp.Slice64.elts 1 = (42: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 2}-
+              [ &_1 <- __arr_temp ] s1'0) ]
+          | s1'0 = [ &_ret'0 <- _1 ] s2'0
+          | s2'0 = _const_ret {_ret'0} ] ]
+        [ & _ret'0: Slice64.array Int32.t = Any.any_l () | & _1: Slice64.array Int32.t = Any.any_l () ]
+        [ _const_ret (_const: Slice64.array Int32.t) -> [ &_48 <- _const ] s1 ]
+      | s1 = [ &_30 <- { end''0 = (1: UInt64.t) } ] s2
+      | s2 = index_array_i32_2'0 {_48} {_30} (fun (_x: Slice64.slice Int32.t) -> [ &_27 <- _x ] s3)
+      | s3 = bb0'0
+        [ bb0'0 = s0'0
+          [ s0'0 = any
+            [ any_ (__arr_temp: Slice64.array Int32.t) -> (! -{Seq.get __arr_temp.Slice64.elts 0 = (1: Int32.t)
+              /\ Seq.get __arr_temp.Slice64.elts 1 = (42: Int32.t) /\ Seq.length __arr_temp.Slice64.elts = 2}-
+              [ &_1 <- __arr_temp ] s1'0) ]
+          | s1'0 = [ &_ret'0 <- _1 ] s2'0
+          | s2'0 = _const_ret {_ret'0} ] ]
+        [ & _ret'0: Slice64.array Int32.t = Any.any_l () | & _1: Slice64.array Int32.t = Any.any_l () ]
+        [ _const_ret (_const: Slice64.array Int32.t) -> [ &_47 <- _const ] s4 ]
+      | s4 = [ &_25 <- { f0'0 = _27; f1'0 = _47 } ] s5
+      | s5 = [ &left_val'0 <- _25.f0'0 ] s6
+      | s6 = [ &right_val'0 <- _25.f1'0 ] s7
+      | s7 = eq_slice_i32'0 {left_val'0} {right_val'0} (fun (_x: bool) -> [ &_35 <- _x ] s8)
+      | s8 = any [ br0 -> {_35 = false} (! bb8) | br1 -> {_35} (! bb7) ] ]
+    | bb7 = return {_ret}
+    | bb8 = s0
+      [ s0 = [ &kind'0 <- Eq ] s1
+      | s1 = [ &_43 <- left_val'0 ] s2
+      | s2 = [ &_45 <- right_val'0 ] s3
+      | s3 = {false} any ]
+    | bb4 = s0
+      [ s0 = [ &kind <- Eq ] s1 | s1 = [ &_20 <- left_val ] s2 | s2 = [ &_22 <- right_val ] s3 | s3 = {false} any ] ]
+    [ & _ret: () = Any.any_l ()
+    | & _2: tup2_ref_slice_i32_ref_array_i32_1 = Any.any_l ()
+    | & _4: Slice64.slice Int32.t = Any.any_l ()
+    | & _7: t_RangeTo_usize = Any.any_l ()
+    | & left_val: Slice64.slice Int32.t = Any.any_l ()
+    | & right_val: Slice64.array Int32.t = Any.any_l ()
+    | & _12: bool = Any.any_l ()
+    | & kind: t_AssertKind = Any.any_l ()
+    | & _20: Slice64.slice Int32.t = Any.any_l ()
+    | & _22: Slice64.array Int32.t = Any.any_l ()
+    | & _25: tup2_ref_slice_i32_ref_array_i32_2 = Any.any_l ()
+    | & _27: Slice64.slice Int32.t = Any.any_l ()
+    | & _30: t_RangeToInclusive_usize = Any.any_l ()
+    | & left_val'0: Slice64.slice Int32.t = Any.any_l ()
+    | & right_val'0: Slice64.array Int32.t = Any.any_l ()
+    | & _35: bool = Any.any_l ()
+    | & kind'0: t_AssertKind = Any.any_l ()
+    | & _43: Slice64.slice Int32.t = Any.any_l ()
+    | & _45: Slice64.array Int32.t = Any.any_l ()
+    | & _47: Slice64.array Int32.t = Any.any_l ()
+    | & _48: Slice64.array Int32.t = Any.any_l ()
+    | & _49: Slice64.array Int32.t = Any.any_l ()
+    | & _50: Slice64.array Int32.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
