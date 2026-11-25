@@ -126,13 +126,17 @@ module M_knapsack01_dyn
   
   meta "rewrite_def" predicate gt_log_Int
   
+  predicate steps_usize [@inline:trivial] (self: UInt64.t) (count: int) (other: UInt64.t) =
+    UInt64.t'int self + count = UInt64.t'int other
+  
+  meta "rewrite_def" predicate steps_usize
+  
   predicate produces_Range_usize (self: t_Range_usize) (visited: Seq.seq UInt64.t) (o: t_Range_usize) =
     self.end' = o.end'
     /\ deep_model_usize self.start <= deep_model_usize o.start
     /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_usize o.start <= deep_model_usize o.end')
-    /\ Seq.length visited = deep_model_usize o.start - deep_model_usize self.start
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> deep_model_usize (Seq.get visited i) = deep_model_usize self.start + i)
+    /\ steps_usize self.start (Seq.length visited) o.start
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> steps_usize self.start i (Seq.get visited i))
   
   function produces_trans_Range_usize (a: t_Range_usize) (ab: Seq.seq UInt64.t) (b: t_Range_usize) (bc: Seq.seq UInt64.t) (c: t_Range_usize) : ()
   
@@ -294,22 +298,21 @@ module M_knapsack01_dyn
   
   meta "rewrite_def" predicate inv_refmut_RangeInclusive_usize
   
-  function range_inclusive_len_usize (r: t_RangeInclusive_usize) : int = if is_empty_log_RangeInclusive_usize r then
-      0
-    else
-      deep_model_usize (end_log_RangeInclusive_usize r) - deep_model_usize (start_log_RangeInclusive_usize r) + 1
-  
-  
-  axiom range_inclusive_len_usize_spec:
-    forall r: t_RangeInclusive_usize [range_inclusive_len_usize r]. is_empty_log_RangeInclusive_usize r
-      = (range_inclusive_len_usize r = 0)
-  
   predicate produces_RangeInclusive_usize (self: t_RangeInclusive_usize) (visited: Seq.seq UInt64.t) (o: t_RangeInclusive_usize) =
-    Seq.length visited = range_inclusive_len_usize self - range_inclusive_len_usize o
-    /\ (is_empty_log_RangeInclusive_usize self -> is_empty_log_RangeInclusive_usize o)
-    /\ (is_empty_log_RangeInclusive_usize o \/ end_log_RangeInclusive_usize self = end_log_RangeInclusive_usize o)
+    (if is_empty_log_RangeInclusive_usize self then
+        Seq.length visited = 0 /\ is_empty_log_RangeInclusive_usize o
+      else
+        if is_empty_log_RangeInclusive_usize o then
+          gt_log_Int (Seq.length visited) 0
+          /\ steps_usize (start_log_RangeInclusive_usize self) (Seq.length visited
+          - 1) (end_log_RangeInclusive_usize self)
+        else
+          steps_usize (start_log_RangeInclusive_usize self) (Seq.length visited) (start_log_RangeInclusive_usize o)
+          /\ end_log_RangeInclusive_usize self = end_log_RangeInclusive_usize o
+      
+      )
     /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> deep_model_usize (Seq.get visited i) = deep_model_usize (start_log_RangeInclusive_usize self) + i)
+      -> steps_usize (start_log_RangeInclusive_usize self) i (Seq.get visited i))
   
   function produces_trans_RangeInclusive_usize (a: t_RangeInclusive_usize) (ab: Seq.seq UInt64.t) (b: t_RangeInclusive_usize) (bc: Seq.seq UInt64.t) (c: t_RangeInclusive_usize) : ()
   

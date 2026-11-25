@@ -20,13 +20,17 @@ module M_inc_max_repeat
   
   meta "rewrite_def" predicate gt_log_Int
   
+  predicate steps_u32 [@inline:trivial] (self: UInt32.t) (count: int) (other: UInt32.t) =
+    UInt32.t'int self + count = UInt32.t'int other
+  
+  meta "rewrite_def" predicate steps_u32
+  
   predicate produces_Range_u32 (self: t_Range_u32) (visited: Seq.seq UInt32.t) (o: t_Range_u32) =
     self.end' = o.end'
     /\ deep_model_u32 self.start <= deep_model_u32 o.start
     /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_u32 o.start <= deep_model_u32 o.end')
-    /\ Seq.length visited = deep_model_u32 o.start - deep_model_u32 self.start
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> deep_model_u32 (Seq.get visited i) = deep_model_u32 self.start + i)
+    /\ steps_u32 self.start (Seq.length visited) o.start
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> steps_u32 self.start i (Seq.get visited i))
   
   function produces_trans_Range_u32 (a: t_Range_u32) (ab: Seq.seq UInt32.t) (b: t_Range_u32) (bc: Seq.seq UInt32.t) (c: t_Range_u32) : ()
   

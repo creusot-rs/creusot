@@ -1,10 +1,11 @@
-use crate::{prelude::*, std::iter::ExactSizeIteratorSpec};
-#[cfg(feature = "nightly")]
-use core::iter::Step;
+use crate::{
+    prelude::*,
+    std::iter::{ExactSizeIteratorSpec, StepSpec},
+};
 use core::ops::{Range, RangeInclusive};
 
 #[cfg(feature = "nightly")]
-impl<Idx: DeepModel<DeepModelTy = Int> + Step> IteratorSpec for Range<Idx> {
+impl<Idx: StepSpec> IteratorSpec for Range<Idx> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
@@ -17,9 +18,8 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> IteratorSpec for Range<Idx> {
         pearlite! {
             self.end == o.end && self.start.deep_model() <= o.start.deep_model()
             && (visited.len() > 0 ==> o.start.deep_model() <= o.end.deep_model())
-            && visited.len() == o.start.deep_model() - self.start.deep_model()
-            && forall<i> 0 <= i && i < visited.len() ==>
-                visited[i].deep_model() == self.start.deep_model() + i
+            && self.start.steps(visited.len(), o.start)
+            && forall<i> 0 <= i && i < visited.len() ==> self.start.steps(i, visited[i])
         }
     }
 
@@ -35,16 +35,17 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> IteratorSpec for Range<Idx> {
 }
 
 extern_spec! {
-    impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for Range<Idx> {
+    impl<Idx: StepSpec> Iterator for Range<Idx> {
         #[ensures(self.start.deep_model() >= self.end.deep_model() ==>
             result == (0usize, Some(0usize)))]
-        #[ensures({
-            let s = self.end.deep_model() - self.start.deep_model();
-            s >= 0 && s <= usize::MAX@ ==>
-            result.0@ == s && result.1 == Some(result.0)
-        })]
-        #[ensures(self.end.deep_model() - self.start.deep_model() > usize::MAX@ ==>
-            result == (usize::MAX, None))]
+        #[ensures(forall<count: Int>
+            self.start.steps(count, self.end)
+            ==> result == if count <= usize::MAX@ {
+                (count.into(), Some(count.into()))
+            } else {
+                (usize::MAX, None)
+            }
+        )]
         fn size_hint(&self) -> (usize, Option<usize>);
     }
 }
@@ -69,15 +70,14 @@ impl_exact_size_range! { i8 u8 i16 u16 isize usize }
 impl_exact_size_range! { i32 u32 }
 
 #[cfg(feature = "nightly")]
-impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for Range<Idx> {
+impl<Idx: StepSpec> DoubleEndedIteratorSpec for Range<Idx> {
     #[logic(open)]
     fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
             self.start == o.start && self.end.deep_model() >= o.end.deep_model()
             && (visited.len() > 0 ==> o.end.deep_model() >= o.start.deep_model())
-            && visited.len() == self.end.deep_model() - o.end.deep_model()
-            && forall<i> 0 <= i && i < visited.len() ==>
-                visited[i].deep_model() == self.end.deep_model() - i - 1
+            && self.end.steps(-visited.len(), o.end)
+            && forall<i> 0 <= i && i < visited.len() ==> self.end.steps(-i-1, visited[i])
         }
     }
 
@@ -109,14 +109,8 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for Range
     fn size_hint_back_spec(&self, r: (usize, Option<usize>)) {}
 }
 
-#[logic(open)]
-#[ensures(r.is_empty_log() == (result == 0))]
-pub fn range_inclusive_len<Idx: DeepModel<DeepModelTy = Int>>(r: RangeInclusive<Idx>) -> Int {
-    if r.is_empty_log() { 0 } else { r.end_log().deep_model() - r.start_log().deep_model() + 1 }
-}
-
 #[cfg(feature = "nightly")]
-impl<Idx: DeepModel<DeepModelTy = Int> + Step> IteratorSpec for RangeInclusive<Idx> {
+impl<Idx: StepSpec> IteratorSpec for RangeInclusive<Idx> {
     #[logic(open, prophetic)]
     fn completed(&mut self) -> bool {
         pearlite! {
@@ -127,11 +121,22 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> IteratorSpec for RangeInclusive<I
     #[logic(open)]
     fn produces(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            visited.len() == range_inclusive_len(self) - range_inclusive_len(o) &&
-            (self.is_empty_log() ==> o.is_empty_log()) &&
-            (o.is_empty_log() || self.end_log() == o.end_log()) &&
-            forall<i> 0 <= i && i < visited.len() ==>
-                visited[i].deep_model() == self.start_log().deep_model() + i
+            (if self.is_empty_log() {
+                visited.len() == 0 && o.is_empty_log()
+            } else {
+                if o.is_empty_log() {
+                    visited.len() > 0 &&
+                    self.start_log().steps(
+                        visited.len() - 1,
+                        self.end_log())
+                } else {
+                    self.start_log().steps(
+                        visited.len(),
+                        o.start_log()) &&
+                    self.end_log() == o.end_log()
+                }
+            }) &&
+            forall<i> 0 <= i && i < visited.len() ==> self.start_log().steps(i, visited[i])
         }
     }
 
@@ -147,13 +152,17 @@ impl<Idx: DeepModel<DeepModelTy = Int> + Step> IteratorSpec for RangeInclusive<I
 }
 
 extern_spec! {
-    impl<Idx: DeepModel<DeepModelTy = Int> + Step> Iterator for RangeInclusive<Idx> {
-        #[ensures({
-            let s = range_inclusive_len(*self);
-            s <= usize::MAX@ ==> result.0@ == s && result.1 == Some(result.0)
-        })]
-        #[ensures(range_inclusive_len(*self) > usize::MAX@ ==>
-            result == (usize::MAX, None))]
+    impl<Idx: StepSpec> Iterator for RangeInclusive<Idx> {
+        #[ensures(self.is_empty_log() ==> result == (0usize, Some(0usize)))]
+        #[ensures(forall<count: Int>
+            !self.is_empty_log()
+            && self.start_log().steps(count, self.end_log())
+            ==> result == if count < usize::MAX@ {
+                    ((count + 1).into(), Some((count + 1).into()))
+                } else {
+                    (usize::MAX, None)
+                }
+        )]
         fn size_hint(&self) -> (usize, Option<usize>);
     }
 }
@@ -176,15 +185,26 @@ impl_exact_size_range_inclusive! { i8 u8 }
 impl_exact_size_range_inclusive! { i16 u16 }
 
 #[cfg(feature = "nightly")]
-impl<Idx: DeepModel<DeepModelTy = Int> + Step> DoubleEndedIteratorSpec for RangeInclusive<Idx> {
+impl<Idx: StepSpec> DoubleEndedIteratorSpec for RangeInclusive<Idx> {
     #[logic(open)]
     fn produces_back(self, visited: Seq<Self::Item>, o: Self) -> bool {
         pearlite! {
-            visited.len() == range_inclusive_len(self) - range_inclusive_len(o) &&
-            (self.is_empty_log() ==> o.is_empty_log()) &&
-            (o.is_empty_log() || self.start_log() == o.start_log()) &&
-            forall<i> 0 <= i && i < visited.len() ==>
-                visited[i].deep_model() == self.end_log().deep_model() - i
+            (if self.is_empty_log() {
+                visited.len() == 0 && o.is_empty_log()
+            } else {
+                if o.is_empty_log() {
+                    visited.len() > 0 &&
+                    self.end_log().steps(
+                        -visited.len() + 1,
+                        self.start_log())
+                } else {
+                    self.end_log().steps(
+                        -visited.len(),
+                        o.end_log()) &&
+                    self.start_log() == o.start_log()
+                }
+            }) &&
+            forall<i> 0 <= i && i < visited.len() ==> self.end_log().steps(-i, visited[i])
         }
     }
 

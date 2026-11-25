@@ -47,7 +47,14 @@
 #![cfg_attr(feature = "nightly", allow(incomplete_features, internal_features))]
 #![cfg_attr(
     feature = "nightly",
-    feature(step_trait, unboxed_closures, tuple_trait, edition_panic, sync_unsafe_cell)
+    feature(
+        step_trait,
+        unboxed_closures,
+        tuple_trait,
+        edition_panic,
+        sync_unsafe_cell,
+        nonzero_internals
+    )
 )]
 #![cfg_attr(all(feature = "nightly", feature = "std"), feature(allocator_ext))]
 #![cfg_attr(
@@ -70,7 +77,6 @@
         negative_impls,
         exact_size_is_empty,
         sized_hierarchy,
-        nonzero_internals,
         discriminant_kind,
     )
 )]

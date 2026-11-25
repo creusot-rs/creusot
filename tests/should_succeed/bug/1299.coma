@@ -43,13 +43,17 @@ module M_count_paths
   
   meta "rewrite_def" predicate gt_log_Int
   
+  predicate steps_isize [@inline:trivial] (self: Int64.t) (count: int) (other: Int64.t) =
+    Int64.to_int self + count = Int64.to_int other
+  
+  meta "rewrite_def" predicate steps_isize
+  
   predicate produces_Range_isize (self: t_Range_isize) (visited: Seq.seq Int64.t) (o: t_Range_isize) =
     self.end' = o.end'
     /\ deep_model_isize self.start <= deep_model_isize o.start
     /\ (gt_log_Int (Seq.length visited) 0 -> deep_model_isize o.start <= deep_model_isize o.end')
-    /\ Seq.length visited = deep_model_isize o.start - deep_model_isize self.start
-    /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-      -> deep_model_isize (Seq.get visited i) = deep_model_isize self.start + i)
+    /\ steps_isize self.start (Seq.length visited) o.start
+    /\ (forall i: int. 0 <= i /\ i < Seq.length visited -> steps_isize self.start i (Seq.get visited i))
   
   function produces_trans_Range_isize (a: t_Range_isize) (ab: Seq.seq Int64.t) (b: t_Range_isize) (bc: Seq.seq Int64.t) (c: t_Range_isize) : ()
   

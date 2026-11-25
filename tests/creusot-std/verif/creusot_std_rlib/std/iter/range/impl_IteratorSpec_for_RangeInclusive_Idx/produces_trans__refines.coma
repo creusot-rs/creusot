@@ -7,7 +7,27 @@ type t_RangeInclusive_Idx
 
 type t_Idx
 
-function deep_model_Idx (self: t_Idx) : int
+type t_DeepModelTy
+
+predicate lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
+
+predicate le_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy)
+
+function le_lt_log_DeepModelTy (self: t_DeepModelTy) (other: t_DeepModelTy) : ()
+
+axiom le_lt_log_DeepModelTy_spec: forall self: t_DeepModelTy, other: t_DeepModelTy. le_log_DeepModelTy self other
+    = (lt_log_DeepModelTy self other \/ self = other)
+
+function transitive_DeepModelTy (x: t_DeepModelTy) (y: t_DeepModelTy) (z: t_DeepModelTy) : ()
+
+axiom transitive_DeepModelTy_spec: forall x: t_DeepModelTy, y: t_DeepModelTy, z: t_DeepModelTy. lt_log_DeepModelTy x y
+    -> lt_log_DeepModelTy y z -> lt_log_DeepModelTy x z
+
+function irreflexive_DeepModelTy (self: t_DeepModelTy) : ()
+
+axiom irreflexive_DeepModelTy_spec: forall self: t_DeepModelTy. not lt_log_DeepModelTy self self
+
+function deep_model_Idx (self: t_Idx) : t_DeepModelTy
 
 function start_log_RangeInclusive_Idx (self: t_RangeInclusive_Idx) : t_Idx
 
@@ -17,24 +37,51 @@ predicate is_empty_log_RangeInclusive_Idx (self: t_RangeInclusive_Idx)
 
 axiom is_empty_log_RangeInclusive_Idx_spec:
   forall self: t_RangeInclusive_Idx [is_empty_log_RangeInclusive_Idx self]. not is_empty_log_RangeInclusive_Idx self
-    -> deep_model_Idx (start_log_RangeInclusive_Idx self) <= deep_model_Idx (end_log_RangeInclusive_Idx self)
+    -> le_log_DeepModelTy (deep_model_Idx (start_log_RangeInclusive_Idx self)) (deep_model_Idx (end_log_RangeInclusive_Idx self))
 
-function range_inclusive_len_Idx (r: t_RangeInclusive_Idx) : int = if is_empty_log_RangeInclusive_Idx r then
-    0
-  else
-    deep_model_Idx (end_log_RangeInclusive_Idx r) - deep_model_Idx (start_log_RangeInclusive_Idx r) + 1
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
 
+meta "rewrite_def" predicate gt_log_Int
 
-axiom range_inclusive_len_Idx_spec:
-  forall r: t_RangeInclusive_Idx [range_inclusive_len_Idx r]. is_empty_log_RangeInclusive_Idx r
-    = (range_inclusive_len_Idx r = 0)
+predicate steps_Idx (self: t_Idx) (count: int) (other: t_Idx)
+
+function steps_up_Idx (self: t_Idx) (count: int) (other: t_Idx) : ()
+
+axiom steps_up_Idx_spec: forall self: t_Idx, count: int, other: t_Idx. steps_Idx self count other
+    -> lt_log_DeepModelTy (deep_model_Idx self) (deep_model_Idx other) = (0 < count)
+
+function steps_trans_Idx (a: t_Idx) (ab: int) (b: t_Idx) (bc: int) (c: t_Idx) : ()
+
+axiom steps_trans_Idx_spec: forall a: t_Idx, ab: int, b: t_Idx, bc: int, c: t_Idx. steps_Idx a ab b
+    -> steps_Idx b bc c -> steps_Idx a (ab + bc) c
+
+function steps_sym_Idx (a: t_Idx) (ab: int) (b: t_Idx) : ()
+
+axiom steps_sym_Idx_spec: forall a: t_Idx, ab: int, b: t_Idx. steps_Idx a ab b -> steps_Idx b (- ab) a
+
+function steps_refl_Idx (self: t_Idx) : ()
+
+axiom steps_refl_Idx_spec: forall self: t_Idx. steps_Idx self 0 self
+
+function steps_unique_Idx (self: t_Idx) (count1: int) (count2: int) (other: t_Idx) : ()
+
+axiom steps_unique_Idx_spec: forall self: t_Idx, count1: int, count2: int, other: t_Idx. steps_Idx self count1 other
+    -> steps_Idx self count2 other -> count1 = count2
 
 predicate produces_RangeInclusive_Idx (self: t_RangeInclusive_Idx) (visited: Seq.seq t_Idx) (o: t_RangeInclusive_Idx) =
-  Seq.length visited = range_inclusive_len_Idx self - range_inclusive_len_Idx o
-  /\ (is_empty_log_RangeInclusive_Idx self -> is_empty_log_RangeInclusive_Idx o)
-  /\ (is_empty_log_RangeInclusive_Idx o \/ end_log_RangeInclusive_Idx self = end_log_RangeInclusive_Idx o)
+  (if is_empty_log_RangeInclusive_Idx self then
+      Seq.length visited = 0 /\ is_empty_log_RangeInclusive_Idx o
+    else
+      if is_empty_log_RangeInclusive_Idx o then
+        gt_log_Int (Seq.length visited) 0
+        /\ steps_Idx (start_log_RangeInclusive_Idx self) (Seq.length visited - 1) (end_log_RangeInclusive_Idx self)
+      else
+        steps_Idx (start_log_RangeInclusive_Idx self) (Seq.length visited) (start_log_RangeInclusive_Idx o)
+        /\ end_log_RangeInclusive_Idx self = end_log_RangeInclusive_Idx o
+    
+    )
   /\ (forall i: int. 0 <= i /\ i < Seq.length visited
-    -> deep_model_Idx (Seq.get visited i) = deep_model_Idx (start_log_RangeInclusive_Idx self) + i)
+    -> steps_Idx (start_log_RangeInclusive_Idx self) i (Seq.get visited i))
 
 meta "compute_max_steps" 1000000
 

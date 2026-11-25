@@ -17,19 +17,23 @@ function deep_model_usize [@inline:trivial] (self: UInt64.t) : int = UInt64.t'in
 
 meta "rewrite_def" function deep_model_usize
 
+predicate steps_usize [@inline:trivial] (self: UInt64.t) (count: int) (other: UInt64.t) =
+  UInt64.t'int self + count = UInt64.t'int other
+
+meta "rewrite_def" predicate steps_usize
+
 constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
-
-predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
-
-meta "rewrite_def" predicate gt_log_Int
 
 predicate postcondition_size_hint (self: ()) (args: t_Range_usize) (result: tup2_usize_Option_usize) =
   let self'0 = args in (ge_log_Int (deep_model_usize self'0.start) (deep_model_usize self'0.end')
     -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-  /\ (let s = deep_model_usize self'0.end' - deep_model_usize self'0.start in ge_log_Int s 0
-      /\ s <= UInt64.t'int const_MAX -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-  /\ (gt_log_Int (deep_model_usize self'0.end' - deep_model_usize self'0.start) (UInt64.t'int const_MAX)
-  -> result = { f0 = const_MAX; f1 = None })
+  /\ (forall count: int. steps_usize self'0.start count self'0.end'
+    -> result
+    = (if count <= UInt64.t'int const_MAX then
+      { f0 = UInt64.of_int count; f1 = Some (UInt64.of_int count) }
+    else
+      { f0 = const_MAX; f1 = None }
+    ))
 
 meta "rewrite_def" predicate postcondition_size_hint
 
@@ -37,11 +41,13 @@ let size_hint_Range_usize (self: t_Range_usize) (return (x: tup2_usize_Option_us
   [ return (result: tup2_usize_Option_usize) ->
   {[@stop_split] [@expl:size_hint_Range_usize ensures] ([@stop_split] [@expl:size_hint ensures #0] ge_log_Int (deep_model_usize self.start) (deep_model_usize self.end')
       -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-    /\ ([@stop_split] [@expl:size_hint ensures #1] let s = deep_model_usize self.end'
-      - deep_model_usize self.start in ge_log_Int s 0 /\ s <= UInt64.t'int const_MAX
-      -> UInt64.t'int result.f0 = s /\ result.f1 = Some (result.f0))
-    /\ ([@stop_split] [@expl:size_hint ensures #2] gt_log_Int (deep_model_usize self.end'
-      - deep_model_usize self.start) (UInt64.t'int const_MAX) -> result = { f0 = const_MAX; f1 = None })}
+    /\ ([@stop_split] [@expl:size_hint ensures #1] forall count: int. steps_usize self.start count self.end'
+      -> result
+      = (if count <= UInt64.t'int const_MAX then
+        { f0 = UInt64.of_int count; f1 = Some (UInt64.of_int count) }
+      else
+        { f0 = const_MAX; f1 = None }
+      ))}
     (! return {result}) ]
 
 meta "compute_max_steps" 1000000

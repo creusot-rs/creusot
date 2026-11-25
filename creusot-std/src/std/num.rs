@@ -789,10 +789,11 @@ macro_rules! spec_shifts_logic {
 
 spec_shifts_logic!(|u8| u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize,);
 
-#[cfg(creusot)]
-use core::num::{NonZero, ZeroablePrimitive};
+use core::num::NonZero;
+#[cfg(feature = "nightly")]
+use core::num::ZeroablePrimitive;
 
-#[cfg(creusot)]
+#[cfg(feature = "nightly")]
 impl<T: ZeroablePrimitive + View> View for NonZero<T> {
     type ViewTy = T::ViewTy;
     #[logic(open, inline)]
@@ -801,7 +802,7 @@ impl<T: ZeroablePrimitive + View> View for NonZero<T> {
     }
 }
 
-#[cfg(creusot)]
+#[cfg(feature = "nightly")]
 impl<T: ZeroablePrimitive + DeepModel> DeepModel for NonZero<T> {
     type DeepModelTy = T::DeepModelTy;
     #[logic(open, inline)]
@@ -810,19 +811,19 @@ impl<T: ZeroablePrimitive + DeepModel> DeepModel for NonZero<T> {
     }
 }
 
-#[cfg(creusot)]
+#[cfg(feature = "nightly")]
 impl<T: ZeroablePrimitive + Plain + View<ViewTy = Int>> Plain for NonZero<T> {
-    #[requires(inv(*snap))]
-    #[ensures(*result == *snap)]
+    #[requires(inv(*_snap))]
+    #[ensures(*result == *_snap)]
     #[check(ghost)]
-    fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
+    fn into_ghost(_snap: Snapshot<Self>) -> Ghost<Self> {
         ghost! {
-            unsafe { Self::new_unchecked(*snapshot!(snap.get_logic()).into_ghost()) }
+            unsafe { Self::new_unchecked(*snapshot!(_snap.get_logic()).into_ghost()) }
         }
     }
 }
 
-#[cfg(creusot)]
+#[cfg(feature = "nightly")]
 impl<T: ZeroablePrimitive + View<ViewTy = Int>> Invariant for NonZero<T> {
     #[logic(open, prophetic)]
     fn invariant(self) -> bool {
@@ -852,7 +853,6 @@ impl<T: ZeroablePrimitive> NonZeroExt for NonZero<T> {
     }
 }
 
-#[cfg(creusot)]
 extern_spec! {
     impl<T: ZeroablePrimitive> NonZero<T> {
         #[ensures(result == self.get_logic())]

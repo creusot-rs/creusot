@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use core::iter::*;
+use core::{iter::*, num::NonZero};
 
 mod chain;
 mod cloned;
@@ -308,5 +308,116 @@ impl<I: ExactSizeIteratorSpec + ?Sized> ExactSizeIteratorSpec for &mut I {
     #[ensures(r.1 == Some(r.0))]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {
         (**self).size_hint_exact(r)
+    }
+}
+
+pub trait StepSpec: Step + DeepModel<DeepModelTy: OrdLogic> {
+    /// This is a relation rather than a function
+    /// to support infinite iterators.
+    #[logic]
+    fn steps(self, count: Int, other: Self) -> bool;
+
+    #[logic(law)]
+    #[requires(self.steps(count1, other))]
+    #[requires(self.steps(count2, other))]
+    #[ensures(count1 == count2)]
+    fn steps_unique(self, count1: Int, count2: Int, other: Self);
+
+    #[logic(law)]
+    #[ensures(self.steps(0, self))]
+    fn steps_refl(self);
+
+    #[logic(law)]
+    #[requires(a.steps(ab, b))]
+    #[ensures(b.steps(-ab, a))]
+    fn steps_sym(a: Self, ab: Int, b: Self);
+
+    #[logic(law)]
+    #[requires(a.steps(ab, b))]
+    #[requires(b.steps(bc, c))]
+    #[ensures(a.steps(ab + bc, c))]
+    fn steps_trans(a: Self, ab: Int, b: Self, bc: Int, c: Self);
+
+    #[logic(law)]
+    #[requires(self.steps(count, other))]
+    #[ensures((self.deep_model() < other.deep_model()) == (0 < count))]
+    fn steps_up(self, count: Int, other: Self);
+}
+
+macro_rules! step_spec_integer {
+    ($($t:ty)*) => {
+        $(impl StepSpec for $t {
+            #[logic(open, inline)]
+            fn steps(self, count: Int, other: Self) -> bool {
+                pearlite! { self@ + count == other@ }
+            }
+
+            #[logic]
+            fn steps_unique(self, _count1: Int, _count2: Int, _other: Self) {}
+
+            #[logic]
+            fn steps_refl(self) {}
+
+            #[logic]
+            fn steps_sym(_a: Self, _ab: Int, _b: Self) {}
+
+            #[logic]
+            fn steps_trans(_a: Self, _ab: Int, _b: Self, _bc: Int, _c: Self) {}
+
+            #[logic]
+            fn steps_up(self, _count: Int, _other: Self) {}
+        })*
+    };
+}
+
+step_spec_integer! {
+    NonZero<u8>
+    NonZero<u16>
+    NonZero<u32>
+    NonZero<u64>
+    NonZero<u128>
+    NonZero<usize>
+    i8
+    i16
+    i32
+    i64
+    i128
+    isize
+    u8
+    u16
+    u32
+    u64
+    u128
+    usize
+}
+
+extern_spec! {
+    mod core {
+        mod iter {
+            trait Step: StepSpec {
+                #[ensures(forall<count: usize> start.steps(count@, *end) == (result.1 == Some(count)))]
+                #[ensures(result.1 != None ==> result.1 == Some(result.0))]
+                #[ensures(start.deep_model() > end.deep_model() ==> result == (0usize, None))]
+                fn steps_between(start: &Self, end: &Self) -> (usize, Option<usize>);
+
+                #[ensures(match result {
+                    None => forall<end> !start.steps(count@, end),
+                    Some(end) => start.steps(count@, end),
+                })]
+                fn forward_checked(start: Self, count: usize) -> Option<Self>;
+
+                #[ensures(result.1 == start.steps(count@, result.0))]
+                fn forward_overflowing(start: Self, count: usize) -> (Self, bool);
+
+                #[ensures(match result {
+                    None => forall<end> !start.steps(-count@, end),
+                    Some(end) => start.steps(-count@, end),
+                })]
+                fn backward_checked(start: Self, count: usize) -> Option<Self>;
+
+                #[ensures(result.1 == start.steps(-count@, result.0))]
+                fn backward_overflowing(start: Self, count: usize) -> (Self, bool);
+            }
+        }
     }
 }
