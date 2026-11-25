@@ -50,8 +50,8 @@
             };
 
             alt-ergo = {
-              version = "2.6.4";
-              sha256 = "sha256-w1tbSewoFqJMkyWwg+7+I3g566zrgzMa7vBBvtcgsTc=";
+              version = "2.6.5";
+              sha256 = "sha256-iAmjBUOsalJlifcZjZ9IWDaRkJae/OszDmnkPEr1Lps=";
             };
 
             alt-ergo-free = {
