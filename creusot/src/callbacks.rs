@@ -1,11 +1,15 @@
-use rustc_borrowck::consumers::{BodyWithBorrowckFacts, ConsumerOptions};
-use rustc_data_structures::fx::FxHashMap;
+use once_map::OnceMap;
+use rustc_borrowck::consumers::{
+    BorrowIndex, BorrowSet, ConsumerOptions, calculate_borrows_out_of_scope_at_location,
+};
+use rustc_data_structures::fx::FxIndexMap;
 use rustc_driver::{Callbacks, Compilation};
 use rustc_hir::def_id::{DefId, LocalDefId};
+use rustc_index::IndexVec;
 use rustc_interface::{Config, interface::Compiler};
 use rustc_middle::{mir, ty::TyCtxt};
 
-use std::{cell::RefCell, collections::HashMap, thread_local};
+use std::sync::LazyLock;
 
 use crate::{
     cleanup_spec_closures::*,
@@ -60,10 +64,20 @@ impl ToWhy {
     }
 }
 
-thread_local! {
-    pub static MIR_BODIES:
-        RefCell<HashMap<LocalDefId, BodyWithBorrowckFacts<'static>>> =
-        RefCell::new(HashMap::new());
+/// Bodies produced by `mir_borrowck`, leaked so that `get_body` can release the lock.
+/// This `static` also serves as a compile-time check that `BorrowckBody: Sync`.
+static MIR_BODIES: LazyLock<OnceMap<LocalDefId, &'static BorrowckBody<'static>>> =
+    LazyLock::new(OnceMap::new);
+
+/// The parts of [`BodyWithBorrowckFacts`] that Creusot needs.
+///
+/// Unlike `BodyWithBorrowckFacts`, this is `Send` and `Sync`: we drop the `RegionInferenceContext`
+/// (which contains `Rc`s) after extracting the information we need from it.
+pub(crate) struct BorrowckBody<'tcx> {
+    pub(crate) body: mir::Body<'tcx>,
+    pub(crate) promoted: IndexVec<mir::Promoted, mir::Body<'tcx>>,
+    pub(crate) borrow_set: BorrowSet<'tcx>,
+    pub(crate) borrows_out_of_scope_at_location: FxIndexMap<mir::Location, Vec<BorrowIndex>>,
 }
 
 impl Callbacks for ToWhy {
@@ -91,6 +105,9 @@ impl Callbacks for ToWhy {
             // We reintroduce the MIR of Pearlite code for this analysis.
             // Then we remove it again for good.
             providers.queries.check_liveness = |tcx, local_id| {
+                // Make sure borrow checking is done before restoring the MIR,
+                // otherwise the borrow checker could miss it concurrently.
+                tcx.ensure_ok().mir_borrowck(tcx.typeck_root_def_id_local(local_id));
                 restore_mir_for_liveness_check(tcx, local_id);
                 let value = (rustc_interface::DEFAULT_QUERY_PROVIDERS.queries.check_liveness)(
                     tcx, local_id,
@@ -136,38 +153,41 @@ fn copy_mir_bodies<'tcx>(tcx: TyCtxt<'tcx>, def_id: LocalDefId) {
     let bodies_with_facts =
         rustc_borrowck::consumers::get_bodies_with_borrowck_facts(tcx, def_id, opts);
 
-    // SAFETY: The reader casts the 'static lifetime to 'tcx before using it.
-    let bodies_with_facts: FxHashMap<LocalDefId, BodyWithBorrowckFacts<'static>> =
-        unsafe { std::mem::transmute(bodies_with_facts) };
-
-    MIR_BODIES.with(|state| {
-        let mut map = state.borrow_mut();
-        for (def_id, mut body) in bodies_with_facts {
-            // We need to remove false edges. They are used in compilation of pattern matchings
-            // in ways that may result in move paths that are marked live and uninitilized at the
-            // same time. We cannot handle this in the generation of resolution.
-            // On the other hand, it is necessary to keep false unwind edges, because they are needed
-            // by liveness analysis.
-            for bbd in body.body.basic_blocks_mut().iter_mut() {
-                let term = bbd.terminator_mut();
-                if let mir::TerminatorKind::FalseEdge { real_target, .. } = term.kind {
-                    term.kind = mir::TerminatorKind::Goto {
-                        target: real_target,
-                        loop_hint_attrs: Default::default(),
-                    };
-                }
+    for (def_id, mut body) in bodies_with_facts {
+        // We need to remove false edges. They are used in compilation of pattern matchings
+        // in ways that may result in move paths that are marked live and uninitilized at the
+        // same time. We cannot handle this in the generation of resolution.
+        // On the other hand, it is necessary to keep false unwind edges, because they are needed
+        // by liveness analysis.
+        for bbd in body.body.basic_blocks_mut().iter_mut() {
+            let term = bbd.terminator_mut();
+            if let mir::TerminatorKind::FalseEdge { real_target, .. } = term.kind {
+                term.kind = mir::TerminatorKind::Goto {
+                    target: real_target,
+                    loop_hint_attrs: Default::default(),
+                };
             }
-            assert!(map.insert(def_id, body).is_none());
         }
-    });
+        let borrows_out_of_scope_at_location = calculate_borrows_out_of_scope_at_location(
+            &body.body,
+            &body.region_inference_context,
+            &body.borrow_set,
+        );
+        let body = BorrowckBody {
+            body: body.body,
+            promoted: body.promoted,
+            borrow_set: body.borrow_set,
+            borrows_out_of_scope_at_location,
+        };
+        // SAFETY: The reader casts the 'static lifetime to 'tcx before using it.
+        let body: BorrowckBody<'static> = unsafe { std::mem::transmute(body) };
+        MIR_BODIES.insert(def_id, |_| Box::leak(Box::new(body)));
+    }
 }
 
-/// Try to retrieve the promoted MIR for a body from a thread local cache.
+/// Try to retrieve the promoted MIR for a body from a global cache.
 /// The cache is populated when rustc runs the `mir_borrowck` query.
-pub fn get_body<'tcx, 'a>(
-    tcx: TyCtxt<'tcx>,
-    def_id: LocalDefId,
-) -> &'a BodyWithBorrowckFacts<'tcx> {
+pub(crate) fn get_body<'tcx, 'a>(tcx: TyCtxt<'tcx>, def_id: LocalDefId) -> &'a BorrowckBody<'tcx> {
     if let Some(body) = try_get_body(def_id) {
         return body;
     }
@@ -181,11 +201,10 @@ pub fn get_body<'tcx, 'a>(
 }
 
 /// Just try to `get` from `MIR_BODIES`
-fn try_get_body<'tcx, 'a>(def_id: LocalDefId) -> Option<&'a BodyWithBorrowckFacts<'tcx>> {
-    MIR_BODIES.with(|state| {
-        let map = state.borrow();
-        map.get(&def_id).map(|body| unsafe { std::mem::transmute(body) })
-    })
+fn try_get_body<'tcx, 'a>(def_id: LocalDefId) -> Option<&'a BorrowckBody<'tcx>> {
+    let body = MIR_BODIES.get(&def_id)?;
+    // SAFETY: The 'static lifetime is cast back to the actual lifetime 'tcx.
+    Some(unsafe { std::mem::transmute(body) })
 }
 
 /// Callback for libraries that don't depend on creusot-std, to store metadata needed in later passes

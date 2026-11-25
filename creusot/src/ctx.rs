@@ -32,7 +32,6 @@ use rustc_ast::{
     AttrVec, Fn, FnSig, NodeId,
     visit::{FnKind, Visitor, walk_fn},
 };
-use rustc_borrowck::consumers::BodyWithBorrowckFacts;
 use rustc_data_structures::steal::Steal;
 use rustc_errors::{Diag, DiagMessage};
 use rustc_hir::{
@@ -418,7 +417,7 @@ impl<'tcx> TranslationCtx<'tcx> {
         self.aliased_items.contains(&def_id)
     }
 
-    pub(crate) fn body_with_facts(&self, def_id: LocalDefId) -> &BodyWithBorrowckFacts<'tcx> {
+    pub(crate) fn body_with_facts(&self, def_id: LocalDefId) -> &callbacks::BorrowckBody<'tcx> {
         callbacks::get_body(self.tcx, def_id)
     }
 

@@ -1,7 +1,4 @@
-use rustc_borrowck::consumers::{
-    BorrowIndex, BorrowSet, PlaceConflictBias, PlaceExt, RegionInferenceContext,
-    calculate_borrows_out_of_scope_at_location,
-};
+use rustc_borrowck::consumers::{BorrowIndex, BorrowSet, PlaceConflictBias, PlaceExt};
 use rustc_data_structures::fx::FxIndexMap;
 use rustc_index::bit_set::MixedBitSet;
 // This Source Code Form is subject to the terms of the Mozilla Public
@@ -19,7 +16,7 @@ pub struct Borrows<'a, 'mir, 'tcx> {
     body: &'mir Body<'tcx>,
 
     borrow_set: &'a BorrowSet<'tcx>,
-    pub borrows_out_of_scope_at_location: FxIndexMap<Location, Vec<BorrowIndex>>,
+    pub borrows_out_of_scope_at_location: &'a FxIndexMap<Location, Vec<BorrowIndex>>,
 }
 
 // This analysis collects the active borrows at each program location.
@@ -37,11 +34,9 @@ impl<'a, 'mir, 'tcx> Borrows<'a, 'mir, 'tcx> {
     pub fn new(
         tcx: TyCtxt<'tcx>,
         body: &'mir Body<'tcx>,
-        regioncx: &RegionInferenceContext<'tcx>,
+        borrows_out_of_scope_at_location: &'a FxIndexMap<Location, Vec<BorrowIndex>>,
         borrow_set: &'a BorrowSet<'tcx>,
     ) -> Self {
-        let borrows_out_of_scope_at_location =
-            calculate_borrows_out_of_scope_at_location(body, regioncx, &*borrow_set);
         Borrows { tcx, body, borrow_set, borrows_out_of_scope_at_location }
     }
 

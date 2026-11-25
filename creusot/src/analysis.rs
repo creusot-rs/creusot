@@ -13,7 +13,7 @@ use borrows::*;
 use liveness_no_drop::*;
 use not_final_places::NotFinalPlaces;
 use rustc_abi::{FieldIdx, VariantIdx};
-use rustc_borrowck::consumers::{BodyWithBorrowckFacts, TwoPhaseActivation::ActivatedAt};
+use rustc_borrowck::consumers::TwoPhaseActivation::ActivatedAt;
 use rustc_hir::{
     HirId,
     def_id::{DefId, LocalDefId},
@@ -39,7 +39,7 @@ use crate::{
         resolve::{HasMoveDataExt as _, Resolver},
     },
     backend::closures::ClosSubst,
-    callbacks,
+    callbacks::{self, BorrowckBody},
     contracts_items::{is_erasure, is_snapshot_closure, is_spec},
     ctx::{HasTyCtxt, TranslationCtx},
     extended_location::ExtendedLocation,
@@ -301,7 +301,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
     pub fn new(
         ctx: &'a TranslationCtx<'tcx>,
         analysis_env: AnalysisEnv<'a, 'tcx>,
-        body: &'a BodyWithBorrowckFacts<'tcx>,
+        body: &'a BorrowckBody<'tcx>,
         body_specs: &'a mut BodySpecs<'tcx>,
         move_data: &'a MoveData<'tcx>,
     ) -> Self {
@@ -312,7 +312,7 @@ impl<'a, 'tcx> Analysis<'a, 'tcx> {
                 ctx,
                 &body.body,
                 &body.borrow_set,
-                &body.region_inference_context,
+                &body.borrows_out_of_scope_at_location,
                 move_data,
             ),
             current_resolved: Default::default(),
@@ -870,7 +870,7 @@ pub(crate) fn run_without_specs<'tcx>(
 /// Analysis to run from crates that use creusot-std.
 pub(crate) fn run_with_specs<'tcx>(
     ctx: &TranslationCtx<'tcx>,
-    body: &BodyWithBorrowckFacts<'tcx>,
+    body: &BorrowckBody<'tcx>,
     body_specs: &mut BodySpecs<'tcx>,
     body_locals: &BodyLocals<'tcx>,
 ) -> BorrowData<'tcx> {
