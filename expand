@@ -1,21 +1,23 @@
 #!/usr/bin/env bash
 
-pushd $(dirname $1) > /dev/null
-INPUTPATH=$(pwd)/$(basename $1)
+pushd "$(dirname "$1")" > /dev/null
+INPUTPATH=$(pwd)/$(basename "$1")
 popd > /dev/null
 SCRIPTPATH=$(dirname "$BASH_SOURCE")
-pushd $SCRIPTPATH > /dev/null
+pushd "$SCRIPTPATH" > /dev/null
 eval $(cargo run --bin dev-env)
-PROC=(./target/creusot/debug/build/creusot-std-proc/*/out)
+PROC=$(ls -td ./target/creusot/debug/build/creusot-std-proc/*/out | head -n1)
+STD=$(ls -t ./target/creusot/debug/build/creusot-std/*/out/libcreusot_std-*.rmeta | head -n1)
 cargo run --bin creusot-rustc --  \
   --edition=2024 \
   -Zno-codegen \
   -Zmacro-backtrace \
-  --extern creusot_std=./target/creusot/debug/libcreusot_std.rlib \
+  --extern creusot_std=$STD \
   -Ldependency=$PROC \
+  -Ldependency=$(dirname $STD) \
   --crate-type=lib \
   -Zunpretty=expanded \
-  $INPUTPATH \
+  "$INPUTPATH" \
   -- \
   --output-file /dev/null \
   --span-mode=absolute \
