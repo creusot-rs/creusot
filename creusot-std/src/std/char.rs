@@ -48,6 +48,9 @@ pub trait CharExt {
 
     #[logic]
     pub fn from_int(num: Int) -> Self;
+
+    #[logic]
+    pub fn injective_to_utf8();
 }
 
 impl CharExt for char {
@@ -66,9 +69,9 @@ impl CharExt for char {
     fn from_int(_: Int) -> Self {
         dead
     }
-}
 
-#[trusted]
-#[logic(open)]
-#[ensures(forall<c1: char, c2: char> c1.to_utf8() == c2.to_utf8() ==> c1 == c2)]
-pub fn injective_to_utf8() {}
+    #[trusted]
+    #[logic]
+    #[ensures(forall<c1: char, c2: char> c1.to_utf8() == c2.to_utf8() ==> c1 == c2)]
+    fn injective_to_utf8() {}
+}
