@@ -1,4 +1,4 @@
-use super::visibility;
+use super::{deep_model::uses_deep_model, visibility};
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, quote_spanned};
 use syn::{
@@ -23,9 +23,15 @@ pub fn derive_clone(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         Err(e) => return e.into_compile_error().into(),
     };
 
+    let deep_model_post = uses_deep_model(&input.attrs)
+        .then(|| quote! {
+            #[::creusot_std::macros::ensures(::creusot_std::model::DeepModel::deep_model(result) == ::creusot_std::model::DeepModel::deep_model(*self))]
+        });
+
     let expanded = quote! {
         impl #impl_generics ::core::clone::Clone for #name #ty_generics #where_clause {
             #[::creusot_std::macros::ensures(#post)]
+            #deep_model_post
             fn clone(&self) -> Self {
                 #body
             }
