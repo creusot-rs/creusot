@@ -16,6 +16,7 @@ let
     with creusot;
     (if isFree then [ alt-ergo-free ] else [ alt-ergo ])
     ++ [
+      colibri2
       cvc4
       cvc5
       why3

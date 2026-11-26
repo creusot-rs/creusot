@@ -3,6 +3,8 @@ pins: final: prev: {
     alt-ergo = final.callPackage ./alt-ergo.nix pins.alt-ergo;
     alt-ergo-free = final.callPackage ./alt-ergo-free.nix pins.alt-ergo-free;
 
+    colibri2 = final.callPackage ./colibri2.nix pins.colibri2;
+
     cvc4 = final.callPackage ./cvc4.nix pins.cvc4;
     cvc5 = final.callPackage ./cvc5.nix pins.cvc5;
 

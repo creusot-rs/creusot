@@ -10,26 +10,49 @@ use std::{
 #[derive(Clone, Copy)]
 pub struct ManagedBinary {
     pub bin: setup::Binary,
-    /// `None` if no binary release exists for this platform; the tool must then
-    /// be supplied with `--external`.
+    /// `None` if no binary release exists for this platform; the tool is then
+    /// installed from `opam_package` if set, or must be supplied with `--external`.
     url: &'static Option<Url>,
     download: fn(&Url, &Path, &Path, &Args) -> anyhow::Result<()>,
+    /// Opam package providing the tool, installed (at version `bin.version`) in
+    /// Creusot's Opam switch when there is no binary release for this platform.
+    opam_package: Option<&'static str>,
 }
 
 const ALTERGO: ManagedBinary = ManagedBinary {
     bin: setup::ALTERGO,
     url: &URLS.altergo,
     download: download_from_url_with_cache,
+    opam_package: None,
 };
 
-const Z3: ManagedBinary =
-    ManagedBinary { bin: setup::Z3, url: &URLS.z3, download: download_z3_from_url };
+const Z3: ManagedBinary = ManagedBinary {
+    bin: setup::Z3,
+    url: &URLS.z3,
+    download: download_z3_from_url,
+    opam_package: None,
+};
 
-const CVC4: ManagedBinary =
-    ManagedBinary { bin: setup::CVC4, url: &URLS.cvc4, download: download_from_url_with_cache };
+const CVC4: ManagedBinary = ManagedBinary {
+    bin: setup::CVC4,
+    url: &URLS.cvc4,
+    download: download_from_url_with_cache,
+    opam_package: None,
+};
 
-const CVC5: ManagedBinary =
-    ManagedBinary { bin: setup::CVC5, url: &URLS.cvc5, download: download_cvc5_from_url };
+const CVC5: ManagedBinary = ManagedBinary {
+    bin: setup::CVC5,
+    url: &URLS.cvc5,
+    download: download_cvc5_from_url,
+    opam_package: None,
+};
+
+const COLIBRI2: ManagedBinary = ManagedBinary {
+    bin: setup::COLIBRI2,
+    url: &URLS.colibri2,
+    download: download_from_url_with_cache,
+    opam_package: Some("colibri2"),
+};
 
 /// Install Creusot
 #[derive(Debug, Parser)]
@@ -70,6 +93,7 @@ enum SetupTool {
     Z3,
     CVC4,
     CVC5,
+    Colibri2,
 }
 
 impl Args {
@@ -253,6 +277,7 @@ fn install_provers(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<(
         (Z3, SetupTool::Z3),
         (CVC4, SetupTool::CVC4),
         (CVC5, SetupTool::CVC5),
+        (COLIBRI2, SetupTool::Colibri2),
     ] {
         if args.external.contains(&tool) {
             // create symbolic links for external tools
@@ -260,6 +285,15 @@ fn install_provers(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<(
         } else if let Some(url) = bin.url {
             // download binaries for builtins
             download(bin, url, &paths.cache_dir(), &paths.bin(), args)?;
+        } else if let Some(package) = bin.opam_package {
+            // build from source with opam, in Creusot's switch
+            install_from_opam(bin, package, paths, args).with_context(|| {
+                format!(
+                    "Failed to install {} with opam. Install it separately and re-run with `--external {}`.",
+                    bin.bin.display_name,
+                    format!("{tool:?}").to_lowercase(),
+                )
+            })?;
         } else {
             eprintln!(
                 "Skipping {}: no binary release for this platform. \
@@ -270,6 +304,33 @@ fn install_provers(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<(
         }
     }
     Ok(())
+}
+
+fn install_from_opam(
+    bin: ManagedBinary,
+    package: &str,
+    paths: &CreusotPaths,
+    args: &Args,
+) -> anyhow::Result<()> {
+    args.comment();
+    println!("Install {} {} with opam...", bin.bin.display_name, bin.bin.version);
+    let switch_dir = opam_switch(paths);
+    let opam_dir = switch_dir.join("_opam");
+    if !args.dry_run && !fs::exists(&opam_dir)? {
+        bail!(
+            "Creusot's opam switch {} does not exist: install the `why3` component first",
+            switch_dir.display()
+        )
+    }
+    let mut cmd = Command::new("opam");
+    cmd.args(["install", "--yes", "--switch"])
+        .arg(&switch_dir)
+        .arg(format!("{package}.{}", bin.bin.version));
+    args.run(cmd)?;
+    args.symlink_file(
+        opam_dir.join("bin").join(bin.bin.binary_name),
+        paths.bin().join(bin.bin.binary_name),
+    )
 }
 
 fn build_prelude(args: &Args) -> anyhow::Result<()> {
@@ -403,6 +464,10 @@ fn download(
     let path = dest_dir.join(bin.bin.binary_name);
     let dl = bin.download;
     dl(url, cache_dir, &path, args)?;
+    if args.dry_run {
+        println!("chmod 755 {}", path.display());
+        return Ok(());
+    }
     set_executable(&path)
 }
 

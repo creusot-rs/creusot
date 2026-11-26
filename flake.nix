@@ -59,6 +59,11 @@
               sha256 = "sha256-ksVP9HH9pY+T6Es/wgC9pGd805AGw1e1vgfVlNGCXG8=";
             };
 
+            colibri2 = {
+              version = "0.6";
+              sha256 = "sha256-aXS7A5cgJkft5Xdx4ylLidiZccPgdA5K3IqL2CZKtKM=";
+            };
+
             cvc4 = {
               version = "1.8";
               sha256 = "sha256-V6KShPLW6kFBJaNgqy98rjOxULmf5c8AmDwo9fclGuY=";
