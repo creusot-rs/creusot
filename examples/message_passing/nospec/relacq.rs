@@ -9,9 +9,8 @@ use std::{
     thread,
 };
 
-use creusot_std::{prelude::erasure, std::sync::SyncViewExt};
+use creusot_std::std::sync::SyncViewExt;
 
-#[erasure(spec::message_passing)]
 pub fn message_passing() {
     let flag = AtomicBool::new(false);
     let data = SyncUnsafeCell::new(0i32);
@@ -31,6 +30,10 @@ pub fn message_passing() {
     });
 }
 
-mod spec {
+pub mod spec {
+    erase! {
+        fn message_passing => super::message_passing;
+    }
+
     include!("../relacq.rs");
 }

@@ -7,9 +7,8 @@ use std::{
     thread,
 };
 
-use creusot_std::{prelude::erasure, std::thread::JoinHandleExt};
+use creusot_std::std::thread::JoinHandleExt;
 
-#[erasure(spec::parallel_add)]
 pub fn parallel_add() {
     let atomic = AtomicI32::new(0);
 
@@ -30,6 +29,10 @@ pub fn parallel_add() {
     assert!(n == 4i32);
 }
 
-mod spec {
+pub mod spec {
+    erase! {
+        fn parallel_add => super::parallel_add;
+    }
+
     include!("../rlx.rs");
 }

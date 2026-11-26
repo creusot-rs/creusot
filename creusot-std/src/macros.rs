@@ -567,35 +567,44 @@ pub use base_macros::constant;
 
 pub(crate) use base_macros::intrinsic;
 
-#[cfg(creusot)]
-#[macro_export]
-macro_rules! erase {
-    // `type A<T: U> => B<T>`
-    // expands to
-    // ```
-    // const _: () = {
-    //    #[creusot::no_translate]
-    //    #[creusot::erasure_type]
-    //    fn _erasure<T: U>(_: A<T>, _: B<T>) {}
-    // }
-    // ```
-    // Wrapping the function in a `const _` avoids name clashes.
-    // Parsing the type parameter list makes this rule a bit awkward.
-    (type $a1:ident $(:: $a2:ident)* $(< $($i:ident $(: $bound:ty)?),* >)? => $b:path $(; $($rest:tt)*)?) => {
-        const _: () = {
-            #[creusot::no_translate]
-            #[creusot::spec::erasure_type]
-            fn _erasure $(< $($i $(: $bound)?),* >)? (_: $a1 $(:: $a2)* $(< $($i),* >)?, _: $b) {}
-        };
-        $crate::erase!{$($($rest)*)?}
-    };
-    () => {};
-}
-
-#[cfg(not(creusot))]
-#[macro_export]
-macro_rules! erase {
-    ($($_:tt)*) => {};
-}
-
-pub use erase;
+/// Erasure specifications
+///
+/// ```ignore
+/// erase! {
+///     // type erasure
+///     type Source => Target;
+///     // function erasure
+///     fn source => target;
+/// }
+/// ```
+///
+/// # Type erasure
+///
+/// Erase a type into another type. The `Source` type must contain
+/// the same fields as the `Target` type, plus only extra ghost fields.
+///
+/// # Function erasure
+///
+/// `fn source => target` declares that `source` erases to `target`.
+/// It has the same meaning as `#[erasure(target)]` on `source`,
+/// but it does not need to be next to the definition of `source`.
+///
+/// When the `source` is a trait method implementation,
+/// you may need to bind type parameters explicitly with
+/// `for<...> fn source => target`.
+///
+/// Examples:
+///
+/// ```ignore
+/// erase! {
+///     fn spec::Queue::<T>::new => Queue::<T>::new;
+///     fn spec::Consumer::<T>::dequeue::<F> => Consumer::<T>::dequeue
+///         where F: FnGhost + FnOnce(&mut spec::QueueCommitter<T>);
+///     fn spec::channel::<T> => channel::<T>;
+///     fn <spec::Queue<T> as Clone>::clone => <Queue<T> as Clone>::clone;
+///     for<T: Clone> fn <spec::S<Vec<T>> as Trait>::f => <S<Vec<T>> as Trait>::f;
+/// }
+/// ```
+///
+/// See also the [guide: Erasure check](https://guide.creusot.rs/erasure.html).
+pub use base_macros::erase;

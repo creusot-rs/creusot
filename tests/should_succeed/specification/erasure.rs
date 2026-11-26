@@ -256,3 +256,55 @@ pub mod ops {
         }
     }
 }
+
+// `erase!` with a trait impl method as source
+pub trait Tr2 {
+    fn tr2(&self, x: i32) -> i32;
+}
+
+impl Tr2 for i32 {
+    fn tr2(&self, x: i32) -> i32 {
+        foo2(x, ghost! { 0int })
+    }
+}
+
+pub struct W<T>(pub T);
+
+impl<T> Tr2 for W<T> {
+    fn tr2(&self, x: i32) -> i32 {
+        foo2(x, ghost! { 0int })
+    }
+}
+
+pub fn tr2_i32(_: &i32, x: i32) -> i32 {
+    foo(x)
+}
+
+pub fn tr2_w<T>(_: &W<T>, x: i32) -> i32 {
+    foo(x)
+}
+
+erase! {
+    fn <i32 as Tr2>::tr2 => tr2_i32;
+    fn <W<T> as Tr2>::tr2 => tr2_w::<T>;
+}
+
+// `erase!` with an explicit binder, for impls whose `Self` type is not
+// applied to bare generic parameters
+pub trait Tr3<U> {
+    fn tr3(&self, x: i32) -> i32;
+}
+
+impl<T: Clone> Tr3<T> for W<Option<T>> {
+    fn tr3(&self, x: i32) -> i32 {
+        foo2(x, ghost! { 0int })
+    }
+}
+
+pub fn tr3_w<T>(_: &W<Option<T>>, x: i32) -> i32 {
+    foo(x)
+}
+
+erase! {
+    for<T: Clone> fn <W<Option<T>> as Tr3<T>>::tr3 => tr3_w::<T>;
+}

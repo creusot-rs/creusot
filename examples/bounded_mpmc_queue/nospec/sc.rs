@@ -7,11 +7,7 @@
 #![allow(creusot::contractless_external_function)]
 
 use core::mem::{MaybeUninit, replace};
-use creusot_std::{
-    ghost::ErasedGhostFn,
-    prelude::{erase, erasure},
-    std::sync::SyncViewExt,
-};
+use creusot_std::std::sync::SyncViewExt;
 use std::{
     cell::SyncUnsafeCell,
     sync::atomic::{AtomicUsize, Ordering},
@@ -28,13 +24,7 @@ struct QueueCell<T> {
     status: AtomicUsize,
 }
 
-erase! {
-    type spec::Queue<T> => Queue<T>;
-    type spec::QueueCell<T> => QueueCell<T>;
-}
-
-impl<T: 'static> Queue<T> {
-    #[erasure(spec::Queue::<T>::new)]
+impl<T> Queue<T> {
     pub fn new(length: usize) -> Self {
         let mut cells: Vec<QueueCell<T>> = Vec::new();
 
@@ -51,7 +41,6 @@ impl<T: 'static> Queue<T> {
         Queue { cells, head, tail }
     }
 
-    #[erasure(spec::Queue::<T>::try_enqueue::<ErasedGhostFn<T, spec::ErasedCommitter, ()>>)]
     pub fn try_enqueue(&self, item: T) -> bool {
         let head = self.head.load(Ordering::SeqCst);
         let head_mod = head % self.cells.len();
@@ -77,7 +66,6 @@ impl<T: 'static> Queue<T> {
         true
     }
 
-    #[erasure(spec::Queue::<T>::try_dequeue::<ErasedGhostFn<T, spec::ErasedCommitter, ()>>)]
     pub fn try_dequeue(&self) -> Option<T> {
         let tail = self.tail.load(Ordering::SeqCst);
         let tail_mod = tail % self.cells.len();
@@ -105,10 +93,13 @@ impl<T: 'static> Queue<T> {
 }
 
 pub mod spec {
-    include!("../sc.rs");
-
-    pub struct ErasedCommitter {}
-    impl creusot_std::ghost::ErasedGhostFnArg for ErasedCommitter {
-        type Ty<'a, T: 'a> = QueueCommitter<'a, T>;
+    erase! {
+        type Queue<T> => super::Queue<T>;
+        type QueueCell<T> => super::QueueCell<T>;
+        fn Queue::<T>::new => super::Queue::<T>::new;
+        fn Queue::<T>::try_enqueue::<F> => super::Queue::<T>::try_enqueue where F: FnGhost + FnOnce(&mut QueueCommitter<T>);
+        fn Queue::<T>::try_dequeue::<F> => super::Queue::<T>::try_dequeue where F: FnGhost + FnOnce(&mut QueueCommitter<T>);
     }
+
+    include!("../sc.rs");
 }
