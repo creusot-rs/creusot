@@ -26,14 +26,15 @@ let
   };
 in
 
+# NOTE: Update this when NixOS 26.11 is released
 let
-  # NOTE: Colibri2 needs more recent versions of the following libraries than nixpkgs provides.
   patricia-tree = ocamlPackages.patricia-tree.overrideAttrs {
     version = "0.15.0";
     src = fetchurl {
       url = "https://github.com/codex-semantics-library/patricia-tree/releases/download/v0.15.0/patricia-tree-0.15.0.tbz";
       hash = "sha256-4P5mq32lsq0kC2RDDWBfQGS8cEv0h6zGMU/YaOmOwnk=";
     };
+
     doCheck = false;
   };
 
@@ -47,18 +48,16 @@ let
 
   trace-tef = ocamlPackages.trace-tef.overrideAttrs {
     inherit (trace) version src;
+
     propagatedBuildInputs = [
       trace
       ocamlPackages.mtime
     ];
-    # The nixpkgs patch removing the `atomic` dependency no longer applies.
+
     postPatch = "";
     doCheck = false;
   };
 
-  # NOTE: The following libraries are not packaged in nixpkgs.
-
-  # OCaml bindings to the FLINT library
   ocaml-flint = ocamlPackages.buildDunePackage {
     pname = "flint";
     version = "0.4.2";
@@ -68,22 +67,18 @@ let
       hash = "sha256-hv4NtXjX4hFgUowH/9yAN15kk3HhxfvJ9Qqv2Zyh3bo=";
     };
 
-    nativeBuildInputs = [ pkg-config ];
+    dontConfigure = true;
+
     buildInputs = [ ocamlPackages.dune-configurator ];
     propagatedBuildInputs = [
       flint
-      gmp
-      mpfr
-    ]
-    ++ (with ocamlPackages; [
-      ctypes
-      zarith
-    ]);
+      ocamlPackages.ctypes
+      ocamlPackages.zarith
+    ];
   };
 
-  # OCaml bindings to the CUDD library (provides the findlib package `cudd`)
   mlcuddidl = stdenv.mkDerivation {
-    pname = "ocaml${ocamlPackages.ocaml.version}-mlcuddidl";
+    pname = "mlcuddidl";
     version = "3.0.8";
 
     src = fetchurl {
@@ -91,7 +86,6 @@ let
       hash = "sha256-JrIrHx6tWhnqdCNIK1L1tcSYo9G54TzgVmIKd6VJir0=";
     };
 
-    # Same patches as the opam package
     patches = [
       (fetchurl {
         url = "https://raw.githubusercontent.com/ocaml/opam-source-archives/main/patches/mlcuddidl/compilation_ocaml5.diff";
@@ -114,10 +108,8 @@ let
       ocaml
     ]);
 
-    # `cudd.cmxa` links against `libcamlidl.a`.
     propagatedBuildInputs = [ ocamlPackages.camlidl ];
 
-    # The configure script is hand-written: it does not understand `--prefix=`.
     dontAddPrefix = true;
     configureFlags = [ "--disable-profiling" ];
 
@@ -147,7 +139,6 @@ ocamlPackages.buildDunePackage {
     trace-tef
   ]
   ++ (with ocamlPackages; [
-    base
     cmdliner
     containers
     dolmen
@@ -155,18 +146,14 @@ ocamlPackages.buildDunePackage {
     dolmen_type
     dune-build-info
     farith
-    gen
     gmap
     ocamlgraph
     ocplib-simplex
-    ppx_deriving
     ppx_hash
     ppx_here
     ppx_inline_test
-    ppx_optcomp
     qcheck-core
     re
-    zarith
   ]);
 
   meta = {
