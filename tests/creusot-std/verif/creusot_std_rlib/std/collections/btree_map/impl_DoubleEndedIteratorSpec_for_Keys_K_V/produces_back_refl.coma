@@ -1,0 +1,35 @@
+(* <std::collections::btree_map::Keys<'a, K, V> as std::iter::DoubleEndedIteratorSpec> *)
+
+use seq.Seq
+use seq.Reverse
+
+type t_Keys_K_V
+
+type t_K
+
+function view_Keys_K_V (self: t_Keys_K_V) : Seq.seq t_K
+
+predicate produces_back_Keys_K_V (self: t_Keys_K_V) (visited: Seq.seq t_K) (tl: t_Keys_K_V) =
+  view_Keys_K_V self = Seq.(++) (view_Keys_K_V tl) (Reverse.reverse visited)
+
+constant reverse_empty_ref_K : ()
+
+axiom reverse_empty_ref_K_spec: Reverse.reverse (Seq.empty: Seq.seq t_K) = (Seq.empty: Seq.seq t_K)
+
+function concat_empty_ref_K (self: Seq.seq t_K) : ()
+
+axiom concat_empty_ref_K_spec: forall self: Seq.seq t_K. Seq.(++) self (Seq.empty: Seq.seq t_K) = self
+
+axiom concat_empty_ref_K_spec'0: forall self: Seq.seq t_K. Seq.(++) (Seq.empty: Seq.seq t_K) self = self
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Keys_K_V
+
+function produces_back_refl_Keys_K_V (self: t_Keys_K_V) : ()
+
+goal vc_produces_back_refl_Keys_K_V:
+  ([@stop_split] [@expl:reverse_empty ensures] Reverse.reverse (Seq.empty: Seq.seq t_K) = (Seq.empty: Seq.seq t_K))
+  -> ([@stop_split] [@expl:produces_back_refl ensures] produces_back_Keys_K_V self (Seq.empty: Seq.seq t_K) self)

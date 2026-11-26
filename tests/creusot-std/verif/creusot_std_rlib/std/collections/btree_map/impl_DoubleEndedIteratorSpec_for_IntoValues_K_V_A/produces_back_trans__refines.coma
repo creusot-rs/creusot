@@ -1,0 +1,25 @@
+(* <std::collections::btree_map::IntoValues<K, V, A> as std::iter::DoubleEndedIteratorSpec> *)
+
+use seq.Seq
+use seq.Reverse
+
+type t_IntoValues_K_V_A
+
+type t_V
+
+function view_IntoValues_K_V_A (self: t_IntoValues_K_V_A) : Seq.seq t_V
+
+predicate produces_back_IntoValues_K_V_A (self: t_IntoValues_K_V_A) (visited: Seq.seq t_V) (tl: t_IntoValues_K_V_A) =
+  view_IntoValues_K_V_A self = Seq.(++) (view_IntoValues_K_V_A tl) (Reverse.reverse visited)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall a: t_IntoValues_K_V_A, ab: Seq.seq t_V, b: t_IntoValues_K_V_A, bc: Seq.seq t_V, c: t_IntoValues_K_V_A. produces_back_IntoValues_K_V_A a ab b
+    -> produces_back_IntoValues_K_V_A b bc c
+    -> produces_back_IntoValues_K_V_A a ab b
+    /\ produces_back_IntoValues_K_V_A b bc c
+    /\ (forall result: (). produces_back_IntoValues_K_V_A a (Seq.(++) ab bc) c
+      -> produces_back_IntoValues_K_V_A a (Seq.(++) ab bc) c)

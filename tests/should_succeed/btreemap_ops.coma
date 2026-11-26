@@ -1,0 +1,1117 @@
+module M_index
+  use creusot.int.UInt64
+  use creusot.int.UInt32
+  use map.Map
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_BTreeMap_u64_u32_Global
+  
+  type t_FMap_Int_u32
+  
+  type t_Option_u32 = None | Some UInt32.t
+  
+  function to_mapping_Int (self: t_FMap_Int_u32) : Map.map int t_Option_u32
+  
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_u32) (k: int) : t_Option_u32 = Map.get (to_mapping_Int self) k
+  
+  meta "rewrite_def" function lookup_Int
+  
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_u32) (k: int) = lookup_Int self k <> None
+  
+  meta "rewrite_def" predicate contains_Int
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  function len_Int (self: t_FMap_Int_u32) : int
+  
+  axiom len_Int_spec: forall self: t_FMap_Int_u32 [len_Int self]. ge_log_Int (len_Int self) 0
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_BTreeMap_u64_u32_Global (self: t_BTreeMap_u64_u32_Global) : t_FMap_Int_u32
+  
+  axiom view_BTreeMap_u64_u32_Global_spec:
+    forall self: t_BTreeMap_u64_u32_Global [view_BTreeMap_u64_u32_Global self]. len_Int (view_BTreeMap_u64_u32_Global self)
+      <= UInt64.t'int const_MAX
+  
+  function deep_model_u64 [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model_u64
+  
+  function deep_model_ref_u64 [@inline:trivial] (self: UInt64.t) : int = deep_model_u64 self
+  
+  meta "rewrite_def" function deep_model_ref_u64
+  
+  constant any_u32 : UInt32.t
+  
+  function unwrap_Option_u32 (self: t_Option_u32) : UInt32.t = match self with
+      | Some x -> x
+      | None -> any_u32
+      end
+  
+  function index_FMap_Int_u32 [@inline:trivial] (self: t_FMap_Int_u32) (key: int) : UInt32.t =
+    unwrap_Option_u32 (lookup_Int self key)
+  
+  meta "rewrite_def" function index_FMap_Int_u32
+  
+  let index_BTreeMap_u64_u32_Global (self: t_BTreeMap_u64_u32_Global) (key: UInt64.t) (return (x: UInt32.t)) =
+  {[@stop_split] [@expl:index requires] contains_Int (view_BTreeMap_u64_u32_Global self) (deep_model_ref_u64 key)}
+    any
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:index ensures] result
+      = index_FMap_Int_u32 (view_BTreeMap_u64_u32_Global self) (deep_model_ref_u64 key)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let index (m: t_BTreeMap_u64_u32_Global) (k: UInt64.t) (return (x: UInt32.t)) =
+  {[@stop_split] [@expl:index requires] contains_Int (view_BTreeMap_u64_u32_Global m) (UInt64.t'int k)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_12 <- k ] s1
+      | s1 = index_BTreeMap_u64_u32_Global {m} {_12} (fun (_x: UInt32.t) -> [ &_9 <- _x ] s2)
+      | s2 = [ &_ret <- _9 ] s3
+      | s3 = return {_ret} ] ]
+    [ & _ret: UInt32.t = Any.any_l ()
+    | & m: t_BTreeMap_u64_u32_Global = m
+    | & k: UInt64.t = k
+    | & _9: UInt32.t = Any.any_l ()
+    | & _12: UInt64.t = Any.any_l () ])
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:index ensures] result
+      = index_FMap_Int_u32 (view_BTreeMap_u64_u32_Global m) (UInt64.t'int k)}
+      (! return {result}) ]
+end
+module M_insert_fresh
+  use creusot.prelude.MutBorrow
+  use creusot.int.UInt64
+  use creusot.int.UInt32
+  use map.Map
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_BTreeMap_u64_u32_Global
+  
+  type t_Option_u32 = None | Some UInt32.t
+  
+  type t_FMap_Int_u32
+  
+  function to_mapping_Int (self: t_FMap_Int_u32) : Map.map int t_Option_u32
+  
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_u32) (k: int) : t_Option_u32 = Map.get (to_mapping_Int self) k
+  
+  meta "rewrite_def" function lookup_Int
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  function len_Int (self: t_FMap_Int_u32) : int
+  
+  axiom len_Int_spec: forall self: t_FMap_Int_u32 [len_Int self]. ge_log_Int (len_Int self) 0
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_BTreeMap_u64_u32_Global (self: t_BTreeMap_u64_u32_Global) : t_FMap_Int_u32
+  
+  axiom view_BTreeMap_u64_u32_Global_spec:
+    forall self: t_BTreeMap_u64_u32_Global [view_BTreeMap_u64_u32_Global self]. len_Int (view_BTreeMap_u64_u32_Global self)
+      <= UInt64.t'int const_MAX
+  
+  function deep_model_u64 [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model_u64
+  
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_u32) (k: int) = lookup_Int self k <> None
+  
+  meta "rewrite_def" predicate contains_Int
+  
+  function add_Int (self: t_FMap_Int_u32) (k: int) (v: UInt32.t) : t_FMap_Int_u32
+  
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_u32, k: int, v: UInt32.t [add_Int self k v]. to_mapping_Int (add_Int self k v)
+      = Map.set (to_mapping_Int self) k (Some v)
+  
+  axiom add_Int_spec'0: forall self: t_FMap_Int_u32, k: int, v: UInt32.t [add_Int self k v]. len_Int (add_Int self k v)
+      = (if contains_Int self k then len_Int self else len_Int self + 1)
+  
+  let insert_u64 (self: MutBorrow.t t_BTreeMap_u64_u32_Global) (key: UInt64.t) (value: UInt32.t)
+    (return (x: t_Option_u32)) = any
+    [ return (result: t_Option_u32) ->
+    {[@stop_split] [@expl:insert_u64 ensures] ([@stop_split] [@expl:insert ensures #0] result
+        = lookup_Int (view_BTreeMap_u64_u32_Global self.current) (deep_model_u64 key))
+      /\ ([@stop_split] [@expl:insert ensures #1] view_BTreeMap_u64_u32_Global self.final
+      = add_Int (view_BTreeMap_u64_u32_Global self.current) (deep_model_u64 key) value)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_BTreeMap_u64_u32_Global [@inline:trivial] (_1: MutBorrow.t t_BTreeMap_u64_u32_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_BTreeMap_u64_u32_Global
+  
+  let is_none_u32 (self: t_Option_u32) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:is_none ensures] result = (self = None)} (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let insert_fresh (m: MutBorrow.t t_BTreeMap_u64_u32_Global) (k: UInt64.t) (v: UInt32.t) (return (x: ())) =
+  {[@stop_split] [@expl:insert_fresh requires] not contains_Int (view_BTreeMap_u64_u32_Global m.current) (UInt64.t'int k)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_final <t_BTreeMap_u64_u32_Global> {m.current} {MutBorrow.get_id m}
+          (fun (_bor: MutBorrow.t t_BTreeMap_u64_u32_Global) ->
+            [ &_17 <- _bor ] [ &m <- { m with current = _bor.final } ] s1)
+      | s1 = insert_u64 {_17} {k} {v} (fun (_x: t_Option_u32) -> [ &old' <- _x ] s2)
+      | s2 = -{resolve_refmut_BTreeMap_u64_u32_Global m}- s3
+      | s3 = is_none_u32 {old'} (fun (_x: bool) -> [ &_21 <- _x ] s4)
+      | s4 = any [ br0 -> {_21 = false} (! bb4) | br1 -> {_21} (! bb3) ] ]
+    | bb3 = return {_ret}
+    | bb4 = {false} any ]
+    [ & _ret: () = Any.any_l ()
+    | & m: MutBorrow.t t_BTreeMap_u64_u32_Global = m
+    | & k: UInt64.t = k
+    | & v: UInt32.t = v
+    | & old': t_Option_u32 = Any.any_l ()
+    | & _17: MutBorrow.t t_BTreeMap_u64_u32_Global = Any.any_l ()
+    | & _21: bool = Any.any_l () ])
+    [ return (result: ()) ->
+    {[@stop_split] [@expl:insert_fresh ensures] ([@stop_split] [@expl:insert_fresh ensures #0] lookup_Int (view_BTreeMap_u64_u32_Global m.final) (UInt64.t'int k)
+        = Some v)
+      /\ ([@stop_split] [@expl:insert_fresh ensures #1] forall k2: int. k2 <> UInt64.t'int k
+          -> lookup_Int (view_BTreeMap_u64_u32_Global m.final) k2
+          = lookup_Int (view_BTreeMap_u64_u32_Global m.current) k2)
+      /\ ([@stop_split] [@expl:insert_fresh ensures #2] len_Int (view_BTreeMap_u64_u32_Global m.final)
+      = len_Int (view_BTreeMap_u64_u32_Global m.current) + 1)}
+      (! return {result}) ]
+end
+module M_insert_generic
+  use creusot.prelude.MutBorrow
+  use map.Map
+  use creusot.int.UInt64
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_BTreeMap_K_V_Global
+  
+  type t_FMap_DeepModelTy_V
+  
+  type t_DeepModelTy
+  
+  type t_V
+  
+  type t_Option_V = None | Some t_V
+  
+  function to_mapping_DeepModelTy (self: t_FMap_DeepModelTy_V) : Map.map t_DeepModelTy t_Option_V
+  
+  function lookup_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) : t_Option_V =
+    Map.get (to_mapping_DeepModelTy self) k
+  
+  meta "rewrite_def" function lookup_DeepModelTy
+  
+  predicate contains_DeepModelTy [@inline:trivial] (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) =
+    lookup_DeepModelTy self k <> None
+  
+  meta "rewrite_def" predicate contains_DeepModelTy
+  
+  predicate inv_DeepModelTy (_1: t_DeepModelTy)
+  
+  predicate inv_V (_1: t_V)
+  
+  constant any_V : t_V
+  
+  function unwrap_Option_V (self: t_Option_V) : t_V = match self with
+      | Some x -> x
+      | None -> any_V
+      end
+  
+  function index_FMap_DeepModelTy_V [@inline:trivial] (self: t_FMap_DeepModelTy_V) (key: t_DeepModelTy) : t_V =
+    unwrap_Option_V (lookup_DeepModelTy self key)
+  
+  meta "rewrite_def" function index_FMap_DeepModelTy_V
+  
+  predicate invariant_FMap_DeepModelTy_V [@inline:trivial] (self: t_FMap_DeepModelTy_V) =
+    forall k: t_DeepModelTy. contains_DeepModelTy self k -> inv_DeepModelTy k /\ inv_V (index_FMap_DeepModelTy_V self k)
+  
+  meta "rewrite_def" predicate invariant_FMap_DeepModelTy_V
+  
+  predicate inv_FMap_DeepModelTy_V (_1: t_FMap_DeepModelTy_V)
+  
+  axiom inv_axiom [@rewrite]: forall _1: t_FMap_DeepModelTy_V [inv_FMap_DeepModelTy_V _1]. inv_FMap_DeepModelTy_V _1
+      = invariant_FMap_DeepModelTy_V _1
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  function len_DeepModelTy (self: t_FMap_DeepModelTy_V) : int
+  
+  axiom len_DeepModelTy_spec:
+    forall self: t_FMap_DeepModelTy_V [len_DeepModelTy self]. ge_log_Int (len_DeepModelTy self) 0
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_BTreeMap_K_V_Global (self: t_BTreeMap_K_V_Global) : t_FMap_DeepModelTy_V
+  
+  axiom view_BTreeMap_K_V_Global_spec:
+    forall self: t_BTreeMap_K_V_Global [view_BTreeMap_K_V_Global self]. len_DeepModelTy (view_BTreeMap_K_V_Global self)
+      <= UInt64.t'int const_MAX
+  
+  predicate invariant_BTreeMap_K_V_Global (self: t_BTreeMap_K_V_Global) =
+    inv_FMap_DeepModelTy_V (view_BTreeMap_K_V_Global self)
+  
+  predicate inv_BTreeMap_K_V_Global (_1: t_BTreeMap_K_V_Global)
+  
+  axiom inv_axiom'0: forall _1: t_BTreeMap_K_V_Global [inv_BTreeMap_K_V_Global _1]. inv_BTreeMap_K_V_Global _1
+      -> invariant_BTreeMap_K_V_Global _1
+  
+  type t_K
+  
+  predicate invariant_refmut_BTreeMap_K_V_Global [@inline:trivial] (self: MutBorrow.t t_BTreeMap_K_V_Global) =
+    inv_BTreeMap_K_V_Global self.current /\ inv_BTreeMap_K_V_Global self.final
+  
+  meta "rewrite_def" predicate invariant_refmut_BTreeMap_K_V_Global
+  
+  predicate inv_refmut_BTreeMap_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_BTreeMap_K_V_Global) =
+    invariant_refmut_BTreeMap_K_V_Global _1
+  
+  meta "rewrite_def" predicate inv_refmut_BTreeMap_K_V_Global
+  
+  predicate inv_K (_1: t_K)
+  
+  predicate inv_Option_V (_1: t_Option_V)
+  
+  axiom inv_axiom'1 [@rewrite]: forall _1: t_Option_V [inv_Option_V _1]. inv_Option_V _1
+      = match _1 with
+        | None -> true
+        | Some f0 -> inv_V f0
+        end
+  
+  function deep_model_K (self: t_K) : t_DeepModelTy
+  
+  function add_DeepModelTy (self: t_FMap_DeepModelTy_V) (k: t_DeepModelTy) (v: t_V) : t_FMap_DeepModelTy_V
+  
+  axiom add_DeepModelTy_spec:
+    forall self: t_FMap_DeepModelTy_V, k: t_DeepModelTy, v: t_V [add_DeepModelTy self k v]. to_mapping_DeepModelTy (add_DeepModelTy self k v)
+      = Map.set (to_mapping_DeepModelTy self) k (Some v)
+  
+  axiom add_DeepModelTy_spec'0:
+    forall self: t_FMap_DeepModelTy_V, k: t_DeepModelTy, v: t_V [add_DeepModelTy self k v]. len_DeepModelTy (add_DeepModelTy self k v)
+      = (if contains_DeepModelTy self k then len_DeepModelTy self else len_DeepModelTy self + 1)
+  
+  let insert_K (self: MutBorrow.t t_BTreeMap_K_V_Global) (key: t_K) (value: t_V) (return (x: t_Option_V)) =
+  {[@stop_split] [@expl:insert_K requires] ([@stop_split] [@expl:insert 'self' type invariant] inv_refmut_BTreeMap_K_V_Global self)
+    /\ ([@stop_split] [@expl:insert 'key' type invariant] inv_K key)
+    /\ ([@stop_split] [@expl:insert 'value' type invariant] inv_V value)}
+    any
+    [ return (result: t_Option_V) ->
+    {[@stop_split] [@expl:insert_K ensures] ([@stop_split] [@expl:insert result type invariant] inv_Option_V result)
+      /\ ([@stop_split] [@expl:insert ensures #0] result
+        = lookup_DeepModelTy (view_BTreeMap_K_V_Global self.current) (deep_model_K key))
+      /\ ([@stop_split] [@expl:insert ensures #1] view_BTreeMap_K_V_Global self.final
+      = add_DeepModelTy (view_BTreeMap_K_V_Global self.current) (deep_model_K key) value)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_BTreeMap_K_V_Global [@inline:trivial] (_1: MutBorrow.t t_BTreeMap_K_V_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_BTreeMap_K_V_Global
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let insert_generic_K (m: MutBorrow.t t_BTreeMap_K_V_Global) (k: t_K) (v: t_V) (return (x: t_Option_V)) =
+  {[@stop_split] [@expl:insert_generic_K requires] ([@stop_split] [@expl:insert_generic 'm' type invariant] inv_refmut_BTreeMap_K_V_Global m)
+    /\ ([@stop_split] [@expl:insert_generic 'k' type invariant] inv_K k)
+    /\ ([@stop_split] [@expl:insert_generic 'v' type invariant] inv_V v)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_final <t_BTreeMap_K_V_Global> {m.current} {MutBorrow.get_id m}
+          (fun (_bor: MutBorrow.t t_BTreeMap_K_V_Global) ->
+            [ &_11 <- _bor ] -{inv_BTreeMap_K_V_Global _bor.final}-
+            [ &m <- { m with current = _bor.final } ] s1)
+        [ _ck -> (! {[@expl:type invariant] inv_BTreeMap_K_V_Global m.current} any) ]
+      | s1 = insert_K {_11} {k} {v} (fun (_x: t_Option_V) -> [ &_ret <- _x ] s2)
+      | s2 = s3 [ _ck -> (! {[@expl:type invariant] inv_refmut_BTreeMap_K_V_Global m} any) ]
+      | s3 = -{resolve_refmut_BTreeMap_K_V_Global m}- s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_Option_V = Any.any_l ()
+    | & m: MutBorrow.t t_BTreeMap_K_V_Global = m
+    | & k: t_K = k
+    | & v: t_V = v
+    | & _11: MutBorrow.t t_BTreeMap_K_V_Global = Any.any_l () ])
+    [ return (result: t_Option_V) ->
+    {[@stop_split] [@expl:insert_generic_K ensures] ([@stop_split] [@expl:insert_generic result type invariant] inv_Option_V result)
+      /\ ([@stop_split] [@expl:insert_generic ensures #0] lookup_DeepModelTy (view_BTreeMap_K_V_Global m.final) (deep_model_K k)
+        = Some v)
+      /\ ([@stop_split] [@expl:insert_generic ensures #1] result
+      = lookup_DeepModelTy (view_BTreeMap_K_V_Global m.current) (deep_model_K k))}
+      (! return {result}) ]
+end
+module M_insert_preserves_others
+  use creusot.int.UInt64
+  use creusot.int.UInt32
+  use map.Map
+  use creusot.prelude.MutBorrow
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_BTreeMap_u64_u32_Global
+  
+  type t_Option_ref_u32 = None | Some UInt32.t
+  
+  type t_FMap_Int_u32
+  
+  type t_Option_u32 = None'0 | Some'0 UInt32.t
+  
+  function to_mapping_Int (self: t_FMap_Int_u32) : Map.map int t_Option_u32
+  
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_u32) (k: int) : t_Option_u32 = Map.get (to_mapping_Int self) k
+  
+  meta "rewrite_def" function lookup_Int
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  function len_Int (self: t_FMap_Int_u32) : int
+  
+  axiom len_Int_spec: forall self: t_FMap_Int_u32 [len_Int self]. ge_log_Int (len_Int self) 0
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_BTreeMap_u64_u32_Global (self: t_BTreeMap_u64_u32_Global) : t_FMap_Int_u32
+  
+  axiom view_BTreeMap_u64_u32_Global_spec:
+    forall self: t_BTreeMap_u64_u32_Global [view_BTreeMap_u64_u32_Global self]. len_Int (view_BTreeMap_u64_u32_Global self)
+      <= UInt64.t'int const_MAX
+  
+  function deep_model_u64 [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model_u64
+  
+  function deep_model_ref_u64 [@inline:trivial] (self: UInt64.t) : int = deep_model_u64 self
+  
+  meta "rewrite_def" function deep_model_ref_u64
+  
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_u32) (k: int) = lookup_Int self k <> None'0
+  
+  meta "rewrite_def" predicate contains_Int
+  
+  let get_u64 (self: t_BTreeMap_u64_u32_Global) (key: UInt64.t) (return (x: t_Option_ref_u32)) = any
+    [ return (result: t_Option_ref_u32) -> {[@stop_split] [@expl:get ensures] match result with
+        | Some v -> lookup_Int (view_BTreeMap_u64_u32_Global self) (deep_model_ref_u64 key) = Some'0 v
+        | None -> not contains_Int (view_BTreeMap_u64_u32_Global self) (deep_model_ref_u64 key)
+        end}
+      (! return {result}) ]
+  
+  let copied_u32 (self: t_Option_ref_u32) (return (x: t_Option_u32)) = any
+    [ return (result: t_Option_u32) -> {[@stop_split] [@expl:copied ensures] match self with
+        | None -> result = None'0
+        | Some s -> result = Some'0 s
+        end}
+      (! return {result}) ]
+  
+  function add_Int (self: t_FMap_Int_u32) (k: int) (v: UInt32.t) : t_FMap_Int_u32
+  
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_u32, k: int, v: UInt32.t [add_Int self k v]. to_mapping_Int (add_Int self k v)
+      = Map.set (to_mapping_Int self) k (Some'0 v)
+  
+  axiom add_Int_spec'0: forall self: t_FMap_Int_u32, k: int, v: UInt32.t [add_Int self k v]. len_Int (add_Int self k v)
+      = (if contains_Int self k then len_Int self else len_Int self + 1)
+  
+  let insert_u64 (self: MutBorrow.t t_BTreeMap_u64_u32_Global) (key: UInt64.t) (value: UInt32.t)
+    (return (x: t_Option_u32)) = any
+    [ return (result: t_Option_u32) ->
+    {[@stop_split] [@expl:insert_u64 ensures] ([@stop_split] [@expl:insert ensures #0] result
+        = lookup_Int (view_BTreeMap_u64_u32_Global self.current) (deep_model_u64 key))
+      /\ ([@stop_split] [@expl:insert ensures #1] view_BTreeMap_u64_u32_Global self.final
+      = add_Int (view_BTreeMap_u64_u32_Global self.current) (deep_model_u64 key) value)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_BTreeMap_u64_u32_Global [@inline:trivial] (_1: MutBorrow.t t_BTreeMap_u64_u32_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_BTreeMap_u64_u32_Global
+  
+  type t_Option_Int = None'1 | Some'1 int
+  
+  function deep_model_u32 [@inline:trivial] (self: UInt32.t) : int = UInt32.t'int self
+  
+  meta "rewrite_def" function deep_model_u32
+  
+  function deep_model_Option_u32 [@inline:trivial] (self: t_Option_u32) : t_Option_Int = match self with
+      | Some'0 t -> Some'1 (deep_model_u32 t)
+      | None'0 -> None'1
+      end
+  
+  meta "rewrite_def" function deep_model_Option_u32
+  
+  function deep_model_ref_Option_u32 [@inline:trivial] (self: t_Option_u32) : t_Option_Int = deep_model_Option_u32 self
+  
+  meta "rewrite_def" function deep_model_ref_Option_u32
+  
+  let eq_Option_u32 (self: t_Option_u32) (other: t_Option_u32) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
+      = (deep_model_ref_Option_u32 self = deep_model_ref_Option_u32 other)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let insert_preserves_others (m: MutBorrow.t t_BTreeMap_u64_u32_Global) (k1: UInt64.t) (k2: UInt64.t) (v: UInt32.t)
+    (return (x: ())) = {[@stop_split] [@expl:insert_preserves_others requires] k1 <> k2}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_12 <- k2 ] s1
+      | s1 = get_u64 {m.current} {_12} (fun (_x: t_Option_ref_u32) -> [ &_9 <- _x ] s2)
+      | s2 = copied_u32 {_9} (fun (_x: t_Option_u32) -> [ &before <- _x ] s3)
+      | s3 = MutBorrow.borrow_final <t_BTreeMap_u64_u32_Global> {m.current} {MutBorrow.get_id m}
+          (fun (_bor: MutBorrow.t t_BTreeMap_u64_u32_Global) ->
+            [ &_14 <- _bor ] [ &m <- { m with current = _bor.final } ] s4)
+      | s4 = insert_u64 {_14} {k1} {v} (fun (_x: t_Option_u32) -> [ &_13 <- _x ] s5)
+      | s5 = -{resolve_refmut_BTreeMap_u64_u32_Global m}- s6
+      | s6 = [ &_24 <- k2 ] s7
+      | s7 = get_u64 {m.current} {_24} (fun (_x: t_Option_ref_u32) -> [ &_21 <- _x ] s8)
+      | s8 = copied_u32 {_21} (fun (_x: t_Option_u32) -> [ &_20 <- _x ] s9)
+      | s9 = eq_Option_u32 {_20} {before} (fun (_x: bool) -> [ &_18 <- _x ] s10)
+      | s10 = any [ br0 -> {_18 = false} (! bb8) | br1 -> {_18} (! bb7) ] ]
+    | bb7 = return {_ret}
+    | bb8 = {false} any ]
+    [ & _ret: () = Any.any_l ()
+    | & m: MutBorrow.t t_BTreeMap_u64_u32_Global = m
+    | & k1: UInt64.t = k1
+    | & k2: UInt64.t = k2
+    | & v: UInt32.t = v
+    | & before: t_Option_u32 = Any.any_l ()
+    | & _9: t_Option_ref_u32 = Any.any_l ()
+    | & _12: UInt64.t = Any.any_l ()
+    | & _13: t_Option_u32 = Any.any_l ()
+    | & _14: MutBorrow.t t_BTreeMap_u64_u32_Global = Any.any_l ()
+    | & _18: bool = Any.any_l ()
+    | & _20: t_Option_u32 = Any.any_l ()
+    | & _21: t_Option_ref_u32 = Any.any_l ()
+    | & _24: UInt64.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_insert_then_lookup
+  use creusot.prelude.MutBorrow
+  use creusot.int.UInt64
+  use creusot.int.UInt32
+  use map.Map
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_BTreeMap_u64_u32_Global
+  
+  type t_Option_u32 = None | Some UInt32.t
+  
+  type t_FMap_Int_u32
+  
+  function to_mapping_Int (self: t_FMap_Int_u32) : Map.map int t_Option_u32
+  
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_u32) (k: int) : t_Option_u32 = Map.get (to_mapping_Int self) k
+  
+  meta "rewrite_def" function lookup_Int
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  function len_Int (self: t_FMap_Int_u32) : int
+  
+  axiom len_Int_spec: forall self: t_FMap_Int_u32 [len_Int self]. ge_log_Int (len_Int self) 0
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_BTreeMap_u64_u32_Global (self: t_BTreeMap_u64_u32_Global) : t_FMap_Int_u32
+  
+  axiom view_BTreeMap_u64_u32_Global_spec:
+    forall self: t_BTreeMap_u64_u32_Global [view_BTreeMap_u64_u32_Global self]. len_Int (view_BTreeMap_u64_u32_Global self)
+      <= UInt64.t'int const_MAX
+  
+  function deep_model_u64 [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model_u64
+  
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_u32) (k: int) = lookup_Int self k <> None
+  
+  meta "rewrite_def" predicate contains_Int
+  
+  function add_Int (self: t_FMap_Int_u32) (k: int) (v: UInt32.t) : t_FMap_Int_u32
+  
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_u32, k: int, v: UInt32.t [add_Int self k v]. to_mapping_Int (add_Int self k v)
+      = Map.set (to_mapping_Int self) k (Some v)
+  
+  axiom add_Int_spec'0: forall self: t_FMap_Int_u32, k: int, v: UInt32.t [add_Int self k v]. len_Int (add_Int self k v)
+      = (if contains_Int self k then len_Int self else len_Int self + 1)
+  
+  let insert_u64 (self: MutBorrow.t t_BTreeMap_u64_u32_Global) (key: UInt64.t) (value: UInt32.t)
+    (return (x: t_Option_u32)) = any
+    [ return (result: t_Option_u32) ->
+    {[@stop_split] [@expl:insert_u64 ensures] ([@stop_split] [@expl:insert ensures #0] result
+        = lookup_Int (view_BTreeMap_u64_u32_Global self.current) (deep_model_u64 key))
+      /\ ([@stop_split] [@expl:insert ensures #1] view_BTreeMap_u64_u32_Global self.final
+      = add_Int (view_BTreeMap_u64_u32_Global self.current) (deep_model_u64 key) value)}
+      (! return {result}) ]
+  
+  type t_Option_ref_u32 = None'0 | Some'0 UInt32.t
+  
+  function deep_model_ref_u64 [@inline:trivial] (self: UInt64.t) : int = deep_model_u64 self
+  
+  meta "rewrite_def" function deep_model_ref_u64
+  
+  let get_u64 (self: t_BTreeMap_u64_u32_Global) (key: UInt64.t) (return (x: t_Option_ref_u32)) = any
+    [ return (result: t_Option_ref_u32) -> {[@stop_split] [@expl:get ensures] match result with
+        | Some'0 v -> lookup_Int (view_BTreeMap_u64_u32_Global self) (deep_model_ref_u64 key) = Some v
+        | None'0 -> not contains_Int (view_BTreeMap_u64_u32_Global self) (deep_model_ref_u64 key)
+        end}
+      (! return {result}) ]
+  
+  type t_Option_Int = None'1 | Some'1 int
+  
+  function deep_model_u32 [@inline:trivial] (self: UInt32.t) : int = UInt32.t'int self
+  
+  meta "rewrite_def" function deep_model_u32
+  
+  function deep_model_ref_u32 [@inline:trivial] (self: UInt32.t) : int = deep_model_u32 self
+  
+  meta "rewrite_def" function deep_model_ref_u32
+  
+  function deep_model_Option_ref_u32 [@inline:trivial] (self: t_Option_ref_u32) : t_Option_Int = match self with
+      | Some'0 t -> Some'1 (deep_model_ref_u32 t)
+      | None'0 -> None'1
+      end
+  
+  meta "rewrite_def" function deep_model_Option_ref_u32
+  
+  function deep_model_ref_Option_ref_u32 [@inline:trivial] (self: t_Option_ref_u32) : t_Option_Int =
+    deep_model_Option_ref_u32 self
+  
+  meta "rewrite_def" function deep_model_ref_Option_ref_u32
+  
+  let eq_Option_ref_u32 (self: t_Option_ref_u32) (other: t_Option_ref_u32) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
+      = (deep_model_ref_Option_ref_u32 self = deep_model_ref_Option_ref_u32 other)}
+      (! return {result}) ]
+  
+  let contains_key_u64 (self: t_BTreeMap_u64_u32_Global) (key: UInt64.t) (return (x: bool)) = any
+    [ return (result: bool) -> {[@stop_split] [@expl:contains_key ensures] result
+      = contains_Int (view_BTreeMap_u64_u32_Global self) (deep_model_ref_u64 key)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_BTreeMap_u64_u32_Global [@inline:trivial] (_1: MutBorrow.t t_BTreeMap_u64_u32_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_BTreeMap_u64_u32_Global
+  
+  constant any_u32 : UInt32.t
+  
+  function unwrap_Option_u32 (self: t_Option_u32) : UInt32.t = match self with
+      | Some x -> x
+      | None -> any_u32
+      end
+  
+  function index_FMap_Int_u32 [@inline:trivial] (self: t_FMap_Int_u32) (key: int) : UInt32.t =
+    unwrap_Option_u32 (lookup_Int self key)
+  
+  meta "rewrite_def" function index_FMap_Int_u32
+  
+  let index_BTreeMap_u64_u32_Global (self: t_BTreeMap_u64_u32_Global) (key: UInt64.t) (return (x: UInt32.t)) =
+  {[@stop_split] [@expl:index requires] contains_Int (view_BTreeMap_u64_u32_Global self) (deep_model_ref_u64 key)}
+    any
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:index ensures] result
+      = index_FMap_Int_u32 (view_BTreeMap_u64_u32_Global self) (deep_model_ref_u64 key)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let insert_then_lookup (m: MutBorrow.t t_BTreeMap_u64_u32_Global) (k: UInt64.t) (v: UInt32.t) (return (x: ())) =
+  (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_final <t_BTreeMap_u64_u32_Global> {m.current} {MutBorrow.get_id m}
+          (fun (_bor: MutBorrow.t t_BTreeMap_u64_u32_Global) ->
+            [ &_5 <- _bor ] [ &m <- { m with current = _bor.final } ] s1)
+      | s1 = insert_u64 {_5} {k} {v} (fun (_x: t_Option_u32) -> [ &_4 <- _x ] s2)
+      | s2 = [ &_14 <- k ] s3
+      | s3 = get_u64 {m.current} {_14} (fun (_x: t_Option_ref_u32) -> [ &_11 <- _x ] s4)
+      | s4 = [ &_18 <- v ] s5
+      | s5 = [ &_16 <- Some'0 _18 ] s6
+      | s6 = eq_Option_ref_u32 {_11} {_16} (fun (_x: bool) -> [ &_9 <- _x ] s7)
+      | s7 = any [ br0 -> {_9 = false} (! bb5) | br1 -> {_9} (! bb4) ] ]
+    | bb4 = s0
+      [ s0 = [ &_24 <- k ] s1
+      | s1 = contains_key_u64 {m.current} {_24} (fun (_x: bool) -> [ &_21 <- _x ] s2)
+      | s2 = any [ br0 -> {_21 = false} (! bb8) | br1 -> {_21} (! bb7) ] ]
+    | bb7 = s0
+      [ s0 = -{resolve_refmut_BTreeMap_u64_u32_Global m}- s1
+      | s1 = [ &_32 <- k ] s2
+      | s2 = index_BTreeMap_u64_u32_Global {m.current} {_32} (fun (_x: UInt32.t) -> [ &_29 <- _x ] s3)
+      | s3 = [ &_27 <- _29 = v ] s4
+      | s4 = any [ br0 -> {_27 = false} (! bb11) | br1 -> {_27} (! bb10) ] ]
+    | bb10 = return {_ret}
+    | bb11 = {false} any
+    | bb8 = s0 [ s0 = -{resolve_refmut_BTreeMap_u64_u32_Global m}- s1 | s1 = {false} any ]
+    | bb5 = s0 [ s0 = -{resolve_refmut_BTreeMap_u64_u32_Global m}- s1 | s1 = {false} any ] ]
+    [ & _ret: () = Any.any_l ()
+    | & m: MutBorrow.t t_BTreeMap_u64_u32_Global = m
+    | & k: UInt64.t = k
+    | & v: UInt32.t = v
+    | & _4: t_Option_u32 = Any.any_l ()
+    | & _5: MutBorrow.t t_BTreeMap_u64_u32_Global = Any.any_l ()
+    | & _9: bool = Any.any_l ()
+    | & _11: t_Option_ref_u32 = Any.any_l ()
+    | & _14: UInt64.t = Any.any_l ()
+    | & _16: t_Option_ref_u32 = Any.any_l ()
+    | & _18: UInt32.t = Any.any_l ()
+    | & _21: bool = Any.any_l ()
+    | & _24: UInt64.t = Any.any_l ()
+    | & _27: bool = Any.any_l ()
+    | & _29: UInt32.t = Any.any_l ()
+    | & _32: UInt64.t = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end
+module M_lookup
+  use creusot.int.UInt64
+  use creusot.int.UInt32
+  use map.Map
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_BTreeMap_u64_u32_Global
+  
+  type t_Option_ref_u32 = None | Some UInt32.t
+  
+  type t_FMap_Int_u32
+  
+  type t_Option_u32 = None'0 | Some'0 UInt32.t
+  
+  function to_mapping_Int (self: t_FMap_Int_u32) : Map.map int t_Option_u32
+  
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_u32) (k: int) : t_Option_u32 = Map.get (to_mapping_Int self) k
+  
+  meta "rewrite_def" function lookup_Int
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  function len_Int (self: t_FMap_Int_u32) : int
+  
+  axiom len_Int_spec: forall self: t_FMap_Int_u32 [len_Int self]. ge_log_Int (len_Int self) 0
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_BTreeMap_u64_u32_Global (self: t_BTreeMap_u64_u32_Global) : t_FMap_Int_u32
+  
+  axiom view_BTreeMap_u64_u32_Global_spec:
+    forall self: t_BTreeMap_u64_u32_Global [view_BTreeMap_u64_u32_Global self]. len_Int (view_BTreeMap_u64_u32_Global self)
+      <= UInt64.t'int const_MAX
+  
+  function deep_model_u64 [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model_u64
+  
+  function deep_model_ref_u64 [@inline:trivial] (self: UInt64.t) : int = deep_model_u64 self
+  
+  meta "rewrite_def" function deep_model_ref_u64
+  
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_u32) (k: int) = lookup_Int self k <> None'0
+  
+  meta "rewrite_def" predicate contains_Int
+  
+  let get_u64 (self: t_BTreeMap_u64_u32_Global) (key: UInt64.t) (return (x: t_Option_ref_u32)) = any
+    [ return (result: t_Option_ref_u32) -> {[@stop_split] [@expl:get ensures] match result with
+        | Some v -> lookup_Int (view_BTreeMap_u64_u32_Global self) (deep_model_ref_u64 key) = Some'0 v
+        | None -> not contains_Int (view_BTreeMap_u64_u32_Global self) (deep_model_ref_u64 key)
+        end}
+      (! return {result}) ]
+  
+  let copied_u32 (self: t_Option_ref_u32) (return (x: t_Option_u32)) = any
+    [ return (result: t_Option_u32) -> {[@stop_split] [@expl:copied ensures] match self with
+        | None -> result = None'0
+        | Some s -> result = Some'0 s
+        end}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let lookup (m: t_BTreeMap_u64_u32_Global) (k: UInt64.t) (return (x: t_Option_u32)) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_9 <- k ] s1
+      | s1 = get_u64 {m} {_9} (fun (_x: t_Option_ref_u32) -> [ &_6 <- _x ] s2)
+      | s2 = copied_u32 {_6} (fun (_x: t_Option_u32) -> [ &_ret <- _x ] s3)
+      | s3 = return {_ret} ] ]
+    [ & _ret: t_Option_u32 = Any.any_l ()
+    | & m: t_BTreeMap_u64_u32_Global = m
+    | & k: UInt64.t = k
+    | & _6: t_Option_ref_u32 = Any.any_l ()
+    | & _9: UInt64.t = Any.any_l () ])
+    [ return (result: t_Option_u32) -> {[@stop_split] [@expl:lookup ensures] match result with
+        | Some'0 v -> lookup_Int (view_BTreeMap_u64_u32_Global m) (UInt64.t'int k) = Some'0 v
+        | None'0 -> not contains_Int (view_BTreeMap_u64_u32_Global m) (UInt64.t'int k)
+        end}
+      (! return {result}) ]
+end
+module M_remove
+  use creusot.prelude.MutBorrow
+  use creusot.int.UInt64
+  use creusot.int.UInt32
+  use map.Map
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_BTreeMap_u64_u32_Global
+  
+  type t_Option_u32 = None | Some UInt32.t
+  
+  type t_FMap_Int_u32
+  
+  function to_mapping_Int (self: t_FMap_Int_u32) : Map.map int t_Option_u32
+  
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_u32) (k: int) : t_Option_u32 = Map.get (to_mapping_Int self) k
+  
+  meta "rewrite_def" function lookup_Int
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  function len_Int (self: t_FMap_Int_u32) : int
+  
+  axiom len_Int_spec: forall self: t_FMap_Int_u32 [len_Int self]. ge_log_Int (len_Int self) 0
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_BTreeMap_u64_u32_Global (self: t_BTreeMap_u64_u32_Global) : t_FMap_Int_u32
+  
+  axiom view_BTreeMap_u64_u32_Global_spec:
+    forall self: t_BTreeMap_u64_u32_Global [view_BTreeMap_u64_u32_Global self]. len_Int (view_BTreeMap_u64_u32_Global self)
+      <= UInt64.t'int const_MAX
+  
+  function deep_model_u64 [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model_u64
+  
+  function deep_model_ref_u64 [@inline:trivial] (self: UInt64.t) : int = deep_model_u64 self
+  
+  meta "rewrite_def" function deep_model_ref_u64
+  
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_u32) (k: int) = lookup_Int self k <> None
+  
+  meta "rewrite_def" predicate contains_Int
+  
+  function remove_Int (self: t_FMap_Int_u32) (k: int) : t_FMap_Int_u32
+  
+  axiom remove_Int_spec: forall self: t_FMap_Int_u32, k: int [remove_Int self k]. to_mapping_Int (remove_Int self k)
+      = Map.set (to_mapping_Int self) k (None)
+  
+  axiom remove_Int_spec'0: forall self: t_FMap_Int_u32, k: int [remove_Int self k]. len_Int (remove_Int self k)
+      = (if contains_Int self k then len_Int self - 1 else len_Int self)
+  
+  let remove_u64 (self: MutBorrow.t t_BTreeMap_u64_u32_Global) (key: UInt64.t) (return (x: t_Option_u32)) = any
+    [ return (result: t_Option_u32) ->
+    {[@stop_split] [@expl:remove_u64 ensures] ([@stop_split] [@expl:remove ensures #0] result
+        = lookup_Int (view_BTreeMap_u64_u32_Global self.current) (deep_model_ref_u64 key))
+      /\ ([@stop_split] [@expl:remove ensures #1] view_BTreeMap_u64_u32_Global self.final
+      = remove_Int (view_BTreeMap_u64_u32_Global self.current) (deep_model_ref_u64 key))}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_BTreeMap_u64_u32_Global [@inline:trivial] (_1: MutBorrow.t t_BTreeMap_u64_u32_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_BTreeMap_u64_u32_Global
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let remove (m: MutBorrow.t t_BTreeMap_u64_u32_Global) (k: UInt64.t) (return (x: t_Option_u32)) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_14 <- k ] s1
+      | s1 = MutBorrow.borrow_final <t_BTreeMap_u64_u32_Global> {m.current} {MutBorrow.get_id m}
+          (fun (_bor: MutBorrow.t t_BTreeMap_u64_u32_Global) ->
+            [ &_12 <- _bor ] [ &m <- { m with current = _bor.final } ] s2)
+      | s2 = remove_u64 {_12} {_14} (fun (_x: t_Option_u32) -> [ &_ret <- _x ] s3)
+      | s3 = -{resolve_refmut_BTreeMap_u64_u32_Global m}- s4
+      | s4 = return {_ret} ] ]
+    [ & _ret: t_Option_u32 = Any.any_l ()
+    | & m: MutBorrow.t t_BTreeMap_u64_u32_Global = m
+    | & k: UInt64.t = k
+    | & _12: MutBorrow.t t_BTreeMap_u64_u32_Global = Any.any_l ()
+    | & _14: UInt64.t = Any.any_l () ])
+    [ return (result: t_Option_u32) ->
+    {[@stop_split] [@expl:remove ensures] ([@stop_split] [@expl:remove ensures #0] result
+        = lookup_Int (view_BTreeMap_u64_u32_Global m.current) (UInt64.t'int k))
+      /\ ([@stop_split] [@expl:remove ensures #1] not contains_Int (view_BTreeMap_u64_u32_Global m.final) (UInt64.t'int k))
+      /\ ([@stop_split] [@expl:remove ensures #2] forall k2: int. k2 <> UInt64.t'int k
+        -> lookup_Int (view_BTreeMap_u64_u32_Global m.final) k2
+        = lookup_Int (view_BTreeMap_u64_u32_Global m.current) k2)}
+      (! return {result}) ]
+end
+module M_replace
+  use creusot.prelude.MutBorrow
+  use creusot.int.UInt64
+  use creusot.int.UInt32
+  use map.Map
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_BTreeMap_u64_u32_Global
+  
+  type t_Option_u32 = None | Some UInt32.t
+  
+  type t_FMap_Int_u32
+  
+  function to_mapping_Int (self: t_FMap_Int_u32) : Map.map int t_Option_u32
+  
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_u32) (k: int) : t_Option_u32 = Map.get (to_mapping_Int self) k
+  
+  meta "rewrite_def" function lookup_Int
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  function len_Int (self: t_FMap_Int_u32) : int
+  
+  axiom len_Int_spec: forall self: t_FMap_Int_u32 [len_Int self]. ge_log_Int (len_Int self) 0
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_BTreeMap_u64_u32_Global (self: t_BTreeMap_u64_u32_Global) : t_FMap_Int_u32
+  
+  axiom view_BTreeMap_u64_u32_Global_spec:
+    forall self: t_BTreeMap_u64_u32_Global [view_BTreeMap_u64_u32_Global self]. len_Int (view_BTreeMap_u64_u32_Global self)
+      <= UInt64.t'int const_MAX
+  
+  function deep_model_u64 [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model_u64
+  
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_u32) (k: int) = lookup_Int self k <> None
+  
+  meta "rewrite_def" predicate contains_Int
+  
+  function add_Int (self: t_FMap_Int_u32) (k: int) (v: UInt32.t) : t_FMap_Int_u32
+  
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_u32, k: int, v: UInt32.t [add_Int self k v]. to_mapping_Int (add_Int self k v)
+      = Map.set (to_mapping_Int self) k (Some v)
+  
+  axiom add_Int_spec'0: forall self: t_FMap_Int_u32, k: int, v: UInt32.t [add_Int self k v]. len_Int (add_Int self k v)
+      = (if contains_Int self k then len_Int self else len_Int self + 1)
+  
+  let insert_u64 (self: MutBorrow.t t_BTreeMap_u64_u32_Global) (key: UInt64.t) (value: UInt32.t)
+    (return (x: t_Option_u32)) = any
+    [ return (result: t_Option_u32) ->
+    {[@stop_split] [@expl:insert_u64 ensures] ([@stop_split] [@expl:insert ensures #0] result
+        = lookup_Int (view_BTreeMap_u64_u32_Global self.current) (deep_model_u64 key))
+      /\ ([@stop_split] [@expl:insert ensures #1] view_BTreeMap_u64_u32_Global self.final
+      = add_Int (view_BTreeMap_u64_u32_Global self.current) (deep_model_u64 key) value)}
+      (! return {result}) ]
+  
+  predicate resolve_refmut_BTreeMap_u64_u32_Global [@inline:trivial] (_1: MutBorrow.t t_BTreeMap_u64_u32_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_BTreeMap_u64_u32_Global
+  
+  let elim_Some (_x: t_Option_u32) (return (f0: UInt32.t)) = any
+    [ _k (f0: UInt32.t) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Some] match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  constant any_u32 : UInt32.t
+  
+  function unwrap_Option_u32 (self: t_Option_u32) : UInt32.t = match self with
+      | Some x -> x
+      | None -> any_u32
+      end
+  
+  function index_FMap_Int_u32 [@inline:trivial] (self: t_FMap_Int_u32) (key: int) : UInt32.t =
+    unwrap_Option_u32 (lookup_Int self key)
+  
+  meta "rewrite_def" function index_FMap_Int_u32
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let replace (m: MutBorrow.t t_BTreeMap_u64_u32_Global) (k: UInt64.t) (v: UInt32.t) (return (x: UInt32.t)) =
+  {[@stop_split] [@expl:replace requires] contains_Int (view_BTreeMap_u64_u32_Global m.current) (UInt64.t'int k)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = MutBorrow.borrow_final <t_BTreeMap_u64_u32_Global> {m.current} {MutBorrow.get_id m}
+          (fun (_bor: MutBorrow.t t_BTreeMap_u64_u32_Global) ->
+            [ &_20 <- _bor ] [ &m <- { m with current = _bor.final } ] s1)
+      | s1 = insert_u64 {_20} {k} {v} (fun (_x: t_Option_u32) -> [ &_19 <- _x ] s2)
+      | s2 = -{resolve_refmut_BTreeMap_u64_u32_Global m}- s3
+      | s3 = any [ br0 -> {_19 = None} (! bb4) | br1 (x0: UInt32.t) -> {_19 = Some x0} (! bb5) ] ]
+    | bb5 = s0
+      [ s0 = elim_Some {_19} (fun (r0: UInt32.t) -> [ &old' <- r0 ] s1)
+      | s1 = [ &_ret <- old' ] s2
+      | s2 = return {_ret} ]
+    | bb4 = {false} any ]
+    [ & _ret: UInt32.t = Any.any_l ()
+    | & m: MutBorrow.t t_BTreeMap_u64_u32_Global = m
+    | & k: UInt64.t = k
+    | & v: UInt32.t = v
+    | & _19: t_Option_u32 = Any.any_l ()
+    | & _20: MutBorrow.t t_BTreeMap_u64_u32_Global = Any.any_l ()
+    | & old': UInt32.t = Any.any_l () ])
+    [ return (result: UInt32.t) ->
+    {[@stop_split] [@expl:replace ensures] ([@stop_split] [@expl:replace ensures #0] result
+        = index_FMap_Int_u32 (view_BTreeMap_u64_u32_Global m.current) (UInt64.t'int k))
+      /\ ([@stop_split] [@expl:replace ensures #1] lookup_Int (view_BTreeMap_u64_u32_Global m.final) (UInt64.t'int k)
+        = Some v)
+      /\ ([@stop_split] [@expl:replace ensures #2] forall k2: int. k2 <> UInt64.t'int k
+          -> lookup_Int (view_BTreeMap_u64_u32_Global m.final) k2
+          = lookup_Int (view_BTreeMap_u64_u32_Global m.current) k2)
+      /\ ([@stop_split] [@expl:replace ensures #3] len_Int (view_BTreeMap_u64_u32_Global m.final)
+      = len_Int (view_BTreeMap_u64_u32_Global m.current))}
+      (! return {result}) ]
+end
+module M_update_via_get_mut
+  use creusot.prelude.MutBorrow
+  use creusot.int.UInt64
+  use creusot.int.UInt32
+  use map.Map
+  use creusot.prelude.Any
+  use int.Int
+  
+  type t_BTreeMap_u64_u32_Global
+  
+  type t_Option_refmut_u32 = None | Some (MutBorrow.t UInt32.t)
+  
+  type t_FMap_Int_u32
+  
+  type t_Option_u32 = None'0 | Some'0 UInt32.t
+  
+  function to_mapping_Int (self: t_FMap_Int_u32) : Map.map int t_Option_u32
+  
+  function lookup_Int [@inline:trivial] (self: t_FMap_Int_u32) (k: int) : t_Option_u32 = Map.get (to_mapping_Int self) k
+  
+  meta "rewrite_def" function lookup_Int
+  
+  predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+  
+  meta "rewrite_def" predicate ge_log_Int
+  
+  function len_Int (self: t_FMap_Int_u32) : int
+  
+  axiom len_Int_spec: forall self: t_FMap_Int_u32 [len_Int self]. ge_log_Int (len_Int self) 0
+  
+  constant const_MAX: UInt64.t = (18446744073709551615: UInt64.t)
+  
+  function view_BTreeMap_u64_u32_Global (self: t_BTreeMap_u64_u32_Global) : t_FMap_Int_u32
+  
+  axiom view_BTreeMap_u64_u32_Global_spec:
+    forall self: t_BTreeMap_u64_u32_Global [view_BTreeMap_u64_u32_Global self]. len_Int (view_BTreeMap_u64_u32_Global self)
+      <= UInt64.t'int const_MAX
+  
+  function deep_model_u64 [@inline:trivial] (self: UInt64.t) : int = UInt64.t'int self
+  
+  meta "rewrite_def" function deep_model_u64
+  
+  function deep_model_ref_u64 [@inline:trivial] (self: UInt64.t) : int = deep_model_u64 self
+  
+  meta "rewrite_def" function deep_model_ref_u64
+  
+  predicate contains_Int [@inline:trivial] (self: t_FMap_Int_u32) (k: int) = lookup_Int self k <> None'0
+  
+  meta "rewrite_def" predicate contains_Int
+  
+  function add_Int (self: t_FMap_Int_u32) (k: int) (v: UInt32.t) : t_FMap_Int_u32
+  
+  axiom add_Int_spec:
+    forall self: t_FMap_Int_u32, k: int, v: UInt32.t [add_Int self k v]. to_mapping_Int (add_Int self k v)
+      = Map.set (to_mapping_Int self) k (Some'0 v)
+  
+  axiom add_Int_spec'0: forall self: t_FMap_Int_u32, k: int, v: UInt32.t [add_Int self k v]. len_Int (add_Int self k v)
+      = (if contains_Int self k then len_Int self else len_Int self + 1)
+  
+  let get_mut_u64 (self: MutBorrow.t t_BTreeMap_u64_u32_Global) (key: UInt64.t) (return (x: t_Option_refmut_u32)) = any
+    [ return (result: t_Option_refmut_u32) -> {[@stop_split] [@expl:get_mut ensures] match result with
+        | Some v -> lookup_Int (view_BTreeMap_u64_u32_Global self.current) (deep_model_ref_u64 key) = Some'0 (v.current)
+        /\ view_BTreeMap_u64_u32_Global self.final
+        = add_Int (view_BTreeMap_u64_u32_Global self.current) (deep_model_ref_u64 key) v.final
+        | None -> not contains_Int (view_BTreeMap_u64_u32_Global self.current) (deep_model_ref_u64 key)
+        /\ self.final = self.current
+        end}
+      (! return {result}) ]
+  
+  let elim_Some (_x: t_Option_refmut_u32) (return (f0: MutBorrow.t UInt32.t)) = any
+    [ _k (f0: MutBorrow.t UInt32.t) -> {Some f0 = _x} (! return {f0})
+    | _chk -> (! {[@expl:elim Some] match _x with
+        | Some _ -> true
+        | _ -> false
+        end}
+      any) ]
+  
+  predicate resolve_refmut_u32 [@inline:trivial] (_1: MutBorrow.t UInt32.t) = _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_u32
+  
+  predicate resolve_refmut_BTreeMap_u64_u32_Global [@inline:trivial] (_1: MutBorrow.t t_BTreeMap_u64_u32_Global) =
+    _1.final = _1.current
+  
+  meta "rewrite_def" predicate resolve_refmut_BTreeMap_u64_u32_Global
+  
+  predicate resolve_Option_refmut_u32 (_1: t_Option_refmut_u32)
+  
+  axiom resolve_axiom [@rewrite]:
+    forall _1: t_Option_refmut_u32 [resolve_Option_refmut_u32 _1]. resolve_Option_refmut_u32 _1
+      = match _1 with
+        | None -> true
+        | Some x0 -> resolve_refmut_u32 x0
+        end
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let update_via_get_mut (m: MutBorrow.t t_BTreeMap_u64_u32_Global) (k: UInt64.t) (v: UInt32.t) (return (x: ())) =
+  {[@stop_split] [@expl:update_via_get_mut requires] contains_Int (view_BTreeMap_u64_u32_Global m.current) (UInt64.t'int k)}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_14 <- k ] s1
+      | s1 = MutBorrow.borrow_final <t_BTreeMap_u64_u32_Global> {m.current} {MutBorrow.get_id m}
+          (fun (_bor: MutBorrow.t t_BTreeMap_u64_u32_Global) ->
+            [ &_12 <- _bor ] [ &m <- { m with current = _bor.final } ] s2)
+      | s2 = get_mut_u64 {_12} {_14} (fun (_x: t_Option_refmut_u32) -> [ &_11 <- _x ] s3)
+      | s3 = any [ br0 -> {_11 = None} (! bb4) | br1 (x0: MutBorrow.t UInt32.t) -> {_11 = Some x0} (! bb5) ] ]
+    | bb5 = s0
+      [ s0 = elim_Some {_11} (fun (r0: MutBorrow.t UInt32.t) -> [ &r <- r0 ] s1)
+      | s1 = [ &r <- { r with current = v } ] s2
+      | s2 = -{resolve_refmut_u32 r}- s3
+      | s3 = -{resolve_refmut_BTreeMap_u64_u32_Global m}- s4
+      | s4 = return {_ret} ]
+    | bb4 = s0
+      [ s0 = -{resolve_Option_refmut_u32 _11}- s1
+      | s1 = -{resolve_refmut_BTreeMap_u64_u32_Global m}- s2
+      | s2 = {false} any ] ]
+    [ & _ret: () = Any.any_l ()
+    | & m: MutBorrow.t t_BTreeMap_u64_u32_Global = m
+    | & k: UInt64.t = k
+    | & v: UInt32.t = v
+    | & _11: t_Option_refmut_u32 = Any.any_l ()
+    | & _12: MutBorrow.t t_BTreeMap_u64_u32_Global = Any.any_l ()
+    | & _14: UInt64.t = Any.any_l ()
+    | & r: MutBorrow.t UInt32.t = Any.any_l () ])
+    [ return (result: ()) -> {[@stop_split] [@expl:update_via_get_mut ensures] view_BTreeMap_u64_u32_Global m.final
+      = add_Int (view_BTreeMap_u64_u32_Global m.current) (UInt64.t'int k) v}
+      (! return {result}) ]
+end

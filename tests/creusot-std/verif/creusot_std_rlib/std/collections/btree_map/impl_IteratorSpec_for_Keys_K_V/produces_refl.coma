@@ -1,0 +1,29 @@
+(* <std::collections::btree_map::Keys<'a, K, V> as std::iter::IteratorSpec> *)
+
+use seq.Seq
+
+type t_Keys_K_V
+
+type t_K
+
+function view_Keys_K_V (self: t_Keys_K_V) : Seq.seq t_K
+
+predicate produces_Keys_K_V (self: t_Keys_K_V) (visited: Seq.seq t_K) (tl: t_Keys_K_V) =
+  view_Keys_K_V self = Seq.(++) visited (view_Keys_K_V tl)
+
+function concat_empty_ref_K (self: Seq.seq t_K) : ()
+
+axiom concat_empty_ref_K_spec: forall self: Seq.seq t_K. Seq.(++) self (Seq.empty: Seq.seq t_K) = self
+
+axiom concat_empty_ref_K_spec'0: forall self: Seq.seq t_K. Seq.(++) (Seq.empty: Seq.seq t_K) self = self
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_Keys_K_V
+
+function produces_refl_Keys_K_V (self: t_Keys_K_V) : ()
+
+goal vc_produces_refl_Keys_K_V:
+  [@stop_split] [@expl:produces_refl ensures] produces_Keys_K_V self (Seq.empty: Seq.seq t_K) self

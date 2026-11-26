@@ -1,0 +1,27 @@
+(* <std::collections::btree_map::Iter<'a, K, V> as std::iter::IteratorSpec> *)
+
+use seq.Seq
+
+type t_Iter_K_V
+
+type t_K
+
+type t_V
+
+type tup2_ref_K_ref_V = { f0: t_K; f1: t_V }
+
+function view_Iter_K_V (self: t_Iter_K_V) : Seq.seq tup2_ref_K_ref_V
+
+predicate produces_Iter_K_V (self: t_Iter_K_V) (visited: Seq.seq tup2_ref_K_ref_V) (tl: t_Iter_K_V) =
+  view_Iter_K_V self = Seq.(++) visited (view_Iter_K_V tl)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+goal refines:
+  forall a: t_Iter_K_V, ab: Seq.seq tup2_ref_K_ref_V, b: t_Iter_K_V, bc: Seq.seq tup2_ref_K_ref_V, c: t_Iter_K_V. produces_Iter_K_V a ab b
+    -> produces_Iter_K_V b bc c
+    -> produces_Iter_K_V a ab b
+    /\ produces_Iter_K_V b bc c
+    /\ (forall result: (). produces_Iter_K_V a (Seq.(++) ab bc) c -> produces_Iter_K_V a (Seq.(++) ab bc) c)

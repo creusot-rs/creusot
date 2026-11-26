@@ -1,0 +1,29 @@
+(* <std::collections::btree_map::IntoValues<K, V, A> as std::iter::IteratorSpec> *)
+
+use seq.Seq
+
+type t_IntoValues_K_V_A
+
+type t_V
+
+function view_IntoValues_K_V_A (self: t_IntoValues_K_V_A) : Seq.seq t_V
+
+predicate produces_IntoValues_K_V_A (self: t_IntoValues_K_V_A) (visited: Seq.seq t_V) (tl: t_IntoValues_K_V_A) =
+  view_IntoValues_K_V_A self = Seq.(++) visited (view_IntoValues_K_V_A tl)
+
+function concat_empty_V (self: Seq.seq t_V) : ()
+
+axiom concat_empty_V_spec: forall self: Seq.seq t_V. Seq.(++) self (Seq.empty: Seq.seq t_V) = self
+
+axiom concat_empty_V_spec'0: forall self: Seq.seq t_V. Seq.(++) (Seq.empty: Seq.seq t_V) self = self
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : t_IntoValues_K_V_A
+
+function produces_refl_IntoValues_K_V_A (self: t_IntoValues_K_V_A) : ()
+
+goal vc_produces_refl_IntoValues_K_V_A:
+  [@stop_split] [@expl:produces_refl ensures] produces_IntoValues_K_V_A self (Seq.empty: Seq.seq t_V) self
