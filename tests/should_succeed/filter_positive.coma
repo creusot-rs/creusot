@@ -147,12 +147,19 @@ module M_m
   
   meta "rewrite_def" function index_Vec_i32_Global'0
   
+  predicate postcondition_clone (self: ()) (args: Int32.t) (result: Int32.t) = let self'0 = args in result = self'0
+  
+  meta "rewrite_def" predicate postcondition_clone
+  
+  let clone_i32 (self: Int32.t) (return (x: Int32.t)) = any
+    [ return (result: Int32.t) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
+  
   let from_elem_i32 (elem: Int32.t) (n: UInt64.t) (return (x: t_Vec_i32_Global)) = any
     [ return (result: t_Vec_i32_Global) ->
     {[@stop_split] [@expl:from_elem_i32 ensures] ([@stop_split] [@expl:from_elem ensures #0] Seq.length (view_Vec_i32_Global result)
         = UInt64.t'int n)
       /\ ([@stop_split] [@expl:from_elem ensures #1] forall i: int. 0 <= i /\ i < UInt64.t'int n
-        -> index_Vec_i32_Global'0 result i = elem)}
+        -> index_Vec_i32_Global'0 result i = elem \/ postcondition_clone () elem (index_Vec_i32_Global'0 result i))}
       (! return {result}) ]
   
   function lemma_num_of_pos_strictly_increasing (i: int) (t: Seq.seq Int32.t) : () = ()

@@ -535,19 +535,18 @@ extern_spec! {
         fn binary_search(&self, x: &T) -> Result<usize, usize>
             where T: Ord + DeepModel,  T::DeepModelTy: OrdLogic,;
 
+        // One of the elements may be `value` (rather than the result of `clone`) but we don't specify which.
         #[ensures((^self)@.len() == (*self)@.len())]
-        #[ensures(forall<i> 0 <= i && i < (^self)@.len() ==> T::clone.postcondition((&value,), (^self)@[i]))]
+        #[ensures(forall<i> 0 <= i && i < (^self)@.len() ==> (^self)@[i] == value || T::clone.postcondition((&value,), (^self)@[i]))]
         fn fill(&mut self, value: T)
             where T: Clone,
         {
-            let _sl = snapshot!(self@.len());
-            let mut i = 0;
-            #[invariant(self@.len() == *_sl)]
-            #[invariant(i@ <= self@.len())]
-            #[invariant(forall<j> 0 <= j && j < i@ ==> T::clone.postcondition((&value,), self@[j]))]
-            while i < self.len() {
-                self[i] = value.clone();
-                i += 1;
+            if let Some((last, elems)) = self.split_last_mut() {
+                #[invariant(forall<j> 0 <= j && j < produced.len() ==> T::clone.postcondition((&value,), ^produced[j]))]
+                for el in elems {
+                    el.clone_from(&value);
+                }
+                *last = value;
             }
         }
 

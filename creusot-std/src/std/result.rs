@@ -97,8 +97,10 @@ extern_spec! {
         where
             T: Copy;
 
-        #[ensures(forall<t: &T> self == Ok(t) ==> result == Ok(*t))]
-        #[ensures(forall<e: E> self == Err(e) ==> result == Err(e))]
+        #[ensures(match self {
+            Ok(t) => exists<r> result == Ok(r) && T::clone.postcondition((t,), r) && resolve(t),
+            Err(e) => result == Err(e),
+        })]
         fn cloned(self) -> Result<T, E>
         where
             T: Clone;
@@ -112,7 +114,10 @@ extern_spec! {
         where
             T: Copy;
 
-        #[ensures(forall<t: &mut T> self == Ok(t) ==> result == Ok(*t) && resolve(t))]
+        #[ensures(match self {
+            Ok(t) => exists<r> result == Ok(r) && T::clone.postcondition((&*t,), r) && resolve(t),
+            Err(e) => result == Err(e),
+        })]
         #[ensures(forall<e: E> self == Err(e) ==> result == Err(e))]
         fn cloned(self) -> Result<T, E>
         where
