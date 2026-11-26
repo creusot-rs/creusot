@@ -1,3 +1,4 @@
+use super::visibility;
 use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, quote_spanned};
 use syn::{
@@ -17,7 +18,7 @@ pub fn derive_clone(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
         Ok(b) => b,
         Err(e) => return e.into_compile_error().into(),
     };
-    let post = match post(&name, &input.data) {
+    let post = match post(&name, &input.data, &input.vis) {
         Ok(p) => p,
         Err(e) => return e.into_compile_error().into(),
     };
@@ -118,34 +119,56 @@ fn gen_match_arm<'a, I: Iterator<Item = &'a syn::Field>>(fields: I) -> ArmAcc {
     acc
 }
 
-fn post(base_ident: &Ident, data: &Data) -> syn::Result<TokenStream> {
+fn post(base_ident: &Ident, data: &Data, vis: &syn::Visibility) -> syn::Result<TokenStream> {
     match *data {
         Data::Struct(ref data) => Ok(match data.fields {
             Fields::Named(ref fields) if fields.named.len() == 0 => {
                 quote! { true }
             }
             Fields::Named(ref fields) => {
-                let conjuncts = fields.named.iter().map(|f| {
-                    let name = &f.ident;
-                    let ty = &f.ty;
-                    quote_spanned! {f.span()=>
-                        <#ty as ::core::clone::Clone>::clone.postcondition((&self.#name,), result.#name)
+                let mut conjuncts = fields.named.iter().filter_map(|f| {
+                    // This takes care of structs where a field's visibility is greater than that
+                    // of the struct
+                    let effective_vis = visibility::intersection(f.vis.clone(), vis);
+                    if effective_vis == *vis {
+                        let name = &f.ident;
+                        let ty = &f.ty;
+                        Some(quote_spanned! {f.span()=>
+                            <#ty as ::core::clone::Clone>::clone.postcondition((&self.#name,), result.#name)
+                        })
+                    } else {
+                        None
                     }
-                });
-                quote! { #(#conjuncts) && * }
+                }).peekable();
+                if conjuncts.peek().is_some() {
+                    quote! { #(#conjuncts) && * }
+                } else {
+                    quote! { true }
+                }
             }
             Fields::Unnamed(ref fields) if fields.unnamed.len() == 0 => {
                 quote! { true }
             }
             Fields::Unnamed(ref fields) => {
-                let conjuncts = fields.unnamed.iter().enumerate().map(|(i, f)| {
-                    let index = Index::from(i);
-                    let ty = &f.ty;
-                    quote_spanned! {f.span()=>
-                        <#ty as ::core::clone::Clone>::clone.postcondition((&self.#index,), result.#index)
+                let mut conjuncts = fields.unnamed.iter().enumerate().filter_map(|(i, f)| {
+                    // This takes care of structs where a field's visibility is greater than that
+                    // of the struct
+                    let effective_vis = visibility::intersection(f.vis.clone(), vis);
+                    if effective_vis == *vis {
+                        let index = Index::from(i);
+                        let ty = &f.ty;
+                        Some(quote_spanned! {f.span()=>
+                            <#ty as ::core::clone::Clone>::clone.postcondition((&self.#index,), result.#index)
+                        })
+                    } else {
+                        None
                     }
-                });
-                quote! { #(#conjuncts) && * }
+                }).peekable();
+                if conjuncts.peek().is_some() {
+                    quote! { #(#conjuncts) && * }
+                } else {
+                    quote! { true }
+                }
             }
             Fields::Unit => quote! { true },
         }),

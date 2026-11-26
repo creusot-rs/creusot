@@ -1,8 +1,9 @@
+use super::visibility;
 use proc_macro2::{Span, TokenStream};
 use quote::{quote, quote_spanned};
 use syn::{
-    Data, DeriveInput, Fields, GenericParam, Generics, Ident, parse_macro_input, parse_quote,
-    spanned::Spanned,
+    Data, DeriveInput, Fields, GenericParam, Generics, Ident, Visibility, parse_macro_input,
+    parse_quote, spanned::Spanned,
 };
 
 /// Derive `Default` and `creusot_std::Default` on the given type.
@@ -14,7 +15,7 @@ pub fn derive_default(input: proc_macro::TokenStream) -> proc_macro::TokenStream
     let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
 
     let body_code = default_body(&input.data);
-    let body_spec = default_spec(&input.data);
+    let body_spec = default_spec(&input.data, &input.vis);
 
     quote! {
         impl #impl_generics ::core::default::Default for #name #ty_generics #where_clause {
@@ -87,9 +88,9 @@ fn fields_set_to_default(fields: &Fields) -> TokenStream {
 }
 
 /// The body of the ensures clause.
-fn default_spec(data: &Data) -> TokenStream {
+fn default_spec(data: &Data, vis: &Visibility) -> TokenStream {
     match data {
-        Data::Struct(data_struct) => fields_are_default(&data_struct.fields, true),
+        Data::Struct(data_struct) => fields_are_default(&data_struct.fields, true, vis),
         Data::Enum(data_enum) => {
             let Some(default_variant) = data_enum
                 .variants
@@ -120,7 +121,7 @@ fn default_spec(data: &Data) -> TokenStream {
                 Fields::Unit => quote!(),
             };
 
-            let expr = fields_are_default(&default_variant.fields, false);
+            let expr = fields_are_default(&default_variant.fields, false, vis);
 
             quote!( match result { Self :: #var_name #pat => #expr , _ => false } )
         }
@@ -135,27 +136,41 @@ fn default_spec(data: &Data) -> TokenStream {
 ///
 /// Else, this is a struct in an enum case. In the case of a tuple struct, assume that the
 /// variables are named `x1 ... xn`.
-fn fields_are_default(fields: &Fields, with_result: bool) -> TokenStream {
+fn fields_are_default(fields: &Fields, with_result: bool, vis: &Visibility) -> TokenStream {
     match fields {
         Fields::Named(fields) => {
-            let fs = fields.named.iter().map(|f| {
+            let fs = fields.named.iter().filter_map(|f| {
                 let name = &f.ident;
                 if with_result {
-                    quote_spanned! { f.span() => creusot_std::std::ops::FnExt::postcondition(::core::default::Default::default, (), result.#name) }
+                    // This takes care of structs where a field's visibility is greater than that
+                    // of the struct
+                    let effective_vis = visibility::intersection(f.vis.clone(), vis);
+                    if effective_vis == *vis {
+                        Some(quote_spanned! { f.span() => creusot_std::std::ops::FnExt::postcondition(::core::default::Default::default, (), result.#name) })
+                    } else {
+                        None
+                    }
                 } else {
-                    quote_spanned! { f.span() => creusot_std::std::ops::FnExt::postcondition(::core::default::Default::default, (), #name) }
+                    Some(quote_spanned! { f.span() => creusot_std::std::ops::FnExt::postcondition(::core::default::Default::default, (), #name) })
                 }
             });
             quote! { true #(&& #fs)* }
         }
         Fields::Unnamed(fields) => {
-            let fs = fields.unnamed.iter().enumerate().map(|(i, f)| {
+            let fs = fields.unnamed.iter().enumerate().filter_map(|(i, f)| {
                 if with_result {
-                    let i = syn::LitInt::new(&format!("{i}"), f.span());
-                    quote_spanned! { f.span() => creusot_std::std::ops::FnExt::postcondition(::core::default::Default::default, (), result.#i) }
+                    // This takes care of structs where a field's visibility is greater than that
+                    // of the struct
+                    let effective_vis = visibility::intersection(f.vis.clone(), vis);
+                    if effective_vis == *vis {
+                        let i = syn::LitInt::new(&format!("{i}"), f.span());
+                        Some(quote_spanned! { f.span() => creusot_std::std::ops::FnExt::postcondition(::core::default::Default::default, (), result.#i) })
+                    } else {
+                        None
+                    }
                 } else {
                     let name = Ident::new(&format!("x{i}"), f.span());
-                    quote_spanned! { f.span() => creusot_std::std::ops::FnExt::postcondition(::core::default::Default::default, (), #name) }
+                    Some(quote_spanned! { f.span() => creusot_std::std::ops::FnExt::postcondition(::core::default::Default::default, (), #name) })
                 }
             });
             quote! { true #(&& #fs)* }
