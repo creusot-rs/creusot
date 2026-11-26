@@ -26,6 +26,20 @@ impl Real {
     pub fn from_int(_: Int) -> Self {
         dead
     }
+
+    /// The real `0.0`
+    #[logic]
+    #[builtin("real.Real.zero")]
+    pub fn zero() -> Self {
+        dead
+    }
+
+    /// The real `1.0`
+    #[logic]
+    #[builtin("real.Real.one")]
+    pub fn one() -> Self {
+        dead
+    }
 }
 
 impl PartialOrdLogic for Real {
@@ -155,6 +169,12 @@ impl PositiveReal {
     #[logic(open, inline)]
     pub fn from_int(i: Int) -> Self {
         Self::new(Real::from_int(i))
+    }
+
+    /// The real `1.0`
+    #[logic(open, inline)]
+    pub fn one() -> Self {
+        Self::new(Real::one())
     }
 }
 
