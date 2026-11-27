@@ -325,6 +325,7 @@ fn install_from_opam(
         cmd.args(["switch", "create", "--yes", "--empty"]).arg(&switch_dir);
         args.run(cmd)?;
     }
+    add_ocamlmklib_opt_hack(&opam_dir.join("bin"), args)?;
     let mut cmd = Command::new("opam");
     cmd.args(["install", "--yes", "--switch"])
         .arg(&switch_dir)
@@ -334,6 +335,40 @@ fn install_from_opam(
         opam_dir.join("bin").join(bin.bin.binary_name),
         paths.bin().join(bin.bin.binary_name),
     )
+}
+
+/// HACK: make the switch provide an `ocamlmklib.opt`, as a symbolic link to its `ocamlmklib`.
+///
+/// The hand-written `configure` script of mlcuddidl (a dependency of Colibri2) looks up its tools
+/// with a `.opt` suffix in the whole `PATH` first, and only then without the suffix. Since OCaml
+/// 5.1 (ocaml/ocaml#11993), `ocamlmklib` is only installed in bytecode, with no `ocamlmklib.opt`;
+/// older versions installed one. So when another OCaml older than 5.1 is in the `PATH` (e.g. the
+/// system's), the script picks its `ocamlmklib.opt`, which links with that OCaml's `ocamlc` and
+/// rejects the bytecode files compiled by the switch's OCaml ("not a bytecode object file").
+/// During opam builds, the switch's `bin` directory comes first in `PATH`, so this link is found
+/// first instead.
+///
+/// The link is created before `opam install` installs the compiler, so it dangles until then; it
+/// only needs to resolve when mlcuddidl is configured, which happens after the compiler is
+/// installed. Nothing is done if the switch already has an `ocamlmklib.opt`. If the switch gets an
+/// OCaml older than 5.1, its installation replaces the link with its own `ocamlmklib.opt` (both
+/// `install` and OCaml's `install-sh` replace a symbolic link instead of writing through it).
+///
+/// This hack can go when mlcuddidl's `configure` prefers the tools next to the `ocamlc` it finds.
+fn add_ocamlmklib_opt_hack(switch_bin: &Path, args: &Args) -> anyhow::Result<()> {
+    let link = switch_bin.join("ocamlmklib.opt");
+    // `symlink_metadata` so that an existing (even dangling) link counts as existing.
+    if fs::symlink_metadata(&link).is_ok() {
+        return Ok(());
+    }
+    args.create_dir_all(switch_bin)?;
+    if args.dry_run {
+        println!("ln -s ocamlmklib {}", link.display());
+        return Ok(());
+    }
+    #[cfg(unix)]
+    std::os::unix::fs::symlink("ocamlmklib", &link)?;
+    Ok(())
 }
 
 fn build_prelude(args: &Args) -> anyhow::Result<()> {
