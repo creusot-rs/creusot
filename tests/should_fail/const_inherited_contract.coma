@@ -1,0 +1,66 @@
+module M_bad
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  use int.Int
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  constant const_C : Int32.t
+  
+  axiom const_C_spec: gt_log_Int (Int32.to_int const_C) 0
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let bad (return (x: ())) = (! bb0
+    [ bb0 = s0 [ s0 = {[@expl:assertion] gt_log_Int (Int32.to_int const_C) 0} s1 | s1 = return {_ret} ] ]
+    [ & _ret: () = Any.any_l () ])
+    [ return (result: ()) -> {[@stop_split] [@expl:bad ensures] false} (! return {result}) ]
+end
+module M_impl_F_for_S__C (* <S as F> *)
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  use int.Int
+  
+  constant const_C : Int32.t
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  constant const_C'0 : Int32.t
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let const_C_def (return (x: Int32.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- (0: Int32.t) ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () ])
+    [ return (result: Int32.t) -> -{const_C = result}-
+      {[@stop_split] [@expl:C ensures] gt_log_Int (Int32.to_int const_C'0) 0}
+      (! return {result}) ]
+end
+module M_trait_F__C
+  use creusot.int.Int32
+  use creusot.prelude.Any
+  use int.Int
+  
+  constant const_C : Int32.t
+  
+  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+  
+  meta "rewrite_def" predicate gt_log_Int
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let const_C_def (return (x: Int32.t)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_ret <- (1: Int32.t) ] s1 | s1 = return {_ret} ] ] [ & _ret: Int32.t = Any.any_l () ])
+    [ return (result: Int32.t) -> -{const_C = result}-
+      {[@stop_split] [@expl:C ensures] gt_log_Int (Int32.to_int const_C) 0}
+      (! return {result}) ]
+end
