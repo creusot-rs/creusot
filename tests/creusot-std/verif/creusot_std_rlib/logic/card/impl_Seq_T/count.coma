@@ -1,0 +1,44 @@
+(* logic::seq::Seq<T> *)
+
+use seq.Seq
+use map.Map
+use int.Int
+
+type t_T
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Int_bool
+
+function card (a: int) (b: int) (p: Map.map int bool) : int
+
+axiom card_def: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+    -> card a b p
+    = (if ge_log_Int a b then 0 else card a (b - 1) p + (if index_Mapping_Int_bool p (b - 1) then 1 else 0))
+
+axiom card_spec: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+    -> 0 <= card a b p /\ card a b p <= b - a
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Seq.seq t_T
+
+constant a : int
+
+constant b : int
+
+constant t : t_T
+
+function count_T (self: Seq.seq t_T) (a: int) (b: int) (t: t_T) : int
+
+goal vc_count_T: a <= b
+  -> (forall f: Map.map int bool. (forall i: int. (Seq.get self i = t) = f i)
+    -> ([@stop_split] [@expl:card requires] a <= b)
+    /\ (([@stop_split] [@expl:card ensures] 0 <= card a b f /\ card a b f <= b - a)
+    -> (let result = card a b f in [@stop_split] [@expl:count ensures] 0 <= result /\ result <= b - a)))

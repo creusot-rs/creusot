@@ -1,0 +1,45 @@
+use map.Map
+use int.Int
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+  ge_log_Int self 0 /\ gt_log_Int self other
+
+meta "rewrite_def" predicate well_founded_relation_Int
+
+predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Int_bool
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant a : int
+
+constant b : int
+
+constant p : Map.map int bool
+
+function card (a: int) (b: int) (p: Map.map int bool) : int
+
+goal vc_card: a <= b
+  -> (if ge_log_Int a b then
+    let result = 0 in [@stop_split] [@expl:card ensures] 0 <= result /\ result <= b - a
+  else
+    (([@stop_split] [@expl:card requires] a <= b - 1)
+      /\ ([@expl:variant decreases] well_founded_relation_Int (b - a) (b - 1 - a)))
+    /\ (([@stop_split] [@expl:card ensures] 0 <= card a (b - 1) p /\ card a (b - 1) p <= b - 1 - a)
+    -> (if index_Mapping_Int_bool p (b - 1) then
+      let result = card a (b - 1) p + 1 in [@stop_split] [@expl:card ensures] 0 <= result /\ result <= b - a
+    else
+      let result = card a (b - 1) p + 0 in [@stop_split] [@expl:card ensures] 0 <= result /\ result <= b - a
+    ))
+  )

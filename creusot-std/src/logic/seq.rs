@@ -365,43 +365,6 @@ impl<T> Seq<T> {
         pearlite! { self[..index].concat(self[index+1..]) }
     }
 
-    #[doc(hidden)]
-    #[logic(opaque)]
-    #[builtin("seq.Occ.occ")]
-    pub fn occ(
-        #[allow(unused)] item: T,
-        #[allow(unused)] this: Self,
-        #[allow(unused)] l: Int,
-        #[allow(unused)] u: Int,
-    ) -> Int {
-        dead
-    }
-
-    /// Count the number of occurrences of `item` in `self`.
-    #[logic(open)]
-    pub fn count(self, #[allow(unused)] item: T) -> Int {
-        Self::occ(item, self, 0, self.len())
-    }
-
-    /// Returns `true` if `other` is a permutation of `self`.
-    #[logic(open)]
-    pub fn permutation_of(self, other: Self) -> bool {
-        self.permut(other, 0, self.len())
-    }
-
-    /// Returns `true` if:
-    /// - `self` and `other` have the same length
-    /// - `start` and `end` are in bounds (between `0` and `self.len()` included)
-    /// - Every element occurs as many times in `self[start..end]` as in `other[start..end]`.
-    #[logic]
-    #[builtin("seq.Permut.permut")]
-    pub fn permut(self, other: Self, start: Int, end: Int) -> bool {
-        let _ = other;
-        let _ = start;
-        let _ = end;
-        dead
-    }
-
     /// Returns `true` if:
     /// - `self` and `other` have the same length
     /// - `i` and `j` are in bounds (between `0` and `self.len()` excluded)

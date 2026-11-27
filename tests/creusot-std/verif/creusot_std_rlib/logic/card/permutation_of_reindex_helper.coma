@@ -1,0 +1,34 @@
+use seq.Seq
+use map.Map
+use int.Int
+
+type t_T
+
+predicate contains_Int (self: Seq.seq int) (x: int) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+
+predicate surjective_onto (self: Seq.seq int) (n: int) = forall j: int. 0 <= j /\ j < n -> contains_Int self j
+
+predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Int_bool
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant s1 : Seq.seq t_T
+
+constant idx : Seq.seq int
+
+constant t : t_T
+
+constant k : int
+
+function permutation_of_reindex_helper_T (s1: Seq.seq t_T) (idx: Seq.seq int) (t: t_T) (k: int) : ()
+
+goal vc_permutation_of_reindex_helper_T: surjective_onto idx (Seq.length s1)
+  -> 0 <= k /\ k < Seq.length s1
+  -> ([@stop_split] [@expl:permutation_of_reindex_helper ensures] index_Mapping_Int_bool (fun (j: int) -> Seq.get s1 j
+      = t
+    /\ (exists i: int. 0 <= i /\ i < Seq.length idx /\ Seq.get idx i = j)) k
+  = index_Mapping_Int_bool (fun (j: int) -> Seq.get s1 j = t) k)

@@ -1,0 +1,25 @@
+use seq.Seq
+use map.Map
+use int.Int
+
+predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Int_bool
+
+predicate contains_Int (self: Seq.seq int) (x: int) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+
+predicate surjective_onto (self: Seq.seq int) (n: int) = forall j: int. 0 <= j /\ j < n -> contains_Int self j
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant s : Seq.seq int
+
+constant n : int
+
+function inj_helper (s: Seq.seq int) (n: int) : ()
+
+goal vc_inj_helper: (forall j: int. 0 <= j /\ j < n
+      -> index_Mapping_Int_bool (fun (k: int) -> exists i: int. 0 <= i /\ i < Seq.length s /\ Seq.get s i = k) j)
+  -> ([@stop_split] [@expl:inj_helper ensures] surjective_onto s n)
