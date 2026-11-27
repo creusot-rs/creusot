@@ -1,16 +1,7 @@
 {
   # Dependencies
-  antlr3_4,
-  cadical,
-  cln,
-  cmake,
-  cryptominisat,
-  gmp,
-  jdk,
-  libantlr3c,
-  pkg-config,
-  python3,
-  symfpu,
+  buildPackages,
+  pkgs,
 
   # Previous overlay
   cvc4,
@@ -24,10 +15,19 @@
   sha256,
   version,
 }:
-let
-  cvc4-cln = cln.override { gccStdenv = stdenv; };
 
-  cvc4-cryptominisat = cryptominisat.overrideAttrs {
+let
+  cadical = pkgs.cadical.overrideAttrs { doCheck = false; };
+
+  cln = (pkgs.cln.override { gccStdenv = stdenv; }).overrideAttrs (
+    old:
+    lib.optionalAttrs stdenv.hostPlatform.isStatic {
+      NIX_CFLAGS_COMPILE = "${old.NIX_CFLAGS_COMPILE or ""} -DHZ=1000";
+    }
+  );
+
+  cryptominisat = pkgs.cryptominisat.overrideAttrs {
+    version = "5.8.0";
     src = fetchFromGitHub {
       owner = "msoos";
       repo = "cryptominisat";
@@ -37,15 +37,23 @@ let
 
     cmakeFlags = [
       "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+
+      "-DBUILD_SHARED_LIBS=${if stdenv.hostPlatform.isStatic then "0" else "1"}"
+
       "-DENABLE_PYTHON_INTERFACE=0"
+      "-DONLY_SIMPLE=1"
     ];
 
-    patchPhase = ''
+    postPatch = ''
       sed -i -e '28i#include <cstdint>' src/ccnr.h
+
+      substituteInPlace src/GitSHA1.cpp.in \
+        --replace-fail '@CMAKE_CXX_COMPILER@' 'CXX' \
+        --replace-fail '@PYTHON_EXECUTABLE@' 'python3'
     '';
   };
 
-  cvc4-symfpu = symfpu.overrideAttrs {
+  symfpu = pkgs.symfpu.overrideAttrs {
     version = "0-unstable-2019-05-17";
     src = fetchFromGitHub {
       owner = "martin-cs";
@@ -55,93 +63,103 @@ let
     };
   };
 in
-stdenv.mkDerivation {
-  inherit (cvc4)
-    meta
-    patches
-    pname
-    preConfigure
-    ;
-  inherit version;
+stdenv.mkDerivation (
+  {
+    inherit (cvc4) meta patches pname;
+    inherit (cvc4) preConfigure;
+    inherit version;
 
-  src = fetchFromGitHub {
-    owner = "cvc5";
-    repo = "cvc5";
-    rev = "cvc4-${version}";
-    hash = sha256;
-  };
+    src = fetchFromGitHub {
+      owner = "cvc5";
+      repo = "cvc5";
+      rev = "cvc4-${version}";
+      hash = sha256;
+    };
 
-  nativeBuildInputs = [
-    pkg-config
-    cmake
-  ];
+    nativeBuildInputs = with buildPackages; [
+      antlr3_4
+      cmake
+      jdk
+      pkg-config
+      (python3.withPackages (ps: [ ps.toml ]))
+    ];
 
-  buildInputs = [
-    antlr3_4
-    cadical
-    cvc4-cln
-    cvc4-cryptominisat
-    cvc4-symfpu
-    gmp
-    jdk
-    libantlr3c
-    python3
-    python3.pkgs.toml
-  ];
+    buildInputs = with pkgs; [
+      cadical
+      cln
+      cryptominisat
+      gmp
+      libantlr3c
+      symfpu
+    ];
 
-  cmakeFlags = [
-    "-DCMAKE_BUILD_TYPE=Production"
-    "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
-    "-DENABLE_GPL=1"
+    cmakeFlags = [
+      "-DCMAKE_BUILD_TYPE=Production"
+      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+      "-DENABLE_GPL=1"
 
-    "-DENABLE_ASAN=0"
-    "-DENABLE_UBSAN=0"
-    "-DENABLE_TSAN=0"
-    "-DENABLE_ASSERTIONS=0"
-    "-DENABLE_COMP_INC_TRACK=0"
-    "-DENABLE_DEBUG_SYMBOLS=0"
-    "-DENABLE_DUMPING=0"
-    "-DENABLE_MUZZLE=0"
-    "-DENABLE_PROOFS=0"
-    "-DENABLE_STATISTICS=1"
-    "-DENABLE_TRACING=0"
-    "-DENABLE_UNIT_TESTING=0"
-    "-DENABLE_VALGRIND=0"
-    "-DENABLE_SHARED=1"
-    "-DENABLE_STATIC_BINARY=0"
+      "-DENABLE_ASAN=0"
+      "-DENABLE_UBSAN=0"
+      "-DENABLE_TSAN=0"
+      "-DENABLE_ASSERTIONS=0"
+      "-DENABLE_COMP_INC_TRACK=0"
+      "-DENABLE_DEBUG_SYMBOLS=0"
+      "-DENABLE_DUMPING=0"
+      "-DENABLE_MUZZLE=0"
+      "-DENABLE_PROOFS=0"
+      "-DENABLE_STATISTICS=1"
+      "-DENABLE_TRACING=0"
+      "-DENABLE_UNIT_TESTING=0"
+      "-DENABLE_VALGRIND=0"
+      "-DENABLE_SHARED=0"
+      "-DENABLE_STATIC_BINARY=${if stdenv.hostPlatform.isStatic then "1" else "0"}"
 
-    "-DENABLE_BEST=0"
-    "-DENABLE_COVERAGE=0"
-    "-DENABLE_DEBUG_CONTEXT_MM=0"
-    "-DENABLE_PROFILING=0"
+      "-DENABLE_BEST=0"
+      "-DENABLE_COVERAGE=0"
+      "-DENABLE_DEBUG_CONTEXT_MM=0"
+      "-DENABLE_PROFILING=0"
 
-    "-DUSE_ABC=0"
-    "-DUSE_CADICAL=1"
-    "-DUSE_CLN=1"
-    "-DUSE_CRYPTOMINISAT=1"
-    "-DUSE_GLPK=0"
-    "-DUSE_KISSAT=0"
-    "-DUSE_READLINE=0"
+      "-DUSE_ABC=0"
+      "-DUSE_CADICAL=1"
+      "-DUSE_CLN=1"
+      "-DUSE_CRYPTOMINISAT=1"
+      "-DUSE_GLPK=0"
+      "-DUSE_KISSAT=0"
+      "-DUSE_READLINE=0"
 
-    "-DUSE_DRAT2ER=0"
-    "-DUSE_LFSC=0"
-    "-DUSE_SYMFPU=1"
-    "-DUSE_PYTHON2=0"
-    "-DUSE_PYTHON3=1"
+      "-DUSE_DRAT2ER=0"
+      "-DUSE_LFSC=0"
+      "-DUSE_SYMFPU=1"
+      "-DUSE_PYTHON2=0"
+      "-DUSE_PYTHON3=0"
 
-    "-DBUILD_SWIG_BINDINGS_JAVA=0"
-    "-DBUILD_SWIG_BINDINGS_PYTHON=0"
-    "-DBUILD_BINDINGS_PYTHON=0"
-  ];
+      "-DBUILD_SWIG_BINDINGS_JAVA=0"
+      "-DBUILD_SWIG_BINDINGS_PYTHON=0"
+      "-DBUILD_BINDINGS_PYTHON=0"
+    ];
 
-  postPatch = ''
-    sed -i '/#pragma once/a\
-    #include <cstddef>' src/expr/emptyset.h
+    postPatch =
+      (cvc4.postPatch or "")
+      + ''
+        sed -i '/#include <fpu_control.h>/d' \
+          src/prop/minisat/utils/System.h \
+          src/prop/bvminisat/utils/System.h
+      ''
+      + lib.optionalString stdenv.hostPlatform.isDarwin ''
+        substituteInPlace src/main/CMakeLists.txt \
+          --replace-fail 'if(ENABLE_STATIC_BINARY)' 'if(ENABLE_STATIC_BINARY AND NOT APPLE)'
+      '';
 
-    sed -i '/#define CVC4__EXPR__EXPR_IOMANIP_H/a\
-    #include <cstddef>' src/expr/expr_iomanip.h
+    installPhase = ''
+      install -Dm755 bin/cvc4 $out/bin/cvc4
+    '';
 
-    sed -i '/#define CVC4__UTIL__REGEXP_H/a\
-    #include <cstddef>' src/util/regexp.h
-  '';
-}
+    postFixup = lib.optional stdenv.hostPlatform.isStatic ''
+      rm -rf $out/nix-support
+    '';
+  }
+  // lib.optionalAttrs stdenv.hostPlatform.isStatic {
+    allowedReferences = [ "out" ];
+    allowedRequisites = [ "out" ];
+  }
+)
