@@ -1,5 +1,6 @@
 {
   # Dependencies
+  darwin,
   flint,
   gmp,
   m4,
@@ -35,6 +36,10 @@ let
       hash = "sha256-I1x4ofTavGwRbT0c9Rryhss/vtcTxhFs1dGxy+0MyH8=";
     };
 
+    nativeBuildInputs = old.nativeBuildInputs ++ lib.optionals stdenv.isDarwin [
+      darwin.sigtool
+    ];
+
     propagatedBuildInputs =
       old.propagatedBuildInputs
       ++ (with ocamlPackages; [
@@ -44,11 +49,9 @@ let
       ]);
   });
 
-  # `dolmen_type` and `dolmen_loop` take their `src` and `version` from `dolmen`.
   dolmen_type = ocamlPackages.dolmen_type.override { inherit dolmen; };
 
-  dolmen_loop' = ocamlPackages.dolmen_loop.override { inherit dolmen dolmen_type; };
-  dolmen_loop = dolmen_loop'.overrideAttrs (old: {
+  dolmen_loop = (ocamlPackages.dolmen_loop.override { inherit dolmen dolmen_type; }).overrideAttrs (old: {
     propagatedBuildInputs = old.propagatedBuildInputs ++ [ ocamlPackages.zarith ];
     doCheck = false;
   });
@@ -172,6 +175,10 @@ in
 
 ocamlPackages.buildDunePackage {
   inherit pname version src;
+
+  nativeBuildInputs = lib.optionals stdenv.isDarwin [
+    darwin.sigtool
+  ];
 
   buildInputs = [
     colibrilib
