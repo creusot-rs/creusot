@@ -50,8 +50,8 @@
             };
 
             alt-ergo = {
-              version = "2.6.4";
-              sha256 = "sha256-w1tbSewoFqJMkyWwg+7+I3g566zrgzMa7vBBvtcgsTc=";
+              version = "2.6.5";
+              sha256 = "sha256-iAmjBUOsalJlifcZjZ9IWDaRkJae/OszDmnkPEr1Lps=";
             };
 
             alt-ergo-free = {
@@ -65,13 +65,13 @@
             };
 
             cvc5 = {
-              version = "1.4.1";
-              sha256 = "sha256-LVPNGt1DKkqQ9uesKBXMtQ3t58yvtYtvyfuZnhXbIgs=";
+              version = "1.4.2";
+              sha256 = "sha256-GhqYYTbn0mh/EjoXy9ovKWRtFXYoeuHGp0KuYvfwH7w=";
             };
 
             z3 = {
-              version = "5.3.2";
-              sha256 = "sha256-vKNrsm09LGu8pgkX5Yv0XlY3u/MAawoma3BIeavS8So=";
+              version = "5.4.1";
+              sha256 = "sha256-wac7ZB8HOFxcw5fdOfWu8wiMHFQ/z+dLMJE4Q32xbsI=";
             };
           };
         in
