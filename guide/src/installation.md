@@ -11,8 +11,13 @@ accompanying tools.
 Requirements to run the `INSTALL` script:
 
 - `cargo`
-- [`opam`](https://opam.ocaml.org/) to install `why3` and `why3find`.
-- `curl` to download provers: `alt-ergo`, `z3`, `cvc4`, `cvc5`.
+- [`opam`](https://opam.ocaml.org/) to install `why3`, `why3find` and the provers that have
+  no binary release for your platform (`colibri2` everywhere but on x86_64 Linux, `alt-ergo`
+  on aarch64 Linux).
+- `curl` to download provers: `alt-ergo`, `z3`, `cvc4`, `cvc5`, `colibri2`.
+- Where `colibri2` is built with Opam: the development files of [FLINT](https://flintlib.org/)
+  (version 3 or later), MPFR and GMP (e.g., `libflint-dev libmpfr-dev` on Debian/Ubuntu,
+  `flint-devel mpfr-devel` on Fedora, `brew install flint mpfr` on macOS).
 
 ```sh
 git clone https://github.com/creusot-rs/creusot
@@ -21,6 +26,11 @@ cd creusot
 ```
 
 See `./INSTALL --help` for options.
+
+Provers without a binary release for your platform are built from source with Opam,
+each in its own local switch under `$XDG_DATA_HOME/creusot/provers/` (on macOS:
+`~/.creusot/provers/`). You can instead install a prover by your own means and pass
+`--external <TOOL>` (e.g., `--external colibri2`) to use the version found in your `PATH`.
 
 Note that the `INSTALL` script will take a couple minutes to create
 a local Opam switch and then to install the many dependencies of `why3`.
@@ -119,10 +129,12 @@ To use a non-default location, set and export `CREUSOT_DATA_HOME` in your shell 
     `creusot-setup/src/tools_versions_urls.rs` (other versions may work but are not tested).
     Refer to their respective project pages for how to get them:
 
-    - [`alt-ergo`](https://alt-ergo.ocamlpro.com/) (downloadable binaries, also on Opam)
+    - [`alt-ergo`](https://alt-ergo.ocamlpro.com/) (downloadable binaries, except for aarch64 Linux; also on Opam)
     - [`z3`](https://github.com/Z3Prover/z3) (downloadable binaries, also on Opam)
     - [`cvc5`](https://cvc5.github.io/) (downloadable binaries)
     - [`cvc4`](https://cvc4.github.io/) (downloadable binaries)
+    - [`colibri2`](https://colibri.frama-c.com/) (downloadable binary for x86_64 Linux; also on Opam,
+        in a switch of its own since it conflicts with `alt-ergo`'s dependencies)
 
 ## Installed files
 
@@ -139,7 +151,7 @@ Everything Creusot needs to run.
     - `bin/` containing binaries.
 
         - `why3` and `why3find`
-        - Provers: `alt-ergo`, `z3`, `cvc5`, `cvc4`
+        - Provers: `alt-ergo`, `z3`, `cvc5`, `cvc4`, `colibri2`
 
     - `why3find.json`, the config file for Why3find (which is copied into new Creusot projects with
         `cargo creusot new` or `cargo creusot init`).

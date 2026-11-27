@@ -10,26 +10,49 @@ use std::{
 #[derive(Clone, Copy)]
 pub struct ManagedBinary {
     pub bin: setup::Binary,
-    /// `None` if no binary release exists for this platform; the tool must then
-    /// be supplied with `--external`.
+    /// `None` if no binary release exists for this platform; the tool is then
+    /// installed from `opam_package` if set, or must be supplied with `--external`.
     url: &'static Option<Url>,
     download: fn(&Url, &Path, &Path, &Args) -> anyhow::Result<()>,
+    /// Opam package providing the tool, installed (at version `bin.version`) in
+    /// its own Opam switch when there is no binary release for this platform.
+    opam_package: Option<&'static str>,
 }
 
 const ALTERGO: ManagedBinary = ManagedBinary {
     bin: setup::ALTERGO,
     url: &URLS.altergo,
     download: download_from_url_with_cache,
+    opam_package: Some("alt-ergo"),
 };
 
-const Z3: ManagedBinary =
-    ManagedBinary { bin: setup::Z3, url: &URLS.z3, download: download_z3_from_url };
+const Z3: ManagedBinary = ManagedBinary {
+    bin: setup::Z3,
+    url: &URLS.z3,
+    download: download_z3_from_url,
+    opam_package: None,
+};
 
-const CVC4: ManagedBinary =
-    ManagedBinary { bin: setup::CVC4, url: &URLS.cvc4, download: download_from_url_with_cache };
+const CVC4: ManagedBinary = ManagedBinary {
+    bin: setup::CVC4,
+    url: &URLS.cvc4,
+    download: download_from_url_with_cache,
+    opam_package: None,
+};
 
-const CVC5: ManagedBinary =
-    ManagedBinary { bin: setup::CVC5, url: &URLS.cvc5, download: download_cvc5_from_url };
+const CVC5: ManagedBinary = ManagedBinary {
+    bin: setup::CVC5,
+    url: &URLS.cvc5,
+    download: download_cvc5_from_url,
+    opam_package: None,
+};
+
+const COLIBRI2: ManagedBinary = ManagedBinary {
+    bin: setup::COLIBRI2,
+    url: &URLS.colibri2,
+    download: download_from_url_with_cache,
+    opam_package: Some("colibri2"),
+};
 
 /// Install Creusot
 #[derive(Debug, Parser)]
@@ -70,6 +93,7 @@ enum SetupTool {
     Z3,
     CVC4,
     CVC5,
+    Colibri2,
 }
 
 impl Args {
@@ -253,6 +277,7 @@ fn install_provers(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<(
         (Z3, SetupTool::Z3),
         (CVC4, SetupTool::CVC4),
         (CVC5, SetupTool::CVC5),
+        (COLIBRI2, SetupTool::Colibri2),
     ] {
         if args.external.contains(&tool) {
             // create symbolic links for external tools
@@ -260,6 +285,15 @@ fn install_provers(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<(
         } else if let Some(url) = bin.url {
             // download binaries for builtins
             download(bin, url, &paths.cache_dir(), &paths.bin(), args)?;
+        } else if let Some(package) = bin.opam_package {
+            // build from source with opam, in Creusot's switch
+            install_from_opam(bin, package, paths, args).with_context(|| {
+                format!(
+                    "Failed to install {} with opam. Install it separately and re-run with `--external {}`.",
+                    bin.bin.display_name,
+                    format!("{tool:?}").to_lowercase(),
+                )
+            })?;
         } else {
             eprintln!(
                 "Skipping {}: no binary release for this platform. \
@@ -269,6 +303,71 @@ fn install_provers(paths: &setup::CreusotPaths, args: &Args) -> anyhow::Result<(
             );
         }
     }
+    Ok(())
+}
+
+fn install_from_opam(
+    bin: ManagedBinary,
+    package: &str,
+    paths: &CreusotPaths,
+    args: &Args,
+) -> anyhow::Result<()> {
+    args.comment();
+    println!("Install {} {} with opam...", bin.bin.display_name, bin.bin.version);
+    // Each prover gets its own switch: the dependencies of provers may conflict with each other
+    // (Alt-Ergo 2.6 and Colibri2 0.7 need different versions of Dolmen) or with Why3's.
+    let switch_dir = opam_switch(paths).join("provers").join(package);
+    let opam_dir = switch_dir.join("_opam");
+    if !fs::exists(&opam_dir)? {
+        // The switch is created empty: installing the prover pulls in an OCaml compiler.
+        args.create_dir_all(&switch_dir)?;
+        let mut cmd = Command::new("opam");
+        cmd.args(["switch", "create", "--yes", "--empty"]).arg(&switch_dir);
+        args.run(cmd)?;
+    }
+    add_ocamlmklib_opt_hack(&opam_dir.join("bin"), args)?;
+    let mut cmd = Command::new("opam");
+    cmd.args(["install", "--yes", "--switch"])
+        .arg(&switch_dir)
+        .arg(format!("{package}.{}", bin.bin.version));
+    args.run(cmd)?;
+    args.symlink_file(
+        opam_dir.join("bin").join(bin.bin.binary_name),
+        paths.bin().join(bin.bin.binary_name),
+    )
+}
+
+/// HACK: make the switch provide an `ocamlmklib.opt`, as a symbolic link to its `ocamlmklib`.
+///
+/// The hand-written `configure` script of mlcuddidl (a dependency of Colibri2) looks up its tools
+/// with a `.opt` suffix in the whole `PATH` first, and only then without the suffix. Since OCaml
+/// 5.1 (ocaml/ocaml#11993), `ocamlmklib` is only installed in bytecode, with no `ocamlmklib.opt`;
+/// older versions installed one. So when another OCaml older than 5.1 is in the `PATH` (e.g. the
+/// system's), the script picks its `ocamlmklib.opt`, which links with that OCaml's `ocamlc` and
+/// rejects the bytecode files compiled by the switch's OCaml ("not a bytecode object file").
+/// During opam builds, the switch's `bin` directory comes first in `PATH`, so this link is found
+/// first instead.
+///
+/// The link is created before `opam install` installs the compiler, so it dangles until then; it
+/// only needs to resolve when mlcuddidl is configured, which happens after the compiler is
+/// installed. Nothing is done if the switch already has an `ocamlmklib.opt`. If the switch gets an
+/// OCaml older than 5.1, its installation replaces the link with its own `ocamlmklib.opt` (both
+/// `install` and OCaml's `install-sh` replace a symbolic link instead of writing through it).
+///
+/// This hack can go when mlcuddidl's `configure` prefers the tools next to the `ocamlc` it finds.
+fn add_ocamlmklib_opt_hack(switch_bin: &Path, args: &Args) -> anyhow::Result<()> {
+    let link = switch_bin.join("ocamlmklib.opt");
+    // `symlink_metadata` so that an existing (even dangling) link counts as existing.
+    if fs::symlink_metadata(&link).is_ok() {
+        return Ok(());
+    }
+    args.create_dir_all(switch_bin)?;
+    if args.dry_run {
+        println!("ln -s ocamlmklib {}", link.display());
+        return Ok(());
+    }
+    #[cfg(unix)]
+    std::os::unix::fs::symlink("ocamlmklib", &link)?;
     Ok(())
 }
 
@@ -403,6 +502,10 @@ fn download(
     let path = dest_dir.join(bin.bin.binary_name);
     let dl = bin.download;
     dl(url, cache_dir, &path, args)?;
+    if args.dry_run {
+        println!("chmod 755 {}", path.display());
+        return Ok(());
+    }
     set_executable(&path)
 }
 

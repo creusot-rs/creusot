@@ -14,6 +14,7 @@ pub const ALTERGO_VERSION: &'static str = "2.6.4";
 pub const Z3_VERSION: &'static str = "5.3.2";
 pub const CVC4_VERSION: &'static str = "1.8";
 pub const CVC5_VERSION: &'static str = "1.4.1";
+pub const COLIBRI2_VERSION: &'static str = "0.7.1";
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
 pub const URLS: Urls = Urls {
@@ -33,12 +34,15 @@ pub const URLS: Urls = Urls {
         url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.4.1/cvc5-Linux-x86_64-static-gpl.zip",
         sha256: "d0b54324ec2129697975da8753767fd255309947b87832917d32a78da7d16666",
     }),
+    colibri2: Some(Url {
+        url: "https://git.frama-c.com/api/v4/projects/879/packages/generic/colibri2/0.7.1/colibri2-0.7.1-x86_64-linux-static",
+        sha256: "4201192af0efc5ac49c814745ca3e1eaf3998478083942018acce44834898a33",
+    }),
 };
 
 #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
 pub const URLS: Urls = Urls {
-    // Alt-Ergo publishes no aarch64-linux binary; it is an OCaml program, so
-    // `opam install alt-ergo` plus `--external alt-ergo` covers it.
+    // Alt-Ergo publishes no aarch64-linux binary: it is built with opam.
     altergo: None,
     z3: Some(Url {
         url: "https://github.com/Z3Prover/z3/releases/download/z3-5.3.2/z3-5.3.2-arm64-glibc-2.38.zip",
@@ -51,6 +55,8 @@ pub const URLS: Urls = Urls {
         url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.4.1/cvc5-Linux-arm64-static-gpl.zip",
         sha256: "e6cac10f5b80177b21ef56660ea580120fb8b614ceacc8ba8907c0fcfd9a1e7c",
     }),
+    // Colibri2 only publishes an x86_64-linux binary: it is built with opam.
+    colibri2: None,
 };
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
@@ -72,16 +78,21 @@ pub const URLS: Urls = Urls {
         url: "https://github.com/cvc5/cvc5/releases/download/cvc5-1.4.1/cvc5-macOS-arm64-static-gpl.zip",
         sha256: "9b3c16e9853475108db2022ba0882e57df60f93d888d148c246a819ce4716eef",
     }),
+    // Colibri2 only publishes an x86_64-linux binary: it is built with opam.
+    colibri2: None,
 };
 
 /// A `None` field means: no binary release of that prover exists for this
-/// platform. `creusot-install` skips it with a message; install it by other
-/// means (opam, distro package, from source) and pass `--external <TOOL>`.
+/// platform. `creusot-install` then builds it with opam if it knows the opam
+/// package (see `opam_package` in `creusot-install`), or else skips it with a
+/// message; install it by other means (opam, distro package, from source) and
+/// pass `--external <TOOL>`.
 pub struct Urls {
     pub altergo: Option<Url>,
     pub z3: Option<Url>,
     pub cvc4: Option<Url>,
     pub cvc5: Option<Url>,
+    pub colibri2: Option<Url>,
 }
 
 pub struct Url {

@@ -51,7 +51,14 @@ pub const CVC5: Binary = Binary {
     detect_version: detect_cvc5_version,
 };
 
-pub const PROVERS: &[Binary] = &[ALTERGO, Z3, CVC4, CVC5];
+pub const COLIBRI2: Binary = Binary {
+    display_name: "Colibri2",
+    binary_name: "colibri2",
+    version: COLIBRI2_VERSION,
+    detect_version: detect_colibri2_version,
+};
+
+pub const PROVERS: &[Binary] = &[ALTERGO, Z3, CVC4, CVC5, COLIBRI2];
 
 // ----
 
@@ -143,6 +150,18 @@ fn detect_cvc5_version(cvc5: &Path) -> anyhow::Result<String> {
         .strip_prefix("This is cvc5 version ")
         .and_then(|version| version.split_ascii_whitespace().next().map(String::from));
     version.ok_or(anyhow!("bad CVC5 version: {}", version_full))
+}
+
+// colibri2
+
+// assumes a version of the form: "0.7.1\n"
+fn detect_colibri2_version(colibri2: &Path) -> anyhow::Result<String> {
+    let version_full = run(Command::new(&colibri2).arg("--version"))?;
+    let version = version_full.trim();
+    if version.is_empty() {
+        bail!("bad Colibri2 version: {}", version_full)
+    }
+    Ok(version.strip_prefix("v").unwrap_or(version).into())
 }
 
 // Wrapper for Command::output(), error is wrapped in anyhow::Error

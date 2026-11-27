@@ -123,6 +123,7 @@ jobs:
         [[ $(nix_version alt-ergo) == $(cargo_version ALTERGO) ]]
         [[ $(nix_version cvc4) == $(cargo_version CVC4) ]]
         [[ $(nix_version cvc5) == $(cargo_version CVC5) ]]
+        [[ $(nix_version colibri2) == $(cargo_version COLIBRI2) ]]
         [[ $(nix_version z3) == $(cargo_version Z3) ]]
 
     - name: Build
@@ -199,7 +200,7 @@ jobs:
     - name: Restore Why3find cache
       uses: actions/cache/restore@v4
       with:
-        path: .why3find
+        path: tests/.why3find
         key: ${{ runner.os }}-why3find-${{ env.TODAY }}-
     - name: Setup environment
       run: |
@@ -218,8 +219,8 @@ jobs:
     - name: Save Why3find cache
       uses: actions/cache/save@v4
       with:
-        path: .why3find
-        key: ${{ runner.os }}-why3find-${{ env.TODAY }}-${{ hashFiles('.why3find/**') }}
+        path: tests/.why3find
+        key: ${{ runner.os }}-why3find-${{ env.TODAY }}-${{ hashFiles('tests/.why3find/**') }}
   install-aarch64:
     runs-on: ubuntu-24.04-arm
     steps:
@@ -227,25 +228,18 @@ jobs:
     - name: Cache Opam switch
       uses: actions/cache@v4
       with:
-        path: ~/.local/share/creusot/_opam
-        key: ${{ runner.os }}-${{ runner.arch }}-opam-${{ hashFiles('creusot-deps.opam') }}
+        path: |
+          ~/.local/share/creusot/_opam
+          ~/.local/share/creusot/provers
+        key: ${{ runner.os }}-${{ runner.arch }}-opam-${{ hashFiles('creusot-deps.opam', 'creusot-setup/src/tools_versions_urls.rs') }}
         restore-keys: ${{ runner.os }}-${{ runner.arch }}-opam-
-    - run: sudo apt update && sudo apt install -y opam libzmq3-dev
+    - run: sudo apt update && sudo apt install -y opam libzmq3-dev libflint-dev libmpfr-dev
     - name: setup opam
       run: |
         opam init --bare --disable-sandboxing --no-setup -y
         opam --cli=2.1 var --global in-creusot-ci=true
-    # The switch must exist before Alt-Ergo can be installed into it, so the components are taken in
-    # two passes rather than one `./INSTALL`.
-    - name: install why3 (creates the opam switch)
-      run: cargo run --bin creusot-install -- why3
-    - name: install alt-ergo from opam
-      run: opam install -y alt-ergo.2.6.2 --switch "$HOME/.local/share/creusot"
-    - name: install the rest, with alt-ergo supplied externally
-      run: |
-        eval $(opam env --switch "$HOME/.local/share/creusot" --set-switch)
-        cargo run --bin creusot-install -- --external alt-ergo \
-          creusot-rustc prelude cargo-creusot provers why3-conf
+    # Alt-Ergo and Colibri2 have no aarch64-linux binary: `./INSTALL` builds them with opam.
+    - run: ./INSTALL
     # Stat the results rather than trusting a zero exit: the point of the job is that the binaries
     # an aarch64 user needs actually land.
     - name: the installed toolchain is really there
@@ -254,6 +248,7 @@ jobs:
         test -x "$D/bin/z3"
         test -x "$D/bin/cvc5"
         test -x "$D/bin/alt-ergo"
+        test -x "$D/bin/colibri2"
         test -x $(echo "$D"/toolchains/*/bin/creusot-rustc)
         test -x "$HOME/.cargo/bin/cargo-creusot"
     - name: Minimize Opam cache
@@ -300,12 +295,14 @@ jobs:
       if: matrix.os == 'macos-latest'
       uses: actions/cache@v4
       with:
-        path: ~/.creusot/_opam
-        key: ${{ runner.os }}-opam-${{ hashFiles('creusot-deps.opam') }}
+        path: |
+          ~/.creusot/_opam
+          ~/.creusot/provers
+        key: ${{ runner.os }}-opam-${{ hashFiles('creusot-deps.opam', 'creusot-setup/src/tools_versions_urls.rs') }}
         restore-keys: ${{ runner.os }}-opam-
     - run: sudo apt update && sudo apt install opam libzmq3-dev
       if: matrix.os == 'ubuntu-latest'
-    - run: brew update && brew install opam autoconf zeromq zlib automake
+    - run: brew update && brew install opam autoconf zeromq zlib automake flint mpfr
       if: matrix.os == 'macos-latest'
     - name: setup opam
       run: |
