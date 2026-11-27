@@ -1,6 +1,7 @@
 {
   # Dependencies
   creusot,
+  pkgsStatic,
 
   # Librairies
   symlinkJoin,
@@ -17,7 +18,7 @@ let
     (if isFree then [ alt-ergo-free ] else [ alt-ergo ])
     ++ [
       colibri2
-      cvc4
+      pkgsStatic.creusot.cvc4
       cvc5
       why3
       why3find
