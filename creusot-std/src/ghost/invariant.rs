@@ -463,7 +463,7 @@ impl<T: Protocol> AtomicInvariant<T> {
 pub struct NonAtomicInvariant<T: Protocol>(PhantomData<*mut T>);
 
 #[trusted]
-unsafe impl<T: Protocol> Send for NonAtomicInvariant<T> {}
+unsafe impl<T: Protocol + Send> Send for NonAtomicInvariant<T> {}
 
 /// Guard for [`NonAtomicInvariant::open`].
 ///
