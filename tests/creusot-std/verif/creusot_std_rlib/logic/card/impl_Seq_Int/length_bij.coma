@@ -1,0 +1,44 @@
+(* logic::seq::Seq<logic::int::Int> *)
+
+use seq.Seq
+use int.Int
+
+predicate injective_into (self: Seq.seq int) (n: int) =
+  (forall i: int. 0 <= i /\ i < Seq.length self -> 0 <= Seq.get self i /\ Seq.get self i < n)
+  /\ (forall i1: int, i2: int. 0 <= i1 /\ i1 <= i2 /\ i2 < Seq.length self
+    -> Seq.get self i1 = Seq.get self i2 -> i1 = i2)
+
+predicate contains_Int (self: Seq.seq int) (x: int) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+
+predicate surjective_onto (self: Seq.seq int) (n: int) = forall j: int. 0 <= j /\ j < n -> contains_Int self j
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+function length_surj (self: Seq.seq int) (n: int) : ()
+
+axiom length_surj_spec: forall self: Seq.seq int, n: int. surjective_onto self n -> ge_log_Int (Seq.length self) n
+
+function length_inj (self: Seq.seq int) (n: int) : ()
+
+axiom length_inj_spec: forall self: Seq.seq int, n: int. injective_into self n -> 0 <= n -> Seq.length self <= n
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Seq.seq int
+
+constant n : int
+
+function length_bij (self: Seq.seq int) (n: int) : ()
+
+goal vc_length_bij: injective_into self n /\ surjective_onto self n
+  -> 0 <= n
+  -> ([@stop_split] [@expl:length_surj requires] surjective_onto self n)
+  /\ (([@stop_split] [@expl:length_surj ensures] ge_log_Int (Seq.length self) n)
+  -> ([@stop_split] [@expl:length_inj requires] ([@stop_split] [@expl:length_inj requires #0] injective_into self n)
+    /\ ([@stop_split] [@expl:length_inj requires #1] 0 <= n))
+  /\ (([@stop_split] [@expl:length_inj ensures] Seq.length self <= n)
+  -> ([@stop_split] [@expl:length_bij ensures] Seq.length self = n)))

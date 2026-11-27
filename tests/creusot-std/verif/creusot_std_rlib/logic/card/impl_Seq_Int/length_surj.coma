@@ -1,0 +1,53 @@
+(* logic::seq::Seq<logic::int::Int> *)
+
+use seq.Seq
+use map.Map
+use int.Int
+
+predicate contains_Int (self: Seq.seq int) (x: int) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+
+predicate surjective_onto (self: Seq.seq int) (n: int) = forall j: int. 0 <= j /\ j < n -> contains_Int self j
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Int_bool
+
+function card (a: int) (b: int) (p: Map.map int bool) : int
+
+axiom card_def: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+    -> card a b p
+    = (if ge_log_Int a b then 0 else card a (b - 1) p + (if index_Mapping_Int_bool p (b - 1) then 1 else 0))
+
+axiom card_spec: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+    -> 0 <= card a b p /\ card a b p <= b - a
+
+function surj_aux (s: Seq.seq int) (a: int) (j: int) : ()
+
+axiom surj_aux_spec: forall s: Seq.seq int, a: int, j: int. a <= j
+    -> (forall k: int. a <= k /\ k < j -> contains_Int s k)
+    -> ge_log_Int (card 0 (Seq.length s) (fun (i: int) -> a <= Seq.get s i /\ Seq.get s i < j)) (j - a)
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Seq.seq int
+
+constant n : int
+
+function length_surj (self: Seq.seq int) (n: int) : ()
+
+goal vc_length_surj: surjective_onto self n
+  -> (if 0 <= n then
+    ([@stop_split] [@expl:surj_aux requires] ([@stop_split] [@expl:surj_aux requires #0] 0 <= n)
+      /\ ([@stop_split] [@expl:surj_aux requires #1] forall k: int. 0 <= k /\ k < n -> contains_Int self k))
+    /\ (([@stop_split] [@expl:surj_aux ensures] ge_log_Int (card 0 (Seq.length self) (fun (i: int) -> 0
+        <= Seq.get self i
+      /\ Seq.get self i < n)) (n - 0)) -> ([@stop_split] [@expl:length_surj ensures] ge_log_Int (Seq.length self) n))
+  else
+    [@stop_split] [@expl:length_surj ensures] ge_log_Int (Seq.length self) n
+  )

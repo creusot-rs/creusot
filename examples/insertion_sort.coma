@@ -4,8 +4,9 @@ module M_insertion_sort
   use creusot.int.UInt64
   use seq.Seq
   use creusot.prelude.MutBorrow
-  use seq.Permut
+  use map.Map
   use creusot.prelude.Opaque
+  use seq.Permut
   use creusot.prelude.Any
   use int.Int
   
@@ -67,8 +68,28 @@ module M_insertion_sort
         end}
       (! return {result}) ]
   
+  predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Int_bool
+  
+  function card (a: int) (b: int) (p: Map.map int bool) : int
+  
+  axiom card_def: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+      -> card a b p
+      = (if ge_log_Int a b then 0 else card a (b - 1) p + (if index_Mapping_Int_bool p (b - 1) then 1 else 0))
+  
+  axiom card_spec: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+      -> 0 <= card a b p /\ card a b p <= b - a
+  
+  function count_i32 (self: Seq.seq Int32.t) (a: int) (b: int) (t: Int32.t) : int =
+    card a b (fun (i: int) -> Seq.get self i = t)
+  
+  axiom count_i32_spec: forall self: Seq.seq Int32.t, a: int, b: int, t: Int32.t [count_i32 self a b t]. a <= b
+      -> 0 <= count_i32 self a b t /\ count_i32 self a b t <= b - a
+  
   predicate permutation_of_i32 (self: Seq.seq Int32.t) (other: Seq.seq Int32.t) =
-    Permut.permut self other 0 (Seq.length self)
+    Seq.length self = Seq.length other
+    /\ (forall t: Int32.t. count_i32 self 0 (Seq.length self) t = count_i32 other 0 (Seq.length other) t)
   
   predicate sorted_range_i32 (s: Seq.seq Int32.t) (l: int) (u: int) =
     forall i: int, j: int. l <= i /\ i < j /\ j < u -> Int32.le (Seq.get s i) (Seq.get s j)
@@ -101,7 +122,8 @@ module M_insertion_sort
     /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < Seq.length (Slice64.view self.current))}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:swap ensures] Permut.exchange (Slice64.view self.final) (Slice64.view self.current) (UInt64.t'int a) (UInt64.t'int b)}
+    {[@stop_split] [@expl:swap_i32 ensures] ([@stop_split] [@expl:swap ensures #0] Permut.exchange (Slice64.view self.final) (Slice64.view self.current) (UInt64.t'int a) (UInt64.t'int b))
+      /\ ([@stop_split] [@expl:swap ensures #1] permutation_of_i32 (Slice64.view self.final) (Slice64.view self.current))}
       (! return {result}) ]
   
   predicate resolve_refmut_slice_i32 [@inline:trivial] (_1: MutBorrow.t (Slice64.slice Int32.t)) = _1.final = _1.current

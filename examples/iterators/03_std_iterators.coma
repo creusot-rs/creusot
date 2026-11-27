@@ -797,6 +797,7 @@ module M_my_reverse
   use seq.Seq
   use creusot.prelude.MutBorrow
   use seq.Permut
+  use map.Map
   use creusot.prelude.Any
   use seq.Reverse
   use int.Int
@@ -1029,13 +1030,36 @@ module M_my_reverse
         end}
       any) ]
   
+  predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+  
+  meta "rewrite_def" predicate index_Mapping_Int_bool
+  
+  function card (a: int) (b: int) (p: Map.map int bool) : int
+  
+  axiom card_def: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+      -> card a b p
+      = (if ge_log_Int a b then 0 else card a (b - 1) p + (if index_Mapping_Int_bool p (b - 1) then 1 else 0))
+  
+  axiom card_spec: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+      -> 0 <= card a b p /\ card a b p <= b - a
+  
+  function count_T (self: Seq.seq t_T) (a: int) (b: int) (t: t_T) : int = card a b (fun (i: int) -> Seq.get self i = t)
+  
+  axiom count_T_spec: forall self: Seq.seq t_T, a: int, b: int, t: t_T [count_T self a b t]. a <= b
+      -> 0 <= count_T self a b t /\ count_T self a b t <= b - a
+  
+  predicate permutation_of_T (self: Seq.seq t_T) (other: Seq.seq t_T) =
+    Seq.length self = Seq.length other
+    /\ (forall t: t_T. count_T self 0 (Seq.length self) t = count_T other 0 (Seq.length other) t)
+  
   let swap_T (self: MutBorrow.t (Slice64.slice t_T)) (a: UInt64.t) (b: UInt64.t) (return (x: ())) =
   {[@stop_split] [@expl:swap_T requires] ([@stop_split] [@expl:swap 'self' type invariant] inv_refmut_slice_T self)
     /\ ([@stop_split] [@expl:swap requires #0] UInt64.t'int a < Seq.length (Slice64.view self.current))
     /\ ([@stop_split] [@expl:swap requires #1] UInt64.t'int b < Seq.length (Slice64.view self.current))}
     any
     [ return (result: ()) ->
-    {[@stop_split] [@expl:swap ensures] Permut.exchange (Slice64.view self.final) (Slice64.view self.current) (UInt64.t'int a) (UInt64.t'int b)}
+    {[@stop_split] [@expl:swap_T ensures] ([@stop_split] [@expl:swap ensures #0] Permut.exchange (Slice64.view self.final) (Slice64.view self.current) (UInt64.t'int a) (UInt64.t'int b))
+      /\ ([@stop_split] [@expl:swap ensures #1] permutation_of_T (Slice64.view self.final) (Slice64.view self.current))}
       (! return {result}) ]
   
   predicate resolve_Zip_Range_usize_Range_usize (_1: t_Zip_Range_usize_Range_usize)

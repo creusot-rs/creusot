@@ -1,0 +1,146 @@
+(* logic::seq::Seq<T> *)
+
+use seq.Seq
+use map.Map
+use int.Int
+
+type t_T
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Int_bool
+
+function card (a: int) (b: int) (p: Map.map int bool) : int
+
+axiom card_def: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+    -> card a b p
+    = (if ge_log_Int a b then 0 else card a (b - 1) p + (if index_Mapping_Int_bool p (b - 1) then 1 else 0))
+
+axiom card_spec: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+    -> 0 <= card a b p /\ card a b p <= b - a
+
+function count_T (self: Seq.seq t_T) (a: int) (b: int) (t: t_T) : int = card a b (fun (i: int) -> Seq.get self i = t)
+
+axiom count_T_spec: forall self: Seq.seq t_T, a: int, b: int, t: t_T [count_T self a b t]. a <= b
+    -> 0 <= count_T self a b t /\ count_T self a b t <= b - a
+
+predicate permutation_of_T (self: Seq.seq t_T) (other: Seq.seq t_T) =
+  Seq.length self = Seq.length other
+  /\ (forall t: t_T. count_T self 0 (Seq.length self) t = count_T other 0 (Seq.length other) t)
+
+predicate injective_into (self: Seq.seq int) (n: int) =
+  (forall i: int. 0 <= i /\ i < Seq.length self -> 0 <= Seq.get self i /\ Seq.get self i < n)
+  /\ (forall i1: int, i2: int. 0 <= i1 /\ i1 <= i2 /\ i2 < Seq.length self
+    -> Seq.get self i1 = Seq.get self i2 -> i1 = i2)
+
+predicate contains_Int (self: Seq.seq int) (x: int) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+
+predicate surjective_onto (self: Seq.seq int) (n: int) = forall j: int. 0 <= j /\ j < n -> contains_Int self j
+
+function extract_indices_T (s: Seq.seq t_T) (t: t_T) (i: int) : Seq.seq int
+
+axiom extract_indices_T_spec: forall s: Seq.seq t_T, t: t_T, i: int [extract_indices_T s t i]. 0 <= i
+      /\ i <= Seq.length s
+    -> (forall j: int. 0 <= j /\ j < Seq.length (extract_indices_T s t i)
+      -> 0 <= Seq.get (extract_indices_T s t i) j
+      /\ Seq.get (extract_indices_T s t i) j < i /\ Seq.get s (Seq.get (extract_indices_T s t i) j) = t)
+
+axiom extract_indices_T_spec'0: forall s: Seq.seq t_T, t: t_T, i: int [extract_indices_T s t i]. 0 <= i
+      /\ i <= Seq.length s -> Seq.length (extract_indices_T s t i) = count_T s 0 i t
+
+axiom extract_indices_T_spec'1: forall s: Seq.seq t_T, t: t_T, i: int [extract_indices_T s t i]. 0 <= i
+      /\ i <= Seq.length s
+    -> (forall j: int, k: int. 0 <= j /\ j < k /\ k < Seq.length (extract_indices_T s t i)
+      -> Seq.get (extract_indices_T s t i) j < Seq.get (extract_indices_T s t i) k)
+
+function get_indices_in_class_T (s: Seq.seq t_T) : Seq.seq int
+
+axiom get_indices_in_class_T_spec:
+  forall s: Seq.seq t_T [get_indices_in_class_T s]. Seq.length (get_indices_in_class_T s) = Seq.length s
+
+axiom get_indices_in_class_T_spec'0: forall s: Seq.seq t_T [get_indices_in_class_T s]. forall j: int. 0 <= j
+        /\ j < Seq.length (get_indices_in_class_T s)
+      -> 0 <= Seq.get (get_indices_in_class_T s) j
+      /\ Seq.get (get_indices_in_class_T s) j < count_T s 0 (Seq.length s) (Seq.get s j)
+
+axiom get_indices_in_class_T_spec'1: forall s: Seq.seq t_T [get_indices_in_class_T s]. forall j: int, k: int. 0 <= j
+        /\ j < k /\ k < Seq.length (get_indices_in_class_T s)
+      -> Seq.get s j = Seq.get s k -> Seq.get (get_indices_in_class_T s) j < Seq.get (get_indices_in_class_T s) k
+
+function surj_of_inj (self: Seq.seq int) (n: int) : ()
+
+axiom surj_of_inj_spec: forall self: Seq.seq int, n: int. injective_into self n
+    -> ge_log_Int (Seq.length self) n -> 0 <= n -> surjective_onto self n
+
+axiom surj_of_inj_spec'0: forall self: Seq.seq int, n: int. injective_into self n
+    -> ge_log_Int (Seq.length self) n -> 0 <= n -> Seq.length self = n
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Seq.seq t_T
+
+constant other : Seq.seq t_T
+
+function reindex_of_permutation_T (self: Seq.seq t_T) (other: Seq.seq t_T) : Seq.seq int
+
+goal vc_reindex_of_permutation_T: permutation_of_T self other
+  -> (forall i: int. if 0 <= i then
+        if i < Seq.length other then
+          [@stop_split] [@expl:extract_indices requires] 0 <= Seq.length self /\ Seq.length self <= Seq.length self
+        else
+          true
+      
+      else
+        true
+    )
+  /\ (forall f: Map.map int int. (forall i: int. if 0 <= i then
+          if i < Seq.length other then
+            ([@stop_split] [@expl:extract_indices ensures] ([@stop_split] [@expl:extract_indices ensures #0] forall j: int. 0
+                      <= j
+                    /\ j < Seq.length (extract_indices_T self (Seq.get other i) (Seq.length self))
+                  -> 0 <= Seq.get (extract_indices_T self (Seq.get other i) (Seq.length self)) j
+                  /\ Seq.get (extract_indices_T self (Seq.get other i) (Seq.length self)) j < Seq.length self
+                  /\ Seq.get self (Seq.get (extract_indices_T self (Seq.get other i) (Seq.length self)) j)
+                  = Seq.get other i)
+              /\ ([@stop_split] [@expl:extract_indices ensures #1] Seq.length (extract_indices_T self (Seq.get other i) (Seq.length self))
+                = count_T self 0 (Seq.length self) (Seq.get other i))
+              /\ ([@stop_split] [@expl:extract_indices ensures #2] forall j: int, k: int. 0 <= j
+                  /\ j < k /\ k < Seq.length (extract_indices_T self (Seq.get other i) (Seq.length self))
+                -> Seq.get (extract_indices_T self (Seq.get other i) (Seq.length self)) j
+                < Seq.get (extract_indices_T self (Seq.get other i) (Seq.length self)) k))
+            /\ ([@stop_split] [@expl:get_indices_in_class ensures] ([@stop_split] [@expl:get_indices_in_class ensures #0] Seq.length (get_indices_in_class_T other)
+                = Seq.length other)
+              /\ ([@stop_split] [@expl:get_indices_in_class ensures #1] forall j: int. 0 <= j
+                    /\ j < Seq.length (get_indices_in_class_T other)
+                  -> 0 <= Seq.get (get_indices_in_class_T other) j
+                  /\ Seq.get (get_indices_in_class_T other) j < count_T other 0 (Seq.length other) (Seq.get other j))
+              /\ ([@stop_split] [@expl:get_indices_in_class ensures #2] forall j: int, k: int. 0 <= j
+                  /\ j < k /\ k < Seq.length (get_indices_in_class_T other)
+                -> Seq.get other j = Seq.get other k
+                -> Seq.get (get_indices_in_class_T other) j < Seq.get (get_indices_in_class_T other) k))
+            /\ Seq.get (extract_indices_T self (Seq.get other i) (Seq.length self)) (Seq.get (get_indices_in_class_T other) i)
+            = f i
+          else
+            0 = f i
+        
+        else
+          0 = f i
+      )
+    -> (let res = Seq.create (Seq.length other) f in injective_into res (Seq.length self)
+    && ([@stop_split] [@expl:surj_of_inj requires] ([@stop_split] [@expl:surj_of_inj requires #0] injective_into res (Seq.length self))
+      /\ ([@stop_split] [@expl:surj_of_inj requires #1] ge_log_Int (Seq.length res) (Seq.length self))
+      /\ ([@stop_split] [@expl:surj_of_inj requires #2] 0 <= Seq.length self))
+    /\ (([@stop_split] [@expl:surj_of_inj ensures] ([@stop_split] [@expl:surj_of_inj ensures #0] surjective_onto res (Seq.length self))
+      /\ ([@stop_split] [@expl:surj_of_inj ensures #1] Seq.length res = Seq.length self))
+    -> (let result = res in [@stop_split] [@expl:reindex_of_permutation_T ensures] ([@stop_split] [@expl:reindex_of_permutation ensures #0] Seq.length result
+      = Seq.length other)
+    /\ ([@stop_split] [@expl:reindex_of_permutation ensures #1] injective_into result (Seq.length self)
+      /\ surjective_onto result (Seq.length self))
+    /\ ([@stop_split] [@expl:reindex_of_permutation ensures #2] forall i: int. 0 <= i /\ i < Seq.length result
+      -> Seq.get other i = Seq.get self (Seq.get result i))))))

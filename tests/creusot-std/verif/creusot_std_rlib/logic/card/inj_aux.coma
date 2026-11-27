@@ -1,0 +1,106 @@
+use seq.Seq
+use map.Map
+use int.Int
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Int_bool
+
+function card (a: int) (b: int) (p: Map.map int bool) : int
+
+axiom card_def: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+    -> card a b p
+    = (if ge_log_Int a b then 0 else card a (b - 1) p + (if index_Mapping_Int_bool p (b - 1) then 1 else 0))
+
+axiom card_spec: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+    -> 0 <= card a b p /\ card a b p <= b - a
+
+predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
+
+meta "rewrite_def" predicate gt_log_Int
+
+function card_false (a: int) (b: int) (p: Map.map int bool) : ()
+
+axiom card_false_spec: forall a: int, b: int, p: Map.map int bool. a <= b
+    -> (card a b p = 0) = (forall i: int. a <= i /\ i < b -> not index_Mapping_Int_bool p i)
+
+function card_ge_2 (a: int) (b: int) (p: Map.map int bool) : ()
+
+axiom card_ge_2_spec: forall a: int, b: int, p: Map.map int bool. a <= b
+    -> ge_log_Int (card a b p) 2
+    = (exists i: int, j: int. a <= i /\ i < j /\ j < b /\ index_Mapping_Int_bool p i /\ index_Mapping_Int_bool p j)
+
+predicate well_founded_relation_Int [@inline:trivial] (self: int) (other: int) =
+  ge_log_Int self 0 /\ gt_log_Int self other
+
+meta "rewrite_def" predicate well_founded_relation_Int
+
+function card_disjoint (a: int) (b: int) (p1: Map.map int bool) (p2: Map.map int bool) (p: Map.map int bool) : ()
+
+axiom card_disjoint_spec: forall a: int, b: int, p1: Map.map int bool, p2: Map.map int bool, p: Map.map int bool. a <= b
+    -> (forall i: int. a <= i /\ i < b -> not (index_Mapping_Int_bool p1 i /\ index_Mapping_Int_bool p2 i))
+    -> (forall i: int. a <= i /\ i < b
+        -> index_Mapping_Int_bool p i = (index_Mapping_Int_bool p1 i \/ index_Mapping_Int_bool p2 i))
+    -> card a b p = card a b p1 + card a b p2
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant s : Seq.seq int
+
+constant n : int
+
+constant k : int
+
+function inj_aux (s: Seq.seq int) (n: int) (k: int) : ()
+
+goal vc_inj_aux: 0 <= n
+  -> (forall i1: int, i2: int. 0 <= i1 /\ i1 <= i2 /\ i2 < Seq.length s -> Seq.get s i1 = Seq.get s i2 -> i1 = i2)
+  -> (forall i: int. 0 <= i /\ i < Seq.length s -> 0 <= Seq.get s i /\ Seq.get s i < n)
+  -> 0 <= k /\ k <= Seq.length s
+  -> (if gt_log_Int k 0 then
+    forall f: Map.map int bool. (forall j: int. (exists i: int. i = k - 1 /\ Seq.get s i = j) = f j)
+      -> ([@stop_split] [@expl:card_false requires] 0 <= n)
+      /\ (([@stop_split] [@expl:card_false ensures] (card 0 n f = 0)
+        = (forall i: int. 0 <= i /\ i < n -> not index_Mapping_Int_bool f i))
+      -> (forall f'0: Map.map int bool. (forall j: int. (exists i: int. i = k - 1 /\ Seq.get s i = j) = f'0 j)
+        -> ([@stop_split] [@expl:card_ge_2 requires] 0 <= n)
+        /\ (([@stop_split] [@expl:card_ge_2 ensures] ge_log_Int (card 0 n f'0) 2
+          = (exists i: int, j: int. 0 <= i
+            /\ i < j /\ j < n /\ index_Mapping_Int_bool f'0 i /\ index_Mapping_Int_bool f'0 j))
+        -> (forall f'1: Map.map int bool. (forall j: int. (exists i: int. i = k - 1 /\ Seq.get s i = j) = f'1 j)
+          -> ([@stop_split] [@expl:card requires] 0 <= n)
+          /\ (([@stop_split] [@expl:card ensures] 0 <= card 0 n f'1 /\ card 0 n f'1 <= n - 0)
+          -> card 0 n f'1 = 1
+          && (([@stop_split] [@expl:inj_aux requires] ([@stop_split] [@expl:inj_aux requires #0] 0 <= n)
+              /\ ([@stop_split] [@expl:inj_aux requires #1] forall i1: int, i2: int. 0 <= i1
+                    /\ i1 <= i2 /\ i2 < Seq.length s -> Seq.get s i1 = Seq.get s i2 -> i1 = i2)
+              /\ ([@stop_split] [@expl:inj_aux requires #2] forall i: int. 0 <= i /\ i < Seq.length s
+                  -> 0 <= Seq.get s i /\ Seq.get s i < n)
+              /\ ([@stop_split] [@expl:inj_aux requires #3] 0 <= k - 1 /\ k - 1 <= Seq.length s))
+            /\ ([@expl:variant decreases] well_founded_relation_Int k (k - 1)))
+          /\ (([@stop_split] [@expl:inj_aux ensures] k - 1
+            = card 0 n (fun (j: int) -> exists i: int. 0 <= i /\ i < k - 1 /\ Seq.get s i = j))
+          -> (forall f'2: Map.map int bool. (forall j: int. (exists i: int. 0 <= i /\ i < k - 1 /\ Seq.get s i = j)
+                = f'2 j)
+            -> (forall f'3: Map.map int bool. (forall j: int. (exists i: int. i = k - 1 /\ Seq.get s i = j) = f'3 j)
+              -> (forall f'4: Map.map int bool. (forall j: int. (exists i: int. 0 <= i /\ i < k /\ Seq.get s i = j)
+                    = f'4 j)
+                -> ([@stop_split] [@expl:card_disjoint requires] ([@stop_split] [@expl:card_disjoint requires #0] 0
+                    <= n)
+                  /\ ([@stop_split] [@expl:card_disjoint requires #1] forall i: int. 0 <= i /\ i < n
+                      -> not (index_Mapping_Int_bool f'2 i /\ index_Mapping_Int_bool f'3 i))
+                  /\ ([@stop_split] [@expl:card_disjoint requires #2] forall i: int. 0 <= i /\ i < n
+                    -> index_Mapping_Int_bool f'4 i = (index_Mapping_Int_bool f'2 i \/ index_Mapping_Int_bool f'3 i)))
+                /\ (([@stop_split] [@expl:card_disjoint ensures] card 0 n f'4 = card 0 n f'2 + card 0 n f'3)
+                -> ([@stop_split] [@expl:inj_aux ensures] k
+                = card 0 n (fun (j: int) -> exists i: int. 0 <= i /\ i < k /\ Seq.get s i = j))))))))))))
+  else
+    [@stop_split] [@expl:inj_aux ensures] k
+    = card 0 n (fun (j: int) -> exists i: int. 0 <= i /\ i < k /\ Seq.get s i = j)
+  )

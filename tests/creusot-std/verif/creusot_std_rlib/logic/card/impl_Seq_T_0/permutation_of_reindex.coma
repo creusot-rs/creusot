@@ -1,0 +1,172 @@
+(* logic::seq::Seq<T> *)
+
+use seq.Seq
+use map.Map
+use int.Int
+
+type t_T
+
+predicate injective_into (self: Seq.seq int) (n: int) =
+  (forall i: int. 0 <= i /\ i < Seq.length self -> 0 <= Seq.get self i /\ Seq.get self i < n)
+  /\ (forall i1: int, i2: int. 0 <= i1 /\ i1 <= i2 /\ i2 < Seq.length self
+    -> Seq.get self i1 = Seq.get self i2 -> i1 = i2)
+
+predicate contains_Int (self: Seq.seq int) (x: int) = exists i: int. 0 <= i /\ i < Seq.length self /\ Seq.get self i = x
+
+predicate surjective_onto (self: Seq.seq int) (n: int) = forall j: int. 0 <= j /\ j < n -> contains_Int self j
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Int_bool
+
+function card (a: int) (b: int) (p: Map.map int bool) : int
+
+axiom card_def: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+    -> card a b p
+    = (if ge_log_Int a b then 0 else card a (b - 1) p + (if index_Mapping_Int_bool p (b - 1) then 1 else 0))
+
+axiom card_spec: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+    -> 0 <= card a b p /\ card a b p <= b - a
+
+function count_T (self: Seq.seq t_T) (a: int) (b: int) (t: t_T) : int = card a b (fun (i: int) -> Seq.get self i = t)
+
+axiom count_T_spec: forall self: Seq.seq t_T, a: int, b: int, t: t_T [count_T self a b t]. a <= b
+    -> 0 <= count_T self a b t /\ count_T self a b t <= b - a
+
+predicate permutation_of_T (self: Seq.seq t_T) (other: Seq.seq t_T) =
+  Seq.length self = Seq.length other
+  /\ (forall t: t_T. count_T self 0 (Seq.length self) t = count_T other 0 (Seq.length other) t)
+
+function length_bij (self: Seq.seq int) (n: int) : ()
+
+axiom length_bij_spec: forall self: Seq.seq int, n: int. injective_into self n /\ surjective_onto self n
+    -> 0 <= n -> Seq.length self = n
+
+function permutation_of_reindex_aux_T (s1: Seq.seq t_T) (s2: Seq.seq t_T) (idx: Seq.seq int) (t: t_T) (k: int) : ()
+
+axiom permutation_of_reindex_aux_T_spec:
+  forall s1: Seq.seq t_T, s2: Seq.seq t_T, idx: Seq.seq int, t: t_T, k: int. Seq.length idx = Seq.length s2
+    -> injective_into idx (Seq.length s1)
+    -> (forall i: int. 0 <= i /\ i < Seq.length idx -> Seq.get s2 i = Seq.get s1 (Seq.get idx i))
+    -> 0 <= k /\ k <= Seq.length idx
+    -> count_T s2 0 k t
+    = card 0 (Seq.length s1) (fun (j: int) -> Seq.get s1 j = t /\ (exists i: int. 0 <= i /\ i < k /\ Seq.get idx i = j))
+
+function permutation_of_reindex_helper_T (s1: Seq.seq t_T) (idx: Seq.seq int) (t: t_T) (k: int) : ()
+
+axiom permutation_of_reindex_helper_T_spec:
+  forall s1: Seq.seq t_T, idx: Seq.seq int, t: t_T, k: int. surjective_onto idx (Seq.length s1)
+    -> 0 <= k /\ k < Seq.length s1
+    -> index_Mapping_Int_bool (fun (j: int) -> Seq.get s1 j = t
+      /\ (exists i: int. 0 <= i /\ i < Seq.length idx /\ Seq.get idx i = j)) k
+    = index_Mapping_Int_bool (fun (j: int) -> Seq.get s1 j = t) k
+
+function card_congr (a: int) (b: int) (p1: Map.map int bool) (p2: Map.map int bool) : ()
+
+axiom card_congr_spec: forall a: int, b: int, p1: Map.map int bool, p2: Map.map int bool. a <= b
+    -> (forall i: int. a <= i /\ i < b -> index_Mapping_Int_bool p1 i = index_Mapping_Int_bool p2 i)
+    -> card a b p1 = card a b p2
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Seq.seq t_T
+
+constant other : Seq.seq t_T
+
+constant idx : Seq.seq int
+
+function permutation_of_reindex_T (self: Seq.seq t_T) (other: Seq.seq t_T) (idx: Seq.seq int) : ()
+
+goal vc_permutation_of_reindex_T: Seq.length idx = Seq.length other
+  -> injective_into idx (Seq.length self) /\ surjective_onto idx (Seq.length self)
+  -> (forall i: int. 0 <= i /\ i < Seq.length idx -> Seq.get other i = Seq.get self (Seq.get idx i))
+  -> ([@stop_split] [@expl:length_bij requires] ([@stop_split] [@expl:length_bij requires #0] injective_into idx (Seq.length self)
+      /\ surjective_onto idx (Seq.length self))
+    /\ ([@stop_split] [@expl:length_bij requires #1] 0 <= Seq.length self))
+  /\ (([@stop_split] [@expl:length_bij ensures] Seq.length idx = Seq.length self)
+  -> (forall t: t_T. ([@stop_split] [@expl:permutation_of_reindex_aux requires] ([@stop_split] [@expl:permutation_of_reindex_aux requires #0] Seq.length idx
+          = Seq.length other)
+        /\ ([@stop_split] [@expl:permutation_of_reindex_aux requires #1] injective_into idx (Seq.length self))
+        /\ ([@stop_split] [@expl:permutation_of_reindex_aux requires #2] forall i: int. 0 <= i /\ i < Seq.length idx
+            -> Seq.get other i = Seq.get self (Seq.get idx i))
+        /\ ([@stop_split] [@expl:permutation_of_reindex_aux requires #3] 0 <= Seq.length idx
+        /\ Seq.length idx <= Seq.length idx))
+      /\ (([@stop_split] [@expl:permutation_of_reindex_aux ensures] count_T other 0 (Seq.length idx) t
+        = card 0 (Seq.length self) (fun (j: int) -> Seq.get self j = t
+        /\ (exists i: int. 0 <= i /\ i < Seq.length idx /\ Seq.get idx i = j)))
+      -> (forall k: int. if 0 <= k then
+            if k < Seq.length self then
+              [@stop_split] [@expl:permutation_of_reindex_helper requires] ([@stop_split] [@expl:permutation_of_reindex_helper requires #0] surjective_onto idx (Seq.length self))
+              /\ ([@stop_split] [@expl:permutation_of_reindex_helper requires #1] 0 <= k /\ k < Seq.length self)
+            else
+              true
+          
+          else
+            true
+        )
+      /\ (forall f: Map.map int (). (forall k: int. if 0 <= k then
+              if k < Seq.length self then
+                ([@stop_split] [@expl:permutation_of_reindex_helper ensures] index_Mapping_Int_bool (fun (j: int) -> Seq.get self j
+                      = t
+                    /\ (exists i: int. 0 <= i /\ i < Seq.length idx /\ Seq.get idx i = j)) k
+                  = index_Mapping_Int_bool (fun (j: int) -> Seq.get self j = t) k)
+                /\ () = f k
+              else
+                () = f k
+            
+            else
+              () = f k
+          )
+        -> (forall f'0: Map.map int bool. (forall j: int. if Seq.get self j = t then
+                (exists i: int. 0 <= i /\ i < Seq.length idx /\ Seq.get idx i = j) = f'0 j
+              else
+                false = f'0 j
+            )
+          -> (forall f'1: Map.map int bool. (forall j: int. (Seq.get self j = t) = f'1 j)
+            -> ([@stop_split] [@expl:card_congr requires] ([@stop_split] [@expl:card_congr requires #0] 0
+                <= Seq.length self)
+              /\ ([@stop_split] [@expl:card_congr requires #1] forall i: int. 0 <= i /\ i < Seq.length self
+                -> index_Mapping_Int_bool f'0 i = index_Mapping_Int_bool f'1 i))
+            /\ (([@stop_split] [@expl:card_congr ensures] card 0 (Seq.length self) f'0 = card 0 (Seq.length self) f'1)
+            -> ([@stop_split] [@expl:count requires] 0 <= Seq.length self)
+            /\ (([@stop_split] [@expl:count ensures] 0 <= count_T self 0 (Seq.length self) t
+              /\ count_T self 0 (Seq.length self) t <= Seq.length self - 0)
+            -> ([@stop_split] [@expl:count requires] 0 <= Seq.length other)
+            /\ (([@stop_split] [@expl:count ensures] 0 <= count_T other 0 (Seq.length other) t
+              /\ count_T other 0 (Seq.length other) t <= Seq.length other - 0)
+            -> count_T self 0 (Seq.length self) t = count_T other 0 (Seq.length other) t))))))))
+  /\ (forall f: Map.map t_T (). (forall t: t_T. ([@stop_split] [@expl:permutation_of_reindex_aux ensures] count_T other 0 (Seq.length idx) t
+          = card 0 (Seq.length self) (fun (j: int) -> Seq.get self j = t
+          /\ (exists i: int. 0 <= i /\ i < Seq.length idx /\ Seq.get idx i = j)))
+        /\ (exists f'0: Map.map int (). (forall k: int. if 0 <= k then
+                if k < Seq.length self then
+                  ([@stop_split] [@expl:permutation_of_reindex_helper ensures] index_Mapping_Int_bool (fun (j: int) -> Seq.get self j
+                        = t
+                      /\ (exists i: int. 0 <= i /\ i < Seq.length idx /\ Seq.get idx i = j)) k
+                    = index_Mapping_Int_bool (fun (j: int) -> Seq.get self j = t) k)
+                  /\ () = f'0 k
+                else
+                  () = f'0 k
+              
+              else
+                () = f'0 k
+            )
+          /\ (exists f'1: Map.map int bool. (forall j: int. if Seq.get self j = t then
+                  (exists i: int. 0 <= i /\ i < Seq.length idx /\ Seq.get idx i = j) = f'1 j
+                else
+                  false = f'1 j
+              )
+            /\ (exists f'2: Map.map int bool. (forall j: int. (Seq.get self j = t) = f'2 j)
+              /\ ([@stop_split] [@expl:card_congr ensures] card 0 (Seq.length self) f'1 = card 0 (Seq.length self) f'2)
+              /\ ([@stop_split] [@expl:count ensures] 0 <= count_T self 0 (Seq.length self) t
+                /\ count_T self 0 (Seq.length self) t <= Seq.length self - 0)
+              /\ ([@stop_split] [@expl:count ensures] 0 <= count_T other 0 (Seq.length other) t
+                /\ count_T other 0 (Seq.length other) t <= Seq.length other - 0)
+              /\ count_T self 0 (Seq.length self) t = count_T other 0 (Seq.length other) t /\ () = f t))))
+    -> ([@stop_split] [@expl:permutation_of_reindex ensures] permutation_of_T self other)))

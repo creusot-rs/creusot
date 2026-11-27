@@ -1,0 +1,207 @@
+(* logic::seq::Seq<T> *)
+
+use seq.Seq
+use seq.Permut
+use map.Map
+use int.Int
+
+type t_T
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Int_bool
+
+function card (a: int) (b: int) (p: Map.map int bool) : int
+
+axiom card_def: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+    -> card a b p
+    = (if ge_log_Int a b then 0 else card a (b - 1) p + (if index_Mapping_Int_bool p (b - 1) then 1 else 0))
+
+axiom card_spec: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+    -> 0 <= card a b p /\ card a b p <= b - a
+
+function count_T (self: Seq.seq t_T) (a: int) (b: int) (t: t_T) : int = card a b (fun (i: int) -> Seq.get self i = t)
+
+axiom count_T_spec: forall self: Seq.seq t_T, a: int, b: int, t: t_T [count_T self a b t]. a <= b
+    -> 0 <= count_T self a b t /\ count_T self a b t <= b - a
+
+predicate permutation_of_T (self: Seq.seq t_T) (other: Seq.seq t_T) =
+  Seq.length self = Seq.length other
+  /\ (forall t: t_T. count_T self 0 (Seq.length self) t = count_T other 0 (Seq.length other) t)
+
+function count_join_T (self: Seq.seq t_T) (a: int) (b: int) (c: int) (t: t_T) : ()
+
+axiom count_join_T_spec: forall self: Seq.seq t_T, a: int, b: int, c: int, t: t_T. a <= b /\ b <= c
+    -> count_T self a c t = count_T self a b t + count_T self b c t
+
+function count_congr_T (self: Seq.seq t_T) (other: Seq.seq t_T) (a: int) (b: int) (t: t_T) : ()
+
+axiom count_congr_T_spec: forall self: Seq.seq t_T, other: Seq.seq t_T, a: int, b: int, t: t_T. a <= b
+    -> (forall i: int. a <= i /\ i < b -> Seq.get self i = Seq.get other i) -> count_T self a b t = count_T other a b t
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Seq.seq t_T
+
+constant other : Seq.seq t_T
+
+constant i : int
+
+constant j : int
+
+function permutation_of_exchange_T (self: Seq.seq t_T) (other: Seq.seq t_T) (i: int) (j: int) : ()
+
+goal vc_permutation_of_exchange_T: Permut.exchange self other i j
+  -> (forall t: t_T. if i < j then
+        ([@stop_split] [@expl:count_join requires] 0 <= i /\ i <= i + 1)
+        /\ (([@stop_split] [@expl:count_join ensures] count_T self 0 (i + 1) t
+          = count_T self 0 i t + count_T self i (i + 1) t)
+        -> ([@stop_split] [@expl:count_join requires] 0 <= i + 1 /\ i + 1 <= j)
+        /\ (([@stop_split] [@expl:count_join ensures] count_T self 0 j t
+          = count_T self 0 (i + 1) t + count_T self (i + 1) j t)
+        -> ([@stop_split] [@expl:count_join requires] 0 <= j /\ j <= j + 1)
+        /\ (([@stop_split] [@expl:count_join ensures] count_T self 0 (j + 1) t
+          = count_T self 0 j t + count_T self j (j + 1) t)
+        -> ([@stop_split] [@expl:count_join requires] 0 <= j + 1 /\ j + 1 <= Seq.length self)
+        /\ (([@stop_split] [@expl:count_join ensures] count_T self 0 (Seq.length self) t
+          = count_T self 0 (j + 1) t + count_T self (j + 1) (Seq.length self) t)
+        -> ([@stop_split] [@expl:count_congr requires] ([@stop_split] [@expl:count_congr requires #0] 0 <= i)
+          /\ ([@stop_split] [@expl:count_congr requires #1] forall i'0: int. 0 <= i'0 /\ i'0 < i
+            -> Seq.get self i'0 = Seq.get other i'0))
+        /\ (([@stop_split] [@expl:count_congr ensures] count_T self 0 i t = count_T other 0 i t)
+        -> ([@stop_split] [@expl:count_congr requires] ([@stop_split] [@expl:count_congr requires #0] i + 1 <= j)
+          /\ ([@stop_split] [@expl:count_congr requires #1] forall i'0: int. i + 1 <= i'0 /\ i'0 < j
+            -> Seq.get self i'0 = Seq.get other i'0))
+        /\ (([@stop_split] [@expl:count_congr ensures] count_T self (i + 1) j t = count_T other (i + 1) j t)
+        -> ([@stop_split] [@expl:count_congr requires] ([@stop_split] [@expl:count_congr requires #0] j + 1
+            <= Seq.length self)
+          /\ ([@stop_split] [@expl:count_congr requires #1] forall i'0: int. j + 1 <= i'0 /\ i'0 < Seq.length self
+            -> Seq.get self i'0 = Seq.get other i'0))
+        /\ (([@stop_split] [@expl:count_congr ensures] count_T self (j + 1) (Seq.length self) t
+          = count_T other (j + 1) (Seq.length self) t)
+        -> ([@stop_split] [@expl:count requires] 0 <= Seq.length self)
+        /\ (([@stop_split] [@expl:count ensures] 0 <= count_T self 0 (Seq.length self) t
+          /\ count_T self 0 (Seq.length self) t <= Seq.length self - 0)
+        -> ([@stop_split] [@expl:count requires] 0 <= Seq.length other)
+        /\ (([@stop_split] [@expl:count ensures] 0 <= count_T other 0 (Seq.length other) t
+          /\ count_T other 0 (Seq.length other) t <= Seq.length other - 0)
+        -> count_T self 0 (Seq.length self) t = count_T other 0 (Seq.length other) t)))))))))
+      else
+        if j < i then
+          ([@stop_split] [@expl:count_join requires] 0 <= j /\ j <= j + 1)
+          /\ (([@stop_split] [@expl:count_join ensures] count_T self 0 (j + 1) t
+            = count_T self 0 j t + count_T self j (j + 1) t)
+          -> ([@stop_split] [@expl:count_join requires] 0 <= j + 1 /\ j + 1 <= i)
+          /\ (([@stop_split] [@expl:count_join ensures] count_T self 0 i t
+            = count_T self 0 (j + 1) t + count_T self (j + 1) i t)
+          -> ([@stop_split] [@expl:count_join requires] 0 <= i /\ i <= i + 1)
+          /\ (([@stop_split] [@expl:count_join ensures] count_T self 0 (i + 1) t
+            = count_T self 0 i t + count_T self i (i + 1) t)
+          -> ([@stop_split] [@expl:count_join requires] 0 <= i + 1 /\ i + 1 <= Seq.length self)
+          /\ (([@stop_split] [@expl:count_join ensures] count_T self 0 (Seq.length self) t
+            = count_T self 0 (i + 1) t + count_T self (i + 1) (Seq.length self) t)
+          -> ([@stop_split] [@expl:count_congr requires] ([@stop_split] [@expl:count_congr requires #0] 0 <= j)
+            /\ ([@stop_split] [@expl:count_congr requires #1] forall i'0: int. 0 <= i'0 /\ i'0 < j
+              -> Seq.get self i'0 = Seq.get other i'0))
+          /\ (([@stop_split] [@expl:count_congr ensures] count_T self 0 j t = count_T other 0 j t)
+          -> ([@stop_split] [@expl:count_congr requires] ([@stop_split] [@expl:count_congr requires #0] j + 1 <= i)
+            /\ ([@stop_split] [@expl:count_congr requires #1] forall i'0: int. j + 1 <= i'0 /\ i'0 < i
+              -> Seq.get self i'0 = Seq.get other i'0))
+          /\ (([@stop_split] [@expl:count_congr ensures] count_T self (j + 1) i t = count_T other (j + 1) i t)
+          -> ([@stop_split] [@expl:count_congr requires] ([@stop_split] [@expl:count_congr requires #0] i + 1
+              <= Seq.length self)
+            /\ ([@stop_split] [@expl:count_congr requires #1] forall i'0: int. i + 1 <= i'0 /\ i'0 < Seq.length self
+              -> Seq.get self i'0 = Seq.get other i'0))
+          /\ (([@stop_split] [@expl:count_congr ensures] count_T self (i + 1) (Seq.length self) t
+            = count_T other (i + 1) (Seq.length self) t)
+          -> ([@stop_split] [@expl:count requires] 0 <= Seq.length self)
+          /\ (([@stop_split] [@expl:count ensures] 0 <= count_T self 0 (Seq.length self) t
+            /\ count_T self 0 (Seq.length self) t <= Seq.length self - 0)
+          -> ([@stop_split] [@expl:count requires] 0 <= Seq.length other)
+          /\ (([@stop_split] [@expl:count ensures] 0 <= count_T other 0 (Seq.length other) t
+            /\ count_T other 0 (Seq.length other) t <= Seq.length other - 0)
+          -> count_T self 0 (Seq.length self) t = count_T other 0 (Seq.length other) t)))))))))
+        else
+          ([@stop_split] [@expl:count_join requires] 0 <= i /\ i <= i + 1)
+          /\ (([@stop_split] [@expl:count_join ensures] count_T self 0 (i + 1) t
+            = count_T self 0 i t + count_T self i (i + 1) t)
+          -> ([@stop_split] [@expl:count_join requires] 0 <= i + 1 /\ i + 1 <= Seq.length self)
+          /\ (([@stop_split] [@expl:count_join ensures] count_T self 0 (Seq.length self) t
+            = count_T self 0 (i + 1) t + count_T self (i + 1) (Seq.length self) t)
+          -> ([@stop_split] [@expl:count_congr requires] ([@stop_split] [@expl:count_congr requires #0] 0 <= i)
+            /\ ([@stop_split] [@expl:count_congr requires #1] forall i'0: int. 0 <= i'0 /\ i'0 < i
+              -> Seq.get self i'0 = Seq.get other i'0))
+          /\ (([@stop_split] [@expl:count_congr ensures] count_T self 0 i t = count_T other 0 i t)
+          -> ([@stop_split] [@expl:count_congr requires] ([@stop_split] [@expl:count_congr requires #0] i + 1
+              <= Seq.length self)
+            /\ ([@stop_split] [@expl:count_congr requires #1] forall i'0: int. i + 1 <= i'0 /\ i'0 < Seq.length self
+              -> Seq.get self i'0 = Seq.get other i'0))
+          /\ (([@stop_split] [@expl:count_congr ensures] count_T self (i + 1) (Seq.length self) t
+            = count_T other (i + 1) (Seq.length self) t)
+          -> ([@stop_split] [@expl:count requires] 0 <= Seq.length self)
+          /\ (([@stop_split] [@expl:count ensures] 0 <= count_T self 0 (Seq.length self) t
+            /\ count_T self 0 (Seq.length self) t <= Seq.length self - 0)
+          -> ([@stop_split] [@expl:count requires] 0 <= Seq.length other)
+          /\ (([@stop_split] [@expl:count ensures] 0 <= count_T other 0 (Seq.length other) t
+            /\ count_T other 0 (Seq.length other) t <= Seq.length other - 0)
+          -> count_T self 0 (Seq.length self) t = count_T other 0 (Seq.length other) t))))))
+      
+    )
+  /\ (forall f: Map.map t_T (). (forall t: t_T. if i < j then
+          ([@stop_split] [@expl:count_join ensures] count_T self 0 (i + 1) t
+            = count_T self 0 i t + count_T self i (i + 1) t)
+          /\ ([@stop_split] [@expl:count_join ensures] count_T self 0 j t
+            = count_T self 0 (i + 1) t + count_T self (i + 1) j t)
+          /\ ([@stop_split] [@expl:count_join ensures] count_T self 0 (j + 1) t
+            = count_T self 0 j t + count_T self j (j + 1) t)
+          /\ ([@stop_split] [@expl:count_join ensures] count_T self 0 (Seq.length self) t
+            = count_T self 0 (j + 1) t + count_T self (j + 1) (Seq.length self) t)
+          /\ ([@stop_split] [@expl:count_congr ensures] count_T self 0 i t = count_T other 0 i t)
+          /\ ([@stop_split] [@expl:count_congr ensures] count_T self (i + 1) j t = count_T other (i + 1) j t)
+          /\ ([@stop_split] [@expl:count_congr ensures] count_T self (j + 1) (Seq.length self) t
+            = count_T other (j + 1) (Seq.length self) t)
+          /\ ([@stop_split] [@expl:count ensures] 0 <= count_T self 0 (Seq.length self) t
+            /\ count_T self 0 (Seq.length self) t <= Seq.length self - 0)
+          /\ ([@stop_split] [@expl:count ensures] 0 <= count_T other 0 (Seq.length other) t
+            /\ count_T other 0 (Seq.length other) t <= Seq.length other - 0)
+          /\ count_T self 0 (Seq.length self) t = count_T other 0 (Seq.length other) t /\ () = f t
+        else
+          if j < i then
+            ([@stop_split] [@expl:count_join ensures] count_T self 0 (j + 1) t
+              = count_T self 0 j t + count_T self j (j + 1) t)
+            /\ ([@stop_split] [@expl:count_join ensures] count_T self 0 i t
+              = count_T self 0 (j + 1) t + count_T self (j + 1) i t)
+            /\ ([@stop_split] [@expl:count_join ensures] count_T self 0 (i + 1) t
+              = count_T self 0 i t + count_T self i (i + 1) t)
+            /\ ([@stop_split] [@expl:count_join ensures] count_T self 0 (Seq.length self) t
+              = count_T self 0 (i + 1) t + count_T self (i + 1) (Seq.length self) t)
+            /\ ([@stop_split] [@expl:count_congr ensures] count_T self 0 j t = count_T other 0 j t)
+            /\ ([@stop_split] [@expl:count_congr ensures] count_T self (j + 1) i t = count_T other (j + 1) i t)
+            /\ ([@stop_split] [@expl:count_congr ensures] count_T self (i + 1) (Seq.length self) t
+              = count_T other (i + 1) (Seq.length self) t)
+            /\ ([@stop_split] [@expl:count ensures] 0 <= count_T self 0 (Seq.length self) t
+              /\ count_T self 0 (Seq.length self) t <= Seq.length self - 0)
+            /\ ([@stop_split] [@expl:count ensures] 0 <= count_T other 0 (Seq.length other) t
+              /\ count_T other 0 (Seq.length other) t <= Seq.length other - 0)
+            /\ count_T self 0 (Seq.length self) t = count_T other 0 (Seq.length other) t /\ () = f t
+          else
+            ([@stop_split] [@expl:count_join ensures] count_T self 0 (i + 1) t
+              = count_T self 0 i t + count_T self i (i + 1) t)
+            /\ ([@stop_split] [@expl:count_join ensures] count_T self 0 (Seq.length self) t
+              = count_T self 0 (i + 1) t + count_T self (i + 1) (Seq.length self) t)
+            /\ ([@stop_split] [@expl:count_congr ensures] count_T self 0 i t = count_T other 0 i t)
+            /\ ([@stop_split] [@expl:count_congr ensures] count_T self (i + 1) (Seq.length self) t
+              = count_T other (i + 1) (Seq.length self) t)
+            /\ ([@stop_split] [@expl:count ensures] 0 <= count_T self 0 (Seq.length self) t
+              /\ count_T self 0 (Seq.length self) t <= Seq.length self - 0)
+            /\ ([@stop_split] [@expl:count ensures] 0 <= count_T other 0 (Seq.length other) t
+              /\ count_T other 0 (Seq.length other) t <= Seq.length other - 0)
+            /\ count_T self 0 (Seq.length self) t = count_T other 0 (Seq.length other) t /\ () = f t
+        
+      ) -> ([@stop_split] [@expl:permutation_of_exchange ensures] permutation_of_T self other))

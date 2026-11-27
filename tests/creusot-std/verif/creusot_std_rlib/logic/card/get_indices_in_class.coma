@@ -1,0 +1,88 @@
+use seq.Seq
+use map.Map
+use int.Int
+
+type t_T
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Int_bool
+
+function card (a: int) (b: int) (p: Map.map int bool) : int
+
+axiom card_def: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+    -> card a b p
+    = (if ge_log_Int a b then 0 else card a (b - 1) p + (if index_Mapping_Int_bool p (b - 1) then 1 else 0))
+
+axiom card_spec: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+    -> 0 <= card a b p /\ card a b p <= b - a
+
+function count_T (self: Seq.seq t_T) (a: int) (b: int) (t: t_T) : int = card a b (fun (i: int) -> Seq.get self i = t)
+
+axiom count_T_spec: forall self: Seq.seq t_T, a: int, b: int, t: t_T [count_T self a b t]. a <= b
+    -> 0 <= count_T self a b t /\ count_T self a b t <= b - a
+
+function count_join_T (self: Seq.seq t_T) (a: int) (b: int) (c: int) (t: t_T) : ()
+
+axiom count_join_T_spec: forall self: Seq.seq t_T, a: int, b: int, c: int, t: t_T. a <= b /\ b <= c
+    -> count_T self a c t = count_T self a b t + count_T self b c t
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant s : Seq.seq t_T
+
+function get_indices_in_class_T (s: Seq.seq t_T) : Seq.seq int
+
+goal vc_get_indices_in_class_T: (forall i: int. if 0 <= i then
+        if i < Seq.length s then
+          ([@stop_split] [@expl:count_join requires] 0 <= i + 1 /\ i + 1 <= Seq.length s)
+          /\ (([@stop_split] [@expl:count_join ensures] count_T s 0 (Seq.length s) (Seq.get s i)
+            = count_T s 0 (i + 1) (Seq.get s i) + count_T s (i + 1) (Seq.length s) (Seq.get s i))
+          -> ([@stop_split] [@expl:count requires] 0 <= i)
+          /\ (([@stop_split] [@expl:count ensures] 0 <= count_T s 0 i (Seq.get s i)
+            /\ count_T s 0 i (Seq.get s i) <= i - 0)
+          -> ([@stop_split] [@expl:count requires] 0 <= Seq.length s)
+          /\ (([@stop_split] [@expl:count ensures] 0 <= count_T s 0 (Seq.length s) (Seq.get s i)
+            /\ count_T s 0 (Seq.length s) (Seq.get s i) <= Seq.length s - 0)
+          -> count_T s 0 i (Seq.get s i) < count_T s 0 (Seq.length s) (Seq.get s i))))
+        else
+          true
+      
+      else
+        true
+    )
+  /\ (forall f: Map.map int (). (forall i: int. if 0 <= i then
+          if i < Seq.length s then
+            ([@stop_split] [@expl:count_join ensures] count_T s 0 (Seq.length s) (Seq.get s i)
+              = count_T s 0 (i + 1) (Seq.get s i) + count_T s (i + 1) (Seq.length s) (Seq.get s i))
+            /\ ([@stop_split] [@expl:count ensures] 0 <= count_T s 0 i (Seq.get s i)
+              /\ count_T s 0 i (Seq.get s i) <= i - 0)
+            /\ ([@stop_split] [@expl:count ensures] 0 <= count_T s 0 (Seq.length s) (Seq.get s i)
+              /\ count_T s 0 (Seq.length s) (Seq.get s i) <= Seq.length s - 0)
+            /\ count_T s 0 i (Seq.get s i) < count_T s 0 (Seq.length s) (Seq.get s i) /\ () = f i
+          else
+            () = f i
+        
+        else
+          () = f i
+      )
+    -> (forall i: int. if 0 <= i then [@stop_split] [@expl:count requires] 0 <= i else true)
+    /\ (forall f'0: Map.map int int. (forall i: int. if 0 <= i then
+            ([@stop_split] [@expl:count ensures] 0 <= count_T s 0 i (Seq.get s i)
+              /\ count_T s 0 i (Seq.get s i) <= i - 0)
+            /\ count_T s 0 i (Seq.get s i) = f'0 i
+          else
+            0 = f'0 i
+        )
+      -> (let result = Seq.create (Seq.length s) f'0 in [@stop_split] [@expl:get_indices_in_class_T ensures] ([@stop_split] [@expl:get_indices_in_class ensures #0] Seq.length result
+        = Seq.length s)
+      /\ ([@stop_split] [@expl:get_indices_in_class ensures #1] forall j: int. 0 <= j /\ j < Seq.length result
+          -> 0 <= Seq.get result j /\ Seq.get result j < count_T s 0 (Seq.length s) (Seq.get s j))
+      /\ ([@stop_split] [@expl:get_indices_in_class ensures #2] forall j: int, k: int. 0 <= j
+          /\ j < k /\ k < Seq.length result -> Seq.get s j = Seq.get s k -> Seq.get result j < Seq.get result k))))

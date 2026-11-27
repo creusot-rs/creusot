@@ -1,0 +1,61 @@
+(* logic::seq::Seq<T> *)
+
+use seq.Seq
+use map.Map
+use int.Int
+
+type t_T
+
+predicate ge_log_Int [@inline:trivial] (self: int) (other: int) = other <= self
+
+meta "rewrite_def" predicate ge_log_Int
+
+predicate index_Mapping_Int_bool [@inline:trivial] (self: Map.map int bool) (a: int) = Map.get self a
+
+meta "rewrite_def" predicate index_Mapping_Int_bool
+
+function card (a: int) (b: int) (p: Map.map int bool) : int
+
+axiom card_def: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+    -> card a b p
+    = (if ge_log_Int a b then 0 else card a (b - 1) p + (if index_Mapping_Int_bool p (b - 1) then 1 else 0))
+
+axiom card_spec: forall a: int, b: int, p: Map.map int bool [card a b p]. a <= b
+    -> 0 <= card a b p /\ card a b p <= b - a
+
+function count_T (self: Seq.seq t_T) (a: int) (b: int) (t: t_T) : int = card a b (fun (i: int) -> Seq.get self i = t)
+
+axiom count_T_spec: forall self: Seq.seq t_T, a: int, b: int, t: t_T [count_T self a b t]. a <= b
+    -> 0 <= count_T self a b t /\ count_T self a b t <= b - a
+
+function card_congr (a: int) (b: int) (p1: Map.map int bool) (p2: Map.map int bool) : ()
+
+axiom card_congr_spec: forall a: int, b: int, p1: Map.map int bool, p2: Map.map int bool. a <= b
+    -> (forall i: int. a <= i /\ i < b -> index_Mapping_Int_bool p1 i = index_Mapping_Int_bool p2 i)
+    -> card a b p1 = card a b p2
+
+meta "compute_max_steps" 1000000
+
+meta "select_lsinst" "all"
+
+constant self : Seq.seq t_T
+
+constant other : Seq.seq t_T
+
+constant a : int
+
+constant b : int
+
+constant t : t_T
+
+function count_congr_T (self: Seq.seq t_T) (other: Seq.seq t_T) (a: int) (b: int) (t: t_T) : ()
+
+goal vc_count_congr_T: a <= b
+  -> (forall i: int. a <= i /\ i < b -> Seq.get self i = Seq.get other i)
+  -> (forall f: Map.map int bool. (forall i: int. (Seq.get self i = t) = f i)
+    -> (forall f'0: Map.map int bool. (forall i: int. (Seq.get other i = t) = f'0 i)
+      -> ([@stop_split] [@expl:card_congr requires] ([@stop_split] [@expl:card_congr requires #0] a <= b)
+        /\ ([@stop_split] [@expl:card_congr requires #1] forall i: int. a <= i /\ i < b
+          -> index_Mapping_Int_bool f i = index_Mapping_Int_bool f'0 i))
+      /\ (([@stop_split] [@expl:card_congr ensures] card a b f = card a b f'0)
+      -> ([@stop_split] [@expl:count_congr ensures] count_T self a b t = count_T other a b t))))

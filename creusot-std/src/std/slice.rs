@@ -343,6 +343,7 @@ extern_spec! {
         #[requires(i@ < self@.len())]
         #[requires(j@ < self@.len())]
         #[ensures((^self)@.exchange(self@, i@, j@))]
+        #[ensures((^self)@.permutation_of(self@))] //Justified by Seq::permutation_of_exchange
         fn swap(&mut self, i: usize, j: usize);
 
         #[check(ghost)]
