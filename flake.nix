@@ -60,8 +60,8 @@
             };
 
             colibri2 = {
-              version = "0.6";
-              sha256 = "sha256-Qd6rKKE9yYLLYnNMIHZEFjNUYzLlpBMCha6b0DIFKv8=";
+              version = "0.7.1";
+              sha256 = "sha256-XwmAwgmCtEXhQXg8YoAWW0nFMTNnQoccHMISj99Tsmg=";
             };
 
             cvc4 = {

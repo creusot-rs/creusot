@@ -15,7 +15,7 @@ pub struct ManagedBinary {
     url: &'static Option<Url>,
     download: fn(&Url, &Path, &Path, &Args) -> anyhow::Result<()>,
     /// Opam package providing the tool, installed (at version `bin.version`) in
-    /// Creusot's Opam switch when there is no binary release for this platform.
+    /// its own Opam switch when there is no binary release for this platform.
     opam_package: Option<&'static str>,
 }
 
@@ -23,7 +23,7 @@ const ALTERGO: ManagedBinary = ManagedBinary {
     bin: setup::ALTERGO,
     url: &URLS.altergo,
     download: download_from_url_with_cache,
-    opam_package: None,
+    opam_package: Some("alt-ergo"),
 };
 
 const Z3: ManagedBinary = ManagedBinary {
@@ -314,13 +314,16 @@ fn install_from_opam(
 ) -> anyhow::Result<()> {
     args.comment();
     println!("Install {} {} with opam...", bin.bin.display_name, bin.bin.version);
-    let switch_dir = opam_switch(paths);
+    // Each prover gets its own switch: the dependencies of provers may conflict with each other
+    // (Alt-Ergo 2.6 and Colibri2 0.7 need different versions of Dolmen) or with Why3's.
+    let switch_dir = opam_switch(paths).join("provers").join(package);
     let opam_dir = switch_dir.join("_opam");
-    if !args.dry_run && !fs::exists(&opam_dir)? {
-        bail!(
-            "Creusot's opam switch {} does not exist: install the `why3` component first",
-            switch_dir.display()
-        )
+    if !fs::exists(&opam_dir)? {
+        // The switch is created empty: installing the prover pulls in an OCaml compiler.
+        args.create_dir_all(&switch_dir)?;
+        let mut cmd = Command::new("opam");
+        cmd.args(["switch", "create", "--yes", "--empty"]).arg(&switch_dir);
+        args.run(cmd)?;
     }
     let mut cmd = Command::new("opam");
     cmd.args(["install", "--yes", "--switch"])

@@ -28,6 +28,31 @@ in
 
 # NOTE: Update this when NixOS 26.11 is released
 let
+  dolmen = ocamlPackages.dolmen.overrideAttrs (old: {
+    version = "0.11";
+    src = fetchurl {
+      url = "https://github.com/Gbury/dolmen/releases/download/v0.11/dolmen-0.11.tbz";
+      hash = "sha256-I1x4ofTavGwRbT0c9Rryhss/vtcTxhFs1dGxy+0MyH8=";
+    };
+
+    propagatedBuildInputs =
+      old.propagatedBuildInputs
+      ++ (with ocamlPackages; [
+        dune-site
+        seq
+        uutf
+      ]);
+  });
+
+  # `dolmen_type` and `dolmen_loop` take their `src` and `version` from `dolmen`.
+  dolmen_type = ocamlPackages.dolmen_type.override { inherit dolmen; };
+
+  dolmen_loop' = ocamlPackages.dolmen_loop.override { inherit dolmen dolmen_type; };
+  dolmen_loop = dolmen_loop'.overrideAttrs (old: {
+    propagatedBuildInputs = old.propagatedBuildInputs ++ [ ocamlPackages.zarith ];
+    doCheck = false;
+  });
+
   patricia-tree = ocamlPackages.patricia-tree.overrideAttrs {
     version = "0.15.0";
     src = fetchurl {
@@ -58,21 +83,36 @@ let
     doCheck = false;
   };
 
-  ocaml-flint = ocamlPackages.buildDunePackage {
-    pname = "flint";
-    version = "0.4.2";
+  # Generator of C stubs, used to build `ocaml-flint`
+  camlid = ocamlPackages.buildDunePackage {
+    pname = "camlid";
+    version = "0.3";
 
     src = fetchurl {
-      url = "https://github.com/bobot/ocaml-flint/releases/download/0.4.2/flint-0.4.2.tbz";
-      hash = "sha256-hv4NtXjX4hFgUowH/9yAN15kk3HhxfvJ9Qqv2Zyh3bo=";
+      url = "https://github.com/bobot/camlid/releases/download/0.3/camlid-0.3.tbz";
+      hash = "sha256-CGZVIDbEUqHN0Fc4p2ESt2HbbM7u7SsfWgPXMKGSScA=";
+    };
+
+    propagatedBuildInputs = [ ocamlPackages.fmt ];
+  };
+
+  ocaml-flint = ocamlPackages.buildDunePackage {
+    pname = "flint";
+    version = "0.5.0";
+
+    src = fetchurl {
+      url = "https://github.com/bobot/ocaml-flint/releases/download/0.5.0/flint-0.5.0.tbz";
+      hash = "sha256-ccP2rhsdI/FAsKVQnHmJ4z2m9N70X2T21x7LQbgdtzE=";
     };
 
     dontConfigure = true;
 
-    buildInputs = [ ocamlPackages.dune-configurator ];
+    buildInputs = [
+      camlid
+      ocamlPackages.dune-configurator
+    ];
     propagatedBuildInputs = [
       flint
-      ocamlPackages.ctypes
       ocamlPackages.zarith
     ];
   };
@@ -123,7 +163,10 @@ let
     inherit version src;
     pname = "colibrilib";
 
-    propagatedBuildInputs = [ ocamlPackages.zarith ];
+    propagatedBuildInputs = [
+      ocaml-flint
+      ocamlPackages.zarith
+    ];
   };
 in
 
@@ -132,6 +175,9 @@ ocamlPackages.buildDunePackage {
 
   buildInputs = [
     colibrilib
+    dolmen
+    dolmen_loop
+    dolmen_type
     mlcuddidl
     ocaml-flint
     patricia-tree
@@ -141,9 +187,6 @@ ocamlPackages.buildDunePackage {
   ++ (with ocamlPackages; [
     cmdliner
     containers
-    dolmen
-    dolmen_loop
-    dolmen_type
     dune-build-info
     farith
     gmap
