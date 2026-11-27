@@ -307,11 +307,35 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
     - run: brew update && brew install opam autoconf zeromq zlib automake
       if: matrix.os == 'macos-latest'
-    - name: setup opam
+    - name: Setup Opam (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
       run: |
         opam init --bare
         opam --cli=2.1 var --global in-creusot-ci=true
-    - run: ./INSTALL
+    - name: Install Components (Ubuntu)
+      run: ./INSTALL
+      if: matrix.os == 'ubuntu-latest'
+    - name: Setup Opam (MacOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        opam init --bare --disable-sandboxing --no-setup -y
+        opam --cli=2.1 var --global in-creusot-ci=true
+    # The switch must exist before Alt-Ergo can be installed into it, so the components are taken in
+    # two passes rather than one `./INSTALL`.
+    - name: Install why3 (MacOS)
+      run: cargo run --bin creusot-install -- why3
+      if: matrix.os == 'macos-latest'
+    - name: Install Alt-Ergo from Opam (MacOS)
+      run: opam install -y alt-ergo.2.6.2 --switch "$HOME/.creusot"
+      if: matrix.os == 'macos-latest'
+    - name: Install Components (MacOS)
+      if: matrix.os == 'macos-latest'
+      run: |
+        eval $(opam env --switch "$HOME/.creusot" --set-switch)
+        cargo run --bin creusot-install -- --external alt-ergo \
+          creusot-rustc prelude cargo-creusot provers why3-conf \
+          cargo-creusot-config
+
     - name: Build doc of creusot-std
       run: cargo creusot doc
       env:
