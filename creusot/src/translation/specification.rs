@@ -1,8 +1,8 @@
 use crate::{
     backend::closures::ClosSubst,
     contracts_items::{
-        Intrinsic, creusot_clause_attrs, has_logic_alias, is_check_ghost, is_check_terminates,
-        is_trusted_ghost, is_trusted_terminates,
+        Intrinsic, creusot_clause_attrs, get_builtin, has_logic_alias, is_check_ghost,
+        is_check_terminates, is_trusted_ghost, is_trusted_terminates,
     },
     ctx::*,
     lints::{Diagnostics, RESULT_PARAM},
@@ -10,8 +10,8 @@ use crate::{
     translation::{
         external::ExternSpec,
         pearlite::{
-            Ident, PIdent, Subst, Substable, Term, TermKind, TermSort, TermWithTriggers, Trigger,
-            normalize,
+            Ident, NormalizeError, PIdent, Subst, Substable, Term, TermKind, TermSort,
+            TermWithTriggers, Trigger, try_normalize,
         },
     },
     util::erased_identity_for_item,
@@ -24,7 +24,7 @@ use rustc_middle::ty::{
 };
 use rustc_span::{DUMMY_SP, Span};
 use rustc_type_ir::ClosureKind;
-use std::{assert_matches, iter::repeat};
+use std::{assert_matches, collections::HashMap, iter::repeat};
 
 #[derive(
     Eq,
@@ -80,8 +80,9 @@ pub struct Condition<'tcx> {
 }
 
 #[derive(Debug, Clone, Copy, TypeVisitable, TypeFoldable, TyDecodable, TyEncodable)]
-enum ContractSource {
+pub enum ContractSource {
     Basic { has_user_contract: bool },
+    Inherited,
     ConstParam,
     Ctor,
     Extern,
@@ -103,8 +104,7 @@ pub struct PreContract<'tcx> {
 }
 
 impl<'tcx> PreContract<'tcx> {
-    // FIXME: is this used?
-    pub fn new_extern() -> Self {
+    pub fn new(purity: ProgramPurity, source: ContractSource) -> Self {
         PreContract {
             indirect_trig: Box::new([]),
             variant: None,
@@ -112,16 +112,16 @@ impl<'tcx> PreContract<'tcx> {
             ensures: Vec::new(),
             alias: None,
             alias_id: None,
-            purity: ProgramPurity::Impure,
-            source: ContractSource::Extern,
+            purity,
+            source,
         }
     }
 
-    pub(crate) fn normalize(
+    pub(crate) fn try_normalize(
         mut self,
         ctx: &TranslationCtx<'tcx>,
         typing_env: TypingEnv<'tcx>,
-    ) -> Self {
+    ) -> Result<Self, NormalizeError<'tcx>> {
         for term in self
             .requires
             .iter_mut()
@@ -131,10 +131,17 @@ impl<'tcx> PreContract<'tcx> {
             }))
             .chain(self.variant.iter_mut())
         {
-            *term =
-                normalize(ctx, typing_env, std::mem::replace(term, /*Dummy*/ Term::true_(ctx.tcx)));
+            *term = try_normalize(
+                ctx,
+                typing_env,
+                std::mem::replace(term, /*Dummy*/ Term::true_(ctx.tcx)),
+            )?;
         }
-        self
+        Ok(self)
+    }
+
+    pub(crate) fn normalize(self, ctx: &TranslationCtx<'tcx>, typing_env: TypingEnv<'tcx>) -> Self {
+        self.try_normalize(ctx, typing_env).unwrap_or_else(|err| err.report(ctx))
     }
 
     pub(crate) fn is_requires_false(&self) -> bool {
@@ -173,8 +180,17 @@ impl<'tcx> PreContract<'tcx> {
         }
     }
 
+    /// The item has a contract written by the user, either on the item itself or inherited from
+    /// the corresponding trait item.
     pub fn has_user_contract(&self) -> bool {
-        matches!(self.source, ContractSource::Basic { has_user_contract: true })
+        matches!(
+            self.source,
+            ContractSource::Basic { has_user_contract: true } | ContractSource::Inherited
+        )
+    }
+
+    pub fn inherited(&self) -> bool {
+        matches!(self.source, ContractSource::Inherited)
     }
 
     pub fn extern_no_spec(&self) -> bool {
@@ -391,6 +407,43 @@ pub(crate) fn inherited_extern_spec<'tcx, 'a>(
     Some((spec, subst))
 }
 
+fn inherited_spec<'tcx, 'a>(
+    ctx: &'a TranslationCtx<'tcx>,
+    def_id: DefId,
+    has_user_contract: bool,
+) -> Option<(&'a PreSignature<'tcx>, GenericArgsRef<'tcx>)> {
+    let is_builtin = get_builtin(ctx.tcx, def_id).is_some();
+    if has_user_contract && is_builtin {
+        // FIXME: find a better place for this check
+        ctx.crash_and_error(
+            ctx.def_span(def_id),
+            "cannot specify both `creusot::builtin` and a contract on the same definition",
+        );
+    } else if has_user_contract || is_builtin {
+        return None;
+    }
+
+    let assoc = ctx.opt_associated_item(def_id)?;
+    assert!(assoc.trait_item_def_id()? != def_id);
+    let sig = ctx.sig(assoc.trait_item_def_id()?);
+
+    let impl_id = assoc.impl_container(ctx.tcx)?;
+    let trait_ref = ctx
+        .impl_opt_trait_ref(impl_id)?
+        .instantiate(ctx.tcx, erased_identity_for_item(ctx.tcx, impl_id))
+        .skip_normalization();
+    let subst =
+        erased_identity_for_item(ctx.tcx, def_id).rebase_onto(ctx.tcx, impl_id, trait_ref.args);
+
+    // Don't inherit from trivial contracts: false preconditions or empty contracts (to avoid uselessly chaning the source)
+    if sig.contract.requires.iter().any(|t| t.term.is_false())
+        || sig.contract.requires.is_empty() && sig.contract.ensures.is_empty()
+    {
+        return None;
+    }
+    Some((sig, subst))
+}
+
 pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> PreSignature<'tcx> {
     let fn_name = ctx.opt_item_name(def_id);
     let fn_name = match &fn_name {
@@ -405,14 +458,15 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         .get_pre(ctx, fn_name, &inputs)
         .instantiate(ctx.tcx, subst)
         .skip_normalization();
+    let has_user_contract = contract.has_user_contract();
     if let Some(spec) = ctx.extern_spec(def_id) {
-        assert!(contract.is_empty());
+        assert!(!has_user_contract);
         // We do NOT normalize the contract here. See below.
         let sig = spec.to_sig();
         sig.contract.check_ensures_no_trigger(ctx);
         sig
     } else if let Some((spec, subst)) = inherited_extern_spec(ctx, def_id) {
-        assert!(contract.is_empty());
+        assert!(!has_user_contract);
         // We do NOT normalize the contract here: indeed, we do not have a valid non-redundant param
         // env for doing this. This is still valid because this contract is going to be substituted
         // and normalized in the caller context (such extern specs are only evaluated in the context
@@ -421,6 +475,30 @@ pub(crate) fn contract_of<'tcx>(ctx: &TranslationCtx<'tcx>, def_id: DefId) -> Pr
         sig.contract.source = ContractSource::InheritedExtern;
         sig.contract.check_ensures_no_trigger(ctx);
         EarlyBinder::bind(ctx.tcx, sig).instantiate(ctx.tcx, subst).skip_normalization()
+    } else if let Some((isig, isubst)) = inherited_spec(ctx, def_id, has_user_contract) {
+        trace!("inherited spec for {def_id:?}");
+        let icontract = &isig.contract;
+        let (requires, ensures) =
+            EarlyBinder::bind(ctx.tcx, (icontract.requires.clone(), icontract.ensures.clone()))
+                .instantiate(ctx.tcx, isubst)
+                .skip_normalization();
+        let rename: HashMap<Ident, Ident> =
+            isig.inputs.iter().zip(inputs.iter()).map(|(i, j)| (i.0.0, j.0.0)).collect();
+        contract.requires = requires.subst(&rename);
+        contract.ensures = ensures.subst(&rename);
+        contract.source = ContractSource::Inherited;
+        let purity = contract.purity;
+        // Normalization may fail in implementations of extern traits
+        // without extra bounds needed by their specifications; an
+        // error will eventually be raised by `validate_traits`.
+        let contract = contract.try_normalize(ctx, ctx.typing_env(def_id)).unwrap_or_else(|_| {
+            ctx.tcx
+                .dcx()
+                .span_delayed_bug(ctx.def_span(def_id), "Failed to normalize inherited contract");
+            PreContract::new(purity, ContractSource::Inherited)
+        });
+        let inputs = inputs.into();
+        PreSignature { inputs, output, contract }
     } else if matches!(ctx.def_kind(def_id), DefKind::Ctor(..)) {
         contract.purity = ProgramPurity::Ghost;
         contract.source = ContractSource::Ctor;

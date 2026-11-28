@@ -385,7 +385,9 @@ struct ClosSubstState<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> TermVisitorMut<'tcx> for ClosSubstState<'a, 'tcx> {
-    fn visit_mut_term(&mut self, term: &mut Term<'tcx>) {
+    type Error = !;
+
+    fn visit_mut_term(&mut self, term: &mut Term<'tcx>) -> Result<(), !> {
         match &mut term.kind {
             TermKind::Old { term:t } => {
                 if self.old {
@@ -395,7 +397,7 @@ impl<'a, 'tcx> TermVisitorMut<'tcx> for ClosSubstState<'a, 'tcx> {
                     self.tcx.fatal_error(term.span, "The `old` modifier should only be used in #[ensures(..)] clauses of closures.").emit()
                 }
                 self.old = true;
-                self.visit_mut_term(t);
+                self.visit_mut_term(t)?;
                 *term = std::mem::replace(t, /* Dummy */ Term::unit(self.tcx));
                 self.old = false;
             }
@@ -405,8 +407,9 @@ impl<'a, 'tcx> TermVisitorMut<'tcx> for ClosSubstState<'a, 'tcx> {
                     term.span,
                     "Use of a closure capture in an #[ensures(..)] clause, but it is consumed by the closure.",
                 ).emit(),
-            _ => super_visit_mut_term(term, self),
+            _ => return super_visit_mut_term(term, self),
         }
+        Ok(())
     }
 }
 
@@ -492,6 +495,6 @@ impl<'tcx> ClosSubst<'tcx> {
     }
 
     pub(crate) fn subst(&self, tcx: TyCtxt<'tcx>, term: &mut Term<'tcx>) {
-        ClosSubstState { tcx, subst: self, old: false }.visit_mut_term(term);
+        let Ok(()) = ClosSubstState { tcx, subst: self, old: false }.visit_mut_term(term);
     }
 }

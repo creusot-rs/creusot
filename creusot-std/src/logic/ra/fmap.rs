@@ -21,7 +21,6 @@ impl<K, V: RA> RA for FMap<K, V> {
     }
 
     #[logic(open)]
-    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
     fn incl(self, other: Self) -> bool {
         pearlite! {
             let r = forall<k: K> self.lookup(k).incl(other.lookup(k));
@@ -53,7 +52,6 @@ impl<K, V: RA> RA for FMap<K, V> {
     }
 
     #[logic(law)]
-    #[ensures(a.op(b) == b.op(a))]
     fn commutative(a: Self, b: Self) {
         proof_assert!(match (a.op(b), b.op(a)) {
             (Some(ab), Some(ba)) => ab.ext_eq(ba),
@@ -63,7 +61,6 @@ impl<K, V: RA> RA for FMap<K, V> {
     }
 
     #[logic]
-    #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {
         match (a.op(b), b.op(c)) {
             (Some(ab), Some(bc)) => match (ab.op(c), a.op(bc)) {
@@ -80,30 +77,17 @@ impl<K, V: RA> RA for FMap<K, V> {
     }
 
     #[logic]
-    #[requires(self.core() != None)]
-    #[ensures({
-        let c = self.core().unwrap_logic();
-        c.op(c) == Some(c)
-    })]
-    #[ensures(self.core().unwrap_logic().op(self) == Some(self))]
     fn core_idemp(self) {
         self.core_total_idemp()
     }
 
     #[logic]
-    #[requires(i.op(i) == Some(i))]
-    #[requires(i.op(self) == Some(self))]
-    #[ensures(match self.core() {
-        Some(c) => i.incl(c),
-        None => false,
-    })]
+    #[allow(unused_variables)]
     fn core_is_maximal_idemp(self, i: Self) {
         let _ = V::core_is_maximal_idemp;
     }
 
     #[logic(open)]
-    #[ensures(result == (forall<x, y> self.op(x) != None ==>
-        self.op(x) == self.op(y) ==> x == y))]
     fn cancelable(self) -> bool {
         proof_assert!(
             (forall<x, y> self.op(x) != None ==> self.op(x) == self.op(y) ==> x == y) ==>
@@ -134,21 +118,17 @@ impl<K, V: RA> RA for FMap<K, V> {
 
 impl<K, V: RA> UnitRA for FMap<K, V> {
     #[logic(open)]
-    #[ensures(forall<x: Self> #[trigger(x.op(result))] x.op(result) == Some(x))]
     fn unit() -> Self {
         proof_assert!(forall<x: Self> x.op(Self::empty()).unwrap_logic().ext_eq(x));
         Self::empty()
     }
 
     #[logic(open)]
-    #[ensures(self.core() == Some(result))]
     fn core_total(self) -> Self {
         self.filter_map(|(_, v): (K, V)| v.core())
     }
 
     #[logic]
-    #[ensures(self.core_total().op(self.core_total()) == Some(self.core_total()))]
-    #[ensures(self.core_total().op(self) == Some(self))]
     fn core_total_idemp(self) {
         let _ = V::core_idemp;
         let c = self.core_total();

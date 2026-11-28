@@ -24,7 +24,7 @@ impl Symmetric for () {
     }
 
     #[logic(open, law)]
-    #[ensures(a.op(b) == b.op(a))]
+    #[allow(unused_variables)]
     fn reflexive(a: Self, b: Self) {}
 }
 

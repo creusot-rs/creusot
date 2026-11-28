@@ -152,9 +152,6 @@ mod statuses {
 
     impl ord::SemiLattice for StatusWithView {
         #[logic]
-        #[ensures(self <= result)]
-        #[ensures(other <= result)]
-        #[ensures(forall<r> self <= r ==> other <= r ==> result <= r)]
         fn join(self, other: Self) -> Self {
             match self.status.cmp_log(other.status) {
                 Ordering::Less => other,

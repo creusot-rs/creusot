@@ -38,21 +38,14 @@ impl<A: Iterator, B: Iterator<Item = A::Item>> Iterator for Chain<A, B> {
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law, prophetic)]
-    #[requires(x.produces(xy, y))]
-    #[requires(y.produces(yz, z))]
-    #[ensures(x.produces(xy.concat(yz), z))]
+    #[allow(unused_variables)]
     fn produces_trans(x: Self, xy: Seq<Self::Item>, y: Self, yz: Seq<Self::Item>, z: Self) {
         let _ = Self::produces_inner_trans;
     }
 
-    #[ensures(match result {
-        None => self.completed(),
-        Some(v) => (*self).produces(Seq::singleton(v), ^self)
-    })]
     fn next(&mut self) -> Option<Self::Item> {
         try {
             let x = self.a.as_mut()?.next();
@@ -129,21 +122,14 @@ impl<A: DoubleEndedIterator, B: DoubleEndedIterator<Item = A::Item>> DoubleEnded
     }
 
     #[logic(law)]
-    #[ensures(self.produces_back(Seq::empty(), self))]
     fn produces_back_refl(self) {}
 
     #[logic(law, prophetic)]
-    #[requires(x.produces_back(xy, y))]
-    #[requires(y.produces_back(yz, z))]
-    #[ensures(x.produces_back(xy.concat(yz), z))]
+    #[allow(unused_variables)]
     fn produces_back_trans(x: Self, xy: Seq<Self::Item>, y: Self, yz: Seq<Self::Item>, z: Self) {
         let _ = Self::produces_inner_back_trans;
     }
 
-    #[ensures(match result {
-        None => self.completed_back(),
-        Some(v) => (*self).produces_back(Seq::singleton(v), ^self)
-    })]
     fn next_back(&mut self) -> Option<Self::Item> {
         try {
             let x = self.b.as_mut()?.next_back();
@@ -156,15 +142,7 @@ impl<A: DoubleEndedIterator, B: DoubleEndedIterator<Item = A::Item>> DoubleEnded
     }
 
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
-    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
-        self.produces_back(s, *i) && i.completed_back() ==> r.0@ <= s.len())]
-    #[ensures(match r.1 {
-        Some(r) => {
-            forall<s: Seq<Self::Item>, i: Self> self.produces_back(s, i) ==> s.len() <= r@
-        }
-        None => true
-    })]
+    #[allow(unused_variables)]
     fn size_hint_back_spec(&self, r: (usize, Option<usize>)) {}
 }
 

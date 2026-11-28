@@ -9,19 +9,52 @@ use crate::{
     },
 };
 use rustc_hir::def_id::DefId;
-use rustc_middle::ty::{EarlyBinder, GenericArgsRef, TypingEnv};
+use rustc_middle::ty::{
+    EarlyBinder, GenericArgsRef, TypingEnv, normalize_erasing_regions::NormalizationError,
+};
+use rustc_span::{DUMMY_SP, Span};
+
+#[derive(Debug)]
+pub(crate) enum NormalizeError<'tcx> {
+    /// A trait item could not be resolved to an instance.
+    Unresolved {
+        span: Span,
+        msg: String,
+    },
+    Normalize(NormalizationError<'tcx>),
+}
+
+impl<'tcx> NormalizeError<'tcx> {
+    pub(crate) fn report(self, ctx: &TranslationCtx<'tcx>) -> ! {
+        use NormalizeError::*;
+        match self {
+            Unresolved { span, msg } => ctx.crash_and_error(span, msg),
+            Normalize(err) => {
+                ctx.crash_and_error(DUMMY_SP, format!("failed to normalize term: {err:?}"))
+            }
+        }
+    }
+}
+
+pub(crate) fn try_normalize<'tcx>(
+    ctx: &TranslationCtx<'tcx>,
+    typing_env: TypingEnv<'tcx>,
+    mut term: Term<'tcx>,
+) -> Result<Term<'tcx>, NormalizeError<'tcx>> {
+    NormalizeTerm { typing_env, ctx }.visit_mut_term(&mut term)?;
+    ctx.try_normalize_erasing_regions(
+        typing_env,
+        EarlyBinder::bind(ctx.tcx, term).instantiate_identity(),
+    )
+    .map_err(NormalizeError::Normalize)
+}
 
 pub(crate) fn normalize<'tcx>(
     ctx: &TranslationCtx<'tcx>,
     typing_env: TypingEnv<'tcx>,
-    mut term: Term<'tcx>,
+    term: Term<'tcx>,
 ) -> Term<'tcx> {
-    NormalizeTerm { typing_env, ctx }.visit_mut_term(&mut term);
-    let term = ctx.normalize_erasing_regions(
-        typing_env,
-        EarlyBinder::bind(ctx.tcx, term).instantiate_identity(),
-    );
-    term
+    try_normalize(ctx, typing_env, term).unwrap_or_else(|err| err.report(ctx))
 }
 
 struct NormalizeTerm<'a, 'tcx> {
@@ -30,21 +63,23 @@ struct NormalizeTerm<'a, 'tcx> {
 }
 
 impl<'a, 'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'a, 'tcx> {
-    fn visit_mut_term(&mut self, term: &mut Term<'tcx>) {
-        super_visit_mut_term(term, self);
+    type Error = NormalizeError<'tcx>;
+
+    fn visit_mut_term(&mut self, term: &mut Term<'tcx>) -> Result<(), NormalizeError<'tcx>> {
+        super_visit_mut_term(term, self)?;
         if let TermKind::Call { id, subst, args } = &mut term.kind {
             let Some(resolved) =
                 TraitResolved::resolve_item(self.ctx.tcx, self.typing_env, *id, subst)
                     .to_opt(*id, subst)
             else {
-                self.ctx.crash_and_error(
-                    term.span,
-                    format!(
+                return Err(NormalizeError::Unresolved {
+                    span: term.span,
+                    msg: format!(
                         "could not resolve trait instance for {}{}",
                         self.ctx.def_path_str(*id),
                         subst.print_as_list()
                     ),
-                )
+                });
             };
 
             (*id, *subst) = resolved;
@@ -52,13 +87,14 @@ impl<'a, 'tcx> TermVisitorMut<'tcx> for NormalizeTerm<'a, 'tcx> {
             if let Some(mut new_term) =
                 subst_alias(self.ctx, self.typing_env, *id, subst, args.clone())
             {
-                self.visit_mut_term(&mut new_term);
+                self.visit_mut_term(&mut new_term)?;
                 *term = new_term;
             } else {
                 term.kind =
                     optimize_builtin(self.ctx, *id, subst, std::mem::replace(args, Box::new([])));
             }
         }
+        Ok(())
     }
 }
 

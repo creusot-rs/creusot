@@ -17,6 +17,7 @@ pub trait B: Sized {
 }
 
 impl B for u32 {
+    #[requires(true)]
     fn g(&self) -> Self {
         1
     }

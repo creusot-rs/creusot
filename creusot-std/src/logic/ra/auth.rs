@@ -38,9 +38,7 @@ impl<T: UnitRA> ViewRel for AuthViewRel<T> {
     }
 
     #[logic(law)]
-    #[requires(Self::rel(a, f1))]
-    #[requires(f2.incl(f1))]
-    #[ensures(Self::rel(a, f2))]
+    #[allow(unused_variables)]
     fn rel_mono(a: Option<T>, f1: T, f2: T) {}
 
     #[logic(law)]

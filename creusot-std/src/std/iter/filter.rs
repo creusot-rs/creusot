@@ -91,12 +91,9 @@ impl<I: IteratorSpec, F: FnMut(&I::Item) -> bool> IteratorSpec for Filter<I, F> 
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
+    #[allow(unused_variables)]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }

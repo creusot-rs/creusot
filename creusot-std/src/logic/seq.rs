@@ -632,17 +632,14 @@ impl<T: PartialOrdLogic> PartialOrdLogic for Seq<T> {
     }
 
     #[logic(law)]
-    #[ensures(!(self < self))]
     fn irreflexive(self) {}
 
     #[logic(law)]
-    #[requires(x < y)]
-    #[requires(y < z)]
-    #[ensures(x < z)]
+    #[allow(unused_variables)]
     fn transitive(x: Self, y: Self, z: Self) {}
 
     #[logic(law)]
-    #[ensures((self <= other) == (self < other || self == other))]
+    #[allow(unused_variables)]
     fn le_lt_log(self, other: Self) {}
 }
 
@@ -1128,8 +1125,6 @@ impl<T: Clone + Copy> Clone for Seq<T> {
 
 impl<T: Copy> Copy for Seq<T> {}
 impl<T: Plain> Plain for Seq<T> {
-    #[requires(inv(*snap))]
-    #[ensures(*result == *snap)]
     #[check(ghost)]
     #[allow(unused_variables)]
     fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
@@ -1194,10 +1189,6 @@ impl<T> Iterator for Iter<T> {
     type Item = T;
 
     #[check(ghost)]
-    #[ensures(match result {
-        None => self.completed(),
-        Some(v) => (*self).produces(Seq::singleton(v), ^self)
-    })]
     fn next(&mut self) -> Option<T> {
         self.0.pop_front()
     }
@@ -1215,13 +1206,10 @@ impl<T> IteratorSpec for Iter<T> {
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
+    #[allow(unused_variables)]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 }
 

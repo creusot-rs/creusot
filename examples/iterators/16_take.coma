@@ -390,145 +390,6 @@ module M_impl_ExactSizeIterator_for_Take_I__size_hint_exact (* <Take<I> as commo
   goal vc_size_hint_exact_Take_I: postcondition_size_hint'0 () self r
     -> ([@stop_split] [@expl:size_hint_exact ensures] r.f1 = Some (r.f0))
 end
-module M_impl_ExactSizeIterator_for_Take_I__size_hint_exact__refines (* <Take<I> as common::ExactSizeIterator> *)
-  use creusot.int.UInt64
-  use seq.Seq
-  use creusot.prelude.MutBorrow
-  use int.Int
-  
-  type t_I
-  
-  type t_Take_I = { iter: t_I; n: UInt64.t }
-  
-  type t_Option_usize = None | Some UInt64.t
-  
-  type tup2_usize_Option_usize = { f0: UInt64.t; f1: t_Option_usize }
-  
-  predicate gt_log_usize [@inline:trivial] (self: UInt64.t) (other: UInt64.t) = UInt64.lt other self
-  
-  meta "rewrite_def" predicate gt_log_usize
-  
-  type t_Item
-  
-  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
-  
-  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
-  
-  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
-      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_I (self: t_I) : ()
-  
-  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
-  
-  predicate completed_I (self: MutBorrow.t t_I)
-  
-  predicate postcondition_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize)
-  
-  axiom postcondition_fndef:
-    forall args: t_I, result: tup2_usize_Option_usize [postcondition_size_hint () args result]. postcondition_size_hint () args result
-      -> (let self = args in (forall s: Seq.seq t_Item, i: MutBorrow.t t_I. produces_I self s i.current /\ completed_I i
-          -> UInt64.t'int result.f0 <= Seq.length s)
-      /\ match result.f1 with
-        | Some r -> forall s: Seq.seq t_Item, i: t_I. produces_I self s i -> Seq.length s <= UInt64.t'int r
-        | None -> true
-        end)
-  
-  predicate ge_log_usize [@inline:trivial] (self: UInt64.t) (other: UInt64.t) = UInt64.le other self
-  
-  meta "rewrite_def" predicate ge_log_usize
-  
-  predicate postcondition_size_hint'0 (self: ()) (args: t_Take_I) (result: tup2_usize_Option_usize) =
-    let self'0 = args in (gt_log_usize self'0.n (0: UInt64.t)
-      -> (exists r: tup2_usize_Option_usize. postcondition_size_hint () self'0.iter r
-        /\ (UInt64.le r.f0 self'0.n -> result.f0 = r.f0)
-        /\ (ge_log_usize r.f0 self'0.n -> result.f0 = self'0.n)
-        /\ match r.f1 with
-          | Some ub -> (UInt64.le ub self'0.n -> result.f1 = Some ub)
-          /\ (ge_log_usize ub self'0.n -> result.f1 = Some (self'0.n))
-          | None -> result.f1 = Some (self'0.n)
-          end))
-    /\ (self'0.n = (0: UInt64.t) -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })
-  
-  meta "rewrite_def" predicate postcondition_size_hint'0
-  
-  predicate produces_Take_I (self: t_Take_I) (visited: Seq.seq t_Item) (o: t_Take_I) =
-    UInt64.t'int self.n = UInt64.t'int o.n + Seq.length visited /\ produces_I self.iter visited o.iter
-  
-  function produces_trans_Take_I (a: t_Take_I) (ab: Seq.seq t_Item) (b: t_Take_I) (bc: Seq.seq t_Item) (c: t_Take_I) : ()
-   = ()
-  
-  axiom produces_trans_Take_I_spec:
-    forall a: t_Take_I, ab: Seq.seq t_Item, b: t_Take_I, bc: Seq.seq t_Item, c: t_Take_I. produces_Take_I a ab b
-      -> produces_Take_I b bc c -> produces_Take_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_Take_I (self: t_Take_I) : () = ()
-  
-  axiom produces_refl_Take_I_spec: forall self: t_Take_I. produces_Take_I self (Seq.empty: Seq.seq t_Item) self
-  
-  predicate inv_I (_1: t_I)
-  
-  predicate inv_Take_I (_1: t_Take_I)
-  
-  axiom inv_axiom [@rewrite]: forall _1: t_Take_I [inv_Take_I _1]. inv_Take_I _1 = inv_I _1.iter
-  
-  predicate invariant_ref_Take_I [@inline:trivial] (self: t_Take_I) = inv_Take_I self
-  
-  meta "rewrite_def" predicate invariant_ref_Take_I
-  
-  predicate inv_ref_Take_I [@inline:trivial] (_1: t_Take_I) = invariant_ref_Take_I _1
-  
-  meta "rewrite_def" predicate inv_ref_Take_I
-  
-  predicate invariant_ref_I [@inline:trivial] (self: t_I) = inv_I self
-  
-  meta "rewrite_def" predicate invariant_ref_I
-  
-  predicate inv_ref_I [@inline:trivial] (_1: t_I) = invariant_ref_I _1
-  
-  meta "rewrite_def" predicate inv_ref_I
-  
-  predicate precondition_size_hint (self: ()) (args: t_I)
-  
-  axiom precondition_fndef: forall args: t_I [precondition_size_hint () args]. (let self = args in inv_ref_I self)
-      -> precondition_size_hint () args
-  
-  predicate postcondition_once_size_hint (self: ()) (args: t_I) (result: tup2_usize_Option_usize) =
-    postcondition_size_hint self args result
-  
-  meta "rewrite_def" predicate postcondition_once_size_hint
-  
-  let size_hint_I (self: t_I) (return (x: tup2_usize_Option_usize)) =
-  {[@stop_split] [@expl:size_hint requires] precondition_size_hint () self}
-    any
-    [ return (result: tup2_usize_Option_usize) ->
-    {[@stop_split] [@expl:size_hint ensures] postcondition_once_size_hint () self result}
-      (! return {result}) ]
-  
-  let size_hint_Take_I (self: t_Take_I) (return (x: tup2_usize_Option_usize)) =
-  {[@stop_split] [@expl:size_hint 'self' type invariant] inv_ref_Take_I self}
-    any
-    [ return (result: tup2_usize_Option_usize) ->
-    {[@stop_split] [@expl:size_hint_Take_I ensures] ([@stop_split] [@expl:size_hint ensures #0] gt_log_usize self.n (0: UInt64.t)
-        -> (exists r: tup2_usize_Option_usize. postcondition_size_hint () self.iter r
-          /\ (UInt64.le r.f0 self.n -> result.f0 = r.f0)
-          /\ (ge_log_usize r.f0 self.n -> result.f0 = self.n)
-          /\ match r.f1 with
-            | Some ub -> (UInt64.le ub self.n -> result.f1 = Some ub)
-            /\ (ge_log_usize ub self.n -> result.f1 = Some (self.n))
-            | None -> result.f1 = Some (self.n)
-            end))
-      /\ ([@stop_split] [@expl:size_hint ensures #1] self.n = (0: UInt64.t)
-      -> result = { f0 = (0: UInt64.t); f1 = Some (0: UInt64.t) })}
-      (! return {result}) ]
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Take_I, r: tup2_usize_Option_usize. postcondition_size_hint'0 () self r
-      -> postcondition_size_hint'0 () self r /\ (forall result: (). r.f1 = Some (r.f0) -> r.f1 = Some (r.f0))
-end
 module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
   use creusot.int.UInt64
   use creusot.prelude.MutBorrow
@@ -642,17 +503,17 @@ module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
   {[@stop_split] [@expl:next 'self' type invariant] inv_refmut_Take_I self}
     (! bb0
     [ bb0 = s0
-      [ s0 = [ &_4 <- self.current.n <> (0: UInt64.t) ] s1
-      | s1 = any [ br0 -> {_4 = false} (! bb3) | br1 -> {_4} (! bb1) ] ]
+      [ s0 = [ &_2 <- self.current.n <> (0: UInt64.t) ] s1
+      | s1 = any [ br0 -> {_2 = false} (! bb3) | br1 -> {_2} (! bb1) ] ]
     | bb1 = s0
       [ s0 = UInt64.sub {self.current.n} {(1: UInt64.t)}
           (fun (_x: UInt64.t) -> [ &self <- { self with current = { self.current with n = _x } } ] s1)
       | s1 = MutBorrow.borrow_final <t_I> {self.current.iter} {MutBorrow.inherit_id (MutBorrow.get_id self) 0}
           (fun (_bor: MutBorrow.t t_I) ->
-            [ &_6 <- _bor ] -{inv_I _bor.final}-
+            [ &_4 <- _bor ] -{inv_I _bor.final}-
             [ &self <- { self with current = { self.current with iter = _bor.final } } ] s2)
         [ _ck -> (! {[@expl:type invariant] inv_I self.current.iter} any) ]
-      | s2 = next_I {_6} (fun (_x: t_Option_Item) -> [ &_ret <- _x ] s3)
+      | s2 = next_I {_4} (fun (_x: t_Option_Item) -> [ &_ret <- _x ] s3)
       | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_refmut_Take_I self} any) ]
       | s4 = -{resolve_refmut_Take_I self}- s5
       | s5 = return {_ret} ]
@@ -663,8 +524,8 @@ module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
       | s3 = return {_ret} ] ]
     [ & _ret: t_Option_Item = Any.any_l ()
     | & self: MutBorrow.t t_Take_I = self
-    | & _4: bool = Any.any_l ()
-    | & _6: MutBorrow.t t_I = Any.any_l () ])
+    | & _2: bool = Any.any_l ()
+    | & _4: MutBorrow.t t_I = Any.any_l () ])
     [ return (result: t_Option_Item) ->
     {[@stop_split] [@expl:next_Take_I ensures] ([@stop_split] [@expl:next result type invariant] inv_Option_Item result)
       /\ ([@stop_split] [@expl:next ensures] match result with
@@ -672,92 +533,6 @@ module M_impl_Iterator_for_Take_I__next (* <Take<I> as common::Iterator> *)
         | Some v -> produces_Take_I self.current (Seq.singleton v) self.final
         end)}
       (! return {result}) ]
-end
-module M_impl_Iterator_for_Take_I__next__refines (* <Take<I> as common::Iterator> *)
-  use creusot.prelude.MutBorrow
-  use creusot.int.UInt64
-  use seq.Seq
-  use int.Int
-  
-  type t_I
-  
-  type t_Take_I = { iter: t_I; n: UInt64.t }
-  
-  predicate inv_I (_1: t_I)
-  
-  predicate inv_Take_I (_1: t_Take_I)
-  
-  axiom inv_axiom [@rewrite]: forall _1: t_Take_I [inv_Take_I _1]. inv_Take_I _1 = inv_I _1.iter
-  
-  predicate invariant_refmut_Take_I [@inline:trivial] (self: MutBorrow.t t_Take_I) =
-    inv_Take_I self.current /\ inv_Take_I self.final
-  
-  meta "rewrite_def" predicate invariant_refmut_Take_I
-  
-  predicate inv_refmut_Take_I [@inline:trivial] (_1: MutBorrow.t t_Take_I) = invariant_refmut_Take_I _1
-  
-  meta "rewrite_def" predicate inv_refmut_Take_I
-  
-  type t_Item
-  
-  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
-  
-  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
-  
-  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
-      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_I (self: t_I) : ()
-  
-  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
-  
-  type t_Option_Item = None | Some t_Item
-  
-  predicate inv_Item (_1: t_Item)
-  
-  predicate inv_Option_Item (_1: t_Option_Item)
-  
-  axiom inv_axiom'0 [@rewrite]: forall _1: t_Option_Item [inv_Option_Item _1]. inv_Option_Item _1
-      = match _1 with
-        | None -> true
-        | Some f0 -> inv_Item f0
-        end
-  
-  predicate resolve_refmut_Take_I [@inline:trivial] (_1: MutBorrow.t t_Take_I) = _1.final = _1.current
-  
-  meta "rewrite_def" predicate resolve_refmut_Take_I
-  
-  predicate gt_log_Int [@inline:trivial] (self: int) (other: int) = other < self
-  
-  meta "rewrite_def" predicate gt_log_Int
-  
-  predicate completed_I (self: MutBorrow.t t_I)
-  
-  predicate completed_Take_I (self: MutBorrow.t t_Take_I) =
-    UInt64.t'int self.current.n = 0 /\ resolve_refmut_Take_I self
-    \/ gt_log_Int (UInt64.t'int self.current.n) 0
-    /\ UInt64.t'int self.current.n = UInt64.t'int self.final.n + 1
-    /\ completed_I (MutBorrow.borrow_logic self.current.iter self.final.iter (MutBorrow.inherit_id (MutBorrow.get_id self) 0))
-  
-  predicate produces_Take_I (self: t_Take_I) (visited: Seq.seq t_Item) (o: t_Take_I) =
-    UInt64.t'int self.n = UInt64.t'int o.n + Seq.length visited /\ produces_I self.iter visited o.iter
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: MutBorrow.t t_Take_I. inv_refmut_Take_I self
-      -> inv_refmut_Take_I self
-      /\ (forall result: t_Option_Item. inv_Option_Item result
-          /\ match result with
-            | None -> completed_Take_I self
-            | Some v -> produces_Take_I self.current (Seq.singleton v) self.final
-            end
-        -> inv_Option_Item result
-        /\ match result with
-          | None -> completed_Take_I self
-          | Some v -> produces_Take_I self.current (Seq.singleton v) self.final
-          end)
 end
 module M_impl_Iterator_for_Take_I__produces_refl (* <Take<I> as common::Iterator> *)
   use creusot.int.UInt64
@@ -794,38 +569,6 @@ module M_impl_Iterator_for_Take_I__produces_refl (* <Take<I> as common::Iterator
   
   goal vc_produces_refl_Take_I:
     [@stop_split] [@expl:produces_refl ensures] produces_Take_I self (Seq.empty: Seq.seq t_Item) self
-end
-module M_impl_Iterator_for_Take_I__produces_refl__refines (* <Take<I> as common::Iterator> *)
-  use creusot.int.UInt64
-  use seq.Seq
-  use int.Int
-  
-  type t_I
-  
-  type t_Take_I = { iter: t_I; n: UInt64.t }
-  
-  type t_Item
-  
-  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
-  
-  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
-  
-  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
-      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_I (self: t_I) : ()
-  
-  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
-  
-  predicate produces_Take_I (self: t_Take_I) (visited: Seq.seq t_Item) (o: t_Take_I) =
-    UInt64.t'int self.n = UInt64.t'int o.n + Seq.length visited /\ produces_I self.iter visited o.iter
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines: forall self: t_Take_I. forall result: (). produces_Take_I self (Seq.empty: Seq.seq t_Item) self
-        -> produces_Take_I self (Seq.empty: Seq.seq t_Item) self
 end
 module M_impl_Iterator_for_Take_I__produces_trans (* <Take<I> as common::Iterator> *)
   use creusot.int.UInt64
@@ -870,42 +613,6 @@ module M_impl_Iterator_for_Take_I__produces_trans (* <Take<I> as common::Iterato
   
   goal vc_produces_trans_Take_I: produces_Take_I a ab b
     -> produces_Take_I b bc c -> ([@stop_split] [@expl:produces_trans ensures] produces_Take_I a (Seq.(++) ab bc) c)
-end
-module M_impl_Iterator_for_Take_I__produces_trans__refines (* <Take<I> as common::Iterator> *)
-  use creusot.int.UInt64
-  use seq.Seq
-  use int.Int
-  
-  type t_I
-  
-  type t_Take_I = { iter: t_I; n: UInt64.t }
-  
-  type t_Item
-  
-  predicate produces_I (self: t_I) (visited: Seq.seq t_Item) (o: t_I)
-  
-  function produces_trans_I (a: t_I) (ab: Seq.seq t_Item) (b: t_I) (bc: Seq.seq t_Item) (c: t_I) : ()
-  
-  axiom produces_trans_I_spec: forall a: t_I, ab: Seq.seq t_Item, b: t_I, bc: Seq.seq t_Item, c: t_I. produces_I a ab b
-      -> produces_I b bc c -> produces_I a (Seq.(++) ab bc) c
-  
-  function produces_refl_I (self: t_I) : ()
-  
-  axiom produces_refl_I_spec: forall self: t_I. produces_I self (Seq.empty: Seq.seq t_Item) self
-  
-  predicate produces_Take_I (self: t_Take_I) (visited: Seq.seq t_Item) (o: t_Take_I) =
-    UInt64.t'int self.n = UInt64.t'int o.n + Seq.length visited /\ produces_I self.iter visited o.iter
-  
-  meta "compute_max_steps" 1000000
-  
-  meta "select_lsinst" "all"
-  
-  goal refines:
-    forall a: t_Take_I, ab: Seq.seq t_Item, b: t_Take_I, bc: Seq.seq t_Item, c: t_Take_I. produces_Take_I a ab b
-      -> produces_Take_I b bc c
-      -> produces_Take_I a ab b
-      /\ produces_Take_I b bc c
-      /\ (forall result: (). produces_Take_I a (Seq.(++) ab bc) c -> produces_Take_I a (Seq.(++) ab bc) c)
 end
 module M_impl_Iterator_for_Take_I__size_hint (* <Take<I> as common::Iterator> *)
   use creusot.int.UInt64

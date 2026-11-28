@@ -70,7 +70,6 @@ trait Hash: DeepModel {
 }
 
 impl Hash for usize {
-    #[ensures(result@ == Self::hash_log(self.deep_model()))]
     fn hash(&self) -> u64 {
         *self as u64
     }
@@ -104,9 +103,6 @@ impl<K: Hash, V> Resolve for MyHashMap<K, V> {
     }
 
     #[logic(prophetic)]
-    #[requires(inv(self))]
-    #[requires(structural_resolve(self))]
-    #[ensures(self.resolve())]
     fn resolve_coherence(self) {}
 }
 

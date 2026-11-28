@@ -19,7 +19,6 @@ impl<T: RA> RA for Option<T> {
     }
 
     #[logic(open)]
-    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
     fn incl(self, other: Self) -> bool {
         match (self, other) {
             (None, _) => true,
@@ -42,13 +41,13 @@ impl<T: RA> RA for Option<T> {
     }
 
     #[logic(law)]
-    #[ensures(a.op(b) == b.op(a))]
+    #[allow(unused_variables)]
     fn commutative(a: Self, b: Self) {
         let _ = <T as RA>::commutative;
     }
 
     #[logic]
-    #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
+    #[allow(unused_variables)]
     fn associative(a: Self, b: Self, c: Self) {}
 
     #[logic(open)]
@@ -60,23 +59,11 @@ impl<T: RA> RA for Option<T> {
     }
 
     #[logic]
-    #[requires(self.core() != None)]
-    #[ensures({
-        let c = self.core().unwrap_logic();
-        c.op(c) == Some(c)
-    })]
-    #[ensures(self.core().unwrap_logic().op(self) == Some(self))]
     fn core_idemp(self) {
         self.core_total_idemp()
     }
 
     #[logic]
-    #[requires(i.op(i) == Some(i))]
-    #[requires(i.op(self) == Some(self))]
-    #[ensures(match self.core() {
-        Some(c) => i.incl(c),
-        None => false,
-    })]
     fn core_is_maximal_idemp(self, i: Self) {
         match (self, i) {
             (Some(x), Some(i)) => x.core_is_maximal_idemp(i),
@@ -85,8 +72,6 @@ impl<T: RA> RA for Option<T> {
     }
 
     #[logic(open)]
-    #[ensures(result == (forall<x, y> self.op(x) != None ==>
-        self.op(x) == self.op(y) ==> x == y))]
     fn cancelable(self) -> bool {
         match self {
             None => true,
@@ -111,13 +96,11 @@ impl<T: RA> RA for Option<T> {
 
 impl<T: RA> UnitRA for Option<T> {
     #[logic(open)]
-    #[ensures(forall<x: Self> #[trigger(x.op(result))] x.op(result) == Some(x))]
     fn unit() -> Self {
         None
     }
 
     #[logic(open)]
-    #[ensures(self.core() == Some(result))]
     fn core_total(self) -> Self {
         match self {
             None => None,
@@ -126,8 +109,6 @@ impl<T: RA> UnitRA for Option<T> {
     }
 
     #[logic]
-    #[ensures(self.core_total().op(self.core_total()) == Some(self.core_total()))]
-    #[ensures(self.core_total().op(self) == Some(self))]
     fn core_total_idemp(self) {
         let _ = T::core_idemp;
     }

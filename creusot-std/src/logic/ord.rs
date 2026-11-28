@@ -213,7 +213,7 @@ impl<T: PartialOrdLogic> PartialOrdLogic for &T {
 
 impl<T: OrdLogic> OrdLogic for &T {
     #[logic]
-    #[ensures(self < other || self == other || other < self)]
+    #[allow(unused_variables)]
     fn lt_log_total(self, other: Self) {
         let _ = T::lt_log_total;
     }
@@ -233,23 +233,20 @@ impl PartialOrdLogic for Int {
     }
 
     #[logic]
-    #[ensures(!(self < self))]
     fn irreflexive(self) {}
 
     #[logic]
-    #[requires(x < y)]
-    #[requires(y < z)]
-    #[ensures(x < z)]
+    #[allow(unused_variables)]
     fn transitive(x: Self, y: Self, z: Self) {}
 
     #[logic]
-    #[ensures((self <= other) == (self < other || self == other))]
+    #[allow(unused_variables)]
     fn le_lt_log(self, other: Self) {}
 }
 
 impl OrdLogic for Int {
     #[logic]
-    #[ensures(self < other || self == other || other < self)]
+    #[allow(unused_variables)]
     fn lt_log_total(self, other: Self) {}
 }
 
@@ -269,23 +266,20 @@ macro_rules! ord_logic_impl {
             }
 
             #[logic]
-            #[ensures(!(self < self))]
             fn irreflexive(self) {}
 
             #[logic]
-            #[requires(x < y)]
-            #[requires(y < z)]
-            #[ensures(x < z)]
+            #[allow(unused_variables)]
             fn transitive(x: Self, y: Self, z: Self) {}
 
             #[logic]
-            #[ensures((self <= other) == (self < other || self == other))]
+            #[allow(unused_variables)]
             fn le_lt_log(self, other: Self) {}
         }
 
         impl OrdLogic for $t {
             #[logic]
-            #[ensures(self < other || self == other || other < self)]
+            #[allow(unused_variables)]
             fn lt_log_total(self, other: Self) {}
         }
     };
@@ -301,17 +295,14 @@ impl PartialOrdLogic for f32 {
     }
 
     #[logic]
-    #[ensures(!(self < self))]
     fn irreflexive(self) {}
 
     #[logic]
-    #[requires(x < y)]
-    #[requires(y < z)]
-    #[ensures(x < z)]
+    #[allow(unused_variables)]
     fn transitive(x: Self, y: Self, z: Self) {}
 
     #[logic]
-    #[ensures((self <= other) == (self < other || self == other))]
+    #[allow(unused_variables)]
     fn le_lt_log(self, other: Self) {}
 }
 
@@ -325,17 +316,14 @@ impl PartialOrdLogic for f64 {
     }
 
     #[logic]
-    #[ensures(!(self < self))]
     fn irreflexive(self) {}
 
     #[logic]
-    #[requires(x < y)]
-    #[requires(y < z)]
-    #[ensures(x < z)]
+    #[allow(unused_variables)]
     fn transitive(x: Self, y: Self, z: Self) {}
 
     #[logic]
-    #[ensures((self <= other) == (self < other || self == other))]
+    #[allow(unused_variables)]
     fn le_lt_log(self, other: Self) {}
 }
 
@@ -382,7 +370,7 @@ impl<A: PartialOrdLogic, B: PartialOrdLogic> PartialOrdLogic for (A, B) {
 
 impl<A: OrdLogic, B: OrdLogic> OrdLogic for (A, B) {
     #[logic]
-    #[ensures(self < other || self == other || other < self)]
+    #[allow(unused_variables)]
     fn lt_log_total(self, other: Self) {
         let _ = A::lt_log_total;
         let _ = B::lt_log_total;
@@ -399,9 +387,6 @@ pub trait SemiLattice: PartialOrdLogic + Sized {
 
 impl<T: OrdLogic> SemiLattice for T {
     #[logic]
-    #[ensures(self <= result)]
-    #[ensures(other <= result)]
-    #[ensures(forall<r> self <= r ==> other <= r ==> result <= r)]
     fn join(self, other: Self) -> Self {
         let _ = Self::lt_log_total;
         if self < other { other } else { self }
@@ -420,22 +405,19 @@ impl PartialOrdLogic for () {
     }
 
     #[logic]
-    #[ensures(!(self < self))]
     fn irreflexive(self) {}
 
     #[logic]
-    #[requires(x < y)]
-    #[requires(y < z)]
-    #[ensures(x < z)]
+    #[allow(unused_variables)]
     fn transitive(x: Self, y: Self, z: Self) {}
 
     #[logic]
-    #[ensures((self <= other) == (self < other || self == other))]
+    #[allow(unused_variables)]
     fn le_lt_log(self, other: Self) {}
 }
 
 impl OrdLogic for () {
     #[logic]
-    #[ensures(self < other || self == other || other < self)]
+    #[allow(unused_variables)]
     fn lt_log_total(self, other: Self) {}
 }

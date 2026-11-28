@@ -653,7 +653,7 @@ impl<T: PartialOrdLogic> PartialOrdLogic for Option<T> {
 
 impl<T: OrdLogic> OrdLogic for Option<T> {
     #[logic(law)]
-    #[ensures(self < other || self == other || other < self)]
+    #[allow(unused_variables)]
     fn lt_log_total(self, other: Self) {
         let _ = T::lt_log_total;
     }
@@ -683,13 +683,10 @@ impl<T> IteratorSpec for IntoIter<T> {
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
+    #[allow(unused_variables)]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         let _ = Seq::<T>::concat_empty;
     }
@@ -705,8 +702,6 @@ extern_spec! {
 
 impl<T> ExactSizeIteratorSpec for IntoIter<T> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
-    #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 }
@@ -735,13 +730,10 @@ impl<T> IteratorSpec for Iter<'_, T> {
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
+    #[allow(unused_variables)]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         let _ = Seq::<T>::concat_empty;
     }
@@ -757,8 +749,6 @@ extern_spec! {
 
 impl<T> ExactSizeIteratorSpec for Iter<'_, T> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
-    #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 }
@@ -773,8 +763,6 @@ impl<'a, T> View for IterMut<'a, T> {
 }
 
 impl<T: Plain> Plain for Option<T> {
-    #[requires(inv(*snap))]
-    #[ensures(*result == *snap)]
     #[check(ghost)]
     #[allow(unused_variables)]
     fn into_ghost(snap: Snapshot<Self>) -> Ghost<Self> {
@@ -805,13 +793,10 @@ impl<T> IteratorSpec for IterMut<'_, T> {
     }
 
     #[logic(law)]
-    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
+    #[allow(unused_variables)]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         let _ = Seq::<T>::concat_empty;
     }
@@ -827,8 +812,6 @@ extern_spec! {
 
 impl<T> ExactSizeIteratorSpec for IterMut<'_, T> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
-    #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {}
 }

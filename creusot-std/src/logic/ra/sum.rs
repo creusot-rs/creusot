@@ -28,7 +28,6 @@ impl<R1: RA, R2: RA> RA for Sum<R1, R2> {
     }
 
     #[logic(open)]
-    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
     fn incl(self, other: Self) -> bool {
         match (self, other) {
             (Self::Left(x), Self::Left(y)) => {
@@ -56,11 +55,11 @@ impl<R1: RA, R2: RA> RA for Sum<R1, R2> {
     }
 
     #[logic(law)]
-    #[ensures(a.op(b) == b.op(a))]
+    #[allow(unused_variables)]
     fn commutative(a: Self, b: Self) {}
 
     #[logic]
-    #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
+    #[allow(unused_variables)]
     fn associative(a: Self, b: Self, c: Self) {}
 
     #[logic(open)]
@@ -72,24 +71,12 @@ impl<R1: RA, R2: RA> RA for Sum<R1, R2> {
     }
 
     #[logic]
-    #[requires(self.core() != None)]
-    #[ensures({
-        let c = self.core().unwrap_logic();
-        c.op(c) == Some(c)
-    })]
-    #[ensures(self.core().unwrap_logic().op(self) == Some(self))]
     fn core_idemp(self) {
         let _ = R1::core_idemp;
         let _ = R2::core_idemp;
     }
 
     #[logic]
-    #[requires(i.op(i) == Some(i))]
-    #[requires(i.op(self) == Some(self))]
-    #[ensures(match self.core() {
-        Some(c) => i.incl(c),
-        None => false,
-    })]
     fn core_is_maximal_idemp(self, i: Self) {
         match (self, i) {
             (Sum::Left(s), Sum::Left(i)) => s.core_is_maximal_idemp(i),
@@ -99,8 +86,6 @@ impl<R1: RA, R2: RA> RA for Sum<R1, R2> {
     }
 
     #[logic(open)]
-    #[ensures(result == (forall<x, y> self.op(x) != None ==>
-        self.op(x) == self.op(y) ==> x == y))]
     fn cancelable(self) -> bool {
         match self {
             Self::Left(l) => {

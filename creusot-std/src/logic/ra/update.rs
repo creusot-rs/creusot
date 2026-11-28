@@ -112,6 +112,7 @@ impl<R: RA> Update<R> for () {
     }
 
     #[logic(open, inline)]
+    #[requires(true)]
     fn update(self, from: R, _: ()) -> R {
         from
     }

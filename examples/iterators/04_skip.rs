@@ -41,13 +41,10 @@ where
     }
 
     #[logic(open, law)]
-    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
+    #[allow(unused_variables)]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {
         // associativity of concat
         proof_assert!(forall<s1: Seq<Self::Item>, s2: Seq<Self::Item>, s3: Seq<Self::Item>> s1.concat(s2.concat(s3)) == s1.concat(s2).concat(s3));
@@ -64,10 +61,6 @@ where
         }
     }
 
-    #[ensures(match result {
-      None => self.completed(),
-      Some(v) => (*self).produces(Seq::singleton(v), ^self)
-    })]
     fn next(&mut self) -> Option<I::Item> {
         let old_self = snapshot! { self };
         let mut n = std::mem::take(&mut self.n);
@@ -114,8 +107,6 @@ where
 
 impl<I: ExactSizeIterator> ExactSizeIterator for Skip<I> {
     #[logic(law)]
-    #[requires(Self::size_hint.postcondition((self,), r))]
-    #[ensures(r.1 == Some(r.0))]
     #[allow(unused_variables)]
     fn size_hint_exact(&self, r: (usize, Option<usize>)) {
         let _ = I::size_hint_exact;

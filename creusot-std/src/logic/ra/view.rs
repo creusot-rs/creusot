@@ -53,7 +53,6 @@ impl<R: ViewRel> Invariant for ViewInner<R> {
 
 impl<R: ViewRel> InhabitedInvariant for ViewInner<R> {
     #[logic]
-    #[ensures(result.invariant())]
     fn inhabits() -> Self {
         Self { auth: None, frag: R::Frag::unit() }
     }
@@ -122,7 +121,6 @@ impl<R: ViewRel> RA for View<R> {
     }
 
     #[logic(open)]
-    #[ensures(result == (exists<factor> self.op(factor) == Some(other)))]
     fn incl(self, other: Self) -> bool {
         let _ = Subset::<ViewInner<R>>::inner_inj;
         let r =
@@ -149,11 +147,10 @@ impl<R: ViewRel> RA for View<R> {
     }
 
     #[logic(law)]
-    #[ensures(a.op(b) == b.op(a))]
+    #[allow(unused_variables)]
     fn commutative(a: Self, b: Self) {}
 
     #[logic]
-    #[ensures(a.op(b).and_then_logic(|ab: Self| ab.op(c)) == b.op(c).and_then_logic(|bc| a.op(bc)))]
     fn associative(a: Self, b: Self, c: Self) {
         match (a.frag().op(b.frag()), b.frag().op(c.frag())) {
             (Some(fab), Some(fbc)) => match (fab.op(c.frag()), a.frag().op(fbc)) {
@@ -189,23 +186,11 @@ impl<R: ViewRel> RA for View<R> {
     }
 
     #[logic]
-    #[requires(self.core() != None)]
-    #[ensures({
-        let c = self.core().unwrap_logic();
-        c.op(c) == Some(c)
-    })]
-    #[ensures(self.core().unwrap_logic().op(self) == Some(self))]
     fn core_idemp(self) {
         self.core_total_idemp()
     }
 
     #[logic]
-    #[requires(i.op(i) == Some(i))]
-    #[requires(i.op(self) == Some(self))]
-    #[ensures(match self.core() {
-        Some(c) => i.incl(c),
-        None => false,
-    })]
     fn core_is_maximal_idemp(self, i: Self) {
         self.frag().core_total_idemp();
         self.frag().core_is_maximal_idemp(i.frag())
@@ -214,22 +199,18 @@ impl<R: ViewRel> RA for View<R> {
 
 impl<R: ViewRel> UnitRA for View<R> {
     #[logic]
-    #[ensures(forall<x: Self> #[trigger(x.op(result))] x.op(result) == Some(x))]
     fn unit() -> Self {
         let _ = Self::eq;
         Self::new_frag(R::Frag::unit())
     }
 
     #[logic(open)]
-    #[ensures(self.core() == Some(result))]
     fn core_total(self) -> Self {
         self.frag().core_total_idemp();
         Self::new_frag(self.frag().core_total())
     }
 
     #[logic]
-    #[ensures(self.core_total().op(self.core_total()) == Some(self.core_total()))]
-    #[ensures(self.core_total().op(self) == Some(self))]
     fn core_total_idemp(self) {
         let _ = Self::eq;
     }

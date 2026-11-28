@@ -65,13 +65,10 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
     }
 
     #[logic(open, law)]
-    #[ensures(self.produces(Seq::empty(), self))]
     fn produces_refl(self) {}
 
     #[logic(open, law)]
-    #[requires(a.produces(ab, b))]
-    #[requires(b.produces(bc, c))]
-    #[ensures(a.produces(ab.concat(bc), c))]
+    #[allow(unused_variables)]
     fn produces_trans(a: Self, ab: Seq<Self::Item>, b: Self, bc: Seq<Self::Item>, c: Self) {}
 
     #[logic(open, prophetic)]
@@ -92,10 +89,6 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
         }
     }
 
-    #[ensures(match result {
-      None => self.completed(),
-      Some(v) => (*self).produces(Seq::singleton(v), ^self)
-    })]
     fn next(&mut self) -> Option<I::Item> {
         let old_self = snapshot! { self };
         let mut produced = snapshot! { Seq::empty() };
@@ -114,14 +107,6 @@ impl<I: Iterator, F: FnMut(&I::Item) -> bool> Iterator for Filter<I, F> {
         None
     }
 
-    #[ensures(forall<s: Seq<Self::Item>, i: &mut Self>
-        self.produces(s, *i) && i.completed() ==> result.0@ <= s.len())]
-    #[ensures(match result.1 {
-        Some(r) => {
-            forall<s: Seq<Self::Item>, i: Self> self.produces(s, i) ==> s.len() <= r@
-        }
-        None => true
-    })]
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (_, upper) = self.iter.size_hint();
         let _ = snapshot! { monotone_mapping_le };

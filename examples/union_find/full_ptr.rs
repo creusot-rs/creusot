@@ -15,7 +15,6 @@ mod implementation {
 
     impl PartialEq for Element {
         #[check(ghost)]
-        #[ensures(result == (self.deep_model() == other.deep_model()))]
         fn eq(&self, other: &Self) -> bool {
             std::ptr::addr_eq(self.0, other.0)
         }
