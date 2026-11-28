@@ -19,7 +19,7 @@ let
     ++ [
       colibri2
       pkgsStatic.creusot.cvc4
-      cvc5
+      pkgsStatic.creusot.cvc5
       why3
       why3find
       z3
