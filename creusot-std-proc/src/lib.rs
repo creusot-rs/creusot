@@ -96,7 +96,7 @@ pub fn derive_deep_model(tokens: TS1) -> TS1 {
 }
 
 #[cfg(feature = "creusot")]
-#[proc_macro_derive(Clone)]
+#[proc_macro_derive(Clone, attributes(use_DeepModel))]
 pub fn derive_clone(tokens: TS1) -> TS1 {
     creusot::derive_clone(tokens)
 }

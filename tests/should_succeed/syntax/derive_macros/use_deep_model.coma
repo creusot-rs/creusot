@@ -1,0 +1,161 @@
+module M_point__impl_Clone_for_Point__clone (* <point::Point as std::clone::Clone> *)
+  use creusot.int.UInt32
+  use creusot.prelude.Any
+  
+  type t_Point = { x: UInt32.t; y: UInt32.t }
+  
+  let clone_u32 (self: UInt32.t) (return (x'0: UInt32.t)) = any
+    [ return (result: UInt32.t) -> {[@stop_split] [@expl:clone ensures] result = self} (! return {result}) ]
+  
+  type t_PointDeepModel = { x'0: int; y'0: int }
+  
+  function deep_model_u32 [@inline:trivial] (self: UInt32.t) : int = UInt32.t'int self
+  
+  meta "rewrite_def" function deep_model_u32
+  
+  function deep_model_Point (self: t_Point) : t_PointDeepModel = { x'0 = deep_model_u32 self.x;
+                                                                   y'0 = deep_model_u32 self.y }
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let clone_Point (self: t_Point) (return (x'1: t_Point)) = (! bb0
+    [ bb0 = s0
+      [ s0 = [ &_7 <- self.x ] s1
+      | s1 = clone_u32 {_7} (fun (_x: UInt32.t) -> [ &_5 <- _x ] s2)
+      | s2 = [ &_10 <- self.y ] s3
+      | s3 = clone_u32 {_10} (fun (_x: UInt32.t) -> [ &_8 <- _x ] s4)
+      | s4 = [ &_ret <- { x = _5; y = _8 } ] s5
+      | s5 = return {_ret} ] ]
+    [ & _ret: t_Point = Any.any_l ()
+    | & self: t_Point = self
+    | & _5: UInt32.t = Any.any_l ()
+    | & _7: UInt32.t = Any.any_l ()
+    | & _8: UInt32.t = Any.any_l ()
+    | & _10: UInt32.t = Any.any_l () ])
+    [ return (result: t_Point) -> {[@stop_split] [@expl:clone ensures #1] deep_model_Point result
+      = deep_model_Point self}
+      (! return {result}) ]
+end
+module M_point__impl_PartialEq_for_Point__eq (* <point::Point as std::cmp::PartialEq> *)
+  use creusot.int.UInt32
+  use creusot.prelude.Any
+  
+  type t_Point = { x: UInt32.t; y: UInt32.t }
+  
+  type t_PointDeepModel = { x'0: int; y'0: int }
+  
+  function deep_model_u32 [@inline:trivial] (self: UInt32.t) : int = UInt32.t'int self
+  
+  meta "rewrite_def" function deep_model_u32
+  
+  function deep_model_Point (self: t_Point) : t_PointDeepModel = { x'0 = deep_model_u32 self.x;
+                                                                   y'0 = deep_model_u32 self.y }
+  
+  function deep_model_ref_Point [@inline:trivial] (self: t_Point) : t_PointDeepModel = deep_model_Point self
+  
+  meta "rewrite_def" function deep_model_ref_Point
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let eq_Point (self: t_Point) (rhs: t_Point) (return (x'1: bool)) = (! bb0
+    [ bb0 = s0 [ s0 = [ &_6 <- self.x = rhs.x ] s1 | s1 = any [ br0 -> {_6 = false} (! bb2) | br1 -> {_6} (! bb1) ] ]
+    | bb1 = s0 [ s0 = [ &_ret <- self.y = rhs.y ] s1 | s1 = return {_ret} ]
+    | bb2 = s0 [ s0 = [ &_ret <- false ] s1 | s1 = return {_ret} ] ]
+    [ & _ret: bool = Any.any_l () | & self: t_Point = self | & rhs: t_Point = rhs | & _6: bool = Any.any_l () ])
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
+      = (deep_model_ref_Point self = deep_model_ref_Point rhs)}
+      (! return {result}) ]
+end
+module M_point__impl_PartialEq_for_Point__eq__refines (* <point::Point as std::cmp::PartialEq> *)
+  use creusot.int.UInt32
+  
+  type t_Point = { x: UInt32.t; y: UInt32.t }
+  
+  type t_PointDeepModel = { x'0: int; y'0: int }
+  
+  function deep_model_u32 [@inline:trivial] (self: UInt32.t) : int = UInt32.t'int self
+  
+  meta "rewrite_def" function deep_model_u32
+  
+  function deep_model_Point (self: t_Point) : t_PointDeepModel = { x'0 = deep_model_u32 self.x;
+                                                                   y'0 = deep_model_u32 self.y }
+  
+  function deep_model_ref_Point [@inline:trivial] (self: t_Point) : t_PointDeepModel = deep_model_Point self
+  
+  meta "rewrite_def" function deep_model_ref_Point
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  goal refines: forall self: t_Point, other: t_Point. forall result: bool. result
+          = (deep_model_ref_Point self = deep_model_ref_Point other)
+        -> result = (deep_model_ref_Point self = deep_model_ref_Point other)
+end
+module M_point_clone_equals
+  use creusot.prelude.Any
+  
+  type t_Point
+  
+  predicate inv_Point (_1: t_Point)
+  
+  predicate invariant_ref_Point [@inline:trivial] (self: t_Point) = inv_Point self
+  
+  meta "rewrite_def" predicate invariant_ref_Point
+  
+  predicate inv_ref_Point [@inline:trivial] (_1: t_Point) = invariant_ref_Point _1
+  
+  meta "rewrite_def" predicate inv_ref_Point
+  
+  type t_PointDeepModel
+  
+  function deep_model_Point (self: t_Point) : t_PointDeepModel
+  
+  let clone_Point (self: t_Point) (return (x: t_Point)) =
+  {[@stop_split] [@expl:clone 'self' type invariant] inv_ref_Point self}
+    any
+    [ return (result: t_Point) ->
+    {[@stop_split] [@expl:clone_Point ensures] ([@stop_split] [@expl:clone result type invariant] inv_Point result)
+      /\ ([@stop_split] [@expl:clone ensures #1] deep_model_Point result = deep_model_Point self)}
+      (! return {result}) ]
+  
+  predicate resolve_Point (_1: t_Point)
+  
+  function deep_model_ref_Point [@inline:trivial] (self: t_Point) : t_PointDeepModel = deep_model_Point self
+  
+  meta "rewrite_def" function deep_model_ref_Point
+  
+  let eq_Point (self: t_Point) (rhs: t_Point) (return (x: bool)) =
+  {[@stop_split] [@expl:eq_Point requires] ([@stop_split] [@expl:eq 'self' type invariant] inv_ref_Point self)
+    /\ ([@stop_split] [@expl:eq 'rhs' type invariant] inv_ref_Point rhs)}
+    any
+    [ return (result: bool) -> {[@stop_split] [@expl:eq ensures] result
+      = (deep_model_ref_Point self = deep_model_ref_Point rhs)}
+      (! return {result}) ]
+  
+  meta "compute_max_steps" 1000000
+  
+  meta "select_lsinst" "all"
+  
+  let point_clone_equals (val': t_Point) (return (x: ())) =
+  {[@stop_split] [@expl:point_clone_equals 'val' type invariant] inv_Point val'}
+    (! bb0
+    [ bb0 = s0
+      [ s0 = clone_Point {val'} (fun (_x: t_Point) -> [ &cloned <- _x ] s1)
+      | s1 = s2 [ _ck -> (! {[@expl:type invariant] inv_Point cloned} any) ]
+      | s2 = -{resolve_Point cloned}- s3
+      | s3 = s4 [ _ck -> (! {[@expl:type invariant] inv_Point val'} any) ]
+      | s4 = -{resolve_Point val'}- s5
+      | s5 = eq_Point {cloned} {val'} (fun (_x: bool) -> [ &_5 <- _x ] s6)
+      | s6 = any [ br0 -> {_5 = false} (! bb4) | br1 -> {_5} (! bb3) ] ]
+    | bb3 = return {_ret}
+    | bb4 = {false} any ]
+    [ & _ret: () = Any.any_l ()
+    | & val': t_Point = val'
+    | & cloned: t_Point = Any.any_l ()
+    | & _5: bool = Any.any_l () ]) [ return (result: ()) -> (! return {result}) ]
+end

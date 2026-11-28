@@ -161,6 +161,37 @@ pub(crate) fn is_deep_model_ty(attrs: &[Attribute]) -> bool {
     }
 }
 
+/// Checks if the type has `use_DeepModel` attribute.
+pub(crate) fn uses_deep_model(attrs: &[Attribute]) -> bool {
+    let mut use_deep_model_attr = None;
+    let mut repeated_use_deep_model_attrs = Vec::new();
+
+    for attr in attrs.into_iter() {
+        if attr.path().is_ident("use_DeepModel") {
+            match attr.meta {
+                Meta::Path(_) => match use_deep_model_attr {
+                    Some(_) => repeated_use_deep_model_attrs.push(attr.span().unwrap()),
+                    None => use_deep_model_attr = Some(attr.span().unwrap()),
+                },
+                Meta::NameValue(_) | Meta::List(_) => (),
+            }
+        }
+    }
+    if let Some(span) = use_deep_model_attr {
+        if !repeated_use_deep_model_attrs.is_empty() {
+            Diagnostic::new(Level::Error, "`use_DeepModel` specified multiple times")
+                .span_note(span, "previous `use_DeepModel` attributes")
+                .span_error(&*repeated_use_deep_model_attrs, "`use_DeepModel` specified again here")
+                .span_help(repeated_use_deep_model_attrs, "delete the repeated attributes")
+                .note("`use_DeepModel` must be specified at most once")
+                .emit();
+        }
+        true
+    } else {
+        false
+    }
+}
+
 fn parse_deep_model_ty_attr(m: &Meta) -> syn::Result<DeepModelTyAttr> {
     match m {
         Meta::NameValue(MetaNameValue {
