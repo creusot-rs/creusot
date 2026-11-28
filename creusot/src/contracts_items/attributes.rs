@@ -51,6 +51,7 @@ attribute_functions! {
     [creusot::spec]                             => is_spec
     [creusot::spec::erasure]                    => is_erasure
     [creusot::spec::erasure_type]               => is_erasure_type
+    [creusot::spec::erasure_fn]                 => is_erasure_fn
     [creusot::spec::invariant]                  => is_invariant
     [creusot::spec::variant]                    => is_variant
     [creusot::spec::variant::loop_]             => is_loop_variant

@@ -12,7 +12,7 @@ mod specs;
 pub(crate) use self::{
     constant::constant,
     derive::*,
-    erasure::erasure,
+    erasure::{erase, erasure},
     extern_spec::extern_spec,
     logic::{logic, pearlite},
     proof::{ghost, ghost_let, invariant, proof_assert, proof_assert_, snapshot},

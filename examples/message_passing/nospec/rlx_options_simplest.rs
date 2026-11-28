@@ -8,9 +8,6 @@ use std::{
     thread,
 };
 
-use creusot_std::prelude::erasure;
-
-#[erasure(spec::message_passing)]
 pub fn message_passing() {
     let flag = AtomicBool::new(false);
 
@@ -28,6 +25,10 @@ pub fn message_passing() {
     });
 }
 
-mod spec {
+pub mod spec {
+    erase! {
+        fn message_passing => super::message_passing;
+    }
+
     include!("../rlx_options_simplest.rs");
 }

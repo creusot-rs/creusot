@@ -8,10 +8,7 @@ use std::{
     sync::atomic::{AtomicU32, Ordering},
 };
 
-use creusot_std::{
-    prelude::{erase, erasure},
-    std::sync::SyncViewExt,
-};
+use creusot_std::std::sync::SyncViewExt;
 
 pub struct TicketLock<T> {
     next_ticket: AtomicU32,
@@ -23,13 +20,7 @@ pub struct TicketLockGuard<'a, T> {
     lock: &'a TicketLock<T>,
 }
 
-erase! {
-    type spec::TicketLock<T> => TicketLock<T>;
-    type spec::TicketLockGuard<T> => TicketLockGuard<'_, T>;
-}
-
 impl<T> TicketLock<T> {
-    #[erasure(spec::TicketLock::<T>::new)]
     pub fn new(data: T) -> Self {
         let data = SyncUnsafeCell::new(data);
 
@@ -39,7 +30,6 @@ impl<T> TicketLock<T> {
         TicketLock { next_ticket, now_serving, data }
     }
 
-    #[erasure(spec::TicketLock::<T>::lock)]
     pub fn lock<'a>(&'a self) -> TicketLockGuard<'a, T> {
         let ticket = self.next_ticket.fetch_add(1, Ordering::Relaxed);
 
@@ -48,24 +38,20 @@ impl<T> TicketLock<T> {
         TicketLockGuard { lock: self }
     }
 
-    #[erasure(spec::TicketLock::<T>::into_inner)]
     pub fn into_inner(self) -> T {
         self.data.into_inner()
     }
 }
 
 impl<'a, T> TicketLockGuard<'a, T> {
-    #[erasure(spec::TicketLockGuard::<T>::deref)]
     pub fn deref(&self) -> &T {
         unsafe { self.lock.data.borrow() }
     }
 
-    #[erasure(spec::TicketLockGuard::<T>::deref_mut)]
     pub fn deref_mut(&mut self) -> &mut T {
         unsafe { self.lock.data.borrow_mut() }
     }
 
-    #[erasure(spec::TicketLockGuard::<T>::unlock)]
     #[allow(unused_mut)]
     pub fn unlock(mut self) {
         let ticket = self.lock.now_serving.load(Ordering::Relaxed);
@@ -74,5 +60,16 @@ impl<'a, T> TicketLockGuard<'a, T> {
 }
 
 pub mod spec {
+    erase! {
+        type TicketLock<T> => super::TicketLock<T>;
+        type TicketLockGuard<T> => super::TicketLockGuard<'_, T>;
+        fn TicketLock::<T>::new => super::TicketLock::<T>::new;
+        fn TicketLock::<T>::lock => super::TicketLock::<T>::lock;
+        fn TicketLock::<T>::into_inner => super::TicketLock::<T>::into_inner;
+        fn TicketLockGuard::<T>::deref => super::TicketLockGuard::<T>::deref;
+        fn TicketLockGuard::<T>::deref_mut => super::TicketLockGuard::<T>::deref_mut;
+        fn TicketLockGuard::<T>::unlock => super::TicketLockGuard::<T>::unlock;
+    }
+
     include!("../relacq.rs");
 }

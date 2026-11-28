@@ -5,16 +5,6 @@
 
 use core::sync::atomic::{AtomicU32, AtomicUsize, Ordering, fence};
 
-use creusot_std::{
-    ghost::ErasedGhostFn,
-    prelude::{erase, erasure},
-};
-
-erase! {
-    type spec::SeqLock => SeqLock;
-    type spec::SeqLockGuard => SeqLockGuard;
-}
-
 pub struct SeqLock {
     seq: AtomicUsize,
     data0: AtomicU32,
@@ -22,7 +12,6 @@ pub struct SeqLock {
 }
 
 impl SeqLock {
-    #[erasure(spec::SeqLock::new)]
     pub fn new(val0: u32, val1: u32) -> Self {
         let data0 = AtomicU32::new(val0);
         let data1 = AtomicU32::new(val1);
@@ -31,7 +20,7 @@ impl SeqLock {
         SeqLock { seq, data0, data1 }
     }
 
-    // TODO: #[erasure(spec::SeqLock::read::<ErasedGhostFn<(), spec::ErasedCommitter, ()>>)]
+    // TODO: erase! { fn spec::SeqLock::read::<F> => SeqLock::read }
     pub fn read(&self) -> (u32, u32) {
         loop {
             let seq1 = self.seq.load(Ordering::Acquire);
@@ -53,7 +42,7 @@ impl SeqLock {
         }
     }
 
-    // TODO: #[erasure(spec::SeqLock::lock_write::<ErasedGhostFn<(), spec::ErasedCommitter, ()>>)]
+    // TODO: erase! { fn spec::SeqLock::lock_write::<F> => SeqLock::lock_write }
     pub fn lock_write(&self) -> SeqLockGuard<'_> {
         loop {
             let seq = self.seq.load(Ordering::Relaxed);
@@ -89,7 +78,6 @@ pub struct SeqLockGuard<'a> {
 }
 
 impl SeqLockGuard<'_> {
-    #[erasure(spec::SeqLockGuard::read)]
     pub fn read(&self) -> (u32, u32) {
         let ret0 = self.seqlock.data0.load(Ordering::Relaxed);
         let ret1 = self.seqlock.data1.load(Ordering::Relaxed);
@@ -97,13 +85,11 @@ impl SeqLockGuard<'_> {
         (ret0, ret1)
     }
 
-    #[erasure(spec::SeqLockGuard::write)]
     pub fn write(&mut self, val0: u32, val1: u32) {
         self.seqlock.data0.store(val0, Ordering::Relaxed);
         self.seqlock.data1.store(val1, Ordering::Relaxed);
     }
 
-    #[erasure(spec::SeqLockGuard::unlock::<ErasedGhostFn<(), spec::ErasedCommitter, ()>>)]
     pub fn unlock(self) {
         let next_seq = self.seq + 1;
         let SeqLockGuard { seqlock, .. } = self;
@@ -113,10 +99,14 @@ impl SeqLockGuard<'_> {
 }
 
 pub mod spec {
-    include!("../relaxed.rs");
-
-    pub struct ErasedCommitter {}
-    impl creusot_std::ghost::ErasedGhostFnArg for ErasedCommitter {
-        type Ty<'a, T: 'a> = SeqLockCommitter<'a>;
+    erase! {
+        type SeqLock => super::SeqLock;
+        type SeqLockGuard => super::SeqLockGuard;
+        fn SeqLock::new => super::SeqLock::new;
+        fn SeqLockGuard::read => super::SeqLockGuard::read;
+        fn SeqLockGuard::write => super::SeqLockGuard::write;
+        fn SeqLockGuard::unlock::<F> => super::SeqLockGuard::unlock where F: FnGhost + FnOnce(&mut SeqLockCommitter);
     }
+
+    include!("../relaxed.rs");
 }

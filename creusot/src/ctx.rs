@@ -725,7 +725,15 @@ impl<'tcx> TranslationCtx<'tcx> {
             use ErasureItem::*;
             match e {
                 FnErasure(erased, erasure) => {
-                    self.erased_local_defid.insert(erased, erasure);
+                    if self.erased_local_defid.insert(erased, erasure).is_some() {
+                        self.crash_and_error(
+                            self.def_span(erased),
+                            format!(
+                                "duplicate erasure declaration for {}",
+                                self.def_path_str(erased)
+                            ),
+                        )
+                    }
                     if !is_trusted(self.tcx, erased.to_def_id()) {
                         // erasure can't be None (`#[erasure(_)]` must be `#[trusted]`)
                         self.erasures_to_check.insert(erased);

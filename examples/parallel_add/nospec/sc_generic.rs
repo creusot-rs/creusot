@@ -7,9 +7,8 @@ use std::{
     thread::{self, ScopedJoinHandle},
 };
 
-use creusot_std::{prelude::erasure, std::thread::JoinHandleExt};
+use creusot_std::std::thread::JoinHandleExt;
 
-#[erasure(spec::parallel_add)]
 pub fn parallel_add(n: i32) {
     let atomic = AtomicI32::new(0);
 
@@ -32,6 +31,10 @@ pub fn parallel_add(n: i32) {
     assert!(n == x);
 }
 
-mod spec {
+pub mod spec {
+    creusot_std::prelude::erase! {
+        fn parallel_add => super::parallel_add;
+    }
+
     include!("../sc_generic.rs");
 }

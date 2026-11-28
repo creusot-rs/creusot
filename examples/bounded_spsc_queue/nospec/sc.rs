@@ -9,17 +9,7 @@ use core::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 
-use creusot_std::{
-    ghost::ErasedGhostFn,
-    prelude::{erase, erasure},
-    std::sync::SyncViewExt,
-};
-
-erase! {
-    type spec::Queue<T> => Queue<T>;
-    type spec::Producer<T> => Producer<T>;
-    type spec::Consumer<T> => Consumer<T>;
-}
+use creusot_std::std::sync::SyncViewExt;
 
 pub struct Queue<T> {
     buffer: Vec<SyncUnsafeCell<MaybeUninit<T>>>,
@@ -28,7 +18,6 @@ pub struct Queue<T> {
 }
 
 impl<T> Queue<T> {
-    #[erasure(spec::Queue::<T>::new)]
     pub fn new(len: usize) -> Self {
         let mut buffer: Vec<SyncUnsafeCell<MaybeUninit<T>>> = Vec::new();
 
@@ -49,8 +38,7 @@ pub struct Producer<'a, T> {
     head: usize,
 }
 
-impl<T: 'static> Producer<'_, T> {
-    #[erasure(spec::Producer::<T>::enqueue::<ErasedGhostFn<T, spec::ErasedCommitter, ()>>)]
+impl<T> Producer<'_, T> {
     pub fn enqueue(&mut self, item: T) {
         let queue = self.queue;
         let buffer_size = queue.buffer.len();
@@ -76,8 +64,7 @@ pub struct Consumer<'a, T> {
     tail: usize,
 }
 
-impl<T: 'static> Consumer<'_, T> {
-    #[erasure(spec::Consumer::<T>::dequeue::<ErasedGhostFn<T, spec::ErasedCommitter, ()>>)]
+impl<T> Consumer<'_, T> {
     pub fn dequeue<F>(&mut self) -> T {
         let queue = self.queue;
         let buffer_size = queue.buffer.len();
@@ -101,7 +88,6 @@ impl<T: 'static> Consumer<'_, T> {
     }
 }
 
-#[erasure(spec::channel::<T>)]
 pub fn channel<'a, T>(queue: &'a Queue<T>) -> (Producer<'a, T>, Consumer<'a, T>) {
     let prod = Producer { queue, head: 0 };
     let cons = Consumer { queue, tail: 0 };
@@ -109,10 +95,15 @@ pub fn channel<'a, T>(queue: &'a Queue<T>) -> (Producer<'a, T>, Consumer<'a, T>)
 }
 
 pub mod spec {
-    include!("../sc.rs");
-
-    pub struct ErasedCommitter {}
-    impl creusot_std::ghost::ErasedGhostFnArg for ErasedCommitter {
-        type Ty<'a, T: 'a> = QueueCommitter<'a, T>;
+    erase! {
+        type Queue<T> => super::Queue<T>;
+        type Producer<T> => super::Producer<T>;
+        type Consumer<T> => super::Consumer<T>;
+        fn Queue::<T>::new => super::Queue::<T>::new;
+        fn Producer::<T>::enqueue::<F> => super::Producer::<T>::enqueue where F: FnGhost + FnOnce(&mut QueueCommitter<T>);
+        fn Consumer::<T>::dequeue::<F> => super::Consumer::<T>::dequeue::<F> where F: FnGhost + FnOnce(&mut QueueCommitter<T>);
+        fn channel::<T> => super::channel::<T>;
     }
+
+    include!("../sc.rs");
 }

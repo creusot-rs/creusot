@@ -7,9 +7,11 @@ use proc_macro2::{Span, TokenStream as TS2};
 use quote::quote;
 // use syn::{Pat, PathArguments, Type, punctuated::Punctuated, spanned::Spanned as _, token::Comma};
 use syn::{
-    ExprPath, Stmt, Token,
+    ExprPath, GenericArgument, GenericParam, Generics, LifetimeParam, Path, PathArguments, QSelf,
+    Stmt, Token, Type, TypeParam, TypePath, WhereClause,
     parse::{Error, Parse, ParseStream, Result},
     parse_macro_input, parse_quote,
+    punctuated::Punctuated,
 };
 
 impl Parse for ErasureArg {
@@ -121,39 +123,156 @@ fn insert_doc(item: FnOrMethod, doc: TS2) -> TS1 {
     })
 }
 
-// fn is_ghost_ty(ty: &Type) -> bool {
-//     let Type::Path(ty) = ty else { return false };
-//     let None = ty.qself else { return false };
-//     let Some(segment) = ty.path.segments.last() else { return false };
-//     let PathArguments::AngleBracketed(_) = segment.arguments else { return false };
-//     let name = segment.ident.to_string();
-//     if name == "Ghost" {
-//         if ty.path.segments.len() != 1 || ty.path.leading_colon.is_some() {
-//             warn_unerased_ghost(ty.span().unwrap());
-//             return false;
-//         }
-//         true
-//     } else if name == "Snapshot" {
-//         if ty.path.segments.len() != 1 || ty.path.leading_colon.is_some() {
-//             warn_unerased_snapshot(ty.span().unwrap());
-//             return false;
-//         }
-//         true
-//     } else {
-//         false
-//     }
-// }
+/// A declaration in `erase!`.
+enum EraseDecl {
+    /// `type #source => #target #where_clause`
+    Type { source: TypePath, target: Type, where_clause: Option<WhereClause> },
+    /// `#binder fn #source => #target #where_clause`, where `#binder` is an optional `for<...>`
+    Fn {
+        binder: Option<Generics>,
+        source: ExprPath,
+        target: ExprPath,
+        where_clause: Option<WhereClause>,
+    },
+}
 
-// fn warn_unerased_ghost(span: proc_macro::Span) {
-//     Diagnostic::spanned(span, Level::Warning, "`#[erasure]` won't erase this `Ghost` argument")
-//         .note("only arguments whose type is unqualified `Ghost<_>` are erased")
-//         .note("if this `Ghost` is not referring to `creusot_std::Ghost`, rename your `Ghost` to a different name to silence this warning")
-//         .emit();
-// }
+impl Parse for EraseDecl {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let lookahead = input.lookahead1();
+        if lookahead.peek(Token![type]) {
+            input.parse::<Token![type]>()?;
+            let source = input.parse()?;
+            input.parse::<Token![=>]>()?;
+            let target = input.parse()?;
+            let where_clause = input.parse()?;
+            Ok(EraseDecl::Type { source, target, where_clause })
+        } else if lookahead.peek(Token![fn]) || lookahead.peek(Token![for]) {
+            let binder = if input.peek(Token![for]) {
+                input.parse::<Token![for]>()?;
+                Some(input.parse()?)
+            } else {
+                None
+            };
+            input.parse::<Token![fn]>()?;
+            let source = input.parse()?;
+            input.parse::<Token![=>]>()?;
+            let target = input.parse()?;
+            let where_clause = input.parse()?;
+            Ok(EraseDecl::Fn { binder, source, target, where_clause })
+        } else {
+            Err(lookahead.error())
+        }
+    }
+}
 
-// fn warn_unerased_snapshot(span: proc_macro::Span) {
-//     Diagnostic::spanned(span, Level::Warning, "`#[erasure]` won't erase this `Snapshot` argument")
-//         .note("only arguments whose type is unqualified `Snapshot<_>` are erased")
-//         .note("if this `Snapshot` is not referring to `creusot_std::Snapshot`, rename your `Snapshot` to a different name to silence this warning")
-//         .emit();
-// }
+/// Generic parameters of the gadget function for `type/fn #source => #target #where_clause`:
+fn erasure_generics(
+    qself: &Option<QSelf>,
+    path: &Path,
+    where_clause: &Option<WhereClause>,
+) -> Generics {
+    fn type_param(ty: &Type) -> Option<GenericParam> {
+        let Type::Path(TypePath { qself: None, path }) = ty else { return None };
+        Some(GenericParam::Type(TypeParam::from(path.get_ident()?.clone())))
+    }
+    fn path_args(path: &Path) -> impl Iterator<Item = &GenericArgument> {
+        path.segments.iter().flat_map(|segment| match &segment.arguments {
+            PathArguments::AngleBracketed(args) => args.args.iter().collect(),
+            _ => Vec::new(),
+        })
+    }
+    // In `<S<T> as Trait>::f`, `S` is a type (the `Self` of an impl) and `T` is a parameter.
+    let qself_args = qself.iter().flat_map(|qself| match &*qself.ty {
+        Type::Path(TypePath { qself: None, path }) => path_args(path).collect(),
+        _ => Vec::new(),
+    });
+    let args = qself_args.chain(path_args(path));
+    let args = args.filter_map(|arg| match arg {
+        GenericArgument::Type(ty) => type_param(ty),
+        GenericArgument::Lifetime(lt) if lt.ident != "_" && lt.ident != "static" => {
+            Some(GenericParam::Lifetime(LifetimeParam::new(lt.clone())))
+        }
+        _ => None,
+    });
+    Generics {
+        lt_token: Some(Default::default()),
+        params: args.collect(),
+        gt_token: Some(Default::default()),
+        where_clause: where_clause.clone(),
+    }
+}
+
+/// A `;`-separated list of erasure declarations.
+///
+/// `type A<T> => B<T> where T: U` expands to
+///
+/// ```ignore
+/// const _: () = {
+///    #[creusot::no_translate]
+///    #[creusot::spec::erasure_type]
+///    fn _erasure<T>(_: A<T>, _: B<T>) where T: U {}
+/// };
+/// ```
+///
+/// `fn A::<T>::f::<U> => B::<T>::g::<U> where T: Bound`
+/// (equivalent to `#[erasure(B::<T>::g::<U>)]` on `A::<T>::f`) expands to
+///
+/// ```ignore
+/// const _: () = {
+///    #[creusot::no_translate]
+///    #[creusot::spec::erasure_fn]
+///    fn _erasure<T, U>() where T: Bound {
+///        let _ = (A::<T>::f::<U>, B::<T>::g::<U>);
+///    }
+/// };
+/// ```
+///
+/// `fn` also has a form with an explicit binder:
+/// `for<T: Bound> fn A::<Vec<T>>::f => B::<T>::g`
+/// uses the binder as the generic parameters of `_erasure`
+/// instead of inferring them from the generic arguments of `#source`.
+///
+/// Wrapping the function in a `const _` avoids name clashes.
+pub(crate) fn erase(tokens: TS1) -> TS1 {
+    let decls =
+        parse_macro_input!(tokens with Punctuated::<EraseDecl, Token![;]>::parse_terminated);
+    let items = decls.iter().map(|decl| match decl {
+        EraseDecl::Type { source, target, where_clause } => {
+            let generics = erasure_generics(&source.qself, &source.path, where_clause);
+            let (impl_generics, _, where_clause) = generics.split_for_impl();
+            quote! {
+                const _: () = {
+                    #[creusot::no_translate]
+                    #[creusot::spec::erasure_type]
+                    fn _erasure #impl_generics (_: #source, _: #target) #where_clause {}
+                };
+            }
+        }
+        EraseDecl::Fn { binder, source, target, where_clause } => {
+            let generics = match binder {
+                Some(binder) => {
+                    let mut generics = binder.clone();
+                    if let Some(where_clause) = where_clause {
+                        generics
+                            .make_where_clause()
+                            .predicates
+                            .extend(where_clause.predicates.clone());
+                    }
+                    generics
+                }
+                None => erasure_generics(&source.qself, &source.path, where_clause),
+            };
+            let (impl_generics, _, where_clause) = generics.split_for_impl();
+            quote! {
+                const _: () = {
+                    #[creusot::no_translate]
+                    #[creusot::spec::erasure_fn]
+                    fn _erasure #impl_generics () #where_clause {
+                        let _ = (#source, #target);
+                    }
+                };
+            }
+        }
+    });
+    TS1::from(quote! { #(#items)* })
+}
