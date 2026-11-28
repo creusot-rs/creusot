@@ -22,7 +22,7 @@ let
       pkgsStatic.creusot.cvc5
       why3
       why3find
-      z3
+      pkgsStatic.creusot.z3
     ];
 
   why3json = writeTextFile {
